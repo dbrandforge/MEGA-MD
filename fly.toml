@@ -1,28 +1,34 @@
-app = "mega-md"
-primary_region = "iad"
+# fly.toml app configuration file generated for mega-md-eobubw on 2026-10-25T11:20:13Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'mega-md-eobubw'
+primary_region = 'ams'
 
 [build]
-  dockerfile = "lib/Dockerfile"
+  dockerfile = 'lib/Dockerfile'
 
 [env]
-  PORT = "5000"
-  BOT_NAME = "MEGA-MD"
-  COMMAND_MODE = "public"
-  TIMEZONE = "Asia/Karachi"
-  SESSION_ID = ""
-  OWNER_NUMBER = "923000000000"
-  MONGO_URL = ""
-  POSTGRES_URL = ""
-  MYSQL_URL = ""
-  DB_URL = ""
+  BOT_NAME = 'MEGA-MD'
+  COMMAND_MODE = 'public'
+  DB_URL = ''
+  MONGO_URL = ''
+  MYSQL_URL = ''
+  OWNER_NUMBER = '923000000000'
+  PORT = '5000'
+  POSTGRES_URL = ''
+  SESSION_ID = ''
+  TIMEZONE = 'Asia/Karachi'
 
 [http_service]
-  internal_port = 5000
+  internal_port = 8080
   force_https = true
-  auto_stop_machines = false
+  auto_stop_machines = 'off'
   auto_start_machines = true
 
 [[vm]]
-  memory = "512mb"
-  cpu_kind = "shared"
+  memory = '512mb'
+  cpu_kind = 'shared'
   cpus = 1
+  memory_mb = 256
