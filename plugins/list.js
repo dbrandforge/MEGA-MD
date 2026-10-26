@@ -1,18 +1,4 @@
 import config from '../config.js';
-/*****************************************************************************
- *                                                                           *
- *                     Developed By Qasim Ali                                *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/GlobalTechInfo                         *
- *  ▶️  YouTube  : https://youtube.com/@GlobalTechInfo                       *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VagJIAr3bbVBCpEkAM07     *
- *                                                                           *
- *    © 2026 GlobalTechInfo. All rights reserved.                            *
- *                                                                           *
- *    Description: This file is part of the MEGA-MD Project.                 *
- *                 Unauthorized copying or distribution is prohibited.       *
- *                                                                           *
- *****************************************************************************/
 import commandHandler from '../lib/commandHandler.js';
 import path from 'path';
 import fs from 'fs';
@@ -29,7 +15,7 @@ function formatTime() {
 const menuStyles = [
     {
         render({ _title, info, categories, prefix }) {
-            let t = `╭━━『 *MEGA MENU* 』━⬣\n`;
+            let t = `╭━━『 *FORGE MENU* 』━⬣\n`;
             t += `┃ ✨ *Bot: ${info.bot}*\n`;
             t += `┃ 🔧 *Prefix: ${info.prefix}*\n`;
             t += `┃ 📦 *Plugin: ${info.total}*\n`;
@@ -46,7 +32,7 @@ const menuStyles = [
     },
     {
         render({ _title, info, categories, prefix }) {
-            let t = `◈╭─❍「 *MEGA MENU* 」❍\n`;
+            let t = `◈╭─❍「 *FORGE MENU* 」❍\n`;
             t += `◈├• 🌟 *Bot: ${info.bot}*\n`;
             t += `◈├• ⚙️ *Prefix: ${info.prefix}*\n`;
             t += `◈├• 🍫 *Plugins: ${info.total}*\n`;
@@ -63,7 +49,7 @@ const menuStyles = [
     },
     {
         render({ _title, info, categories, prefix }) {
-            let t = `┏━━━━ *MEGA MENU* ━━━┓\n`;
+            let t = `┏━━━━ *FORGE MENU* ━━━┓\n`;
             t += `┃• *Bot : ${info.bot}*\n`;
             t += `┃• *Prefixes : ${info.prefix}*\n`;
             t += `┃• *Plugins : ${info.total}*\n`;
@@ -80,7 +66,7 @@ const menuStyles = [
     },
     {
         render({ _title, info, categories, prefix }) {
-            let t = `✦═══ *MEGA MENU* ═══✦\n`;
+            let t = `✦═══ *FORGE MENU* ═══✦\n`;
             t += `║➩ *Bot: ${info.bot}*\n`;
             t += `║➩ *Prefixes: ${info.prefix}*\n`;
             t += `║➩ *Plugins: ${info.total}*\n`;
@@ -97,7 +83,7 @@ const menuStyles = [
     },
     {
         render({ _title, info, categories, prefix }) {
-            let t = `❀━━━ *MEGA MENU* ━━━❀\n`;
+            let t = `❀━━━ *FORGE MENU* ━━━❀\n`;
             t += `┃☞ *Bot: ${info.bot}*\n`;
             t += `┃☞ *Prefixes: ${info.prefix}*\n`;
             t += `┃☞ *Plugins: ${info.total}*\n`;
@@ -114,7 +100,7 @@ const menuStyles = [
     },
     {
         render({ _title, info, categories, prefix }) {
-            let t = `◆━━━ *MEGA MENU* ━━━◆\n`;
+            let t = `◆━━━ *FORGE MENU* ━━━◆\n`;
             t += `┃ ¤ *Bot: ${info.bot}*\n`;
             t += `┃ ¤ *Prefixes: ${info.prefix}*\n`;
             t += `┃ ¤ *Plugins: ${info.total}*\n`;
@@ -131,7 +117,7 @@ const menuStyles = [
     },
     {
         render({ _title, info, categories, prefix }) {
-            let t = `╭───⬣ *MEGA MENU* ──⬣\n`;
+            let t = `╭───⬣ *FORGE MENU* ──⬣\n`;
             t += ` | ● *Bot: ${info.bot}*\n`;
             t += ` | ● *Prefixes: ${info.prefix}*\n`;
             t += ` | ● *Plugins: ${info.total}*\n`;
@@ -215,17 +201,3 @@ export default {
         }
     }
 };
-/*****************************************************************************
- *                                                                           *
- *                     Developed By Qasim Ali                                *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/GlobalTechInfo                         *
- *  ▶️  YouTube  : https://youtube.com/@GlobalTechInfo                       *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VagJIAr3bbVBCpEkAM07     *
- *                                                                           *
- *    © 2026 GlobalTechInfo. All rights reserved.                            *
- *                                                                           *
- *    Description: This file is part of the MEGA-MD Project.                 *
- *                 Unauthorized copying or distribution is prohibited.       *
- *                                                                           *
- *****************************************************************************/
