@@ -104,6 +104,99 @@ process.on('SIGINT', () => {
         rl.close();
     process.exit(0);
 });
+// --- Reconnect/pairing-storm guard -----------------------------------
+// startQasimDev() used to be called directly from 5 different places
+// (the pairing-retry handler, the connection-close handler's two
+// branches, this function's own catch block, and main()) with no
+// coordination. Any disconnect - including a transient one that isn't a
+// real logout - could fire a brand-new startQasimDev() while the
+// previous socket/connection was still alive, creating overlapping
+// WhatsApp Web connections on the same device credentials. WhatsApp
+// detects that as abuse and force-logs-out (401), which this code then
+// "handled" by wiping the session and immediately requesting a new
+// pairing code - and because multiple instances could be racing, that
+// wipe-and-repair could cascade into a runaway loop generating a new
+// pairing code every few seconds.
+//
+// isConnecting prevents two startQasimDev() calls from running at the
+// same time. scheduleReconnect() debounces the close-handler/catch
+// retries so a burst of close events only schedules one reconnect, not
+// one per event.
+let isConnecting = false;
+let reconnectTimer = null;
+async function safeStartQasimDev() {
+    if (isConnecting) {
+        printLog('warning', 'startQasimDev() already in progress - skipping duplicate call.');
+        return;
+    }
+    isConnecting = true;
+    try {
+        await startQasimDev();
+    }
+    finally {
+        isConnecting = false;
+    }
+}
+function scheduleReconnect(delayMs, { wipeSession = false, reason = '' } = {}) {
+    if (reconnectTimer) {
+        printLog('warning', `Reconnect already scheduled - ignoring duplicate request (${reason}).`);
+        return;
+    }
+    printLog('connection', `Reconnecting in ${Math.round(delayMs / 1000)} seconds...${reason ? ` (${reason})` : ''}`);
+    reconnectTimer = setTimeout(async () => {
+        reconnectTimer = null;
+        if (wipeSession) {
+            try {
+                rmSync('./session', { recursive: true, force: true });
+            }
+            catch (_e) { /* ignore */ }
+        }
+        await safeStartQasimDev();
+    }, delayMs);
+}
+
+// --- Zombie-connection watchdog ---------------------------------------
+// Keeping the Render process alive (via an uptime pinger) and having a
+// healthy WhatsApp *socket* are two different things. Baileys doesn't
+// always emit a 'close' event when the underlying connection goes
+// stale/half-open (e.g. a network blip on WhatsApp's side) - the process
+// keeps running, nothing crashes, but the bot stops receiving or sending
+// messages until something forces a fresh connection. This watchdog
+// periodically does a cheap, real round-trip to WhatsApp's servers
+// (a presence update) with a timeout; if it fails or times out, it ends
+// the current socket, which triggers the normal (now deduped) close
+// handler to reconnect automatically - no manual Render restart needed.
+let currentSocket = null;
+let watchdogTimer = null;
+const WATCHDOG_INTERVAL_MS = 3 * 60 * 1000; // probe every 3 minutes
+const WATCHDOG_PROBE_TIMEOUT_MS = 15 * 1000; // give the probe 15s to respond
+function startWatchdog() {
+    if (watchdogTimer)
+        return;
+    watchdogTimer = setInterval(async () => {
+        if (!currentSocket || isConnecting || reconnectTimer)
+            return; // nothing to probe, or a (re)connect is already underway
+        try {
+            await Promise.race([
+                currentSocket.sendPresenceUpdate('available'),
+                new Promise((_resolve, reject) => setTimeout(() => reject(new Error('watchdog probe timed out')), WATCHDOG_PROBE_TIMEOUT_MS)),
+            ]);
+        }
+        catch (err) {
+            printLog('warning', `Watchdog: connection looks dead (${err.message}) - forcing reconnect.`);
+            const dead = currentSocket;
+            currentSocket = null;
+            try {
+                dead.end(new Error('watchdog: stale connection'));
+            }
+            catch (_e) {
+                // .end() itself failed (socket already half-dead) - the close
+                // handler won't fire in this case, so schedule directly.
+                scheduleReconnect(5000, { wipeSession: false, reason: 'watchdog forced reconnect' });
+            }
+        }
+    }, WATCHDOG_INTERVAL_MS);
+}
 function ensureSessionDirectory() {
     const sessionPath = path.join(__dirname, 'session');
     if (!existsSync(sessionPath)) {
@@ -383,12 +476,7 @@ async function startQasimDev() {
                 }
                 catch (error) {
                     if (attempt < 3) {
-                        try {
-                            rmSync('./session', { recursive: true, force: true });
-                        }
-                        catch (_e) { /* ignore */ }
-                        await delay(3000);
-                        startQasimDev();
+                        scheduleReconnect(3000, { wipeSession: true, reason: 'pairing code request failed' });
                     }
                     else {
                         printLog('error', 'All 3 pairing attempts failed. Please restart manually.');
@@ -424,6 +512,8 @@ async function startQasimDev() {
             }
             if (connection === "open") {
                 printLog('success', 'Bot connected successfully!');
+                currentSocket = QasimDev;
+                startWatchdog();
                 try {
                     const setbioModule = await import('./plugins/setbio.js');
                     const startAutoBio = setbioModule.startAutoBio || setbioModule.default?.startAutoBio;
@@ -471,21 +561,16 @@ async function startQasimDev() {
                 console.log();
             }
             if (connection === 'close') {
+                if (currentSocket === QasimDev)
+                    currentSocket = null;
                 const statusCode = lastDisconnect?.error?.output?.statusCode;
                 const shouldReconnect = statusCode !== DisconnectReason.loggedOut && statusCode !== 401;
                 if (statusCode === DisconnectReason.loggedOut || statusCode === 401) {
-                    try {
-                        rmSync('./session', { recursive: true, force: true });
-                    }
-                    catch (_e) { /* ignore */ }
-                    await delay(3000);
-                    startQasimDev();
+                    scheduleReconnect(3000, { wipeSession: true, reason: `logged out (status ${statusCode})` });
                     return;
                 }
                 if (shouldReconnect) {
-                    printLog('connection', 'Reconnecting in 5 seconds...');
-                    await delay(5000);
-                    startQasimDev();
+                    scheduleReconnect(5000, { wipeSession: false, reason: `connection closed (status ${statusCode})` });
                 }
             }
         });
@@ -509,8 +594,7 @@ async function startQasimDev() {
             rl.close();
             rl = null;
         }
-        await delay(5000);
-        startQasimDev();
+        scheduleReconnect(5000, { wipeSession: false, reason: `startQasimDev error: ${error.message}` });
     }
 }
 async function main() {
@@ -519,7 +603,7 @@ async function main() {
     printLog('info', 'Starting MEGA MD BOT...');
     await initializeSession();
     await delay(3000);
-    startQasimDev().catch((error) => {
+    safeStartQasimDev().catch((error) => {
         printLog('error', `Fatal error: ${error.message}`);
         if (rl && !rlClosed)
             rl.close();
