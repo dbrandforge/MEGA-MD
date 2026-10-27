@@ -2,14 +2,7 @@ import store from '../lib/lightweight_store.js';
 
 /**
  * Full Truth or Dare State Machine - Sin City
- * 
- * Supports:
- * - Multiple concurrent sessions
- * - Solo & Paired modes
- * - Forced pattern in Paired: Truth → Truth → Dare
- * - 10-minute inactivity timeout with warnings
- * - Public end announcement
- * - Manual end with .endtod
+ * Fixed: Now supports direct arguments (.tod solo / .tod paired @user)
  */
 
 const truths = [
@@ -119,8 +112,8 @@ const dares = [
 ];
 
 const SESSIONS_KEY = 'todSessions';
-const TIMEOUT_MS = 10 * 60 * 1000;      // 10 minutes
-const WARNING_MS = 7 * 60 * 1000;       // warn at 7 min
+const TIMEOUT_MS = 10 * 60 * 1000;
+const WARNING_MS = 7 * 60 * 1000;
 
 async function getSessions(chatId) {
     return (await store.getSetting(chatId, SESSIONS_KEY)) || {};
@@ -135,7 +128,6 @@ function getRandom(arr) {
 }
 
 function getPatternType(round) {
-    // Forced: 1=Truth, 2=Truth, 3=Dare, 4=Truth, 5=Truth, 6=Dare...
     return ((round - 1) % 3 === 2) ? 'dare' : 'truth';
 }
 
@@ -170,23 +162,18 @@ async function startRound(sock, chatId, session) {
     session.lastActivity = Date.now();
     session.warningSent = false;
 
-    const type = session.mode === 'solo' 
+    const type = session.mode === 'solo'
         ? (Math.random() > 0.5 ? 'truth' : 'dare')
         : getPatternType(session.round);
 
     const content = type === 'truth' ? getRandom(truths) : getRandom(dares);
 
-    // In paired mode, alternate who answers
-    let answerer, chooser;
+    let answerer;
     if (session.mode === 'paired') {
-        // Odd rounds: player[0] is the one the question is for (answered by player[1] wait no)
-        // According to design: the question/dare is given TO one person
         const idx = (session.round - 1) % 2;
         answerer = session.players[idx];
-        chooser = session.players[1 - idx];
     } else {
         answerer = session.players[0];
-        chooser = session.players[0];
     }
 
     session.currentAnswerer = answerer;
@@ -200,7 +187,7 @@ async function startRound(sock, chatId, session) {
     const typeLabel = type === 'truth' ? '🔥 *TRUTH*' : '💀 *DARE*';
     let text = `${typeLabel}  —  Round ${session.round}\n\n`;
     text += `${mention(answerer)}, your ${type}:\n\n${content}\n\n`;
-    text += `_Reply to this message when done, or type .endtod to stop._`;
+    text += `_Reply when done, or type .endtod to stop._`;
 
     await sock.sendMessage(chatId, {
         text,
@@ -208,13 +195,64 @@ async function startRound(sock, chatId, session) {
     });
 }
 
-// Main command
+async function startSolo(sock, chatId, senderId) {
+    const sessions = await getSessions(chatId);
+    const sessionId = `tod_${Date.now()}_${senderId.split('@')[0]}`;
+
+    const session = {
+        id: sessionId,
+        status: 'active',
+        starter: senderId,
+        players: [senderId],
+        mode: 'solo',
+        round: 0,
+        lastActivity: Date.now(),
+        warningSent: false
+    };
+
+    sessions[sessionId] = session;
+    await saveSessions(chatId, sessions);
+
+    await sock.sendMessage(chatId, {
+        text: `✅ *Solo mode* started for ${mention(senderId)}\n\nGet ready...`,
+        mentions: [senderId]
+    });
+
+    await startRound(sock, chatId, session);
+}
+
+async function startPaired(sock, chatId, senderId, partnerId) {
+    const sessions = await getSessions(chatId);
+    const sessionId = `tod_${Date.now()}_${senderId.split('@')[0]}`;
+
+    const session = {
+        id: sessionId,
+        status: 'active',
+        starter: senderId,
+        players: [senderId, partnerId],
+        mode: 'paired',
+        round: 0,
+        lastActivity: Date.now(),
+        warningSent: false
+    };
+
+    sessions[sessionId] = session;
+    await saveSessions(chatId, sessions);
+
+    await sock.sendMessage(chatId, {
+        text: `✅ *Paired mode* started!\n\n${mention(senderId)}  vs  ${mention(partnerId)}\n\nForced pattern: Truth → Truth → Dare\n\nStarting Round 1...`,
+        mentions: [senderId, partnerId]
+    });
+
+    await startRound(sock, chatId, session);
+}
+
 export default {
     command: 'tod',
     aliases: ['truthordare'],
     category: 'games',
     description: 'Truth or Dare - Solo or Paired with forced pattern',
-    usage: '.tod',
+    usage: '.tod | .tod solo | .tod paired @user',
     groupOnly: true,
     async handler(sock, message, args, context) {
         const { chatId, senderId, channelInfo } = context;
@@ -222,7 +260,7 @@ export default {
 
         // Already in a session?
         const existing = Object.values(sessions).find(s =>
-            s.players?.includes(senderId) && ['active', 'choosing_mode', 'waiting_partner'].includes(s.status)
+            s.players?.includes(senderId) && ['active', 'choosing_mode'].includes(s.status)
         );
 
         if (existing) {
@@ -232,6 +270,35 @@ export default {
             }, { quoted: message });
         }
 
+        const firstArg = (args[0] || '').toLowerCase();
+
+        // Direct: .tod solo
+        if (firstArg === 'solo') {
+            return startSolo(sock, chatId, senderId);
+        }
+
+        // Direct: .tod paired @user
+        if (firstArg === 'paired' || firstArg === 'pair') {
+            const mentioned = message.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+            if (mentioned.length === 0) {
+                return sock.sendMessage(chatId, {
+                    text: `Please tag your partner.\nExample: *.tod paired @partner*`,
+                    ...channelInfo
+                }, { quoted: message });
+            }
+
+            const partner = mentioned[0];
+            if (partner === senderId) {
+                return sock.sendMessage(chatId, {
+                    text: `You cannot pair with yourself.`,
+                    ...channelInfo
+                }, { quoted: message });
+            }
+
+            return startPaired(sock, chatId, senderId, partner);
+        }
+
+        // No args → ask for mode
         const sessionId = `tod_${Date.now()}_${senderId.split('@')[0]}`;
         sessions[sessionId] = {
             id: sessionId,
@@ -246,14 +313,13 @@ export default {
         await saveSessions(chatId, sessions);
 
         await sock.sendMessage(chatId, {
-            text: `🔥 *Truth or Dare*\n\n${mention(senderId)}, choose mode:\n\n• Type *solo*\n• Type *paired @partner*\n\nExample: paired @username\n\nEnd anytime with *.endtod*`,
+            text: `🔥 *Truth or Dare*\n\n${mention(senderId)}, choose mode:\n\n• *.tod solo*\n• *.tod paired @partner*\n\nOr just reply with *solo* / *paired @partner*\n\nEnd anytime with *.endtod*`,
             mentions: [senderId],
             ...channelInfo
         }, { quoted: message });
     }
 };
 
-// End command
 export const endTodCmd = {
     command: 'endtod',
     aliases: ['stoptod', 'endtruth'],
@@ -266,7 +332,7 @@ export const endTodCmd = {
         const sessions = await getSessions(chatId);
 
         const entry = Object.entries(sessions).find(([_, s]) =>
-            s.players?.includes(senderId) && ['active', 'choosing_mode', 'waiting_partner'].includes(s.status)
+            s.players?.includes(senderId) && ['active', 'choosing_mode'].includes(s.status)
         );
 
         if (!entry) {
@@ -276,42 +342,27 @@ export const endTodCmd = {
             }, { quoted: message });
         }
 
-        const session = entry[1];
-        await endSession(sock, chatId, session, 'manual');
+        await endSession(sock, chatId, entry[1], 'manual');
     }
 };
 
-/**
- * This function must be called from the main message handler
- * whenever a message comes in a group, to advance sessions.
- */
 export async function handleTodReply(sock, chatId, senderId, text, message) {
     const sessions = await getSessions(chatId);
     const session = Object.values(sessions).find(s =>
-        s.players?.includes(senderId) && ['choosing_mode', 'waiting_partner', 'active'].includes(s.status)
+        s.players?.includes(senderId) && ['choosing_mode', 'active'].includes(s.status)
     );
 
     if (!session) return false;
 
     const lower = (text || '').trim().toLowerCase();
 
-    // Choosing mode
     if (session.status === 'choosing_mode') {
         if (lower === 'solo') {
-            session.mode = 'solo';
-            session.status = 'active';
-            session.players = [senderId];
-            await saveSessions(chatId, sessions);
-            await sock.sendMessage(chatId, {
-                text: `✅ Solo mode started for ${mention(senderId)}\n\nGet ready...`,
-                mentions: [senderId]
-            });
-            await startRound(sock, chatId, session);
+            await startSolo(sock, chatId, senderId);
             return true;
         }
 
-        if (lower.startsWith('paired')) {
-            // Try to extract mentioned partner
+        if (lower.startsWith('paired') || lower.startsWith('pair')) {
             const mentioned = message.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
             if (mentioned.length === 0) {
                 await sock.sendMessage(chatId, {
@@ -326,29 +377,18 @@ export async function handleTodReply(sock, chatId, senderId, text, message) {
                 return true;
             }
 
-            session.mode = 'paired';
-            session.players = [senderId, partner];
-            session.status = 'active';
-            await saveSessions(chatId, sessions);
-
-            await sock.sendMessage(chatId, {
-                text: `✅ Paired mode started!\n\n${mention(senderId)}  vs  ${mention(partner)}\n\nForced pattern: Truth → Truth → Dare\n\nStarting Round 1...`,
-                mentions: [senderId, partner]
-            });
-            await startRound(sock, chatId, session);
+            await startPaired(sock, chatId, senderId, partner);
             return true;
         }
 
         return false;
     }
 
-    // Active session - any message from the current answerer counts as progress
     if (session.status === 'active' && session.waitingFor === senderId) {
         session.lastActivity = Date.now();
         session.warningSent = false;
         await saveSessions(chatId, sessions);
 
-        // Acknowledge and move to next round after a short delay
         await sock.sendMessage(chatId, {
             text: `✅ Noted. Next round coming up...`,
             mentions: session.players
@@ -361,9 +401,6 @@ export async function handleTodReply(sock, chatId, senderId, text, message) {
     return false;
 }
 
-/**
- * Call this periodically (e.g. every 30-60 seconds) to check timeouts
- */
 export async function checkTodTimeouts(sock, chatId) {
     const sessions = await getSessions(chatId);
     const now = Date.now();
