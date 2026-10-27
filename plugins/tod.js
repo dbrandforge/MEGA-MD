@@ -1,8 +1,8 @@
 import store from '../lib/lightweight_store.js';
 
 /**
- * Full Truth or Dare State Machine - Sin City
- * Fixed: Now supports direct arguments (.tod solo / .tod paired @user)
+ * Truth or Dare - Sin City
+ * Players must type .done or .next to advance after answering
  */
 
 const truths = [
@@ -187,7 +187,8 @@ async function startRound(sock, chatId, session) {
     const typeLabel = type === 'truth' ? '🔥 *TRUTH*' : '💀 *DARE*';
     let text = `${typeLabel}  —  Round ${session.round}\n\n`;
     text += `${mention(answerer)}, your ${type}:\n\n${content}\n\n`;
-    text += `_Reply when done, or type .endtod to stop._`;
+    text += `✅ When you are done, type *.done* or *.next* to continue.\n`;
+    text += `🛑 Type *.endtod* to stop the game.`;
 
     await sock.sendMessage(chatId, {
         text,
@@ -258,26 +259,23 @@ export default {
         const { chatId, senderId, channelInfo } = context;
         const sessions = await getSessions(chatId);
 
-        // Already in a session?
         const existing = Object.values(sessions).find(s =>
             s.players?.includes(senderId) && ['active', 'choosing_mode'].includes(s.status)
         );
 
         if (existing) {
             return sock.sendMessage(chatId, {
-                text: `You are already in an active session.\nUse *.endtod* to end it first.`,
+                text: `You are already in an active session.\nUse *.endtod* to end it, or *.done* to continue if it's your turn.`,
                 ...channelInfo
             }, { quoted: message });
         }
 
         const firstArg = (args[0] || '').toLowerCase();
 
-        // Direct: .tod solo
         if (firstArg === 'solo') {
             return startSolo(sock, chatId, senderId);
         }
 
-        // Direct: .tod paired @user
         if (firstArg === 'paired' || firstArg === 'pair') {
             const mentioned = message.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
             if (mentioned.length === 0) {
@@ -298,28 +296,61 @@ export default {
             return startPaired(sock, chatId, senderId, partner);
         }
 
-        // No args → ask for mode
-        const sessionId = `tod_${Date.now()}_${senderId.split('@')[0]}`;
-        sessions[sessionId] = {
-            id: sessionId,
-            status: 'choosing_mode',
-            starter: senderId,
-            players: [senderId],
-            mode: null,
-            round: 0,
-            lastActivity: Date.now(),
-            warningSent: false
-        };
-        await saveSessions(chatId, sessions);
-
+        // No args → show help
         await sock.sendMessage(chatId, {
-            text: `🔥 *Truth or Dare*\n\n${mention(senderId)}, choose mode:\n\n• *.tod solo*\n• *.tod paired @partner*\n\nOr just reply with *solo* / *paired @partner*\n\nEnd anytime with *.endtod*`,
+            text: `🔥 *Truth or Dare*\n\n${mention(senderId)}, choose mode:\n\n• *.tod solo*\n• *.tod paired @partner*\n\nAfter answering, type *.done* or *.next* to continue.\nEnd anytime with *.endtod*`,
             mentions: [senderId],
             ...channelInfo
         }, { quoted: message });
     }
 };
 
+// .done / .next command to advance
+export const doneCmd = {
+    command: 'done',
+    aliases: ['next', 'toddone'],
+    category: 'games',
+    description: 'Mark your Truth/Dare as done and continue to next round',
+    usage: '.done',
+    groupOnly: true,
+    async handler(sock, message, args, context) {
+        const { chatId, senderId, channelInfo } = context;
+        const sessions = await getSessions(chatId);
+
+        const session = Object.values(sessions).find(s =>
+            s.players?.includes(senderId) && s.status === 'active'
+        );
+
+        if (!session) {
+            return sock.sendMessage(chatId, {
+                text: 'You are not in an active Truth or Dare session.',
+                ...channelInfo
+            }, { quoted: message });
+        }
+
+        if (session.waitingFor !== senderId) {
+            return sock.sendMessage(chatId, {
+                text: `It's not your turn right now.\nWaiting for ${mention(session.waitingFor)}.`,
+                mentions: [session.waitingFor],
+                ...channelInfo
+            }, { quoted: message });
+        }
+
+        // Advance
+        session.lastActivity = Date.now();
+        session.warningSent = false;
+        await saveSessions(chatId, sessions);
+
+        await sock.sendMessage(chatId, {
+            text: `✅ ${mention(senderId)} is done! Next round coming up...`,
+            mentions: session.players
+        });
+
+        setTimeout(() => startRound(sock, chatId, session), 1500);
+    }
+};
+
+// .endtod command
 export const endTodCmd = {
     command: 'endtod',
     aliases: ['stoptod', 'endtruth'],
@@ -346,58 +377,8 @@ export const endTodCmd = {
     }
 };
 
-export async function handleTodReply(sock, chatId, senderId, text, message) {
-    const sessions = await getSessions(chatId);
-    const session = Object.values(sessions).find(s =>
-        s.players?.includes(senderId) && ['choosing_mode', 'active'].includes(s.status)
-    );
-
-    if (!session) return false;
-
-    const lower = (text || '').trim().toLowerCase();
-
-    if (session.status === 'choosing_mode') {
-        if (lower === 'solo') {
-            await startSolo(sock, chatId, senderId);
-            return true;
-        }
-
-        if (lower.startsWith('paired') || lower.startsWith('pair')) {
-            const mentioned = message.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-            if (mentioned.length === 0) {
-                await sock.sendMessage(chatId, {
-                    text: `Please tag your partner.\nExample: paired @partner`
-                });
-                return true;
-            }
-
-            const partner = mentioned[0];
-            if (partner === senderId) {
-                await sock.sendMessage(chatId, { text: `You cannot pair with yourself.` });
-                return true;
-            }
-
-            await startPaired(sock, chatId, senderId, partner);
-            return true;
-        }
-
-        return false;
-    }
-
-    if (session.status === 'active' && session.waitingFor === senderId) {
-        session.lastActivity = Date.now();
-        session.warningSent = false;
-        await saveSessions(chatId, sessions);
-
-        await sock.sendMessage(chatId, {
-            text: `✅ Noted. Next round coming up...`,
-            mentions: session.players
-        });
-
-        setTimeout(() => startRound(sock, chatId, session), 2000);
-        return true;
-    }
-
+export async function handleTodReply() {
+    // No longer needed for advancing - we use .done command instead
     return false;
 }
 
@@ -421,7 +402,7 @@ export async function checkTodTimeouts(sock, chatId) {
 
             const remaining = Math.ceil((TIMEOUT_MS - inactive) / 60000);
             await sock.sendMessage(chatId, {
-                text: `⚠️ *Timeout Warning*\n\n${session.players.map(mention).join(' & ')}\n\nNo activity for a while. Session will end in ~${remaining} minute(s) if no one responds.`,
+                text: `⚠️ *Timeout Warning*\n\n${session.players.map(mention).join(' & ')}\n\nNo activity for a while. Session will end in ~${remaining} minute(s) if no one types *.done*.`,
                 mentions: session.players
             });
         }
