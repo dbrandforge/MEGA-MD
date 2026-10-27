@@ -8,7 +8,7 @@ const config = {
     author: process.env.AUTHOR || 'Forge',
     packname: process.env.PACKNAME || 'Forge',
     description: process.env.DESCRIPTION || 'Forge WhatsApp Bot',
-    version: '6.0.0',
+    version: '6.1.0',
     // Bot Config
     prefixes: _prefixes,
     prefix: _prefixes[0],
@@ -29,8 +29,12 @@ const config = {
     // API Keys
     giphyApiKey: process.env.GIPHY_API_KEY || 'qnl7ssQChTdPjsKta2Ax2LMaGXz303tq',
     removeBgKey: process.env.REMOVEBG_KEY || '',
-    // Warn system
+    // Warn + Mute system
     warnCount: 3,
+    muteDurationHours: 10,          // 10 hours mute after 3 warnings or failed activity
+    // Group Activity Settings
+    groupLockEnabled: true,
+    dailyActivityPinHours: 24,
     // External APIs
     APIs: {
         xteam: 'https://api.xteam.xyz',
