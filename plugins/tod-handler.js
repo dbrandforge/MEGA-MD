@@ -1,21 +1,21 @@
 /**
- * TOD Reply Handler - to be called from messageHandler
- * This is a thin wrapper so we can import cleanly.
+ * TOD Reply Handler - thin wrapper
  */
-import { handleTodReply, checkTodTimeouts } from './tod.js';
-import { trackGroup } from './schedule.js';
+import { handleTodReply } from './tod.js';
 
 export async function processTodMessage(sock, chatId, senderId, text, message) {
     if (!chatId?.endsWith('@g.us')) return false;
 
-    trackGroup(chatId);
-
     try {
+        // Lazy track group to avoid circular import at top level
+        try {
+            const { trackGroup } = await import('./schedule.js');
+            trackGroup(chatId);
+        } catch (e) {}
+
         return await handleTodReply(sock, chatId, senderId, text, message);
     } catch (e) {
         console.error('TOD handler error:', e);
         return false;
     }
 }
-
-export { checkTodTimeouts, trackGroup };

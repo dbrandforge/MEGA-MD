@@ -2,8 +2,6 @@ import fs from 'fs';
 import path from 'path';
 import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
-import { checkGroupLockSchedule } from './grouplock.js';
-import { checkTodTimeouts } from './tod.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -96,7 +94,7 @@ export function startSchedulerEngine(sock) {
     if (_engineStarted) return;
     _engineStarted = true;
 
-    console.log('[SCHEDULE] Engine started (includes Group Lock + TOD timeouts)');
+    console.log('[SCHEDULE] Engine started');
 
     setInterval(async () => {
         try {
@@ -121,23 +119,22 @@ export function startSchedulerEngine(sock) {
             }
             if (changed) await saveSchedules(remaining);
 
-            // 2. Group Lock / Unlock checks + TOD timeouts for tracked groups
+            // 2. Group Lock + TOD timeouts (lazy import to avoid circular dependency)
             for (const chatId of _trackedGroups) {
                 try {
+                    const { checkGroupLockSchedule } = await import('./grouplock.js');
                     await checkGroupLockSchedule(sock, chatId);
-                } catch (e) {
-                    // silent
-                }
+                } catch (e) {}
+
                 try {
+                    const { checkTodTimeouts } = await import('./tod.js');
                     await checkTodTimeouts(sock, chatId);
-                } catch (e) {
-                    // silent
-                }
+                } catch (e) {}
             }
         } catch (e) {
             console.error('[SCHEDULE] Engine error:', e.message);
         }
-    }, 15000); // every 15 seconds
+    }, 15000);
 }
 
 export { loadSchedules, saveSchedules, generateId, parseTime, formatTimeLeft };
