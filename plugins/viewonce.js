@@ -1,16 +1,21 @@
 import { downloadContentFromMessage } from '@whiskeysockets/baileys';
+
 export default {
     command: 'viewonce',
     aliases: ['viewmedia', 'vv'],
-    category: 'general',
-    description: 'Re-send a view-once image or video.',
+    category: 'admin',
+    description: 'Re-send a view-once image or video (Admins only)',
     usage: '.viewonce (reply to a view-once media)',
+    groupOnly: true,
+    adminOnly: true,
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
+
         try {
             const quoted = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
             const quotedImage = quoted?.imageMessage;
             const quotedVideo = quoted?.videoMessage;
+
             if (quotedImage && quotedImage.viewOnce) {
                 const stream = await downloadContentFromMessage(quotedImage, 'image');
                 let buffer = Buffer.from([]);
@@ -38,8 +43,7 @@ export default {
                     text: '*Please reply to a view-once image or video.*'
                 }, { quoted: message });
             }
-        }
-        catch (error) {
+        } catch (error) {
             console.error('Error in viewonceCommand:', error);
             await sock.sendMessage(chatId, {
                 text: '❌ Failed to retrieve the view-once media. Please try again later.'
