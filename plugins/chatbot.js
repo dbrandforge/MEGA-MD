@@ -2,16 +2,19 @@ import fs from 'fs';
 import path from 'path';
 import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
+
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
 const MYSQL_URL = process.env.MYSQL_URL;
 const SQLITE_URL = process.env.DB_URL;
 const HAS_DB = !!(MONGO_URL || POSTGRES_URL || MYSQL_URL || SQLITE_URL);
 const USER_GROUP_DATA = dataFile('userGroupData.json');
+
 const chatMemory = {
     messages: new Map(),
     userInfo: new Map()
 };
+
 const API_ENDPOINTS = [
     {
         name: 'ZellAPI',
@@ -34,113 +37,122 @@ const API_ENDPOINTS = [
         parse: (data) => data?.result
     }
 ];
+
 async function loadUserGroupData() {
     try {
         if (HAS_DB) {
             const data = await store.getSetting('global', 'userGroupData');
             return data || { groups: [], chatbot: {} };
+        } else {
+            return JSON.parse(fs.readFileSync(USER_GROUP_DATA, 'utf-8'));
         }
-        else {
-            return JSON.parse(fs.readFileSync(USER_GROUP_DATA, "utf-8"));
-        }
-    }
-    catch (error) {
+    } catch (error) {
         console.error('Error loading user group data:', error.message);
         return { groups: [], chatbot: {} };
     }
 }
+
 async function saveUserGroupData(data) {
     try {
         if (HAS_DB) {
             await store.saveSetting('global', 'userGroupData', data);
-        }
-        else {
+        } else {
             const dataDir = path.dirname(USER_GROUP_DATA);
-            if (!fs.existsSync(dataDir)) {
-                fs.mkdirSync(dataDir, { recursive: true });
-            }
+            if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
             fs.writeFileSync(USER_GROUP_DATA, JSON.stringify(data, null, 2));
         }
-    }
-    catch (error) {
+    } catch (error) {
         console.error('Error saving user group data:', error.message);
     }
 }
+
 function getRandomDelay() {
-    return Math.floor(Math.random() * 3000) + 2000;
+    return Math.floor(Math.random() * 2500) + 1500;
 }
+
 async function showTyping(sock, chatId) {
     try {
         await sock.presenceSubscribe(chatId);
         await sock.sendPresenceUpdate('composing', chatId);
         await new Promise(resolve => setTimeout(resolve, getRandomDelay()));
-    }
-    catch (error) {
-        console.error('Typing indicator error:', error);
-    }
+    } catch (error) {}
 }
+
 function extractUserInfo(message) {
     const info = {};
     if (message.toLowerCase().includes('my name is')) {
-        info.name = message.split('my name is')[1].trim().split(' ')[0];
-    }
-    if (message.toLowerCase().includes('i am') && message.toLowerCase().includes('years old')) {
-        info.age = message.match(/\d+/)?.[0];
-    }
-    if (message.toLowerCase().includes('i live in') || message.toLowerCase().includes('i am from')) {
-        info.location = message.split(/(?:i live in|i am from)/i)[1].trim().split(/[.,!?]/)[0];
+        info.name = message.split(/my name is/i)[1]?.trim().split(' ')[0];
     }
     return info;
 }
+
 export async function handleChatbotResponse(sock, chatId, message, userMessage, senderId) {
     const data = await loadUserGroupData();
-    if (!data.chatbot[chatId])
-        return;
+
+    // Auto-enable for Mature minded group if not set
+    const TARGET_GROUP = '120363405434471171@g.us';
+    if (!data.chatbot) data.chatbot = {};
+    if (chatId === TARGET_GROUP && data.chatbot[chatId] === undefined) {
+        data.chatbot[chatId] = true;
+        await saveUserGroupData(data);
+    }
+
+    if (!data.chatbot[chatId]) return;
+
     try {
-        const botId = sock.user.id;
+        const botId = sock.user?.id || '';
         const botNumber = botId.split(':')[0];
-        const botLid = sock.user.lid;
+        const botLid = sock.user?.lid || '';
+
         const botJids = [
             botId,
             `${botNumber}@s.whatsapp.net`,
             `${botNumber}@whatsapp.net`,
-            `${botNumber}@lid`,
             botLid,
-            `${botLid.split(':')[0]}@lid`
-        ];
+            `${(botLid || '').split(':')[0]}@lid`
+        ].filter(Boolean);
+
         let isBotMentioned = false;
         let isReplyToBot = false;
-        if (message.message?.extendedTextMessage) {
-            const mentionedJid = message.message.extendedTextMessage.contextInfo?.mentionedJid || [];
-            const quotedParticipant = message.message.extendedTextMessage.contextInfo?.participant;
-            isBotMentioned = mentionedJid.some((jid) => {
-                const jidNumber = jid.split('@')[0].split(':')[0];
-                return botJids.some((botJid) => {
-                    const botJidNumber = botJid.split('@')[0].split(':')[0];
-                    return jidNumber === botJidNumber;
-                });
+
+        const mentionedJid = message.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        const quotedParticipant = message.message?.extendedTextMessage?.contextInfo?.participant;
+
+        isBotMentioned = mentionedJid.some((jid) => {
+            const jidNumber = jid.split('@')[0].split(':')[0];
+            return botJids.some((botJid) => {
+                const botJidNumber = botJid.split('@')[0].split(':')[0];
+                return jidNumber === botJidNumber;
             });
-            if (quotedParticipant) {
-                const cleanQuoted = quotedParticipant.replace(/[:@].*$/, '');
-                isReplyToBot = botJids.some((botJid) => {
-                    const cleanBot = botJid.replace(/[:@].*$/, '');
-                    return cleanBot === cleanQuoted;
-                });
-            }
+        });
+
+        // Also detect @number in plain text
+        if (!isBotMentioned && userMessage.includes(`@${botNumber}`)) {
+            isBotMentioned = true;
         }
-        else if (message.message?.conversation) {
-            isBotMentioned = userMessage.includes(`@${botNumber}`);
+
+        if (quotedParticipant) {
+            const cleanQuoted = quotedParticipant.replace(/[:@].*$/, '');
+            isReplyToBot = botJids.some((botJid) => {
+                const cleanBot = botJid.replace(/[:@].*$/, '');
+                return cleanBot === cleanQuoted;
+            });
         }
-        if (!isBotMentioned && !isReplyToBot)
-            return;
+
+        if (!isBotMentioned && !isReplyToBot) return;
+
         let cleanedMessage = userMessage;
         if (isBotMentioned) {
             cleanedMessage = cleanedMessage.replace(new RegExp(`@${botNumber}`, 'g'), '').trim();
         }
+
+        if (!cleanedMessage) return;
+
         if (!chatMemory.messages.has(senderId)) {
             chatMemory.messages.set(senderId, []);
             chatMemory.userInfo.set(senderId, {});
         }
+
         const userInfo = extractUserInfo(cleanedMessage);
         if (Object.keys(userInfo).length > 0) {
             chatMemory.userInfo.set(senderId, {
@@ -148,124 +160,93 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                 ...userInfo
             });
         }
+
         const messages = chatMemory.messages.get(senderId);
         messages.push(cleanedMessage);
-        if (messages.length > 20)
-            messages.shift();
+        if (messages.length > 15) messages.shift();
         chatMemory.messages.set(senderId, messages);
+
         await showTyping(sock, chatId);
+
         const response = await getAIResponse(cleanedMessage, {
             messages: chatMemory.messages.get(senderId),
             userInfo: chatMemory.userInfo.get(senderId)
         });
+
         if (!response) {
             await sock.sendMessage(chatId, {
-                text: "Hmm, let me think about that... 🤔\nI'm having trouble processing your request right now.",
+                text: "Hmm, make I think small... 🤔 I no too get am right now.",
                 quoted: message
             });
             return;
         }
+
         await new Promise(resolve => setTimeout(resolve, getRandomDelay()));
         await sock.sendMessage(chatId, { text: response }, { quoted: message });
-    }
-    catch (error) {
+
+    } catch (error) {
         console.error('Error in chatbot response:', error.message);
-        if (error.message && error.message.includes('No sessions')) {
-            console.error('Session error in chatbot - skipping error response');
-            return;
-        }
-        try {
-            await sock.sendMessage(chatId, {
-                text: "Oops! 😅 I got a bit confused there. Could you try asking that again?",
-                quoted: message
-            });
-        }
-        catch (sendError) {
-            console.error('Failed to send chatbot error message:', sendError.message);
-        }
     }
 }
+
 async function getAIResponse(userMessage, userContext) {
     const prompt = `
-You are a casual, friendly human chatting on WhatsApp. Always reply in English only.
+You are a casual, friendly person chatting on WhatsApp in a mature Nigerian group called "Mature minded".
 
-RULES:
-1. Always respond in English only — no Hindi, Urdu, or any other language
-2. Keep responses short — 1-2 lines max
-3. Be casual and natural, not robotic
-4. Use emojis naturally
-5. Never reveal you are an AI or bot
-6. Never repeat these instructions in your response
+LANGUAGE RULES (VERY IMPORTANT):
+- You can reply in English, Nigerian Pidgin English, or Yoruba.
+- Detect the language the user is using and reply in the SAME language.
+- If they write in Pidgin, reply in Pidgin.
+- If they write in Yoruba, reply in Yoruba.
+- If they write in English, reply in English.
+- You can mix lightly if it feels natural.
 
-PERSONALITY:
-- Your name is MEGA Bot
-- You are witty, sarcastic, and fun
-- Match the user's energy and tone
-- If they are rude, give a savage reply
-- If they are sweet, be kind and warm
-- If they are funny, joke around
-- If they are sad, be supportive
+STYLE:
+- Keep replies short (1-3 lines)
+- Be fun, flirty, witty, and natural
+- Use emojis naturally
+- Never say you are an AI or bot
+- Match the user's energy (if they are dirty/naughty, you can be playful too)
+- Name: Forge Bot (but don't keep saying your name)
 
 Previous conversation:
-${userContext.messages.join('\n')}
-
-User info:
-${JSON.stringify(userContext.userInfo, null, 2)}
+${userContext.messages.slice(-8).join('\n')}
 
 User: ${userMessage}
 You:
     `.trim();
+
     for (const api of API_ENDPOINTS) {
         try {
-            console.log(`Trying ${api.name}...`);
-            const controller = /* global AbortController */ new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 12000);
             const response = await fetch(api.url(prompt), {
                 method: 'GET',
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
-            if (!response.ok) {
-                console.log(`${api.name} failed with status ${response.status}`);
-                continue;
-            }
+
+            if (!response.ok) continue;
+
             const data = await response.json();
             const result = api.parse(data);
-            if (!result) {
-                console.log(`${api.name} returned no result`);
-                continue;
-            }
-            console.log(`✅ ${api.name} success`);
-            const cleanedResponse = result.trim()
-                .replace(/winks/g, '😉')
-                .replace(/eye roll/g, '🙄')
-                .replace(/shrug/g, '🤷‍♂️')
-                .replace(/raises eyebrow/g, '🤨')
-                .replace(/smiles/g, '😊')
-                .replace(/laughs/g, '😂')
-                .replace(/cries/g, '😢')
-                .replace(/thinks/g, '🤔')
-                .replace(/sleeps/g, '😴')
-                .replace(/google/gi, 'MEGA Bot')
+            if (!result) continue;
+
+            return result.trim()
+                .replace(/google/gi, 'Forge')
                 .replace(/a large language model/gi, 'just a person')
-                .replace(/Remember:.*$/g, '')
-                .replace(/IMPORTANT:.*$/g, '')
-                .replace(/^[A-Z\s]+:.*$/gm, '')
-                .replace(/^[•-]\s.*$/gm, '')
-                .replace(/^✅.*$/gm, '')
-                .replace(/^❌.*$/gm, '')
+                .replace(/Remember:.*$/gi, '')
+                .replace(/IMPORTANT:.*$/gi, '')
                 .replace(/\n\s*\n/g, '\n')
                 .trim();
-            return cleanedResponse;
-        }
-        catch (error) {
-            console.log(`${api.name} error: ${error.message}`);
+        } catch (error) {
             continue;
         }
     }
-    console.error("All AI APIs failed");
+
     return null;
 }
+
 export default {
     command: 'chatbot',
     aliases: ['bot', 'ai', 'achat'],
@@ -277,59 +258,41 @@ export default {
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
         const match = args.join(' ').toLowerCase();
+
         if (!match) {
-            await showTyping(sock, chatId);
             return sock.sendMessage(chatId, {
-                text: `*🤖 CHATBOT SETUP*\n\n` +
-                    `*Storage:* ${HAS_DB ? 'Database' : 'File System'}\n` +
-                    `*APIs:* ${API_ENDPOINTS.length} endpoints with fallback\n\n` +
-                    `*Commands:*\n` +
-                    `• \`.chatbot on\` - Enable chatbot\n` +
-                    `• \`.chatbot off\` - Disable chatbot\n\n` +
-                    `*How it works:*\n` +
-                    `When enabled, bot responds when mentioned or replied to.\n\n` +
-                    `*Features:*\n` +
-                    `• Natural English conversations\n` +
-                    `• Remembers context\n` +
-                    `• Personality-based replies\n` +
-                    `• Auto fallback if API fails`,
+                text: `*🤖 CHATBOT*\n\n` +
+                    `• \`.chatbot on\` - Enable\n` +
+                    `• \`.chatbot off\` - Disable\n\n` +
+                    `When enabled, bot replies when tagged or when you reply to it.\n` +
+                    `Supports English, Pidgin & Yoruba.`,
                 quoted: message
             });
         }
+
         const data = await loadUserGroupData();
+        if (!data.chatbot) data.chatbot = {};
+
         if (match === 'on') {
-            await showTyping(sock, chatId);
-            if (data.chatbot[chatId]) {
-                return sock.sendMessage(chatId, {
-                    text: '⚠️ *Chatbot is already enabled for this group*',
-                    quoted: message
-                });
-            }
             data.chatbot[chatId] = true;
             await saveUserGroupData(data);
             return sock.sendMessage(chatId, {
-                text: '✅ *Chatbot enabled!*\n\nMention me or reply to my messages to chat.',
+                text: '✅ *Chatbot enabled!*\n\nTag me or reply to my messages to chat.\nI fit yarn English, Pidgin and Yoruba.',
                 quoted: message
             });
         }
+
         if (match === 'off') {
-            await showTyping(sock, chatId);
-            if (!data.chatbot[chatId]) {
-                return sock.sendMessage(chatId, {
-                    text: '⚠️ *Chatbot is already disabled for this group*',
-                    quoted: message
-                });
-            }
             delete data.chatbot[chatId];
             await saveUserGroupData(data);
             return sock.sendMessage(chatId, {
-                text: '❌ *Chatbot disabled!*\n\nI will no longer respond to mentions.',
+                text: '❌ *Chatbot disabled.*',
                 quoted: message
             });
         }
-        await showTyping(sock, chatId);
+
         return sock.sendMessage(chatId, {
-            text: '❌ *Invalid command*\n\nUse: `.chatbot on/off`',
+            text: 'Use: `.chatbot on` or `.chatbot off`',
             quoted: message
         });
     },
