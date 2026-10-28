@@ -18,6 +18,7 @@ import pino from 'pino';
 import config from './config.js';
 import store from './lib/lightweight_store.js';
 import SaveCreds from './lib/session.js';
+import { restoreSessionFromMongo, backupSessionToMongo, isMongoBackupEnabled } from './lib/sessionBackup.js';
 import { server, PORT } from './lib/server.js';
 import { printLog } from './lib/print.js';
 import { writeErrorLog } from './lib/logger.js';
@@ -197,6 +198,21 @@ function startWatchdog() {
         }
     }, WATCHDOG_INTERVAL_MS);
 }
+// Periodically uploads the full ./session folder to MongoDB (when
+// MONGO_URL is configured) so pre-keys and per-contact Signal sessions
+// survive a redeploy, not just the long-term identity in creds.json.
+let sessionBackupTimer = null;
+const SESSION_BACKUP_INTERVAL_MS = 20 * 1000;
+function startSessionBackupLoop() {
+    if (!isMongoBackupEnabled())
+        return;
+    if (sessionBackupTimer)
+        return;
+    backupSessionToMongo().catch(() => { }); // immediate snapshot, don't wait for the first tick
+    sessionBackupTimer = setInterval(() => {
+        backupSessionToMongo().catch(() => { });
+    }, SESSION_BACKUP_INTERVAL_MS);
+}
 function ensureSessionDirectory() {
     const sessionPath = path.join(__dirname, 'session');
     if (!existsSync(sessionPath)) {
@@ -243,6 +259,17 @@ function hasValidSession() {
 }
 async function initializeSession() {
     ensureSessionDirectory();
+    // Try the full-state MongoDB backup first (covers pre-keys/sessions,
+    // not just the identity in creds.json). Falls through unchanged to the
+    // existing SESSION_ID/Gist path if MONGO_URL isn't set or there's
+    // nothing backed up yet.
+    if (isMongoBackupEnabled()) {
+        const restored = await restoreSessionFromMongo();
+        if (restored && hasValidSession()) {
+            printLog('success', 'Restored full session state from MongoDB - no pairing needed.');
+            return true;
+        }
+    }
     const txt = config.sessionId;
     if (!txt) {
         if (hasValidSession()) {
@@ -283,6 +310,10 @@ async function startQasimDev() {
         const _saveCreds = async () => {
             ensureSessionDirectory();
             await saveCreds();
+            // Credentials changed - back up immediately rather than waiting
+            // for the periodic loop, since this is the highest-value moment
+            // to capture (e.g. right after pairing).
+            backupSessionToMongo().catch(() => { });
         };
         const msgRetryCounterCache = new NodeCache();
         const ghostMode = await store.getSetting('global', 'stealthMode');
@@ -514,6 +545,7 @@ async function startQasimDev() {
                 printLog('success', 'Bot connected successfully!');
                 currentSocket = QasimDev;
                 startWatchdog();
+                startSessionBackupLoop();
                 try {
                     const setbioModule = await import('./plugins/setbio.js');
                     const startAutoBio = setbioModule.startAutoBio || setbioModule.default?.startAutoBio;
