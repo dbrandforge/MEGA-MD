@@ -2,9 +2,12 @@ import { welcomeMessage, groupRules, introReminder } from '../data/welcomeData.j
 import store from '../lib/lightweight_store.js';
 
 /**
- * Sin City Welcome System
- * Automatically sends welcome + rules when someone joins
+ * Sin City / Mature Minded Welcome System
+ * Only triggers for the specific group
  */
+
+// Only this group gets the automatic welcome
+const TARGET_GROUP = '120363405434471171@g.us';
 
 const PENDING_INTRO_KEY = 'pendingIntros';
 
@@ -18,6 +21,12 @@ async function savePendingIntros(chatId, data) {
 }
 
 export async function handleNewMember(sock, chatId, participants) {
+    // Safety: only run for the target group
+    if (chatId !== TARGET_GROUP) {
+        console.log(`[Welcome] Skipped - not the target group: ${chatId}`);
+        return;
+    }
+
     try {
         for (const user of participants) {
             const userId = typeof user === 'string' ? user : (user.id || user);
@@ -26,7 +35,10 @@ export async function handleNewMember(sock, chatId, participants) {
             const mention = `@${userId.split('@')[0]}`;
 
             // 1. Welcome message
-            const welcomeText = welcomeMessage.replace('@user', mention).replace('{user}', mention);
+            const welcomeText = welcomeMessage
+                .replace('@user', mention)
+                .replace('{user}', mention);
+
             await sock.sendMessage(chatId, {
                 text: welcomeText,
                 mentions: [userId]
@@ -52,7 +64,9 @@ export async function handleNewMember(sock, chatId, participants) {
                 try {
                     const current = await getPendingIntros(chatId);
                     if (current[userId] && !current[userId].reminded) {
-                        const reminder = introReminder.replace('{user}', userId.split('@')[0]).replace('@{user}', mention);
+                        const reminder = introReminder
+                            .replace('{user}', userId.split('@')[0])
+                            .replace('@{user}', mention);
                         await sock.sendMessage(chatId, {
                             text: reminder,
                             mentions: [userId]
@@ -70,18 +84,18 @@ export async function handleNewMember(sock, chatId, participants) {
     }
 }
 
-/**
- * This is the main entry point that should be called on group-participants.update
- */
 export async function processGroupParticipantsUpdate(sock, update) {
     try {
         if (!update || !update.id || !update.participants) return;
 
         const chatId = update.id;
-        const action = update.action; // 'add' | 'remove' | 'promote' | 'demote'
+        const action = update.action;
+
+        // Only process for the target group
+        if (chatId !== TARGET_GROUP) return;
 
         if (action === 'add') {
-            console.log(`[Welcome] New member(s) joined ${chatId}:`, update.participants);
+            console.log(`[Welcome] New member(s) joined Mature minded:`, update.participants);
             await handleNewMember(sock, chatId, update.participants);
         }
     } catch (e) {
@@ -89,18 +103,26 @@ export async function processGroupParticipantsUpdate(sock, update) {
     }
 }
 
-// Test command
 export default {
     command: 'testwelcome',
     aliases: ['tw'],
     category: 'admin',
-    description: 'Test the Sin City welcome message',
+    description: 'Test the Mature minded welcome message',
     usage: '.testwelcome',
     adminOnly: true,
     groupOnly: true,
     async handler(sock, message, args, context) {
         const { chatId, senderId } = context;
+
+        if (chatId !== TARGET_GROUP) {
+            return sock.sendMessage(chatId, {
+                text: 'This command only works in the Mature minded group.'
+            }, { quoted: message });
+        }
+
         await handleNewMember(sock, chatId, [senderId]);
-        await sock.sendMessage(chatId, { text: '✅ Welcome system test sent.' }, { quoted: message });
+        await sock.sendMessage(chatId, {
+            text: '✅ Welcome system test sent.'
+        }, { quoted: message });
     }
 };
