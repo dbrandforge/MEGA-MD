@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import store from '../lib/lightweight_store.js';
 import config from '../config.js';
+import isAdmin from '../lib/isAdmin.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -11,29 +12,23 @@ const HAS_DB = !!(MONGO_URL || POSTGRES_URL || MYSQL_URL || SQLITE_URL);
 const databaseDir = path.join(process.cwd(), 'data');
 const warningsPath = path.join(databaseDir, 'warnings.json');
 
-const MUTE_DURATION_MS = (config.muteDurationHours || 10) * 60 * 60 * 1000; // 10 hours default
+const MUTE_DURATION_MS = (config.muteDurationHours || 10) * 60 * 60 * 1000;
 
 function initializeWarningsFile() {
     if (!HAS_DB) {
-        if (!fs.existsSync(databaseDir)) {
-            fs.mkdirSync(databaseDir, { recursive: true });
-        }
-        if (!fs.existsSync(warningsPath)) {
-            fs.writeFileSync(warningsPath, JSON.stringify({}), 'utf8');
-        }
+        if (!fs.existsSync(databaseDir)) fs.mkdirSync(databaseDir, { recursive: true });
+        if (!fs.existsSync(warningsPath)) fs.writeFileSync(warningsPath, JSON.stringify({}), 'utf8');
     }
 }
 
 async function getWarnings() {
     if (HAS_DB) {
-        const warnings = await store.getSetting('global', 'warnings');
-        return warnings || {};
-    } else {
-        try {
-            return JSON.parse(fs.readFileSync(warningsPath, 'utf8'));
-        } catch {
-            return {};
-        }
+        return (await store.getSetting('global', 'warnings')) || {};
+    }
+    try {
+        return JSON.parse(fs.readFileSync(warningsPath, 'utf8'));
+    } catch {
+        return {};
     }
 }
 
@@ -47,27 +42,35 @@ async function saveWarnings(warnings) {
 
 async function muteUser(sock, chatId, userId, durationMs) {
     try {
-        // Restrict the user (mute)
+        // Try modern restrict
         await sock.groupParticipantsUpdate(chatId, [userId], 'restrict');
-        
-        // Schedule unmute
-        setTimeout(async () => {
-            try {
-                await sock.groupParticipantsUpdate(chatId, [userId], 'unrestrict');
-                await sock.sendMessage(chatId, {
-                    text: `🔊 @${userId.split('@')[0]} has been unmuted.`,
-                    mentions: [userId]
-                });
-            } catch (e) {
-                console.error('Failed to unmute:', e);
-            }
-        }, durationMs);
-
-        return true;
-    } catch (e) {
-        console.error('Mute error:', e);
-        return false;
+    } catch (e1) {
+        try {
+            // Fallback: some Baileys versions use different action
+            await sock.groupSettingUpdate(chatId, 'announcement');
+            // Can't easily mute one person this way, so just try restrict again with delay
+            await new Promise(r => setTimeout(r, 500));
+            await sock.groupParticipantsUpdate(chatId, [userId], 'restrict');
+        } catch (e2) {
+            console.error('Mute failed:', e1.message, e2.message);
+            return false;
+        }
     }
+
+    // Schedule unmute
+    setTimeout(async () => {
+        try {
+            await sock.groupParticipantsUpdate(chatId, [userId], 'unrestrict');
+            await sock.sendMessage(chatId, {
+                text: `🔊 @${userId.split('@')[0]} has been unmuted.`,
+                mentions: [userId]
+            });
+        } catch (e) {
+            console.error('Unmute failed:', e);
+        }
+    }, durationMs);
+
+    return true;
 }
 
 export default {
@@ -84,21 +87,29 @@ export default {
         try {
             initializeWarningsFile();
 
+            // Double-check bot is admin with improved detection
+            const adminStatus = await isAdmin(sock, chatId, senderId);
+            if (!adminStatus.isBotAdmin) {
+                return sock.sendMessage(chatId, {
+                    text: '❌ Bot does not appear to be admin. Please make sure the bot is an admin and try again.\n\n(If the bot *is* admin, this may be a temporary detection issue — try again in a few seconds.)',
+                    ...channelInfo
+                }, { quoted: message });
+            }
+
             let userToWarn;
             const mentionedJids = message.message?.extendedTextMessage?.contextInfo?.mentionedJid;
 
-            if (mentionedJids && mentionedJids.length > 0) {
+            if (mentionedJids?.length > 0) {
                 userToWarn = mentionedJids[0];
             } else if (message.message?.extendedTextMessage?.contextInfo?.participant) {
                 userToWarn = message.message.extendedTextMessage.contextInfo.participant;
             }
 
             if (!userToWarn) {
-                await sock.sendMessage(chatId, {
+                return sock.sendMessage(chatId, {
                     text: '❌ Please mention the user or reply to their message to warn!',
                     ...channelInfo
                 }, { quoted: message });
-                return;
             }
 
             const warnings = await getWarnings();
@@ -116,8 +127,8 @@ export default {
                 `⚠️ *Warnings:* ${count}/${maxWarns}\n` +
                 `👑 *By:* @${senderId.split('@')[0]}\n` +
                 `📅 *Date:* ${new Date().toLocaleString()}\n\n` +
-                (count >= maxWarns 
-                    ? `🔇 *Action:* User will be muted for ${config.muteDurationHours || 10} hours.` 
+                (count >= maxWarns
+                    ? `🔇 *Action:* User will be muted for ${config.muteDurationHours || 10} hours.`
                     : `Next warning will result in a ${config.muteDurationHours || 10}-hour mute.`);
 
             await sock.sendMessage(chatId, {
@@ -129,7 +140,6 @@ export default {
             if (count >= maxWarns) {
                 const muted = await muteUser(sock, chatId, userToWarn, MUTE_DURATION_MS);
 
-                // Reset warnings after mute
                 delete warnings[chatId][userToWarn];
                 await saveWarnings(warnings);
 
@@ -141,7 +151,7 @@ export default {
                     });
                 } else {
                     await sock.sendMessage(chatId, {
-                        text: `⚠️ Failed to mute user. Make sure the bot is admin and has permission to restrict members.`,
+                        text: `⚠️ Could not mute the user automatically.\nPlease mute them manually. The bot may need “Restrict members” permission.`,
                         ...channelInfo
                     });
                 }
@@ -150,7 +160,7 @@ export default {
         } catch (error) {
             console.error('Error in warn command:', error);
             await sock.sendMessage(chatId, {
-                text: '❌ Failed to warn user. Make sure the bot is admin.',
+                text: `❌ Failed to warn user: ${error.message}`,
                 ...channelInfo
             }, { quoted: message });
         }
