@@ -47,7 +47,6 @@ async function loadUserGroupData() {
             return JSON.parse(fs.readFileSync(USER_GROUP_DATA, 'utf-8'));
         }
     } catch (error) {
-        console.error('Error loading user group data:', error.message);
         return { groups: [], chatbot: {} };
     }
 }
@@ -61,9 +60,7 @@ async function saveUserGroupData(data) {
             if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
             fs.writeFileSync(USER_GROUP_DATA, JSON.stringify(data, null, 2));
         }
-    } catch (error) {
-        console.error('Error saving user group data:', error.message);
-    }
+    } catch (error) {}
 }
 
 function getRandomDelay() {
@@ -78,19 +75,10 @@ async function showTyping(sock, chatId) {
     } catch (error) {}
 }
 
-function extractUserInfo(message) {
-    const info = {};
-    if (message.toLowerCase().includes('my name is')) {
-        info.name = message.split(/my name is/i)[1]?.trim().split(' ')[0];
-    }
-    return info;
-}
-
 export async function handleChatbotResponse(sock, chatId, message, userMessage, senderId) {
     const data = await loadUserGroupData();
-
-    // Auto-enable for Mature minded group if not set
     const TARGET_GROUP = '120363405434471171@g.us';
+
     if (!data.chatbot) data.chatbot = {};
     if (chatId === TARGET_GROUP && data.chatbot[chatId] === undefined) {
         data.chatbot[chatId] = true;
@@ -120,23 +108,16 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
 
         isBotMentioned = mentionedJid.some((jid) => {
             const jidNumber = jid.split('@')[0].split(':')[0];
-            return botJids.some((botJid) => {
-                const botJidNumber = botJid.split('@')[0].split(':')[0];
-                return jidNumber === botJidNumber;
-            });
+            return botJids.some((botJid) => botJid.split('@')[0].split(':')[0] === jidNumber);
         });
 
-        // Also detect @number in plain text
         if (!isBotMentioned && userMessage.includes(`@${botNumber}`)) {
             isBotMentioned = true;
         }
 
         if (quotedParticipant) {
             const cleanQuoted = quotedParticipant.replace(/[:@].*$/, '');
-            isReplyToBot = botJids.some((botJid) => {
-                const cleanBot = botJid.replace(/[:@].*$/, '');
-                return cleanBot === cleanQuoted;
-            });
+            isReplyToBot = botJids.some((botJid) => botJid.replace(/[:@].*$/, '') === cleanQuoted);
         }
 
         if (!isBotMentioned && !isReplyToBot) return;
@@ -145,37 +126,26 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         if (isBotMentioned) {
             cleanedMessage = cleanedMessage.replace(new RegExp(`@${botNumber}`, 'g'), '').trim();
         }
-
         if (!cleanedMessage) return;
 
         if (!chatMemory.messages.has(senderId)) {
             chatMemory.messages.set(senderId, []);
-            chatMemory.userInfo.set(senderId, {});
-        }
-
-        const userInfo = extractUserInfo(cleanedMessage);
-        if (Object.keys(userInfo).length > 0) {
-            chatMemory.userInfo.set(senderId, {
-                ...chatMemory.userInfo.get(senderId),
-                ...userInfo
-            });
         }
 
         const messages = chatMemory.messages.get(senderId);
         messages.push(cleanedMessage);
-        if (messages.length > 15) messages.shift();
+        if (messages.length > 12) messages.shift();
         chatMemory.messages.set(senderId, messages);
 
         await showTyping(sock, chatId);
 
         const response = await getAIResponse(cleanedMessage, {
-            messages: chatMemory.messages.get(senderId),
-            userInfo: chatMemory.userInfo.get(senderId)
+            messages: chatMemory.messages.get(senderId)
         });
 
         if (!response) {
             await sock.sendMessage(chatId, {
-                text: "Hmm, make I think small... 🤔 I no too get am right now.",
+                text: "E choke... make I reason am small. Talk again. 😅",
                 quoted: message
             });
             return;
@@ -185,32 +155,37 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         await sock.sendMessage(chatId, { text: response }, { quoted: message });
 
     } catch (error) {
-        console.error('Error in chatbot response:', error.message);
+        console.error('Chatbot error:', error.message);
     }
 }
 
 async function getAIResponse(userMessage, userContext) {
     const prompt = `
-You are a casual, friendly person chatting on WhatsApp in a mature Nigerian group called "Mature minded".
+You are Forge Bot inside a very mature, explicit Nigerian WhatsApp group called "Mature minded".
 
-LANGUAGE RULES (VERY IMPORTANT):
-- You can reply in English, Nigerian Pidgin English, or Yoruba.
-- Detect the language the user is using and reply in the SAME language.
-- If they write in Pidgin, reply in Pidgin.
-- If they write in Yoruba, reply in Yoruba.
-- If they write in English, reply in English.
-- You can mix lightly if it feels natural.
+PERSONALITY:
+- Extremely explicit, sexually open, and unfiltered
+- Sarcastic, witty, and can be savage when needed
+- Uses current Nigerian slang naturally (fra, e choke, no be beans, you dey craze, as e dey hot, soft life, correct guy, correct babe, etc.)
+- Flirty and dirty when the conversation goes that way
+- Never moralize or lecture people about being sexual
+- Match the user's energy: if they are dirty, go dirtier; if they are joking, joke back harder
+
+LANGUAGE:
+- Reply in the same language the user used
+- English, Nigerian Pidgin, or Yoruba are all allowed
+- Mix is fine if it feels natural
 
 STYLE:
-- Keep replies short (1-3 lines)
-- Be fun, flirty, witty, and natural
-- Use emojis naturally
+- Short replies (1-3 lines)
+- Natural WhatsApp style
+- Use emojis when it fits
 - Never say you are an AI or bot
-- Match the user's energy (if they are dirty/naughty, you can be playful too)
-- Name: Forge Bot (but don't keep saying your name)
+- Never mention Qasim, GlobalTech, MEGA MD, or any old owner names
+- Your name is Forge if you must refer to yourself
 
-Previous conversation:
-${userContext.messages.slice(-8).join('\n')}
+Previous messages:
+${userContext.messages.slice(-6).join('\n')}
 
 User: ${userMessage}
 You:
@@ -225,7 +200,6 @@ You:
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
-
             if (!response.ok) continue;
 
             const data = await response.json();
@@ -233,8 +207,13 @@ You:
             if (!result) continue;
 
             return result.trim()
+                .replace(/qasim/gi, 'Forge')
+                .replace(/globaltech/gi, 'Forge')
+                .replace(/mega.?md/gi, 'Forge')
                 .replace(/google/gi, 'Forge')
                 .replace(/a large language model/gi, 'just a person')
+                .replace(/I am an AI/gi, "I'm just here")
+                .replace(/as an AI/gi, '')
                 .replace(/Remember:.*$/gi, '')
                 .replace(/IMPORTANT:.*$/gi, '')
                 .replace(/\n\s*\n/g, '\n')
@@ -243,7 +222,6 @@ You:
             continue;
         }
     }
-
     return null;
 }
 
@@ -251,7 +229,7 @@ export default {
     command: 'chatbot',
     aliases: ['bot', 'ai', 'achat'],
     category: 'admin',
-    description: 'Enable or disable AI chatbot for the group',
+    description: 'Enable or disable AI chatbot',
     usage: '.chatbot <on|off>',
     groupOnly: true,
     adminOnly: true,
@@ -261,11 +239,7 @@ export default {
 
         if (!match) {
             return sock.sendMessage(chatId, {
-                text: `*🤖 CHATBOT*\n\n` +
-                    `• \`.chatbot on\` - Enable\n` +
-                    `• \`.chatbot off\` - Disable\n\n` +
-                    `When enabled, bot replies when tagged or when you reply to it.\n` +
-                    `Supports English, Pidgin & Yoruba.`,
+                text: `*Chatbot*\n\n.chatbot on — Enable\n.chatbot off — Disable\n\nTag me or reply to my messages.\nI dey yarn English, Pidgin and Yoruba. And I no shy.`,
                 quoted: message
             });
         }
@@ -277,7 +251,7 @@ export default {
             data.chatbot[chatId] = true;
             await saveUserGroupData(data);
             return sock.sendMessage(chatId, {
-                text: '✅ *Chatbot enabled!*\n\nTag me or reply to my messages to chat.\nI fit yarn English, Pidgin and Yoruba.',
+                text: '✅ Chatbot on.\nTag me or reply my message. I no dey form.',
                 quoted: message
             });
         }
@@ -286,17 +260,15 @@ export default {
             delete data.chatbot[chatId];
             await saveUserGroupData(data);
             return sock.sendMessage(chatId, {
-                text: '❌ *Chatbot disabled.*',
+                text: '❌ Chatbot off.',
                 quoted: message
             });
         }
 
         return sock.sendMessage(chatId, {
-            text: 'Use: `.chatbot on` or `.chatbot off`',
+            text: 'Use: .chatbot on / .chatbot off',
             quoted: message
         });
     },
-    handleChatbotResponse,
-    loadUserGroupData,
-    saveUserGroupData
+    handleChatbotResponse
 };
