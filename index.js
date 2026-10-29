@@ -18,7 +18,7 @@ import pino from 'pino';
 import config from './config.js';
 import store from './lib/lightweight_store.js';
 import SaveCreds from './lib/session.js';
-import { restoreSessionFromMongo, backupSessionToMongo, isMongoBackupEnabled } from './lib/sessionBackup.js';
+import { restoreSessionFromMongo, backupSessionToMongo, isMongoBackupEnabled, clearMongoSessionBackup } from './lib/sessionBackup.js';
 import { server, PORT } from './lib/server.js';
 import { printLog } from './lib/print.js';
 import { writeErrorLog } from './lib/logger.js';
@@ -648,6 +648,22 @@ async function main() {
     await compileAll();
     await commandHandler.loadCommands();
     printLog('info', 'Starting MEGA MD BOT...');
+    // One-shot escape hatch: set FORCE_RELINK=true in the environment to
+    // wipe the local session AND the MongoDB backup before pairing, so a
+    // deliberate fresh relink isn't immediately undone by restoring the
+    // old (possibly Signal-session-desynced) state back. Remove the env
+    // var again after the new pairing succeeds, or every future boot will
+    // keep wiping and re-pairing.
+    if (process.env.FORCE_RELINK === 'true') {
+        printLog('warning', 'FORCE_RELINK=true - wiping local session and MongoDB backup for a fresh pairing...');
+        try {
+            rmSync('./session', { recursive: true, force: true });
+        }
+        catch (_e) { /* ignore */ }
+        if (isMongoBackupEnabled()) {
+            await clearMongoSessionBackup();
+        }
+    }
     await initializeSession();
     await delay(3000);
     safeStartQasimDev().catch((error) => {
