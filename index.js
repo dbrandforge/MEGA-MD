@@ -259,11 +259,26 @@ function hasValidSession() {
 }
 async function initializeSession() {
     ensureSessionDirectory();
-    // Try the full-state MongoDB backup first (covers pre-keys/sessions,
-    // not just the identity in creds.json). Falls through unchanged to the
-    // existing SESSION_ID/Gist path if MONGO_URL isn't set or there's
-    // nothing backed up yet.
-    if (isMongoBackupEnabled()) {
+    // IMPORTANT: only restore from MongoDB if we don't already have a
+    // valid, registered session on local disk. initializeSession() runs
+    // on every startQasimDev() call - which includes every reconnect
+    // (a transient "connection closed (408)", the 3-minute watchdog
+    // probe, etc.), not just a fresh container boot after a redeploy.
+    // Restoring unconditionally on every reconnect was stomping the
+    // local ./session files (which Baileys keeps advancing live, e.g.
+    // per-contact Signal ratchets) with whatever snapshot MongoDB last
+    // had - up to several seconds stale - every single time the socket
+    // blipped. That rollback is exactly what causes "Failed to decrypt
+    // message with any known session... Bad MAC" floods, and it was
+    // happening far more often than real process restarts (confirmed in
+    // production logs on 2026-10-29: a fresh "Restored full session
+    // state from MongoDB" line every 10-20 minutes on the same running
+    // instance, each one followed by a Bad MAC flood).
+    //
+    // Mongo is now only consulted when the local session is missing or
+    // invalid (a genuinely fresh container), which is the only case it
+    // was ever meant to cover.
+    if (isMongoBackupEnabled() && !hasValidSession()) {
         const restored = await restoreSessionFromMongo();
         if (restored && hasValidSession()) {
             printLog('success', 'Restored full session state from MongoDB - no pairing needed.');
