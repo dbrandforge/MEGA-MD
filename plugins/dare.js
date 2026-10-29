@@ -1,6 +1,7 @@
 import { getUserGender } from './gender.js';
 import { getDares, randomFrom } from '../data/todLists.js';
 import { isGameAllowed } from './daylock.js';
+import { startSoloSession } from './truth-continue.js';
 
 export default {
     command: 'dare',
@@ -27,8 +28,10 @@ export default {
         const list = getDares(gender);
         const dareMessage = randomFrom(list);
 
+        await startSoloSession(chatId, senderId, 'dare', gender);
+
         await sock.sendMessage(chatId, {
-            text: `🔥 *DARE* (${gender}) 🔥\n\n${dareMessage}\n\n_Reply to this message to get another one. Type *stop* to end._`
+            text: `🔥 *DARE* (${gender}) 🔥\n\n${dareMessage}\n\n_Reply to this message or tag me to get another one. Type *stop* to end._`
         }, { quoted: message });
     }
 };

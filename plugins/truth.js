@@ -1,6 +1,7 @@
 import { getUserGender } from './gender.js';
 import { getTruths, randomFrom } from '../data/todLists.js';
 import { isGameAllowed } from './daylock.js';
+import { startSoloSession } from './truth-continue.js';
 
 export default {
     command: 'truth',
@@ -27,8 +28,10 @@ export default {
         const list = getTruths(gender);
         const truthMessage = randomFrom(list);
 
+        await startSoloSession(chatId, senderId, 'truth', gender);
+
         await sock.sendMessage(chatId, {
-            text: `🔥 *TRUTH* (${gender}) 🔥\n\n${truthMessage}\n\n_Reply to this message to get another one. Type *stop* to end._`
+            text: `🔥 *TRUTH* (${gender}) 🔥\n\n${truthMessage}\n\n_Reply to this message or tag me to get another one. Type *stop* to end._`
         }, { quoted: message });
     }
 };
