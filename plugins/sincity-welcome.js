@@ -1,8 +1,15 @@
 import { welcomeMessage, groupRules, introReminder } from '../data/welcomeData.js';
+import { dailyActivities } from '../data/dailyActivities.js';
 import store from '../lib/lightweight_store.js';
 
 const TARGET_GROUP = '120363405434471171@g.us';
 const PENDING_INTRO_KEY = 'pendingIntros';
+
+function getLagosDay() {
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const str = new Date().toLocaleString('en-US', { timeZone: 'Africa/Lagos' });
+    return days[new Date(str).getDay()];
+}
 
 async function getPendingIntros(chatId) {
     return (await store.getSetting(chatId, PENDING_INTRO_KEY)) || {};
@@ -24,15 +31,27 @@ export async function handleNewMember(sock, chatId, participants) {
                 .replace(/@user/g, mention)
                 .replace(/\{user\}/g, mention);
 
+            // 1) Intro instructions
             await sock.sendMessage(chatId, {
                 text: welcomeText,
                 mentions: [userId]
             });
+            await new Promise(r => setTimeout(r, 1000));
 
-            // Small gap so WhatsApp doesn't drop rapid messages
-            await new Promise(r => setTimeout(r, 800));
-
+            // 2) Rules
             await sock.sendMessage(chatId, { text: groupRules });
+            await new Promise(r => setTimeout(r, 1000));
+
+            // 3) Today's activity
+            try {
+                const day = getLagosDay();
+                const activity = dailyActivities[day];
+                if (activity?.full) {
+                    await sock.sendMessage(chatId, { text: `📅 *Today's activity*\n\n${activity.full}` });
+                }
+            } catch (e) {
+                console.error('Activity send error:', e.message);
+            }
 
             const pending = await getPendingIntros(chatId);
             pending[userId] = { joinedAt: Date.now(), reminded: false };
@@ -57,7 +76,6 @@ export async function handleNewMember(sock, chatId, participants) {
                 }
             }, 10 * 60 * 1000);
 
-            // Gap between multiple joiners in one batch
             await new Promise(r => setTimeout(r, 1500));
         }
     } catch (error) {
@@ -72,7 +90,6 @@ export async function processGroupParticipantsUpdate(sock, update) {
         if (update.action !== 'add') return;
 
         console.log('[Welcome] Join event:', update.participants);
-        // Don't block other events — run welcome without awaiting forever
         handleNewMember(sock, update.id, update.participants).catch(e =>
             console.error('Welcome async error:', e.message)
         );
@@ -85,7 +102,7 @@ export default {
     command: 'testwelcome',
     aliases: ['tw'],
     category: 'admin',
-    description: 'Test welcome on yourself',
+    description: 'Test full welcome on yourself',
     usage: '.testwelcome',
     adminOnly: true,
     groupOnly: true,
@@ -98,7 +115,7 @@ export default {
         }
         await handleNewMember(sock, chatId, [senderId]);
         await sock.sendMessage(chatId, {
-            text: '✅ Welcome test sent.'
+            text: '✅ Full welcome test sent (intro + rules + activity).'
         }, { quoted: message });
     }
 };
