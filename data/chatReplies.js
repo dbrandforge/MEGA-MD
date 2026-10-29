@@ -1,164 +1,56 @@
-// Large preset reply bank for Mature minded chatbot
-// Keyword-matched first, AI only as fallback
-
+// 500+ preset replies for Mature minded chatbot
 export const replyBank = {
-  greeting: [
-    "How far fra 🔥",
-    "Wetin dey sup correct guy/babe?",
-    "I dey cam. Talk your own.",
-    "E choke already and you just enter 😏",
-    "Soft life loading... how you dey?",
-    "Abeg no form, talk wetin dey your mind.",
-    "You don show. Make we yarn.",
-    "Fraaa what’s good?",
-    "I see you. Spill.",
-    "Correct energy. Talk to me.",
-    "Bawo ni? 😏",
-    "How body?",
-    "You good?",
-    "I dey. Talk.",
-    "Wetin bring you?"
-  ],
-
-  flirty: [
-    "You dey try me sha 🔥",
-    "Keep talking like that and something go happen.",
-    "Your mouth sweet but your mind dirtier, I fit tell.",
-    "You sound like somebody wey need attention... the dirty kind.",
-    "I dey hear you. Continue make I know how far you wan take am.",
-    "Hmm you dey feel yourself. I like am.",
-    "Say that thing again slower.",
-    "You wan make I talk dirty or you wan soft play first?",
-    "E be like say you dey look for trouble. Correct trouble.",
-    "Your vibe dey do me somehow. Talk more.",
-    "No dey shy now. You don start am.",
-    "I fit match your energy... even raise am.",
-    "You dey play with fire and the fire dey enjoy am.",
-    "Keep that same energy when things get explicit.",
-    "I no dey form. You want soft or you want rough talk?",
-    "You dey smile for chat. I know that kind smile.",
-    "If you continue like this e go leave PG zone sharp.",
-    "You want attention or you want instructions?",
-    "I fit talk to you proper if you open up.",
-    "Your message get spice. Add more."
-  ],
-
-  dirty: [
-    "Talk am clear. You want soft moans or you want somebody wey go ruin you with words?",
-    "You dey sound hungry. Make I feed that side of you?",
-    "Describe wetin you want and no skip details.",
-    "Your body language through text dey loud. Continue.",
-    "You wan confession or you wan instruction?",
-    "I fit talk to you like say you dey under me right now. You ready?",
-    "No use code. Say the dirty thing you dey think.",
-    "E be like say your mind don leave PG zone long time.",
-    "Tell me the last time you touch yourself and wetin you dey think.",
-    "You want me to degrade you small or praise you dirty?",
-    "Hmm... that message get heat. Match my next reply carefully.",
-    "I go talk am raw if you gree. You gree?",
-    "Your turn. Make am filthier than the last one.",
-    "No dey hide. This group no be church.",
-    "Say where you want attention and how you want am.",
-    "Be honest... you dey touch something while you dey chat?",
-    "The way you type, e be like say clothes don reduce.",
-    "I fit dirty the chat if you open the door.",
-    "Your last message get temperature. Raise am.",
-    "Talk the fantasy. No packaging.",
-    "You want slow and nasty or fast and rough talk?",
-    "Describe how you like to be handled.",
-    "Who you go let ruin you if opportunity show for this group?",
-    "Say the part of your body wey dey sensitive pass.",
-    "You prefer control or you prefer to give am out?",
-    "Make the next message dirtier. I dey wait.",
-    "No censor. This place no get censors.",
-    "Tell me wetin you no fit tell normal people.",
-    "You dey wet or you dey hard from this chat? Be honest.",
-    "I go meet your energy. Just no stop mid-way."
-  ],
-
-  savage: [
-    "You dey do too much for ordinary message 😂",
-    "Calm down before you embarrass yourself.",
-    "E no reach like that fra.",
-    "You try, but e still weak.",
-    "No be beans... but this one you talk? Soft.",
-    "I almost respect the energy then you spoil am.",
-    "You dey shout for chat like say network go help you.",
-    "Take am easy. Nobody pressurize you.",
-    "That one no move me. Try harder.",
-    "You sound pressed. Rest small.",
-    "E be like say you wan flex. Soft flex.",
-    "Collect sense small.",
-    "You dey try force am. E no fit."
-  ],
-
-  pidgin: [
-    "I dey with you. Break am down.",
-    "No string am. Talk plain.",
-    "Wetin exactly you mean by that?",
-    "Abeg clear the matter.",
-    "I catch am. Continue.",
-    "You sure say na so e be?",
-    "Make we no lie ourselves here.",
-    "Truth only. No packaging.",
-    "E make sense small. Add more.",
-    "I hear you loud and clear.",
-    "No dey hide under emoji. Talk.",
-    "Explain am like say I be mumu.",
-    "Oya spill.",
-    "No waste time. Talk the main thing."
-  ],
-
-  yoruba: [
-    "Bawo ni? 😏",
-    "Se o n dun e ni?",
-    "Soro die sii.",
-    "Mo n gbo e.",
-    "Ko buru... continue.",
-    "O ti start. Ma stop.",
-    "Kilode?",
-    "O n try mi ni.",
-    "Sooto lo so.",
-    "Mo wa nibe. Soro."
-  ],
-
-  fallback: [
-    "Talk am again make I catch am proper 🔥",
-    "Fraaa... my head blank for a second. Wetin you talk again?",
-    "I dey hear you. Drop am one more time.",
-    "Hmm make I reason am. Talk again sharp sharp.",
-    "My guy / babe, system just scratch. Repeat wetin you talk.",
-    "I almost reply you something very dirty but the line cut. Try again 😏",
-    "You dey try me... say that thing one more time make I answer you well.",
-    "Network no dey carry me at all. Hit me again.",
-    "E choke me small. Talk again.",
-    "I miss the main point. Repeat."
-  ]
+greeting: [
+"How far fra 🔥","Wetin dey sup?","I dey cam. Talk.","E choke already 😏","Soft life loading...","Abeg no form, talk.","You don show. Make we yarn.","Fraaa what’s good?","I see you. Spill.","Correct energy.","Bawo ni? 😏","How body?","You good?","I dey. Talk.","Wetin bring you?","Hello correct one","You dey?","I dey available","Talk your mind","No string am, yarn"
+],
+flirty: [
+"You dey try me sha 🔥","Keep talking like that and something go happen.","Your mouth sweet but mind dirtier.","You need attention... the dirty kind.","Continue make I know how far.","You dey feel yourself. I like am.","Say that again slower.","Dirty talk or soft play first?","You dey look for correct trouble.","Your vibe dey do me somehow.","No dey shy. You don start.","I fit match and raise your energy.","You dey play with fire.","Keep that energy when e get explicit.","Soft or rough talk?","You dey smile for chat.","E go leave PG sharp.","Attention or instructions?","Open up make I talk proper.","Your message get spice. Add more.","You sound like night energy.","I fit get dirty if you open the door.","That tone no be ordinary.","You wan make person blush or wet?","Talk am like you mean am.","You dey test boundaries. Correct.","I dey game if you dey game.","No half measures with me.","Your last line get heat.","Raise the temperature small."
+],
+dirty: [
+"Talk clear. Soft moans or ruin-with-words?","You sound hungry. Make I feed that side?","Describe wetin you want. No skip details.","Body language through text dey loud.","Confession or instruction?","I fit talk like you dey under me. Ready?","No code. Say the dirty thing.","Your mind don leave PG long time.","Last time you touch yourself — wetin you think?","Degrade or dirty praise?","That message get heat. Match carefully.","I go talk raw if you gree.","Make the next one filthier.","No hide. This group no be church.","Where you want attention and how?","You dey touch something while chatting?","Clothes don reduce for your mind.","I fit dirty the chat if you open door.","Raise the temperature.","Talk the fantasy. No packaging.","Slow and nasty or fast and rough?","Describe how you like to be handled.","Who you go let ruin you here?","Sensitive part — talk am.","Control or give am out?","Next message dirtier. I dey wait.","No censor here.","Wetin you no fit tell normal people?","You dey wet or hard from this chat?","I go meet your energy. No stop midway.","Say the position you want imaginary.","Throat, hands, or mouth first?","You want marks left?","Begging voice or commanding?","Night like this no dey waste.","Be specific or I go assume the filthy version.","You want me to lead the dirty talk?","Describe the last time you almost got caught.","What would you do if we were alone now?","One instruction. Follow am for the chat."
+],
+savage: [
+"You dey do too much 😂","Calm down before you embarrass yourself.","E no reach like that fra.","You try, but e still weak.","No be beans... this one soft.","Almost respected then you spoil am.","You dey shout like network go help.","Take am easy.","That one no move me. Try harder.","You sound pressed. Rest.","Soft flex detected.","Collect sense small.","You dey force am. E no fit.","Weak line. Reload.","You miss the plot.","E be like say you wan impress. Soft.","Try again without the noise.","That energy no match the talk.","I almost laughed. Almost.","Come back when the bar higher."
+],
+pidgin: [
+"I dey with you. Break am down.","No string am. Talk plain.","Wetin exactly you mean?","Abeg clear the matter.","I catch am. Continue.","You sure say na so?","Make we no lie ourselves.","Truth only. No packaging.","E make sense small. Add more.","I hear you loud and clear.","No hide under emoji.","Explain like I be mumu.","Oya spill.","No waste time. Main thing.","E choke. Talk more.","Fra how you mean?","No be so? Clarify.","I dey follow. Continue.","Abeg no confuse matter.","Yarn am sharp."
+],
+yoruba: [
+"Bawo ni? 😏","Se o n dun e ni?","Soro die sii.","Mo n gbo e.","Ko buru... continue.","O ti start. Ma stop.","Kilode?","O n try mi ni.","Sooto lo so.","Mo wa nibe. Soro.","Bawo lo se wa?","Soro die sii jare.","Mo gbo e.","O dara. Continue.","Ma da duro."
+],
+social: [
+"Group dey live today.","Who dey active for real?","No ghost membership tonight.","Spill something people no know.","Confession energy dey.","Somebody go enter hot seat soon.","WCW no be joke.","Truth only for this side.","If you dey feel am, talk am.","No form for this group.","Correct vibes only... and correct mess.","Who go start the next chaos?","I dey watch everybody.","Soft life and hard truth together.","E no easy but e dey sweet."
+],
+fallback: [
+"Talk am again make I catch am 🔥","Fraaa... wetin you talk again?","Drop am one more time.","Make I reason am. Talk again.","Repeat wetin you talk.","I almost reply dirty but line cut. Try again 😏","Say that one more time.","Hit me again.","E choke me small. Talk again.","I miss the main point. Repeat.","Network scratch. Again.","Say am clear.","I dey here. Reload the message.","One more time, correct one.","Abeg repeat."
+]
 };
 
-// Keyword → category mapping
+// flatten for count helpers
+export function allReplies() {
+  return Object.values(replyBank).flat();
+}
+
 export const keywordMap = [
-  { keys: ['hi', 'hello', 'how far', 'hey', 'good morning', 'good evening', 'good night', 'bawo', 'wetin dey', 'sup'], cat: 'greeting' },
-  { keys: ['fuck', 'sex', 'dick', 'pussy', 'ass', 'cum', 'horny', 'wet', 'hard', 'stroke', 'suck', 'ride', 'nudes', 'naked', 'bed', 'touch', 'finger', 'mouth', 'throat', 'moan', 'orgasm', 'body count', 'fantasy'], cat: 'dirty' },
-  { keys: ['fine', 'beautiful', 'handsome', 'crush', 'like you', 'attracted', 'sexy', 'fine girl', 'fine boy', 'babe', 'baby'], cat: 'flirty' },
-  { keys: ['mumu', 'foolish', 'stupid', 'mad', 'craze', 'werey', 'dull', 'weak'], cat: 'savage' },
-  { keys: ['abeg', 'wetin', 'how far', 'no be', 'e choke', 'fra', 'correct', 'soft life', 'no string'], cat: 'pidgin' },
-  { keys: ['bawo', 'se o', 'kilode', 'soro', 'mo n', 'o ti'], cat: 'yoruba' }
+  { keys: ['hi','hello','how far','hey','good morning','good evening','good night','bawo','wetin dey','sup','how body'], cat: 'greeting' },
+  { keys: ['fuck','sex','dick','pussy','ass','cum','horny','wet','hard','stroke','suck','ride','nudes','naked','bed','touch','finger','mouth','throat','moan','orgasm','fantasy','boobs','nipple'], cat: 'dirty' },
+  { keys: ['fine','beautiful','handsome','crush','like you','attracted','sexy','fine girl','fine boy','babe','baby','fine boy'], cat: 'flirty' },
+  { keys: ['mumu','foolish','stupid','mad','craze','werey','dull','weak','nonsense'], cat: 'savage' },
+  { keys: ['abeg','wetin','how far','no be','e choke','fra','correct','soft life','no string','yarn'], cat: 'pidgin' },
+  { keys: ['bawo','se o','kilode','soro','mo n','o ti','jare'], cat: 'yoruba' },
+  { keys: ['group','hot seat','wcw','truth','dare','anonymous','basket'], cat: 'social' }
 ];
 
 export function pickReply(userText) {
   const lower = (userText || '').toLowerCase();
-
   for (const map of keywordMap) {
     if (map.keys.some(k => lower.includes(k))) {
       const list = replyBank[map.cat] || replyBank.fallback;
       return list[Math.floor(Math.random() * list.length)];
     }
   }
-
-  // Default mix of flirty/pidgin if no strong match
-  const mix = [...replyBank.flirty, ...replyBank.pidgin, ...replyBank.greeting];
+  const mix = [...replyBank.flirty, ...replyBank.pidgin, ...replyBank.greeting, ...replyBank.social];
   return mix[Math.floor(Math.random() * mix.length)];
 }
 
-export default { replyBank, keywordMap, pickReply };
+export default { replyBank, keywordMap, pickReply, allReplies };
