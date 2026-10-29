@@ -1,6 +1,7 @@
 import { welcomeMessage, groupRules, introReminder } from '../data/welcomeData.js';
 import { dailyActivities } from '../data/dailyActivities.js';
 import store from '../lib/lightweight_store.js';
+import { logWelcome } from './welcomelog.js';
 
 const TARGET_GROUP = '120363405434471171@g.us';
 const PENDING_INTRO_KEY = 'pendingIntros';
@@ -31,18 +32,11 @@ export async function handleNewMember(sock, chatId, participants) {
                 .replace(/@user/g, mention)
                 .replace(/\{user\}/g, mention);
 
-            // 1) Intro instructions
-            await sock.sendMessage(chatId, {
-                text: welcomeText,
-                mentions: [userId]
-            });
+            await sock.sendMessage(chatId, { text: welcomeText, mentions: [userId] });
             await new Promise(r => setTimeout(r, 1000));
-
-            // 2) Rules
             await sock.sendMessage(chatId, { text: groupRules });
             await new Promise(r => setTimeout(r, 1000));
 
-            // 3) Today's activity
             try {
                 const day = getLagosDay();
                 const activity = dailyActivities[day];
@@ -52,6 +46,8 @@ export async function handleNewMember(sock, chatId, participants) {
             } catch (e) {
                 console.error('Activity send error:', e.message);
             }
+
+            await logWelcome(chatId, userId).catch(() => {});
 
             const pending = await getPendingIntros(chatId);
             pending[userId] = { joinedAt: Date.now(), reminded: false };
@@ -64,10 +60,7 @@ export async function handleNewMember(sock, chatId, participants) {
                         const reminder = introReminder
                             .replace(/\{user\}/g, userId.split('@')[0])
                             .replace(/@\{user\}/g, mention);
-                        await sock.sendMessage(chatId, {
-                            text: reminder,
-                            mentions: [userId]
-                        });
+                        await sock.sendMessage(chatId, { text: reminder, mentions: [userId] });
                         current[userId].reminded = true;
                         await savePendingIntros(chatId, current);
                     }
@@ -88,7 +81,6 @@ export async function processGroupParticipantsUpdate(sock, update) {
         if (!update?.id || !update.participants) return;
         if (update.id !== TARGET_GROUP) return;
         if (update.action !== 'add') return;
-
         console.log('[Welcome] Join event:', update.participants);
         handleNewMember(sock, update.id, update.participants).catch(e =>
             console.error('Welcome async error:', e.message)
@@ -102,16 +94,14 @@ export default {
     command: 'testwelcome',
     aliases: ['tw'],
     category: 'admin',
-    description: 'Test full welcome on yourself',
+    description: 'Test full welcome',
     usage: '.testwelcome',
     adminOnly: true,
     groupOnly: true,
     async handler(sock, message, args, context) {
         const { chatId, senderId } = context;
         if (chatId !== TARGET_GROUP) {
-            return sock.sendMessage(chatId, {
-                text: 'Only works in Mature minded.'
-            }, { quoted: message });
+            return sock.sendMessage(chatId, { text: 'Only works in Mature minded.' }, { quoted: message });
         }
         await handleNewMember(sock, chatId, [senderId]);
         await sock.sendMessage(chatId, {
