@@ -1,7 +1,6 @@
 /**
- * Gender memory system
- * .gender guy | .gender lady | .gender
- * Stored per user and reused across games + chatbot
+ * Gender memory
+ * Members can set ONCE. After that only admins can change.
  */
 import store from '../lib/lightweight_store.js';
 
@@ -14,7 +13,6 @@ function cleanId(jid) {
 async function getAllGenders() {
     return (await store.getSetting('global', GENDER_KEY)) || {};
 }
-
 async function saveAllGenders(data) {
     await store.saveSetting('global', GENDER_KEY, data);
 }
@@ -22,7 +20,7 @@ async function saveAllGenders(data) {
 export async function getUserGender(userId) {
     const all = await getAllGenders();
     const key = cleanId(userId);
-    return all[key] || all[userId] || null; // 'guy' | 'lady' | null
+    return all[key] || all[userId] || null;
 }
 
 export async function setUserGender(userId, gender) {
@@ -46,36 +44,67 @@ export default {
     command: 'gender',
     aliases: ['setgender', 'mygender'],
     category: 'general',
-    description: 'Set or check your gender for games',
-    usage: '.gender guy | .gender lady | .gender',
+    description: 'Set or check gender (change after set = admin only)',
+    usage: '.gender guy|lady | .gender | .gender @user guy (admin)',
     async handler(sock, message, args, context) {
-        const { chatId, senderId, channelInfo } = context;
-        const arg = (args[0] || '').toLowerCase();
+        const { chatId, senderId, channelInfo, isSenderAdmin, senderIsOwnerOrSudo } = context;
+        const arg0 = (args[0] || '').toLowerCase();
+        const arg1 = (args[1] || '').toLowerCase();
+        const isAdmin = isSenderAdmin || senderIsOwnerOrSudo;
 
-        if (!arg) {
-            const current = await getUserGender(senderId);
-            if (current) {
+        // Admin changing someone else: .gender @user guy
+        const mentioned = message.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+        if (mentioned.length && (arg1 === 'guy' || arg1 === 'lady' || arg0 === 'guy' || arg0 === 'lady')) {
+            if (!isAdmin) {
                 return sock.sendMessage(chatId, {
-                    text: `Your saved gender is: *${current}*\n\nChange with:\n.gender guy\n.gender lady`,
+                    text: 'Only admins can change another member\'s gender.',
                     ...channelInfo
                 }, { quoted: message });
             }
+            const target = mentioned[0];
+            const g = (arg1 === 'guy' || arg1 === 'lady') ? arg1 : arg0;
+            await setUserGender(target, g);
             return sock.sendMessage(chatId, {
-                text: `No gender saved yet.\n\nSet it with:\n*.gender guy*\n*.gender lady*\n\nThis is used for Truth/Dare, Devil's Basket and more.`,
+                text: `✅ Gender for @${target.split('@')[0]} set to *${g}* (admin).`,
+                mentions: [target],
                 ...channelInfo
             }, { quoted: message });
         }
 
-        if (arg !== 'guy' && arg !== 'lady') {
+        if (!arg0) {
+            const current = await getUserGender(senderId);
+            if (current) {
+                return sock.sendMessage(chatId, {
+                    text: `Your gender: *${current}*\n\nTo change it, ask an admin.\nAdmin: *.gender @you guy/lady*`,
+                    ...channelInfo
+                }, { quoted: message });
+            }
+            return sock.sendMessage(chatId, {
+                text: `No gender saved.\n\nSet once with:\n*.gender guy*\n*.gender lady*\n\nAfter that only admins can change it.`,
+                ...channelInfo
+            }, { quoted: message });
+        }
+
+        if (arg0 !== 'guy' && arg0 !== 'lady') {
             return sock.sendMessage(chatId, {
                 text: 'Use: *.gender guy* or *.gender lady*',
                 ...channelInfo
             }, { quoted: message });
         }
 
-        await setUserGender(senderId, arg);
+        const existing = await getUserGender(senderId);
+        if (existing && existing !== arg0 && !isAdmin) {
+            return sock.sendMessage(chatId, {
+                text: `Your gender is already set to *${existing}*.\n\nOnly an *admin* can change it.\nAsk them: *.gender @you ${arg0}*`,
+                ...channelInfo
+            }, { quoted: message });
+        }
+
+        await setUserGender(senderId, arg0);
         await sock.sendMessage(chatId, {
-            text: `✅ Gender set to *${arg}*.\n\nGames will now use the correct list for you.`,
+            text: existing && isAdmin
+                ? `✅ Gender updated to *${arg0}* (admin).`
+                : `✅ Gender set to *${arg0}*.\nGames will use the correct list for you.`,
             ...channelInfo
         }, { quoted: message });
     }
