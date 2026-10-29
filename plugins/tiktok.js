@@ -1,80 +1,69 @@
 import axios from 'axios';
+
+async function downloadTikTok(url) {
+    const sources = [
+        async () => {
+            const { data } = await axios.get('https://api.siputzx.my.id/api/d/tiktok', {
+                params: { url }, timeout: 45000
+            });
+            const v = data?.data?.download || data?.data?.video || data?.result?.video;
+            if (!v) throw new Error('siputzx empty');
+            return { video: v, title: data?.data?.title || 'TikTok' };
+        },
+        async () => {
+            const { data } = await axios.get('https://api.lolhuman.xyz/api/tiktok', {
+                params: { apikey: 'GataDios', url }, timeout: 45000
+            });
+            const v = data?.result?.link || data?.result?.video?.[0];
+            if (!v) throw new Error('lolhuman empty');
+            return { video: v, title: data?.result?.title || 'TikTok' };
+        },
+        async () => {
+            const { data } = await axios.get('https://api.akuari.my.id/downloader/tiktok', {
+                params: { link: url }, timeout: 45000
+            });
+            const v = data?.video || data?.result?.video || data?.mp4;
+            if (!v) throw new Error('akuari empty');
+            return { video: v, title: data?.title || 'TikTok' };
+        }
+    ];
+
+    let last;
+    for (const s of sources) {
+        try {
+            return await s();
+        } catch (e) {
+            last = e;
+        }
+    }
+    throw last || new Error('All TikTok sources failed');
+}
+
 export default {
     command: 'tiktok',
-    aliases: ['tt', 'ttdl', 'tiktokdl'],
-    category: 'download',
-    description: 'Download TikTok video without watermark (HD if available)',
-    usage: '.tiktok <TikTok URL>',
+    aliases: ['tt', 'ttdl'],
+    category: 'downloader',
+    description: 'Download TikTok video',
+    usage: '.tiktok <url>',
     async handler(sock, message, args, context) {
-        const { chatId, rawText } = context;
-        const prefix = rawText.match(/^[.!#]/)?.[0] || '.';
-        const commandPart = rawText.slice(prefix.length).trim();
-        const parts = commandPart.split(/\s+/);
-        const url = parts.slice(1).join(' ').trim();
-        if (!url) {
-            return await sock.sendMessage(chatId, {
-                text: '🎵 *TikTok Downloader*\n\nPlease provide a TikTok URL.\nExample:\n.tiktok https://vm.tiktok.com/XXXX'
+        const chatId = context.chatId || message.key.remoteJid;
+        const url = args.join(' ').trim();
+        if (!url || !url.includes('tiktok')) {
+            return sock.sendMessage(chatId, {
+                text: 'Send TikTok link:\n.tiktok https://...'
             }, { quoted: message });
         }
         try {
+            await sock.sendMessage(chatId, { text: '⏳ Downloading TikTok...' }, { quoted: message });
+            const res = await downloadTikTok(url);
             await sock.sendMessage(chatId, {
-                text: '⏳ Downloading TikTok video...'
+                video: { url: res.video },
+                caption: res.title || 'TikTok'
             }, { quoted: message });
-            const apiUrl = `https://discardapi.onrender.com/api/dl/tiktok?apikey=guru&url=${encodeURIComponent(url)}`;
-            const { data } = await axios.get(apiUrl, {
-                timeout: 45000,
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                }
-            });
-            if (!data?.status || !data?.result) {
-                throw new Error('Invalid API response');
-            }
-            const res = data.result;
-            const hd = res.data.find((v) => v.type === 'nowatermark_hd');
-            const noWm = res.data.find((v) => v.type === 'nowatermark');
-            const videoUrl = hd?.url || noWm?.url;
-            if (!videoUrl) {
-                throw new Error('No downloadable video found');
-            }
-            const caption = `🎵 *TikTok Downloader*
-━━━━━━━━━━━━━━━━━━━
-👤 *User:* ${res.author.nickname}
-🆔 *Username:* ${res.author.fullname}
-🌍 *Region:* ${res.region}
-⏱️ *Duration:* ${res.duration}
-
-❤️ *Likes:* ${res.stats.likes}
-💬 *Comments:* ${res.stats.comment}
-🔁 *Shares:* ${res.stats.share}
-👀 *Views:* ${res.stats.views}
-
-🎧 *Sound:* ${res.music_info.title}
-📅 *Posted:* ${res.taken_at}
-
-📝 *Caption:*
-${res.title || 'No caption'}
-
-✨ *Quality:* ${hd ? 'HD No Watermark' : 'No Watermark'}
-━━━━━━━━━━━━━━━━━━━`;
+        } catch (e) {
             await sock.sendMessage(chatId, {
-                video: { url: videoUrl },
-                mimetype: 'video/mp4',
-                caption
+                text: `❌ TikTok download failed.\n${e.message}`
             }, { quoted: message });
-        }
-        catch (error) {
-            console.error('TikTok plugin error:', error);
-            if (error.code === 'ECONNABORTED') {
-                await sock.sendMessage(chatId, {
-                    text: '⏱️ Request timed out. Please try again later.'
-                }, { quoted: message });
-            }
-            else {
-                await sock.sendMessage(chatId, {
-                    text: `❌ Failed to download TikTok video.\nReason: ${error.message}`
-                }, { quoted: message });
-            }
         }
     }
 };

@@ -1,56 +1,64 @@
 import axios from 'axios';
-const AXIOS_DEFAULTS = {
-    timeout: 60000,
-    headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        'Accept': 'application/json, text/plain, */*'
+
+async function downloadFB(url) {
+    const sources = [
+        async () => {
+            const { data } = await axios.get('https://api.siputzx.my.id/api/d/facebook', {
+                params: { url }, timeout: 45000
+            });
+            const v = data?.data?.url || data?.result?.url || data?.data?.[0]?.url;
+            if (!v) throw new Error('siputzx empty');
+            return v;
+        },
+        async () => {
+            const { data } = await axios.get('https://api.lolhuman.xyz/api/facebook', {
+                params: { apikey: 'GataDios', url }, timeout: 45000
+            });
+            const v = data?.result || data?.result?.[0];
+            if (!v) throw new Error('lolhuman empty');
+            return v;
+        },
+        async () => {
+            const { data } = await axios.get('https://api.akuari.my.id/downloader/fbdl3', {
+                params: { link: url }, timeout: 45000
+            });
+            const v = data?.respon?.hd || data?.respon?.sd || data?.result?.hd;
+            if (!v) throw new Error('akuari empty');
+            return v;
+        }
+    ];
+    let last;
+    for (const s of sources) {
+        try { return await s(); } catch (e) { last = e; }
     }
-};
+    throw last || new Error('All Facebook sources failed');
+}
+
 export default {
-    command: 'facebook',
-    aliases: ['fb', 'fbdl'],
-    category: 'download',
-    description: 'Download Facebook videos',
-    usage: '.fb <facebook video link>',
+    command: 'fb',
+    aliases: ['facebook', 'fbdl'],
+    category: 'downloader',
+    description: 'Download Facebook video',
+    usage: '.fb <url>',
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
-        const url = args.join(' ') ||
-            message.message?.conversation ||
-            message.message?.extendedTextMessage?.text;
-        try {
-            if (!url) {
-                return await sock.sendMessage(chatId, { text: '📘 *Facebook Downloader*\n\nUsage:\n.fb <facebook video link>' }, { quoted: message });
-            }
-            if (!/facebook\.com|fb\.watch/i.test(url)) {
-                return await sock.sendMessage(chatId, { text: '❌ Invalid Facebook link.\nPlease send a valid Facebook video URL.' }, { quoted: message });
-            }
-            await sock.sendMessage(chatId, {
-                react: { text: '🔄', key: message.key }
-            });
-            const apiUrl = `https://gtech-api-xtp1.onrender.com/api/download/fb?url=${encodeURIComponent(url)}&apikey=APIKEY`;
-            const res = await axios.get(apiUrl, AXIOS_DEFAULTS);
-            const videos = res?.data?.data?.data;
-            if (!res?.data?.status || !Array.isArray(videos) || !videos.length) {
-                throw new Error('No downloadable video found');
-            }
-            const sorted = videos.sort((a, b) => {
-                const qa = parseInt(a.resolution, 10) || 0;
-                const qb = parseInt(b.resolution, 10) || 0;
-                return qb - qa;
-            });
-            const selected = sorted[0];
-            const videoUrl = selected.url.startsWith('http')
-                ? selected.url
-                : `https://gtech-api-xtp1.onrender.com${selected.url}`;
-            const caption = `📘 *Facebook Downloader*
-🎞 Quality: *${selected.resolution || 'Unknown'}*
-
-> *_Downloaded by MEGA-MD_*`;
-            await sock.sendMessage(chatId, { video: { url: videoUrl }, mimetype: 'video/mp4', caption }, { quoted: message });
+        const url = args.join(' ').trim();
+        if (!url || !(url.includes('facebook') || url.includes('fb.watch'))) {
+            return sock.sendMessage(chatId, {
+                text: 'Send Facebook link:\n.fb https://...'
+            }, { quoted: message });
         }
-        catch (err) {
-            console.error('Facebook downloader error:', err);
-            await sock.sendMessage(chatId, { text: '❌ Failed to download Facebook video. Please try again later.' }, { quoted: message });
+        try {
+            await sock.sendMessage(chatId, { text: '⏳ Downloading Facebook video...' }, { quoted: message });
+            const video = await downloadFB(url);
+            await sock.sendMessage(chatId, {
+                video: { url: video },
+                caption: 'Facebook'
+            }, { quoted: message });
+        } catch (e) {
+            await sock.sendMessage(chatId, {
+                text: `❌ Facebook download failed.\n${e.message}`
+            }, { quoted: message });
         }
     }
 };
