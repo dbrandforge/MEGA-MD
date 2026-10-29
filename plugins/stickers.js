@@ -1,10 +1,12 @@
 import axios from 'axios';
 export default {
     command: 'stickers',
-    aliases: ['stickersearch', 'ssticker'],
+    aliases: ['stickersearch', 'ssticker', 'sticker'],
     category: 'stickers',
-    description: 'Search for stickers using Tenor',
-    usage: '.stickers <search term>',
+    description: 'Search stickers (admin only)',
+    usage: '.stickers <term>',
+    adminOnly: true,
+    groupOnly: true,
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
         const text = args?.join(' ')?.trim();
@@ -20,12 +22,10 @@ export default {
             const limit = Math.min(data.results.length, 5);
             for (let i = 0; i < limit; i++) {
                 const media = data.results[i].media?.[0]?.mp4?.url;
-                if (!media)
-                    continue;
+                if (!media) continue;
                 await sock.sendMessage(chatId, { video: { url: media }, caption: `Sticker ${i + 1}`, mimetype: 'video/mp4' }, { quoted: message });
             }
-        }
-        catch (error) {
+        } catch (error) {
             console.error('StickerSearch plugin error:', error);
             await sock.sendMessage(chatId, { text: '❌ Failed to fetch stickers.' }, { quoted: message });
         }

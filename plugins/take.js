@@ -5,8 +5,9 @@ export default {
     command: 'take',
     aliases: ['steal', 'wm'],
     category: 'stickers',
-    description: 'Change sticker pack name',
+    description: 'Change sticker pack name (admin only)',
     usage: '.take <packname> (reply to sticker)',
+    adminOnly: true,
     async handler(sock, message, args, context) {
         const { chatId, channelInfo } = context;
         try {
@@ -18,12 +19,11 @@ export default {
                 }, { quoted: message });
                 return;
             }
-            const packname = args.join(' ') || 'MEGA AI';
+            const packname = args.join(' ') || 'Forge';
             try {
                 const stickerBuffer = await downloadMediaMessage({
                     key: message.message.extendedTextMessage.contextInfo.stanzaId,
                     message: quotedMessage,
-                    // messageType: 'stickerMessage'
                 }, 'buffer', {}, {
                     logger: console,
                     reuploadRequest: sock.updateMediaMessage
@@ -51,19 +51,15 @@ export default {
                 await sock.sendMessage(chatId, {
                     sticker: finalBuffer,
                     ...channelInfo
-                }, {
-                    quoted: message
-                });
-            }
-            catch (error) {
+                }, { quoted: message });
+            } catch (error) {
                 console.error('Sticker processing error:', error);
                 await sock.sendMessage(chatId, {
                     text: '❌ Error processing sticker',
                     ...channelInfo
                 }, { quoted: message });
             }
-        }
-        catch (error) {
+        } catch (error) {
             console.error('Error in take command:', error);
             await sock.sendMessage(chatId, {
                 text: '❌ Error processing command',
