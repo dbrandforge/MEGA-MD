@@ -398,50 +398,58 @@ async function startQasimDev() {
         QasimDev.ev.on('creds.update', _saveCreds);
         store.bind(QasimDev.ev);
         QasimDev.ev.on('messages.upsert', async (chatUpdate) => {
-            try {
-                const mek = chatUpdate.messages[0];
-                if (!mek.message)
-                    return;
-                mek.message = (Object.keys(mek.message)[0] === 'ephemeralMessage')
-                    ? mek.message.ephemeralMessage.message
-                    : mek.message;
-                if (mek.key && mek.key.remoteJid === 'status@broadcast') {
-                    await handleStatus(QasimDev, chatUpdate);
-                    return;
-                }
-                if (!QasimDev.public && !mek.key.fromMe && chatUpdate.type === 'notify') {
-                    const isGroup = mek.key?.remoteJid?.endsWith('@g.us');
-                    if (!isGroup)
-                        return;
-                }
-                if (mek.key.id.startsWith('BAE5') && mek.key.id.length === 16)
-                    return;
-                if (QasimDev?.msgRetryCounterCache) {
-                    QasimDev.msgRetryCounterCache.clear();
-                }
+            // Baileys can deliver multiple messages in one upsert. Process each
+            // independently; the old messages[0]-only handler silently dropped
+            // every message after the first item in a batch.
+            for (const originalMessage of (chatUpdate?.messages || [])) {
+                const mek = originalMessage;
                 try {
-                    await handleMessages(QasimDev, chatUpdate);
-                }
-                catch (err) {
-                    printLog('error', `Error in handleMessages: ${err.message}`);
-                    if (mek.key && mek.key.remoteJid) {
-                        await QasimDev.sendMessage(mek.key.remoteJid, {
-                            text: '❌ An error occurred while processing your message.',
-                            contextInfo: {
-                                forwardingScore: 1,
-                                isForwarded: true,
-                                forwardedNewsletterMessageInfo: {
-                                    newsletterJid: '120363319098372999@newsletter',
-                                    newsletterName: 'GlobalTechInc',
-                                    serverMessageId: -1
+                    if (!mek?.message || !mek?.key)
+                        continue;
+                    const messageType = Object.keys(mek.message)[0];
+                    if (messageType === 'ephemeralMessage')
+                        mek.message = mek.message.ephemeralMessage?.message || mek.message;
+
+                    printLog('info', `Incoming message event: type=${chatUpdate.type || 'unknown'} jid=${mek.key.remoteJid || 'unknown'} id=${mek.key.id || 'unknown'}`);
+
+                    const singleUpdate = { ...chatUpdate, messages: [mek] };
+                    if (mek.key.remoteJid === 'status@broadcast') {
+                        await handleStatus(QasimDev, singleUpdate);
+                        continue;
+                    }
+                    if (!QasimDev.public && !mek.key.fromMe && chatUpdate.type === 'notify') {
+                        const isGroup = mek.key.remoteJid?.endsWith('@g.us');
+                        if (!isGroup)
+                            continue;
+                    }
+                    if (mek.key.id?.startsWith('BAE5') && mek.key.id.length === 16)
+                        continue;
+                    QasimDev?.msgRetryCounterCache?.clear();
+                    try {
+                        await handleMessages(QasimDev, singleUpdate);
+                        printLog('info', `Message processed: jid=${mek.key.remoteJid || 'unknown'} id=${mek.key.id || 'unknown'}`);
+                    }
+                    catch (err) {
+                        printLog('error', `Error in handleMessages (jid=${mek.key.remoteJid || 'unknown'}): ${err.stack || err.message}`);
+                        if (mek.key.remoteJid) {
+                            await QasimDev.sendMessage(mek.key.remoteJid, {
+                                text: '❌ An error occurred while processing your message.',
+                                contextInfo: {
+                                    forwardingScore: 1,
+                                    isForwarded: true,
+                                    forwardedNewsletterMessageInfo: {
+                                        newsletterJid: '120363319098372999@newsletter',
+                                        newsletterName: 'GlobalTechInc',
+                                        serverMessageId: -1
+                                    }
                                 }
-                            }
-                        }).catch(console.error);
+                            }).catch(sendError => printLog('error', `Failed to send processing-error notice: ${sendError.message}`));
+                        }
                     }
                 }
-            }
-            catch (err) {
-                printLog('error', `Error in messages.upsert: ${err.message}`);
+                catch (err) {
+                    printLog('error', `Error processing individual messages.upsert item: ${err.stack || err.message}`);
+                }
             }
         });
         QasimDev.decodeJid = (jid) => {
@@ -674,23 +682,10 @@ async function main() {
     });
 }
 main();
-// Session cleanup interval
-const sessionDir = path.join(process.cwd(), 'session');
-setInterval(() => {
-    if (!fs.existsSync(sessionDir))
-        return;
-    fs.readdir(sessionDir, (err, files) => {
-        if (err)
-            return;
-        for (const file of files) {
-            if (file === 'creds.json')
-                continue;
-            if (file.startsWith('app-state-sync-key-'))
-                continue;
-            fs.unlink(path.join(sessionDir, file), () => { });
-        }
-    });
-}, 3 * 60 * 1000);
+// IMPORTANT: Never run periodic cleanup inside ./session.
+// Baileys stores Signal pre-keys, per-contact sessions and sender keys here.
+// Deleting these files while connected corrupts message decryption (Bad MAC).
+// Session files are lifecycle-managed exclusively by Baileys and sessionBackup.js.
 // Temp folder setup
 const customTemp = path.join(process.cwd(), 'temp');
 if (!fs.existsSync(customTemp))
