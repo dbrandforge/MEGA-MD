@@ -134,9 +134,19 @@ export async function checkGroupLockSchedule(sock, chatId) {
             shouldBeLocked = nowMinutes >= lockMinutes || nowMinutes < unlockMinutes;
         }
 
-        // Only auto-correct if we're clearly in the wrong state for more than a couple minutes
-        if (shouldBeLocked && !state.locked && time !== schedule.unlock) {
-            // Don't force lock outside the exact window to avoid surprise locks
+        // Self-heal: retry locking for a short grace window after the
+        // scheduled lock time, in case the exact-minute attempt above
+        // failed (e.g. a WhatsApp reconnect blip - this happened for real
+        // on 2026-10-29: 4 attempts at 01:00 all failed with "Connection
+        // Closed", and the group then stayed unlocked all night because
+        // this branch used to be a no-op). Bounded to a few minutes after
+        // schedule.lock so it can never fight a deliberate manual
+        // ".grouplock unlock" later in the night.
+        const LOCK_GRACE_MINUTES = 10;
+        const minutesSinceLock = nowMinutes - lockMinutes;
+        if (shouldBeLocked && !state.locked && time !== schedule.unlock &&
+            minutesSinceLock >= 0 && minutesSinceLock <= LOCK_GRACE_MINUTES) {
+            await lockGroup(sock, chatId);
         }
         if (!shouldBeLocked && state.locked && time !== schedule.lock) {
             // If past unlock and still locked, unlock
