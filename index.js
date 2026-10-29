@@ -202,7 +202,7 @@ function startWatchdog() {
 // MONGO_URL is configured) so pre-keys and per-contact Signal sessions
 // survive a redeploy, not just the long-term identity in creds.json.
 let sessionBackupTimer = null;
-const SESSION_BACKUP_INTERVAL_MS = 20 * 1000;
+const SESSION_BACKUP_INTERVAL_MS = 8 * 1000;
 function startSessionBackupLoop() {
     if (!isMongoBackupEnabled())
         return;
