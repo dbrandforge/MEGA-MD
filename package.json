@@ -45,6 +45,7 @@
   "license": "MIT",
   "author": "Qasim Ali",
   "dependencies": {
+    "@distube/ytdl-core": "^4.16.12",
     "@hapi/boom": "^10.0.1",
     "@whiskeysockets/baileys": "^6.7.24",
     "acrcloud": "^1.4.0",

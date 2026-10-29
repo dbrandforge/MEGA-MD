@@ -1,5 +1,7 @@
 import yts from 'yt-search';
 import axios from 'axios';
+import fs from 'fs';
+import { ytdlDownloadAudio, cleanupTmpFile } from '../lib/ytdlFallback.js';
 
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -35,15 +37,12 @@ const DOWNLOADERS = [
         if (!data?.data?.downloadUrl) throw new Error('qasim empty');
         return data.data;
     },
-    async (url) => {
-        const { data } = await axios.get(`https://yt-download.org/api/button/mp3/${encodeURIComponent(url)}`, {
-            timeout: 30000,
-            headers: { Accept: 'application/json' }
-        }).catch(() => ({ data: null }));
-        // This one often returns HTML - skip if not json
-        throw new Error('yt-download skip');
-    }
 ];
+// Note: a 4th entry used to live here that hit yt-download.org, but it
+// discarded its own response and unconditionally threw - it could never
+// succeed. Removed rather than kept as dead weight. The real last-resort
+// fallback is ytdl-core, used directly in the handler below since it
+// returns a local file rather than a remote download URL.
 
 async function downloadWithFallback(youtubeUrl) {
     let lastErr;
@@ -98,7 +97,26 @@ export default {
                 text: `✅ *Found:* ${video.title}\n⏱️ ${video.timestamp}\n👤 ${video.author?.name || 'Unknown'}\n\n⏳ *Downloading... (may take up to 30s)*`
             }, { quoted: message });
 
-            const songData = await downloadWithFallback(video.url);
+            let songData;
+            try {
+                songData = await downloadWithFallback(video.url);
+            } catch (apiErr) {
+                // All wrapper APIs failed - fall back to downloading directly from YouTube.
+                console.log('Play APIs failed, falling back to ytdl-core:', apiErr.message);
+                let fallback;
+                try {
+                    fallback = await ytdlDownloadAudio(video.url);
+                    await sock.sendMessage(chatId, {
+                        audio: fs.readFileSync(fallback.filePath),
+                        mimetype: 'audio/mpeg',
+                        fileName: `${(fallback.title || video.title || 'song').replace(/[^\w\s-]/g, '')}.mp3`
+                    }, { quoted: message });
+                    return;
+                }
+                finally {
+                    cleanupTmpFile(fallback?.filePath);
+                }
+            }
 
             let thumbnailBuffer;
             try {

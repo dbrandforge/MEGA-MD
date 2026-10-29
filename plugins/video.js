@@ -1,5 +1,7 @@
 import axios from 'axios';
 import yts from 'yt-search';
+import fs from 'fs';
+import { ytdlDownloadVideo, cleanupTmpFile } from '../lib/ytdlFallback.js';
 const DL_API = 'https://api.qasimdev.dpdns.org/api/loaderto/download';
 const API_KEY = 'qasim-dev';
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
@@ -58,13 +60,32 @@ export default {
                 image: { url: thumb },
                 caption: `🎬 *${videoTitle || query}*\n⬇️ Downloading... *(may take up to 30s)*`
             }, { quoted: message });
-            const videoData = await downloadWithRetry(videoUrl);
-            await sock.sendMessage(chatId, {
-                video: { url: videoData.downloadUrl },
-                mimetype: 'video/mp4',
-                fileName: `${videoData.title || videoTitle || 'video'}.mp4`,
-                caption: `🎬 *${videoData.title || videoTitle || 'Video'}*\n\n> *_Downloaded by MEGA-MD_*`
-            }, { quoted: message });
+            try {
+                const videoData = await downloadWithRetry(videoUrl);
+                await sock.sendMessage(chatId, {
+                    video: { url: videoData.downloadUrl },
+                    mimetype: 'video/mp4',
+                    fileName: `${videoData.title || videoTitle || 'video'}.mp4`,
+                    caption: `🎬 *${videoData.title || videoTitle || 'Video'}*\n\n> *_Downloaded by MEGA-MD_*`
+                }, { quoted: message });
+            }
+            catch (apiErr) {
+                // Wrapper API failed - fall back to downloading directly from YouTube.
+                console.log('Video API failed, falling back to ytdl-core:', apiErr.message);
+                let fallback;
+                try {
+                    fallback = await ytdlDownloadVideo(videoUrl);
+                    await sock.sendMessage(chatId, {
+                        video: fs.readFileSync(fallback.filePath),
+                        mimetype: 'video/mp4',
+                        fileName: `${fallback.title || videoTitle || 'video'}.mp4`,
+                        caption: `🎬 *${fallback.title || videoTitle || 'Video'}*\n\n> *_Downloaded by MEGA-MD_*`
+                    }, { quoted: message });
+                }
+                finally {
+                    cleanupTmpFile(fallback?.filePath);
+                }
+            }
         }
         catch (err) {
             console.error('[VIDEO] Error:', err.message);

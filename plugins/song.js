@@ -1,5 +1,7 @@
 import axios from 'axios';
 import yts from 'yt-search';
+import fs from 'fs';
+import { ytdlDownloadAudio, cleanupTmpFile } from '../lib/ytdlFallback.js';
 const DL_API = 'https://api.qasimdev.dpdns.org/api/loaderto/download';
 const API_KEY = 'xbps-install-Syu';
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
@@ -51,13 +53,33 @@ export default {
                     caption: `🎶 *${video.title || query}*\n⏱ ${video.timestamp || ''}\n\n⏳ Downloading... *(may take up to 30s)*`
                 }, { quoted: message });
             }
-            const audio = await downloadWithRetry(video.url);
-            await sock.sendMessage(chatId, {
-                audio: { url: audio.downloadUrl },
-                mimetype: 'audio/mpeg',
-                fileName: `${audio.title || video.title || 'song'}.mp3`,
-                ptt: false
-            }, { quoted: message });
+            let audio;
+            try {
+                audio = await downloadWithRetry(video.url);
+                await sock.sendMessage(chatId, {
+                    audio: { url: audio.downloadUrl },
+                    mimetype: 'audio/mpeg',
+                    fileName: `${audio.title || video.title || 'song'}.mp3`,
+                    ptt: false
+                }, { quoted: message });
+            }
+            catch (apiErr) {
+                // Wrapper API failed - fall back to downloading directly from YouTube.
+                console.log('Song API failed, falling back to ytdl-core:', apiErr.message);
+                let fallback;
+                try {
+                    fallback = await ytdlDownloadAudio(video.url);
+                    await sock.sendMessage(chatId, {
+                        audio: fs.readFileSync(fallback.filePath),
+                        mimetype: 'audio/mpeg',
+                        fileName: `${fallback.title || video.title || 'song'}.mp3`,
+                        ptt: false
+                    }, { quoted: message });
+                }
+                finally {
+                    cleanupTmpFile(fallback?.filePath);
+                }
+            }
         }
         catch (err) {
             console.error('Song plugin error:', err.message);
