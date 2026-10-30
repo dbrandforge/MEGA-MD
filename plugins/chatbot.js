@@ -65,7 +65,7 @@ async function loadChatHistory(chatId) {
         // Store each group's bounded transcript under its own setting key. The
         // wrapper also keeps the lightweight file backend and DB adapters aligned.
         const saved = await store.getSetting(chatId, MEMORY_SETTING);
-        const history = Array.isArray(saved?.[chatId]) ? saved[chatId] : [];
+        const history = Array.isArray(saved) ? saved : (Array.isArray(saved?.[chatId]) ? saved[chatId] : []);
         const fresh = history
             .filter(item => item && typeof item.text === 'string' &&
                 (!item.at || Date.now() - item.at <= MAX_HISTORY_AGE_MS))
