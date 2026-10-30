@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifyIntent, getIntentExamples, getResponseLibraryStats, responseLibrary } from '../../data/chatbotResponseLibrary.js';
+import { classifyIntent, ensureResponseEmoji, getResponseLibraryStats, pickFallbackReply, pickLibraryReply, responseLibrary } from '../../data/chatbotResponseLibrary.js';
 
 describe('Forge Bot response library', () => {
   it('contains more than 2,000 curated fallback replies', () => {
@@ -10,7 +10,7 @@ describe('Forge Bot response library', () => {
   });
 
   it('keeps the expanded conversational categories populated', () => {
-    for (const category of ['relationships', 'friendship', 'boundaries', 'empathy', 'advice', 'workLife', 'debate', 'entertainment', 'nigerianCulture', 'storytelling', 'hypotheticals', 'humour', 'teasing', 'savage', 'group', 'boredom', 'pidgin', 'yoruba', 'fallback']) {
+    for (const category of ['definition', 'slangDefinition', 'activityInfo', 'relationships', 'friendship', 'boundaries', 'empathy', 'advice', 'workLife', 'debate', 'entertainment', 'nigerianCulture', 'storytelling', 'hypotheticals', 'humour', 'teasing', 'savage', 'group', 'boredom', 'pidgin', 'yoruba', 'fallback']) {
       expect(responseLibrary[category].length).toBeGreaterThanOrEqual(50);
     }
   });
@@ -29,9 +29,21 @@ describe('Forge Bot response library', () => {
     expect(classifyIntent("What's the activity for today?")).toBe('activityInfo');
   });
 
-  it('supplies curated examples to ground the AI response on every turn', () => {
-    const examples = getIntentExamples('What is love?', 4);
-    expect(examples).toHaveLength(4);
-    expect(examples.every(item => typeof item === 'string' && item.length > 0)).toBe(true);
+  it('uses a matching preset first and sends unknown intents to the AI layer', () => {
+    expect(pickLibraryReply('What is love?')).toMatch(/Love is/);
+    expect(pickLibraryReply("What's the meaning of fra?")).toMatch(/fra/i);
+    expect(pickLibraryReply("What's the group's activity for today?")).toMatch(/schedule|activity/i);
+    expect(pickLibraryReply('Can you analyse this unusual situation?')).toBeNull();
+  });
+
+  it('adds a fitting emoji to preset and AI responses when missing', () => {
+    expect(ensureResponseEmoji('Good morning', 'Good morning')).toMatch(/\\p{Extended_Pictographic}/u);
+    expect(ensureResponseEmoji('That is helpful 😂', 'thanks')).toBe('That is helpful 😂');
+    expect(pickFallbackReply()).toMatch(/\\p{Extended_Pictographic}/u);
+  });
+
+  it('avoids repeating the immediately previous preset when alternatives exist', () => {
+    const previous = responseLibrary.greeting[0];
+    expect(pickLibraryReply('Hello', previous)).not.toBe(previous);
   });
 });
