@@ -297,23 +297,17 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
 
         await showTyping(sock, chatId);
 
-        // Bank-first routing: use a suitable curated preset immediately.
-        // Invoke AI only when the bank has no matching category/entry.
-        const speakerName = message.pushName || senderId.split('@')[0];
+        // Local deterministic bank selection; live replies never call an external model.
         const previousBotReply = [...history].reverse().find(item => item.name === 'Forge Bot')?.text || '';
-        let response = pickLibraryReply(cleanForHistory, previousBotReply);
-        if (response) {
-            console.info(`[Chatbot] Responding from curated bank (intent: ${classifyIntent(cleanForHistory)}).`);
-        } else {
-            console.info(`[Chatbot] No suitable preset (intent: ${classifyIntent(cleanForHistory)}); invoking AI fallback.`);
-            response = await tryAI(cleanForHistory, history, speakerName);
-            if (!response) {
-                console.warn('[Chatbot] AI providers unavailable and no matching preset; using general bank fallback.');
-                response = pickFallbackReply(previousBotReply); 
-            } else {
-                response = ensureResponseEmoji(response, cleanForHistory);
-            }
-        }
+        let registeredGender = null;
+        try { registeredGender = await getUserGender(senderId); } catch {}
+        const response = pickPersonalityReply(cleanForHistory, {
+            chatId,
+            previousReply: previousBotReply,
+            gender: registeredGender,
+            history
+        });
+        console.info(`[Chatbot] Personality-bank reply (intent: ${classifyIntent(cleanForHistory)}, gender: ${registeredGender || 'unregistered'}).`);
 
         await sock.sendMessage(chatId, { text: response }, { quoted: message });
 
