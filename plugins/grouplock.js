@@ -1,6 +1,7 @@
 import { dailyActivities, lockSchedule } from '../data/dailyActivities.js';
 import store from '../lib/lightweight_store.js';
 import config from '../config.js';
+import { goodnightMessages, goodmorningMessages, pickRotatingMessage } from '../data/groupLifecycleMessages.js';
 
 /**
  * Group Lock / Unlock + Daily Activity Announcer
@@ -32,11 +33,20 @@ const LOCK_STATE_KEY = 'groupLockState';
 const LAST_ACTION_KEY = 'groupLockLastAction';
 const ACTIVITY_SENT_KEY = 'groupLockActivitySent';
 const MANUAL_OVERRIDE_KEY = 'groupLockManualOverride';
+const GOODNIGHT_SENT_KEY = 'groupLockGoodnightSent';
+const GOODMORNING_SENT_KEY = 'groupLockGoodmorningSent';
+const GOODNIGHT_INDEX_KEY = 'groupLockGoodnightIndex';
+const GOODMORNING_INDEX_KEY = 'groupLockGoodmorningIndex';
 
 function getLagosNow() {
     // Reliable way to get Africa/Lagos time
     const str = new Date().toLocaleString('en-US', { timeZone: 'Africa/Lagos' });
     return new Date(str);
+}
+
+function getCurrentDateKey() {
+    const now = getLagosNow();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
 function getCurrentDay() {
@@ -61,9 +71,17 @@ function getActivityText(day) {
 async function lockGroup(sock, chatId) {
     try {
         await sock.groupSettingUpdate(chatId, 'announcement');
-        await sock.sendMessage(chatId, {
-            text: '🔒 *Group Locked*\n\nOnly admins can send messages now.\nThe group will reopen at the scheduled time.'
-        });
+        const dateKey = getCurrentDateKey();
+        const sentRecord = (await store.getSetting(chatId, GOODNIGHT_SENT_KEY)) || {};
+        if (sentRecord.date !== dateKey) {
+            const previousIndex = (await store.getSetting(chatId, GOODNIGHT_INDEX_KEY)) ?? -1;
+            const selected = pickRotatingMessage(goodnightMessages, previousIndex);
+            await sock.sendMessage(chatId, {
+                text: `🔒 *Group locked for the night.*\n\n${selected.text}`
+            });
+            await store.saveSetting(chatId, GOODNIGHT_INDEX_KEY, selected.index);
+            await store.saveSetting(chatId, GOODNIGHT_SENT_KEY, { date: dateKey, sentAt: Date.now() });
+        }
         await store.saveSetting(chatId, LOCK_STATE_KEY, { locked: true, at: Date.now() });
         await store.saveSetting(chatId, LAST_ACTION_KEY, { action: 'lock', time: getCurrentTimeString(), day: getCurrentDay() });
         console.log(`[GroupLock] Locked ${chatId}`);
@@ -90,14 +108,27 @@ async function unlockGroupSetting(sock, chatId) {
 // what the lock state is. This is the piece that used to be stuck behind
 // `state.locked === true`.
 async function sendDailyActivityOnce(sock, chatId, day) {
+    const dateKey = getCurrentDateKey();
     const sentRecord = (await store.getSetting(chatId, ACTIVITY_SENT_KEY)) || {};
-    if (sentRecord.day === day) return false; // already sent today
+    if (sentRecord.date === dateKey) return false; // already sent today
 
     const activityText = getActivityText(day);
+    const morningRecord = (await store.getSetting(chatId, GOODMORNING_SENT_KEY)) || {};
+    let greeting = '';
+    let selectedGreeting = null;
+    if (morningRecord.date !== dateKey) {
+        const previousIndex = (await store.getSetting(chatId, GOODMORNING_INDEX_KEY)) ?? -1;
+        selectedGreeting = pickRotatingMessage(goodmorningMessages, previousIndex);
+        greeting = selectedGreeting.text;
+    }
 
     const sent = await sock.sendMessage(chatId, {
-        text: `🔓 *Group Unlocked*\n\n${activityText}`
+        text: `🔓 *Group unlocked.*\n\n${greeting ? `${greeting}\n\n` : ''}${activityText}`
     });
+    if (selectedGreeting) {
+        await store.saveSetting(chatId, GOODMORNING_INDEX_KEY, selectedGreeting.index);
+        await store.saveSetting(chatId, GOODMORNING_SENT_KEY, { date: dateKey, sentAt: Date.now() });
+    }
 
     try {
         if (sent?.key) {
@@ -110,7 +141,7 @@ async function sendDailyActivityOnce(sock, chatId, day) {
         console.log('Could not pin message:', pinErr.message);
     }
 
-    await store.saveSetting(chatId, ACTIVITY_SENT_KEY, { day, sentAt: Date.now() });
+    await store.saveSetting(chatId, ACTIVITY_SENT_KEY, { date: dateKey, day, sentAt: Date.now() });
     console.log(`[GroupLock] Daily activity sent for ${chatId} - ${day}`);
     return true;
 }
