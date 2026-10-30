@@ -200,7 +200,7 @@ export const intentRules = [
   // Direct informational requests must be recognised before broad topic categories.
   { intent: 'slangDefinition', patterns: [/\b(what does .{1,40} mean|what is the meaning of .{1,40}|meaning of .{1,40}|define .{1,40})\b/i] },
   { intent: 'definition', patterns: [/^\s*(what is|what are|who is|who are|explain)\b/i, /\b(define|definition of|meaning of)\b/i] },
-  { intent: 'financialNeed', patterns: [/\\b(i need money|need money|i need cash|need some cash|i need funds|need funds urgently|broke|i am broke|i'm broke|no money|out of money|how can i make money|how do i make money|ways to make money|raise money|urgent money)\\b/i] },
+  { intent: 'financialNeed', patterns: [/\b(i need money|need money|i need cash|need some cash|i need funds|need funds urgently|broke|i am broke|i'm broke|no money|out of money|how can i make money|how do i make money|ways to make money|raise money|urgent money)\b/i] },
   { intent: 'error', patterns: [/^\s*(error|it'?s an error|that'?s an error|you made an error)\s*[.!?]*$/i, /\b(error message|showing an error|got an error|failed with an error)\b/i] },
   { intent: 'activityInfo', patterns: [/\b(what'?s|what is|any) (the )?(group'?s )?(activity|activities|plan|plans|agenda) (for )?(today|tonight|this evening)\b/i, /\bwhat (are we|is the group) doing (today|tonight)\b/i] },
   // Specific emotional/social intents precede broad language and generic conversation matches.
