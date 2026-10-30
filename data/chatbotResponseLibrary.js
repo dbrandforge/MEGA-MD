@@ -192,7 +192,7 @@ export const intentRules = [
   // Direct informational requests must be recognised before broad topic categories.
   { intent: 'slangDefinition', patterns: [/\b(what does .{1,40} mean|what is the meaning of .{1,40}|meaning of .{1,40}|define .{1,40})\b/i] },
   { intent: 'definition', patterns: [/^\s*(what is|what are|who is|who are|explain)\b/i, /\b(define|definition of|meaning of)\b/i] },
-  { intent: 'error', patterns: [/^\\s*(error|it'?s an error|that'?s an error|you made an error)\\s*[.!?]*$/i, /\\b(error message|showing an error|got an error|failed with an error)\\b/i] },
+  { intent: 'error', patterns: [/^\s*(error|it'?s an error|that'?s an error|you made an error)\s*[.!?]*$/i, /\b(error message|showing an error|got an error|failed with an error)\b/i] },
   { intent: 'activityInfo', patterns: [/\b(what'?s|what is|any) (the )?(group'?s )?(activity|activities|plan|plans|agenda) (for )?(today|tonight|this evening)\b/i, /\bwhat (are we|is the group) doing (today|tonight)\b/i] },
   // Specific emotional/social intents precede broad language and generic conversation matches.
   { intent: 'disagreement', patterns: [/\b(i disagree|not true|you're wrong|you are wrong|i don't think so|i don't agree|that is incorrect)\b/i] },
