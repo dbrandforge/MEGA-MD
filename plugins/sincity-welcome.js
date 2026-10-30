@@ -2,11 +2,11 @@ import { welcomeMessage, groupRules, introReminder } from '../data/welcomeData.j
 import { dailyActivities } from '../data/dailyActivities.js';
 import store from '../lib/lightweight_store.js';
 import { logWelcome } from './welcomelog.js';
-import { memberLeftMessages, memberRemovedMessages, pickRotatingMessage, classifyDeparture } from '../data/groupLifecycleMessages.js';
+import { memberLeftMessages, memberRemovedMessages, memberLeftReturnMessages, memberRemovedReturnMessages, pickRotatingMessage, classifyDeparture } from '../data/groupLifecycleMessages.js';
 
 const TARGET_GROUP = '120363405434471171@g.us';
 const PENDING_INTRO_KEY = 'pendingIntros';
-const DEPARTURE_INDEX_KEY = 'groupDepartureMessageIndexes';
+const DEPARTURE_INDEX_KEY = 'groupDepartureMessageIndexes';\nconst MEMBER_HISTORY_KEY = 'groupMemberHistory';\nconst RETURN_INDEX_KEY = 'groupReturnMessageIndexes';
 
 function getLagosDay() {
     const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -101,6 +101,15 @@ async function handleMemberDeparture(sock, chatId, update) {
         await sock.sendMessage(chatId, { text, mentions: [userId] });
         console.log(`[Welcome] ${departureType} announcement sent for ${userId}`);
     }
+}
+
+export async function markMemberIntroduced(chatId, userId) {
+    if (chatId !== TARGET_GROUP || !userId) return false;
+    const pending = await getPendingIntros(chatId);
+    if (!pending[userId]) return false;
+    delete pending[userId];
+    await savePendingIntros(chatId, pending);
+    return true;
 }
 
 export async function processGroupParticipantsUpdate(sock, update) {
