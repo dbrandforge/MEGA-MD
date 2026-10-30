@@ -55,6 +55,7 @@ function getMentions(message) {
     return context.mentionedJid || [];
 }
 function formatPlayers(players) { return players.map((p, i) => `${i + 1}. ${mention(p)}`).join('\n'); }
+function unique(items) { return items.length === new Set(items).size; }
 async function muteUser(sock, chatId, userId) {
     try {
         const { softMuteUser } = await import('./softmute.js');
@@ -70,14 +71,16 @@ async function askNextQuestion(sock, chatId) {
         await sock.sendMessage(chatId, { text: '🛑 *Hot Seat ended* — 2-hour limit reached.', mentions: session.players });
         return;
     }
+    if (!session.players?.length) return;
+    // currentIndex advances after every answer or timeout, so every selected player gets a turn.
+    session.currentIndex = ((session.currentIndex || 0) % session.players.length + session.players.length) % session.players.length;
     const player = session.players[session.currentIndex];
-    if (!player) return;
     session.currentQuestion = shuffle(questions)[0];
     session.waitingFor = player;
     session.questionAskedAt = Date.now();
     await saveSession(chatId, session);
     await sock.sendMessage(chatId, {
-        text: `🔥 *HOT SEAT*\n\n${mention(player)}, you are on the seat.\n\n*Question:*\n${session.currentQuestion}\n\n✅ Send any message to answer and receive your next question automatically.\n⏰ 5 minutes — failure to answer results in a 10-hour mute.`,
+        text: `🔥 *HOT SEAT*\n\n${mention(player)}, you are on the seat.\n\n*Question:*\n${session.currentQuestion}\n\n✅ Send any message to answer. The next selected player will then receive a question.\n⏰ 5 minutes — failure to answer results in a 10-hour mute.`,
         mentions: [player]
     });
     setTimeout(async () => {
@@ -97,16 +100,18 @@ export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
     const session = await getSession(chatId);
     if (!session || session.status !== 'active' || !session.waitingFor) return false;
     if (session.waitingFor !== senderId) return false;
-    // Any participant message (text, image, voice note, sticker, etc.) is an answer.
     if (!message?.message || message.message.protocolMessage) return false;
 
     session.waitingFor = null;
     session.lastAnsweredAt = Date.now();
     session.questionsAnswered = (session.questionsAnswered || 0) + 1;
+    // Move to the next participant in the configured order after each answer.
+    session.currentIndex = (session.currentIndex + 1) % session.players.length;
+    if (session.currentIndex === 0) session.round = (session.round || 0) + 1;
     await saveSession(chatId, session);
     await sock.sendMessage(chatId, {
-        text: `✅ ${mention(senderId)}'s response has been received. Here's the next question:`,
-        mentions: [senderId]
+        text: `✅ ${mention(senderId)}'s response has been received. Passing the Hot Seat to the next participant.`,
+        mentions: [senderId, session.players[session.currentIndex]]
     });
     await askNextQuestion(sock, chatId);
     return true;
@@ -121,7 +126,7 @@ async function beginGame(sock, chatId, session) {
     session.waitingFor = null;
     await saveSession(chatId, session);
     await sock.sendMessage(chatId, {
-        text: `🔥 *HOT SEAT STARTED*\n\n${formatPlayers(session.players)}\n\nMax 2 hours · any message counts as an answer · 5 minutes per question · Fail = 10-hour mute`,
+        text: `🔥 *HOT SEAT STARTED*\n\nTurn order:\n${formatPlayers(session.players)}\n\nEach participant gets a question in sequence. After an answer, the next participant takes the seat.\n\nMax 2 hours · any message counts as an answer · 5 minutes per question · Fail = 10-hour mute`,
         mentions: session.players
     });
     setTimeout(() => askNextQuestion(sock, chatId), 2500);
@@ -133,7 +138,7 @@ async function eligibleMembers(sock, chatId) {
 async function sendList(sock, chatId, session) {
     const remaining = Math.max(0, Math.ceil((session.adjustmentEndsAt - Date.now()) / 60000));
     await sock.sendMessage(chatId, {
-        text: `🎟️ *HOT SEAT — SELECTION WINDOW*\n\n${formatPlayers(session.players)}\n\n⏳ Adjustment time remaining: ${remaining} minute(s).\nAdmins: use *.hotseat change @user1 @user2* or *.hotseat start*.`,
+        text: `🎟️ *HOT SEAT — SELECTION WINDOW*\n\nCurrent turn order:\n${formatPlayers(session.players)}\n\n⏳ Adjustment time remaining: ${remaining} minute(s).\n\nReplace one person: *.hotseat change @current @replacement*\nReorder everyone: *.hotseat arrange @user1 @user2 ...*\nStart now: *.hotseat start*`,
         mentions: session.players
     });
 }
@@ -142,7 +147,7 @@ export default {
     aliases: ['hs', 'freakyfriday'],
     category: 'games',
     description: 'Start and manage the Hot Seat confession game',
-    usage: '.hotseat [list|change @users|start]',
+    usage: '.hotseat [list|change @current @replacement|arrange @user1 @user2|start]',
     groupOnly: true,
     adminOnly: true,
     async handler(sock, message, args, context) {
@@ -164,14 +169,29 @@ export default {
                 await beginGame(sock, chatId, session);
                 return reply('The adjustment window has closed. Hot Seat is starting.');
             }
-            const replacements = getMentions(message);
-            if (!replacements.length) return reply('Tag the replacement participants: *.hotseat change @user1 @user2*');
+            const tagged = getMentions(message);
+            if (tagged.length !== 2) return reply('To replace one specific person, tag both the current participant and the replacement: *.hotseat change @current @replacement*');
+            const [current, replacement] = tagged;
+            const index = session.players.indexOf(current);
+            if (index === -1) return reply('The first tagged person is not in the current Hot Seat selection. Check *.hotseat list* and tag an existing participant first.');
+            if (session.players.includes(replacement)) return reply('The replacement is already on the Hot Seat list. Tag a different eligible member.');
             const members = await eligibleMembers(sock, chatId);
-            const valid = replacements.filter((id, i) => members.includes(id) && replacements.indexOf(id) === i);
-            if (valid.length !== replacements.length || valid.length < MIN_PLAYERS || valid.length > MAX_PLAYERS) {
-                return reply('Tag 2–4 unique non-admin members of this group to replace the current selection.');
+            if (!members.includes(replacement)) return reply('The replacement must be a non-admin member of this group.');
+            session.players[index] = replacement;
+            await saveSession(chatId, session);
+            return sendList(sock, chatId, session);
+        }
+        if (sub === 'arrange' || sub === 'order') {
+            if (!session || session.status !== 'pending') return reply('The turn order can only be arranged during the 10-minute selection window.');
+            if (Date.now() >= session.adjustmentEndsAt) {
+                await beginGame(sock, chatId, session);
+                return reply('The adjustment window has closed. Hot Seat is starting.');
             }
-            session.players = valid;
+            const order = getMentions(message);
+            if (order.length !== session.players.length || !unique(order) || !session.players.every(id => order.includes(id))) {
+                return reply(`Tag every selected participant exactly once, in the order they should play. Current list:\n${formatPlayers(session.players)}\n\nExample: *.hotseat arrange @user2 @user1*`);
+            }
+            session.players = order;
             await saveSession(chatId, session);
             return sendList(sock, chatId, session);
         }
@@ -197,7 +217,7 @@ export default {
         };
         await saveSession(chatId, session);
         await sock.sendMessage(chatId, {
-            text: `🎟️ *HOT SEAT SELECTION OPEN*\n\nSelected participants:\n${formatPlayers(session.players)}\n\n${session.readerSelectionUsed ? 'Selection prioritised members who read recent bot messages.' : 'Recent read-receipt data was insufficient; selected randomly from eligible non-admin members.'}\n\nAdmins have 10 minutes to inspect or adjust.\n*.hotseat list* · *.hotseat change @user* · *.hotseat start*\n\nThe game starts automatically when the window closes.`,
+            text: `🎟️ *HOT SEAT SELECTION OPEN*\n\nSelected participants:\n${formatPlayers(session.players)}\n\n${session.readerSelectionUsed ? 'Selection prioritised members who read recent bot messages.' : 'Recent read-receipt data was insufficient; selected randomly from eligible non-admin members.'}\n\nAdmins have 10 minutes to inspect or adjust.\n*.hotseat list* · *.hotseat change @current @replacement* · *.hotseat arrange @user1 @user2* · *.hotseat start*\n\nThe game starts automatically when the window closes.`,
             mentions: session.players
         });
         setTimeout(async () => {
