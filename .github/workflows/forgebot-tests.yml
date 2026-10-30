@@ -6,6 +6,7 @@ on:
       - 'data/chatbotResponseLibrary.js'
       - 'data/chatbotResponseExpansion.js'
       - 'plugins/chatbot.js'
+      - 'lib/messageHandler.js'
       - 'test/**'
       - '.github/workflows/forgebot-tests.yml'
       - 'package.json'
@@ -37,3 +38,5 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Run Forge Bot unit tests
         run: npm run test:unit
+      - name: Run message-routing integration tests
+        run: npx vitest run test/integration/messageHandler.test.js -t "routes personal DM messages"
