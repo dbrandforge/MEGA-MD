@@ -115,17 +115,20 @@ async function sendDailyActivityOnce(sock, chatId, day) {
     const activityText = getActivityText(day);
     const morningRecord = (await store.getSetting(chatId, GOODMORNING_SENT_KEY)) || {};
     let greeting = '';
+    let selectedGreeting = null;
     if (morningRecord.date !== dateKey) {
         const previousIndex = (await store.getSetting(chatId, GOODMORNING_INDEX_KEY)) ?? -1;
-        const selected = pickRotatingMessage(goodmorningMessages, previousIndex);
-        greeting = selected.text;
-        await store.saveSetting(chatId, GOODMORNING_INDEX_KEY, selected.index);
-        await store.saveSetting(chatId, GOODMORNING_SENT_KEY, { date: dateKey, sentAt: Date.now() });
+        selectedGreeting = pickRotatingMessage(goodmorningMessages, previousIndex);
+        greeting = selectedGreeting.text;
     }
 
     const sent = await sock.sendMessage(chatId, {
         text: `🔓 *Group unlocked.*\n\n${greeting ? `${greeting}\n\n` : ''}${activityText}`
     });
+    if (selectedGreeting) {
+        await store.saveSetting(chatId, GOODMORNING_INDEX_KEY, selectedGreeting.index);
+        await store.saveSetting(chatId, GOODMORNING_SENT_KEY, { date: dateKey, sentAt: Date.now() });
+    }
 
     try {
         if (sent?.key) {
