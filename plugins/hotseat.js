@@ -147,11 +147,11 @@ export default {
             const replacements = getMentions(message);
             if (!replacements.length) return reply('Tag the replacement participants: *.hotseat change @user1 @user2*');
             const members = await eligibleMembers(sock, chatId);
-            const valid = replacements.filter((id, i) => members.includes(id) && !session.players.includes(id) && replacements.indexOf(id) === i);
-            if (valid.length !== replacements.length || session.players.length + valid.length > MAX_PLAYERS) {
-                return reply('Every replacement must be a non-admin group member, not already selected, with no more than 4 players total.');
+            const valid = replacements.filter((id, i) => members.includes(id) && replacements.indexOf(id) === i);
+            if (valid.length !== replacements.length || valid.length < MIN_PLAYERS || valid.length > MAX_PLAYERS) {
+                return reply('Tag 2–4 unique non-admin members of this group to replace the current selection.');
             }
-            session.players = [...session.players, ...valid];
+            session.players = valid;
             await saveSession(chatId, session);
             return sendList(sock, chatId, session);
         }
