@@ -24,6 +24,8 @@ import { printLog } from './lib/print.js';
 import { writeErrorLog } from './lib/logger.js';
 import { handleMessages, handleGroupParticipantUpdate, handleStatus, handleCall } from './lib/messageHandler.js';
 import commandHandler from './lib/commandHandler.js';
+import { startSchedulerEngine, trackGroup } from './plugins/schedule.js';
+import { TARGET_GROUP } from './plugins/grouplock.js';
 store.readFromFile();
 setInterval(() => store.writeToFile(), config.storeWriteInterval || 10000);
 setInterval(() => {
@@ -569,6 +571,10 @@ async function startQasimDev() {
                 currentSocket = QasimDev;
                 startWatchdog();
                 startSessionBackupLoop();
+                // Start background schedulers on every successful WhatsApp connection.
+                // Group automation must not depend on someone running .schedule manually.
+                trackGroup(TARGET_GROUP);
+                startSchedulerEngine(QasimDev);
                 try {
                     const setbioModule = await import('./plugins/setbio.js');
                     const startAutoBio = setbioModule.startAutoBio || setbioModule.default?.startAutoBio;

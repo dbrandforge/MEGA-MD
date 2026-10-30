@@ -82,6 +82,8 @@ function formatTimeLeft(ms) {
 
 // ── Scheduler Engine ───────────────────────────────────────────────────────
 let _engineStarted = false;
+let _engineTimer = null;
+let _activeSocket = null;
 let _trackedGroups = new Set();
 
 export function trackGroup(chatId) {
@@ -91,12 +93,20 @@ export function trackGroup(chatId) {
 }
 
 export function startSchedulerEngine(sock) {
+    // Always refresh the socket reference after reconnects. The timer is
+    // created once, but must never retain a stale, closed Baileys socket.
+    if (sock) _activeSocket = sock;
     if (_engineStarted) return;
     _engineStarted = true;
 
-    console.log('[SCHEDULE] Engine started');
+    console.log('[SCHEDULE] Engine started (15-second interval)');
 
-    setInterval(async () => {
+    _engineTimer = setInterval(async () => {
+        const activeSocket = _activeSocket;
+        if (!activeSocket) {
+            console.warn('[SCHEDULE] Tick skipped: no active WhatsApp socket');
+            return;
+        }
         try {
             // 1. Regular scheduled messages
             const now = Date.now();
@@ -107,7 +117,7 @@ export function startSchedulerEngine(sock) {
             for (const item of schedules) {
                 if (now >= item.sendAt) {
                     try {
-                        await sock.sendMessage(item.chatId, { text: item.message });
+                        await activeSocket.sendMessage(item.chatId, { text: item.message });
                         console.log(`[SCHEDULE] ✅ Sent message ID:${item.id}`);
                     } catch (e) {
                         console.error(`[SCHEDULE] ❌ Failed ID:${item.id}: ${e.message}`);
@@ -119,20 +129,24 @@ export function startSchedulerEngine(sock) {
             }
             if (changed) await saveSchedules(remaining);
 
-            // 2. Group Lock + TOD timeouts (lazy import to avoid circular dependency)
+            // 2. Group Lock + TOD timeouts
             for (const chatId of _trackedGroups) {
                 try {
                     const { checkGroupLockSchedule } = await import('./grouplock.js');
-                    await checkGroupLockSchedule(sock, chatId);
-                } catch (e) {}
+                    await checkGroupLockSchedule(activeSocket, chatId);
+                } catch (e) {
+                    console.error(`[SCHEDULE] Group-lock check failed for ${chatId}: ${e.stack || e.message}`);
+                }
 
                 try {
                     const { checkTodTimeouts } = await import('./tod.js');
-                    await checkTodTimeouts(sock, chatId);
-                } catch (e) {}
+                    await checkTodTimeouts(activeSocket, chatId);
+                } catch (e) {
+                    console.error(`[SCHEDULE] TOD timeout check failed for ${chatId}: ${e.stack || e.message}`);
+                }
             }
         } catch (e) {
-            console.error('[SCHEDULE] Engine error:', e.message);
+            console.error('[SCHEDULE] Engine error:', e.stack || e.message);
         }
     }, 15000);
 }

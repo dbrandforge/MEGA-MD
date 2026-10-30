@@ -27,7 +27,7 @@ import config from '../config.js';
  * never fights it.
  */
 
-const TARGET_GROUP = '120363405434471171@g.us';
+export const TARGET_GROUP = '120363405434471171@g.us';
 const LOCK_STATE_KEY = 'groupLockState';
 const LAST_ACTION_KEY = 'groupLockLastAction';
 const ACTIVITY_SENT_KEY = 'groupLockActivitySent';
