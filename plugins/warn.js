@@ -89,7 +89,7 @@ export default {
                 `👤 *User:* @${userToWarn.split('@')[0]}\n` +
                 `⚠️ *Warnings:* ${count}/${maxWarns}\n` +
                 `👑 *By:* @${senderId.split('@')[0]}\n` +
-                `📝 *Reason:* ${reason}\\n` +
+                `📝 *Reason:* ${reason}\n` +
                 `📅 *Date:* ${new Date().toLocaleString()}\n\n` +
                 (count >= maxWarns
                     ? `🔇 *Action:* Soft-muted for ${hours} hours (messages will be deleted).`
