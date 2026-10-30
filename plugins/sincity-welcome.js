@@ -5,7 +5,7 @@ import { logWelcome } from './welcomelog.js';
 import { memberLeftMessages, memberRemovedMessages, memberLeftReturnMessages, memberRemovedReturnMessages, pickRotatingMessage, classifyDeparture } from '../data/groupLifecycleMessages.js';
 
 const TARGET_GROUP = '120363405434471171@g.us';
-const PENDING_INTRO_KEY = 'pendingIntros';
+const PENDING_INTRO_KEY = 'pendingIntros_v2';
 const DEPARTURE_INDEX_KEY = 'groupDepartureMessageIndexes';
 const MEMBER_HISTORY_KEY = 'groupMemberHistory';
 const RETURN_INDEX_KEY = 'groupReturnMessageIndexes';
