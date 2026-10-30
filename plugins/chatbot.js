@@ -16,7 +16,7 @@ const chatMemory = { messages: new Map(), loaded: new Set() };
 const MEMORY_SETTING = 'chatbotConversationMemory';
 const MAX_HISTORY_MESSAGES = 30;
 const MAX_HISTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
-const MAX_PROMPT_TRANSCRIPT_CHARS = 4200;
+const MAX_PROMPT_TRANSCRIPT_CHARS = 2200;
 
 const API_ENDPOINTS = [
     {
@@ -65,7 +65,12 @@ async function loadChatHistory(chatId) {
         // Store each group's bounded transcript under its own setting key. The
         // wrapper also keeps the lightweight file backend and DB adapters aligned.
         const saved = await store.getSetting(chatId, MEMORY_SETTING);
-        const history = Array.isArray(saved) ? saved : (Array.isArray(saved?.[chatId]) ? saved[chatId] : []);
+        let history = Array.isArray(saved) ? saved : (Array.isArray(saved?.[chatId]) ? saved[chatId] : []);
+        // Migrate the previous shared-map format when using a database adapter.
+        if (!history.length) {
+            const legacy = await store.getSetting('global', MEMORY_SETTING);
+            if (Array.isArray(legacy?.[chatId])) history = legacy[chatId];
+        }
         const fresh = history
             .filter(item => item && typeof item.text === 'string' &&
                 (!item.at || Date.now() - item.at <= MAX_HISTORY_AGE_MS))
