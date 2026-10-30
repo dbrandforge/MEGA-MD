@@ -13,20 +13,12 @@ const SQLITE_URL = process.env.DB_URL;
 const HAS_DB = !!(MONGO_URL || POSTGRES_URL || MYSQL_URL || SQLITE_URL);
 const USER_GROUP_DATA = dataFile('userGroupData.json');
 const CHAT_MEMORY_FILE = dataFile('chatbotConversationMemory.json');
-const PROVIDER_TIMEOUT_MS = 7500;
-const PROVIDER_TOTAL_BUDGET_MS = 20000;
-const PROVIDER_COOLDOWN_MS = 30000;
-const MAX_REPLY_CHARS = 1200;
-const providerHealth = new Map();
 
 // Rolling, per-group transcript with speaker labels for contextual replies.
 const chatMemory = { messages: new Map(), loaded: new Set() };
 const MEMORY_SETTING = 'chatbotConversationMemory';
 const MAX_HISTORY_MESSAGES = 30;
 const MAX_HISTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
-const MAX_PROMPT_TRANSCRIPT_CHARS = 2200;
-
-const API_ENDPOINTS = []; // Retained as an empty compatibility placeholder; never called.
 
 async function loadUserGroupData() {
     try {
