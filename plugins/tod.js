@@ -101,8 +101,7 @@ async function startSolo(sock, chatId, senderId, gender) {
     await startRound(sock, chatId, session);
 }
 
-async function startPaired(sock, chatId, senderId, partnerId, starterGender) {
-    const partnerGender = starterGender === 'guy' ? 'lady' : 'guy';
+async function startPaired(sock, chatId, senderId, partnerId, starterGender, partnerGender) {
     const sessions = await getSessions(chatId);
     const sessionId = `tod_${Date.now()}_${senderId.split('@')[0]}`;
     const session = {
@@ -179,7 +178,14 @@ export default {
             if (partner === senderId) {
                 return sock.sendMessage(chatId, { text: `Cannot pair with yourself.`, ...channelInfo }, { quoted: message });
             }
-            return startPaired(sock, chatId, senderId, partner, gender);
+            const partnerGender = await getUserGender(partner);
+            if (!partnerGender) {
+                return sock.sendMessage(chatId, {
+                    text: `Your tagged partner must set their gender first:\\n*.gender guy*\\n*.gender lady*\\n\\nAsk them to set it, then start the paired game again.`,
+                    ...channelInfo
+                }, { quoted: message });
+            }
+            return startPaired(sock, chatId, senderId, partner, gender, partnerGender);
         }
 
         await sock.sendMessage(chatId, {
