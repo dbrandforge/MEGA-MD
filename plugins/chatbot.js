@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
-import { pickReply } from '../data/chatReplies.js';
+import { pickLibraryReply } from '../data/chatbotResponseLibrary.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -12,7 +12,8 @@ const HAS_DB = !!(MONGO_URL || POSTGRES_URL || MYSQL_URL || SQLITE_URL);
 const USER_GROUP_DATA = dataFile('userGroupData.json');
 
 // Rolling, per-group transcript with speaker labels for contextual replies.
-const chatMemory = { messages: new Map() };
+const chatMemory = { messages: new Map(), loaded: new Set() };
+const MEMORY_SETTING = 'chatbotConversationMemory';
 const MAX_HISTORY_MESSAGES = 12;
 const MAX_PROMPT_TRANSCRIPT_CHARS = 2200;
 
@@ -55,6 +56,30 @@ async function saveUserGroupData(data) {
             fs.writeFileSync(USER_GROUP_DATA, JSON.stringify(data, null, 2));
         }
     } catch {}
+}
+
+async function loadChatHistory(chatId) {
+    if (chatMemory.loaded.has(chatId)) return chatMemory.messages.get(chatId) || [];
+    try {
+        const saved = await store.getSetting('global', MEMORY_SETTING);
+        const history = Array.isArray(saved?.[chatId]) ? saved[chatId] : [];
+        chatMemory.messages.set(chatId, history.slice(-MAX_HISTORY_MESSAGES));
+    } catch (error) {
+        console.warn('[Chatbot] Could not load persistent conversation memory:', error.message);
+        chatMemory.messages.set(chatId, []);
+    }
+    chatMemory.loaded.add(chatId);
+    return chatMemory.messages.get(chatId);
+}
+
+async function saveChatHistory(chatId, history) {
+    try {
+        const saved = await store.getSetting('global', MEMORY_SETTING) || {};
+        saved[chatId] = history.slice(-MAX_HISTORY_MESSAGES);
+        await store.saveSetting('global', MEMORY_SETTING, saved);
+    } catch (error) {
+        console.warn('[Chatbot] Could not save persistent conversation memory:', error.message);
+    }
 }
 
 async function showTyping(sock, chatId) {
@@ -180,8 +205,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             .replace(new RegExp(`@${botNumber}`, 'g'), '')
             .trim();
 
-        if (!chatMemory.messages.has(chatId)) chatMemory.messages.set(chatId, []);
-        const history = chatMemory.messages.get(chatId);
+        const history = await loadChatHistory(chatId);
         if (cleanForHistory && !message.key.fromMe) {
             history.push({
                 name: message.pushName || senderId.split('@')[0],
@@ -189,6 +213,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                 at: Date.now()
             });
             if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
+            await saveChatHistory(chatId, history);
         }
 
         if (!isMention && !isReply) return;
@@ -200,12 +225,13 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         // Keep the preset bank only as a fallback if all providers fail.
         const speakerName = message.pushName || senderId.split('@')[0];
         let response = await tryAI(cleanForHistory, history, speakerName);
-        if (!response) response = pickReply(cleanForHistory);
+        if (!response) response = pickLibraryReply(cleanForHistory);
 
         await sock.sendMessage(chatId, { text: response }, { quoted: message });
 
         history.push({ name: 'Forge Bot', text: response.slice(0, 350), at: Date.now() });
         if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
+        await saveChatHistory(chatId, history);
 
     } catch (e) {
         console.error('Chatbot error:', e.message);
