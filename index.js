@@ -406,6 +406,7 @@ async function startQasimDev() {
             // Baileys can deliver multiple messages in one upsert. Process each
             // independently; the old messages[0]-only handler silently dropped
             // every message after the first item in a batch.
+            for (const originalMessage of (chatUpdate?.messages || [])) {
                 const mek = originalMessage;
                 try {
                     if (!mek?.message || !mek?.key)
