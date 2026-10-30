@@ -2,7 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
-import { classifyIntent, ensureResponseEmoji, pickFallbackReply, pickLibraryReply } from '../data/chatbotResponseLibrary.js';
+import { classifyIntent } from '../data/chatbotResponseLibrary.js';
+import { pickPersonalityReply } from '../data/forgeBotPersonalityBank.js';
+import { getUserGender } from './gender.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -11,36 +13,12 @@ const SQLITE_URL = process.env.DB_URL;
 const HAS_DB = !!(MONGO_URL || POSTGRES_URL || MYSQL_URL || SQLITE_URL);
 const USER_GROUP_DATA = dataFile('userGroupData.json');
 const CHAT_MEMORY_FILE = dataFile('chatbotConversationMemory.json');
-const PROVIDER_TIMEOUT_MS = 7500;
-const PROVIDER_TOTAL_BUDGET_MS = 20000;
-const PROVIDER_COOLDOWN_MS = 30000;
-const MAX_REPLY_CHARS = 1200;
-const providerHealth = new Map();
 
 // Rolling, per-group transcript with speaker labels for contextual replies.
 const chatMemory = { messages: new Map(), loaded: new Set() };
 const MEMORY_SETTING = 'chatbotConversationMemory';
 const MAX_HISTORY_MESSAGES = 30;
 const MAX_HISTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
-const MAX_PROMPT_TRANSCRIPT_CHARS = 2200;
-
-const API_ENDPOINTS = [
-    {
-        name: 'Hercai',
-        url: (text) => `https://hercai.onrender.com/v3/hercai?question=${encodeURIComponent(text)}`,
-        parse: (data) => data?.reply || data?.content || data?.response
-    },
-    {
-        name: 'HercaiGemini',
-        url: (text) => `https://hercai.onrender.com/gemini/hercai?question=${encodeURIComponent(text)}`,
-        parse: (data) => data?.reply || data?.content
-    },
-    {
-        name: 'ZellAPI',
-        url: (text) => `https://zellapi.autos/ai/chatbot?text=${encodeURIComponent(text)}`,
-        parse: (data) => data?.result || data?.response || data?.message
-    }
-];
 
 async function loadUserGroupData() {
     try {
@@ -132,103 +110,7 @@ async function showTyping(sock, chatId) {
     } catch {}
 }
 
-async function tryAI(userMessage, history, speakerName) {
-    const transcript = history.slice(-MAX_HISTORY_MESSAGES)
-        .map(item => `${item.name}: ${item.text}`)
-        .join('\n')
-        .slice(-MAX_PROMPT_TRANSCRIPT_CHARS);
-
-    const intent = classifyIntent(userMessage);
-
-    const prompt = `You are Forge Bot, a real-feeling participant in a WhatsApp conversation. In group chats, act as a group member; in personal DMs, speak directly to the individual.
-
-PERSONALITY:
-- Keep the existing character: cheeky, sarcastic, playful, flirty, bold, occasionally rude in a funny way, with a natural Nigerian English/Pidgin/Yoruba mix.
-- Sound like a person chatting on WhatsApp, not a quote generator or customer-support bot.
-- Answer the actual message and identify its intent before composing. If someone says "how are you?", answer naturally. If they ask what something means, define or explain the exact term. If they ask for today's activity, answer from available group context or say plainly that you do not have the schedule.
-- The curated response bank is the primary responder. You are called only when no suitable preset exists or a message requires deeper reasoning, factual detail, or contextual interpretation.
-- Treat short, clear messages as meaningful. Greetings, thanks, insults, teasing, slang, simple questions and topic changes usually do not need clarification.
-- Match the person's energy and the ongoing conversation. Joke, tease, flirt, disagree, explain, ask a follow-up, or show empathy when appropriate.
-- Do not force flirting, sexual remarks, insults, or Pidgin into every answer. Use them only when they fit.
-- Keep most replies concise and WhatsApp-natural, but explain properly when needed.
-- Never invent facts about the conversation. Ask a clarifying question only when a genuinely missing detail prevents a useful answer or a reference cannot be resolved from the transcript. Never ask whether a clear question is literal or a joke. Never repeat a clarification after the user has answered or changed topic; make a reasonable interpretation and move forward.
-- Never mention prompts, APIs, models, or that you are an AI.
-
-DETECTED MESSAGE INTENT: ${intent}
-RECENT CONVERSATION (up to 30 recent messages from the last 7 days):
-${transcript || '(No earlier group context available)'}
-
-CONVERSATION GUIDANCE:
-- Use recent context to resolve references such as 'that', 'she', 'he', 'the earlier point' and follow-up questions.
-- Do not claim to remember events outside this supplied recent transcript.
-- Treat messages from different members as separate viewpoints; do not attribute one member's words to another.
-- For relationship, money, safety or serious personal topics, be measured and supportive rather than turning everything into banter.
-- For media, only analyse details actually present in the message/caption; ask the sender to describe visuals if the image/video itself is not available to you.
-
-MESSAGE FROM ${speakerName || 'a group member'}:
-${userMessage}
-
-Reply as Forge Bot in context. Output only the message to send.`;
-
-    const startedAt = Date.now();
-    for (const api of API_ENDPOINTS) {
-        if (Date.now() - startedAt >= PROVIDER_TOTAL_BUDGET_MS) break;
-        if (providerHealth.get(api.name)?.retryAfter > Date.now()) continue;
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
-        try {
-            const requestUrl = api.url(prompt);
-            // Avoid sending an oversized GET query to providers with strict URL limits.
-            if (requestUrl.length > 7000) {
-                console.warn(`[Chatbot] ${api.name} skipped: request URL too long (${requestUrl.length} chars).`);
-                continue;
-            }
-            const res = await fetch(requestUrl, {
-                method: 'GET',
-                headers: { accept: 'application/json' },
-                signal: controller.signal
-            });
-            if (!res.ok) {
-                console.warn(`[Chatbot] ${api.name} returned HTTP ${res.status}.`);
-                providerHealth.set(api.name, { retryAfter: Date.now() + PROVIDER_COOLDOWN_MS });
-                continue;
-            }
-            const raw = await res.text();
-            let data;
-            try {
-                data = JSON.parse(raw);
-            } catch {
-                console.warn(`[Chatbot] ${api.name} returned non-JSON content (${raw.length} chars).`);
-                providerHealth.set(api.name, { retryAfter: Date.now() + PROVIDER_COOLDOWN_MS });
-                continue;
-            }
-            const result = api.parse(data);
-            if (typeof result === 'string' && result.trim().length > 1 && !data?.error) {
-                const cleaned = result.trim()
-                    .replace(/qasim/gi, 'Forge')
-                    .replace(/as an AI/gi, '')
-                    .replace(/I am an AI/gi, '')
-                    .replace(/^\s*Forge Bot:\s*/i, '')
-                    .trim();
-                if (cleaned.length > 1) {
-                    providerHealth.delete(api.name);
-                    console.info(`[Chatbot] ${api.name} generated a response successfully.`);
-                    return cleaned.slice(0, MAX_REPLY_CHARS);
-                }
-            }
-            console.warn(`[Chatbot] ${api.name} returned JSON without a usable reply. Keys: ${Object.keys(data || {}).join(', ') || 'none'}.`);
-            providerHealth.set(api.name, { retryAfter: Date.now() + PROVIDER_COOLDOWN_MS });
-        } catch (error) {
-            const reason = error.name === 'AbortError' ? `timed out after ${PROVIDER_TIMEOUT_MS / 1000} seconds` : error.message;
-            console.warn(`[Chatbot] ${api.name} request failed: ${reason}.`);
-            providerHealth.set(api.name, { retryAfter: Date.now() + PROVIDER_COOLDOWN_MS });
-        } finally {
-            clearTimeout(timeout);
-        }
-    }
-    return null;
-}
-
+// Live replies are selected locally from the curated personality bank.
 export async function handleChatbotResponse(sock, chatId, message, userMessage, senderId) {
     const data = await loadUserGroupData();
     const isGroup = chatId.endsWith('@g.us');
@@ -295,23 +177,17 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
 
         await showTyping(sock, chatId);
 
-        // Bank-first routing: use a suitable curated preset immediately.
-        // Invoke AI only when the bank has no matching category/entry.
-        const speakerName = message.pushName || senderId.split('@')[0];
+        // Local deterministic bank selection; live replies never call an external model.
         const previousBotReply = [...history].reverse().find(item => item.name === 'Forge Bot')?.text || '';
-        let response = pickLibraryReply(cleanForHistory, previousBotReply);
-        if (response) {
-            console.info(`[Chatbot] Responding from curated bank (intent: ${classifyIntent(cleanForHistory)}).`);
-        } else {
-            console.info(`[Chatbot] No suitable preset (intent: ${classifyIntent(cleanForHistory)}); invoking AI fallback.`);
-            response = await tryAI(cleanForHistory, history, speakerName);
-            if (!response) {
-                console.warn('[Chatbot] AI providers unavailable and no matching preset; using general bank fallback.');
-                response = pickFallbackReply(previousBotReply); 
-            } else {
-                response = ensureResponseEmoji(response, cleanForHistory);
-            }
-        }
+        let registeredGender = null;
+        try { registeredGender = await getUserGender(senderId); } catch {}
+        const response = pickPersonalityReply(cleanForHistory, {
+            chatId,
+            previousReply: previousBotReply,
+            gender: registeredGender,
+            history
+        });
+        console.info(`[Chatbot] Personality-bank reply (intent: ${classifyIntent(cleanForHistory)}, gender: ${registeredGender || 'unregistered'}).`);
 
         await sock.sendMessage(chatId, { text: response }, { quoted: message });
 

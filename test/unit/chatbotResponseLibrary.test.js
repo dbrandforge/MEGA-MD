@@ -38,7 +38,7 @@ describe('Forge Bot response library', () => {
     expect(classifyIntent("What's the activity for today?")).toBe('activityInfo');
   });
 
-  it('uses a matching preset first and sends unknown intents to the AI layer', () => {
+  it('uses matching knowledge presets and leaves unknown intents to the personality bank', () => {
     expect(pickLibraryReply('What is love?')).toMatch(/Love is/);
     expect(pickLibraryReply('I need money')).toMatch(/amount|how much|deadline|raise/i);
     expect(pickLibraryReply("What's the meaning of fra?")).toMatch(/fra/i);
