@@ -41,9 +41,9 @@ describe('Forge Bot response library', () => {
   });
 
   it('adds a fitting emoji to preset and AI responses when missing', () => {
-    expect(ensureResponseEmoji('Good morning', 'Good morning')).toMatch(/\\p{Extended_Pictographic}/u);
+    expect(ensureResponseEmoji('Good morning', 'Good morning')).toMatch(/\p{Extended_Pictographic}/u);
     expect(ensureResponseEmoji('That is helpful 😂', 'thanks')).toBe('That is helpful 😂');
-    expect(pickFallbackReply()).toMatch(/\\p{Extended_Pictographic}/u);
+    expect(pickFallbackReply()).toMatch(/\p{Extended_Pictographic}/u);
   });
 
   it('avoids repeating the immediately previous preset when alternatives exist', () => {
