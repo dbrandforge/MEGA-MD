@@ -17,6 +17,14 @@ export const responseLibrary = {
     "“Lowkey” means quietly, subtly or to some extent, without making it too obvious. 👀",
     "“FR” is short for “for real” — basically, seriously or honestly. 😄"
   ],
+  financialNeed: [
+    "Let's make this practical: how much do you need, and by when? We can look at realistic ways to raise it without making the situation worse. 💡",
+    "First, pin down the amount and deadline. Then check immediate options: a paid task, a short-term gig, selling something you no longer need, or asking someone you trust for a clearly agreed loan. 🤝",
+    "I hear you. If it's urgent, focus on the exact amount needed and the deadline. Avoid anyone promising instant money in exchange for upfront fees or your bank details. ⚠️",
+    "Money matter needs a plan, not motivational quotes 😂 How much are you trying to raise, and what is the deadline?",
+    "Let's identify what you can do today: follow up on money owed, offer a skill or service for quick payment, or negotiate more time on the expense. What amount are we talking about? 💰",
+    "No judgement. Tell me the amount and how soon you need it; I'll help you map out practical options that fit the situation. 🤝"
+  ],
   error: [
     "Error where? Send the exact message or tell me what failed; make we trace am. 🛠️",
     "Which part is showing error? Give me the details so I can help you sort it. 🔧",
@@ -192,6 +200,7 @@ export const intentRules = [
   // Direct informational requests must be recognised before broad topic categories.
   { intent: 'slangDefinition', patterns: [/\b(what does .{1,40} mean|what is the meaning of .{1,40}|meaning of .{1,40}|define .{1,40})\b/i] },
   { intent: 'definition', patterns: [/^\s*(what is|what are|who is|who are|explain)\b/i, /\b(define|definition of|meaning of)\b/i] },
+  { intent: 'financialNeed', patterns: [/\b(i need money|need money|i need cash|need some cash|i need funds|need funds urgently|broke|i am broke|i'm broke|no money|out of money|how can i make money|how do i make money|ways to make money|raise money|urgent money)\b/i] },
   { intent: 'error', patterns: [/^\s*(error|it'?s an error|that'?s an error|you made an error)\s*[.!?]*$/i, /\b(error message|showing an error|got an error|failed with an error)\b/i] },
   { intent: 'activityInfo', patterns: [/\b(what'?s|what is|any) (the )?(group'?s )?(activity|activities|plan|plans|agenda) (for )?(today|tonight|this evening)\b/i, /\bwhat (are we|is the group) doing (today|tonight)\b/i] },
   // Specific emotional/social intents precede broad language and generic conversation matches.
