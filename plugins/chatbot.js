@@ -289,7 +289,8 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             await saveChatHistory(chatId, history);
         }
 
-        // In personal DMs, an enabled session responds naturally without requiring a mention or quoted reply.\n        if (isGroup && !isMention && !isReply) return;
+        // In personal DMs, an enabled session responds naturally without requiring a mention or quoted reply.
+        if (isGroup && !isMention && !isReply) return;
         if (!cleanForHistory) return;
 
         await showTyping(sock, chatId);
@@ -364,7 +365,7 @@ export default {
             }
             if (action === 'status') {
                 const enabled = data.chatbot[chatId] === true;
-                return sock.sendMessage(chatId, { text: `Group chatbot: ${enabled ? '🟢 ON' : '🔴 OFF'}\\nUse .chatbot group on/off.` }, { quoted: message });
+                return sock.sendMessage(chatId, { text: `Group chatbot: ${enabled ? '🟢 ON' : '🔴 OFF'}\nUse .chatbot group on/off.` }, { quoted: message });
             }
         }
 
@@ -376,12 +377,12 @@ export default {
             }
             if (action === 'status') {
                 const enabled = data.chatbotDM[senderId] === true;
-                return sock.sendMessage(chatId, { text: `Personal DM chatbot: ${enabled ? '🟢 ON' : '🔴 OFF'}\\nUse .chatbot dm on/off.` }, { quoted: message });
+                return sock.sendMessage(chatId, { text: `Personal DM chatbot: ${enabled ? '🟢 ON' : '🔴 OFF'}\nUse .chatbot dm on/off.` }, { quoted: message });
             }
         }
 
         return sock.sendMessage(chatId, {
-            text: '*Forge Bot Controls*\\n.chatbot on/off — toggle this chat\\n.chatbot group on/off — group replies\\n.chatbot dm on/off — personal DM replies\\n.chatbot status — show current status',
+            text: '*Forge Bot Controls*\n.chatbot on/off — toggle this chat\n.chatbot group on/off — group replies\n.chatbot dm on/off — personal DM replies\n.chatbot status — show current status',
         }, { quoted: message });
     },
     handleChatbotResponse
