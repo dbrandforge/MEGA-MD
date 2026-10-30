@@ -1,5 +1,5 @@
 import store from '../lib/lightweight_store.js';
-import { getUserGender, getOppositeGender } from './gender.js';
+import { getUserGender } from './gender.js';
 import { getTruths, getDares, randomFrom } from '../data/todLists.js';
 import { isGameAllowed } from './daylock.js';
 
@@ -183,7 +183,7 @@ export default {
         }
 
         await sock.sendMessage(chatId, {
-            text: `🔥 *Truth or Dare*\n\nYour gender: *${gender}*\n\n• *.tod solo*\n• *.tod paired @partner*\n\nPaired: partner treated as opposite gender.\nAfter answers: *.done*`,
+            text: `🔥 *Truth or Dare*\n\nYour gender: *${gender}*\n\n• *.tod solo*\n• *.tod paired @partner*\n\nPaired: each player receives prompts from their own saved-gender list.\nAfter answers: *.done*`,
             ...channelInfo
         }, { quoted: message });
     }
