@@ -257,7 +257,7 @@ export function ensureResponseEmoji(reply = '', text = '') {
   const value = String(reply).trim();
   if (!value) return value;
   // Preserve an emoji already used naturally in the response.
-  if (/\\p{Extended_Pictographic}/u.test(value)) return value;
+  if (/\p{Extended_Pictographic}/u.test(value)) return value;
   return `${value} ${getResponseEmoji(text)}`;
 }
 
