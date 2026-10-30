@@ -163,7 +163,7 @@ async function eligibleMembers(sock, chatId) {
 async function sendList(sock, chatId, session) {
     const remaining = Math.max(0, Math.ceil((session.adjustmentEndsAt - Date.now()) / 60000));
     await sock.sendMessage(chatId, {
-        text: `🎟️ *HOT SEAT — SELECTION WINDOW*\n\nCurrent turn order:\n${formatPlayers(session.players)}\n\n⏳ Adjustment time remaining: ${remaining} minute(s).\n\nReplace one person: *.hotseat change @current @replacement*\nReorder everyone: *.hotseat arrange @user1 @user2 ...*\nStart now: *.hotseat start*`,
+        text: `🎟️ *HOT SEAT — SELECTION WINDOW*\n\nCurrent turn order:\n${formatPlayers(session.players)}\n\n⏳ Adjustment time remaining: ${remaining} minute(s).\n\nManually choose participants: *.hotseat add @user1 @user2 @user3 @user4*\n(Add up to 4; the first manual add replaces the random selection. Further add commands append.)\nReplace one person: *.hotseat change @current @replacement*\nReorder everyone: *.hotseat arrange @user1 @user2 ...*\nStart now: *.hotseat start*`,
         mentions: session.players
     });
 }
@@ -172,7 +172,7 @@ export default {
     aliases: ['hs', 'freakyfriday'],
     category: 'games',
     description: 'Start and manage the Hot Seat confession game',
-    usage: '.hotseat [list|change @current @replacement|arrange @user1 @user2|start]',
+    usage: '.hotseat [list|add @user1 @user2 ...|change @current @replacement|arrange @user1 @user2|start]',
     groupOnly: true,
     adminOnly: true,
     async handler(sock, message, args, context) {
@@ -186,6 +186,28 @@ export default {
 
         if (sub === 'list') {
             if (!session || session.status !== 'pending') return reply('There is no Hot Seat selection window open.');
+            return sendList(sock, chatId, session);
+        }
+        if (sub === 'add') {
+            if (!session || session.status !== 'pending') return reply('Open a Hot Seat selection first with *.hotseat*. Participants can only be added during the 10-minute selection window.');
+            if (Date.now() >= session.adjustmentEndsAt) {
+                await beginGame(sock, chatId, session);
+                return reply('The adjustment window has closed. Hot Seat is starting.');
+            }
+            const tagged = getMentions(message);
+            if (!tagged.length) return reply('Tag 1 to 4 people in the same message: *.hotseat add @user1 @user2 @user3 @user4*');
+            if (tagged.length > MAX_PLAYERS || !unique(tagged)) return reply(`Tag no more than ${MAX_PLAYERS} different people per command.`);
+            const members = await eligibleMembers(sock, chatId);
+            const invalid = tagged.filter(id => !members.includes(id));
+            if (invalid.length) return reply('Every participant must be a non-admin member of this group. Please check the tagged accounts and try again.');
+            const basePlayers = session.manualSelection ? session.players : [];
+            const additions = tagged.filter(id => !basePlayers.includes(id));
+            if (!session.manualSelection && additions.length < MIN_PLAYERS) return reply(`Choose at least ${MIN_PLAYERS} people when setting the manual Hot Seat list.`);
+            if (basePlayers.length + additions.length > MAX_PLAYERS) return reply(`Hot Seat supports a maximum of ${MAX_PLAYERS} participants. Current list:\n${formatPlayers(basePlayers)}`);
+            if (!additions.length) return reply('Those people are already on the Hot Seat list.');
+            session.players = [...basePlayers, ...additions];
+            session.manualSelection = true;
+            await saveSession(chatId, session);
             return sendList(sock, chatId, session);
         }
         if (sub === 'change') {
@@ -222,6 +244,7 @@ export default {
         }
         if (sub === 'start') {
             if (!session || session.status !== 'pending') return reply('There is no Hot Seat selection window to start.');
+            if (session.players.length < MIN_PLAYERS) return reply(`Hot Seat needs at least ${MIN_PLAYERS} participants. Use *.hotseat add @user1 @user2* to choose them manually.`);
             await beginGame(sock, chatId, session);
             return;
         }
@@ -238,11 +261,11 @@ export default {
             startedBy: senderId,
             createdAt: Date.now(),
             adjustmentEndsAt: Date.now() + ADJUSTMENT_MS,
-            readerSelectionUsed: recentReaders.length >= MIN_PLAYERS
+            readerSelectionUsed: recentReaders.length >= MIN_PLAYERS,\n            manualSelection: false
         };
         await saveSession(chatId, session);
         await sock.sendMessage(chatId, {
-            text: `🎟️ *HOT SEAT SELECTION OPEN*\n\nSelected participants:\n${formatPlayers(session.players)}\n\n${session.readerSelectionUsed ? 'Selection prioritised members who read recent bot messages.' : 'Recent read-receipt data was insufficient; selected randomly from eligible non-admin members.'}\n\nAdmins have 10 minutes to inspect or adjust.\n*.hotseat list* · *.hotseat change @current @replacement* · *.hotseat arrange @user1 @user2* · *.hotseat start*\n\nThe game starts automatically when the window closes.`,
+            text: `🎟️ *HOT SEAT SELECTION OPEN*\n\nSelected participants:\n${formatPlayers(session.players)}\n\n${session.readerSelectionUsed ? 'Selection prioritised members who read recent bot messages.' : 'Recent read-receipt data was insufficient; selected randomly from eligible non-admin members.'}\n\nAdmins have 10 minutes to inspect or adjust.\n*.hotseat list* · *.hotseat add @user1 @user2 @user3 @user4* · *.hotseat change @current @replacement* · *.hotseat arrange @user1 @user2* · *.hotseat start*\n\nThe game starts automatically when the window closes.`,
             mentions: session.players
         });
         setTimeout(async () => {
