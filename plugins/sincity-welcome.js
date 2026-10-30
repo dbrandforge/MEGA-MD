@@ -29,10 +29,29 @@ export async function handleNewMember(sock, chatId, participants) {
             const userId = typeof user === 'string' ? user : (user.id || user);
             if (!userId) continue;
 
+            const history = (await store.getSetting(chatId, MEMBER_HISTORY_KEY)) || {};
+            const prior = history[userId] || history[userId.split('@')[0]];
+            const returningType = prior?.everJoined
+                ? (prior.lastDeparture === 'removed' ? 'removed' : 'left')
+                : null;
             const mention = `@${userId.split('@')[0]}`;
+
+            if (returningType) {
+                const bank = returningType === 'removed' ? memberRemovedReturnMessages : memberLeftReturnMessages;
+                const indexes = (await store.getSetting(chatId, RETURN_INDEX_KEY)) || {};
+                const selected = pickRotatingMessage(bank, indexes[returningType] ?? -1);
+                indexes[returningType] = selected.index;
+                await store.saveSetting(chatId, RETURN_INDEX_KEY, indexes);
+                await sock.sendMessage(chatId, { text: selected.text.replaceAll('{name}', mention), mentions: [userId] });
+                history[userId] = { ...prior, everJoined: true, status: 'active', lastJoinedAt: Date.now() };
+                await store.saveSetting(chatId, MEMBER_HISTORY_KEY, history);
+                // Returning members are not new and never re-enter pending introductions.
+                continue;
+            }
+
             const welcomeText = welcomeMessage
                 .replace(/@user/g, mention)
-                .replace(/\{user\}/g, mention);
+                .replace(/\\{user\\}/g, mention);
 
             await sock.sendMessage(chatId, { text: welcomeText, mentions: [userId] });
             await new Promise(r => setTimeout(r, 1000));
@@ -43,7 +62,7 @@ export async function handleNewMember(sock, chatId, participants) {
                 const day = getLagosDay();
                 const activity = dailyActivities[day];
                 if (activity?.full) {
-                    await sock.sendMessage(chatId, { text: `📅 *Today's activity*\n\n${activity.full}` });
+                    await sock.sendMessage(chatId, { text: `📅 *Today's activity*\\n\\n${activity.full}` });
                 }
             } catch (e) {
                 console.error('Activity send error:', e.message);
@@ -52,8 +71,10 @@ export async function handleNewMember(sock, chatId, participants) {
             await logWelcome(chatId, userId).catch(() => {});
 
             const pending = await getPendingIntros(chatId);
-            pending[userId] = { joinedAt: Date.now(), reminded: false };
+            pending[userId] = { joinedAt: Date.now(), reminded: false, introduced: false };
             await savePendingIntros(chatId, pending);
+            history[userId] = { everJoined: true, status: 'active', firstJoinedAt: Date.now(), lastJoinedAt: Date.now() };
+            await store.saveSetting(chatId, MEMBER_HISTORY_KEY, history);
 
             setTimeout(async () => {
                 try {
@@ -85,6 +106,13 @@ async function handleMemberDeparture(sock, chatId, update) {
         const userId = typeof participant === 'string' ? participant : participant?.id;
         if (!userId) continue;
         const departureType = classifyDeparture(update, userId);
+        const history = (await store.getSetting(chatId, MEMBER_HISTORY_KEY)) || {};
+        const prior = history[userId] || history[userId.split('@')[0]] || { everJoined: true };
+        history[userId] = { ...prior, everJoined: true, status: 'inactive', lastDeparture: departureType, departedAt: Date.now() };
+        await store.saveSetting(chatId, MEMBER_HISTORY_KEY, history);
+        const pending = await getPendingIntros(chatId);
+        delete pending[userId];
+        await savePendingIntros(chatId, pending);
         if (departureType === 'unknown') {
             console.warn('[Welcome] Departure actor missing; skipping unverified leave/kick announcement.');
             continue;
