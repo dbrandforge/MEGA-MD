@@ -126,7 +126,7 @@ export const personalityBankExpansion = {
     "Hope you have had a moment to rest. Even phone needs charging. 🔋",
     "Wetin sup for your side? Give me the unfiltered update. 👀"
   ],
-  gratitude: [
+  thanks: [
     "You are welcome. Now go and use this wisdom responsibly. 😂",
     "No wahala, my person. We move. 🤝",
     "Anytime. Just don't make me repeat myself tomorrow. 😭",
