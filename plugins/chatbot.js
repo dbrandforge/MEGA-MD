@@ -343,7 +343,7 @@ export default {
             return sock.sendMessage(chatId, { text: '🔒 Only the bot owner can change personal DM chatbot settings.' }, { quoted: message });
         }
 
-        const parts = args.join(' ').toLowerCase().trim().split(/\\s+/).filter(Boolean);
+        const parts = args.join(' ').toLowerCase().trim().split(/\s+/).filter(Boolean);
         let scope = parts[0];
         let action = parts[1];
         if (['on', 'off', 'status'].includes(scope || '')) {
