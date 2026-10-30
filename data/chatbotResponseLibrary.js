@@ -1,3 +1,5 @@
+import { responseExpansion } from './chatbotResponseExpansion.js';
+
 // Structured fallback response library for Forge Bot.
 // Keep entries conversational, distinct, and category-specific. AI remains the primary responder.
 
@@ -158,6 +160,10 @@ export const responseLibrary = {
     "You can't drop that line and leave us hanging."
   ]
 };
+
+for (const [category, entries] of Object.entries(responseExpansion)) {
+  if (Array.isArray(responseLibrary[category])) responseLibrary[category].push(...entries);
+}
 
 export const intentRules = [
   { intent: 'wellbeing', patterns: [/\\bhow are you\\b/i, /\\bhow you dey\\b/i, /\\bhow body\\b/i, /\\bhow far\\b/i, /\\bhow is your day\\b/i] },
