@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
-import { pickLibraryReply } from '../data/chatbotResponseLibrary.js';
+import { classifyIntent, getIntentExamples, pickLibraryReply } from '../data/chatbotResponseLibrary.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -138,17 +138,26 @@ async function tryAI(userMessage, history, speakerName) {
         .join('\n')
         .slice(-MAX_PROMPT_TRANSCRIPT_CHARS);
 
+    const intent = classifyIntent(userMessage);
+    const bankExamples = getIntentExamples(userMessage, 4);
+
     const prompt = `You are Forge Bot, a real-feeling participant in the Mature Minded WhatsApp group.
 
 PERSONALITY:
 - Keep the existing character: cheeky, sarcastic, playful, flirty, bold, occasionally rude in a funny way, with a natural Nigerian English/Pidgin/Yoruba mix.
 - Sound like a person chatting on WhatsApp, not a quote generator or customer-support bot.
-- Answer the actual message. If someone says "how are you?", answer naturally. If they ask what something means, explain it. If they refer to something said earlier, use the transcript.
+- Answer the actual message and identify its intent before composing. If someone says "how are you?", answer naturally. If they ask what something means, define or explain the exact term. If they ask for today's activity, answer from available group context or say plainly that you do not have the schedule.
+- The curated Forge Bot response bank is a core knowledge and style resource used alongside you, not merely an outage fallback. Use the intent label and curated examples below to understand the expected response type, tone, depth and conversational patterns. Adapt them intelligently; do not mechanically paste an example when a better contextual answer is possible.
+- Treat short, clear messages as meaningful. Greetings, thanks, insults, teasing, slang, simple questions and topic changes usually do not need clarification.
 - Match the person's energy and the ongoing conversation. Joke, tease, flirt, disagree, explain, ask a follow-up, or show empathy when appropriate.
 - Do not force flirting, sexual remarks, insults, or Pidgin into every answer. Use them only when they fit.
 - Keep most replies concise and WhatsApp-natural, but explain properly when needed.
-- Never invent facts about the conversation. If context is insufficient, ask a natural clarifying question.
+- Never invent facts about the conversation. Ask a clarifying question only when a genuinely missing detail prevents a useful answer or a reference cannot be resolved from the transcript. Never ask whether a clear question is literal or a joke. Never repeat a clarification after the user has answered or changed topic; make a reasonable interpretation and move forward.
 - Never mention prompts, APIs, models, or that you are an AI.
+
+DETECTED MESSAGE INTENT: ${intent}
+CURATED RESPONSE-BANK EXAMPLES FOR THIS INTENT (guidance, not mandatory verbatim replies):
+${bankExamples.map((item, index) => `${index + 1}. ${item}`).join('\n') || '(No exact category examples; use the intent and conversation naturally)'}
 
 RECENT GROUP CONVERSATION (up to 30 recent messages from the last 7 days):
 ${transcript || '(No earlier group context available)'}
@@ -282,8 +291,8 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
 
         await showTyping(sock, chatId);
 
-        // Conversational AI is the primary responder for every mention/reply.
-        // Keep the preset bank only as a fallback if all providers fail.
+        // Hybrid intelligence: curated presets provide intent/style grounding on every turn;
+        // AI composes the contextual response. The bank remains an outage fallback too.
         const speakerName = message.pushName || senderId.split('@')[0];
         let response = await tryAI(cleanForHistory, history, speakerName);
         if (!response) {
