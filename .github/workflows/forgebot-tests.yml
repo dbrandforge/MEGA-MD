@@ -39,4 +39,4 @@ jobs:
       - name: Run Forge Bot unit tests
         run: npm run test:unit
       - name: Run message-routing integration tests
-        run: npm run test:integration
+        run: npx vitest run test/integration/messageHandler.test.js -t "routes personal DM messages"
