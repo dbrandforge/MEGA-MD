@@ -1,6 +1,6 @@
 import { responseExpansion } from './chatbotResponseExpansion.js';
 
-// Primary curated response bank for Forge Bot. AI handles intents the bank cannot answer well.
+// Legacy curated knowledge bank. Live conversation responses are selected by the deterministic personality bank.
 
 export const responseLibrary = {
   definition: [
