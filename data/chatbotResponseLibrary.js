@@ -17,6 +17,11 @@ export const responseLibrary = {
     "“Lowkey” means quietly, subtly or to some extent, without making it too obvious. 👀",
     "“FR” is short for “for real” — basically, seriously or honestly. 😄"
   ],
+  error: [
+    "Error where? Send the exact message or tell me what failed; make we trace am. 🛠️",
+    "Which part is showing error? Give me the details so I can help you sort it. 🔧",
+    "I hear you. What exactly went wrong? No need to start from the beginning if you can show the error. 👀"
+  ],
   activityInfo: [
     "I don't have today's group activity schedule available yet. If an admin shares it here, I'll help keep everyone updated. 📅",
     "No confirmed activity has been shared with me for today. Make una suggest something interesting. 👀"
@@ -187,6 +192,7 @@ export const intentRules = [
   // Direct informational requests must be recognised before broad topic categories.
   { intent: 'slangDefinition', patterns: [/\b(what does .{1,40} mean|what is the meaning of .{1,40}|meaning of .{1,40}|define .{1,40})\b/i] },
   { intent: 'definition', patterns: [/^\s*(what is|what are|who is|who are|explain)\b/i, /\b(define|definition of|meaning of)\b/i] },
+  { intent: 'error', patterns: [/^\s*(error|it'?s an error|that'?s an error|you made an error)\s*[.!?]*$/i, /\b(error message|showing an error|got an error|failed with an error)\b/i] },
   { intent: 'activityInfo', patterns: [/\b(what'?s|what is|any) (the )?(group'?s )?(activity|activities|plan|plans|agenda) (for )?(today|tonight|this evening)\b/i, /\bwhat (are we|is the group) doing (today|tonight)\b/i] },
   // Specific emotional/social intents precede broad language and generic conversation matches.
   { intent: 'disagreement', patterns: [/\b(i disagree|not true|you're wrong|you are wrong|i don't think so|i don't agree|that is incorrect)\b/i] },
@@ -213,8 +219,8 @@ export const intentRules = [
   { intent: 'boredom', patterns: [/\b(bored|boring|nothing to do|i'm idle|i am idle)\b/i] },
   { intent: 'group', patterns: [/\b(group|everybody|everyone|hot seat|truth or dare|who is online)\b/i] },
   { intent: 'yoruba', patterns: [/\b(mo n|bawo|kilode|soro|o ti|se o)\b/i] },
-  { intent: 'pidgin', patterns: [/\b(abeg|wetin|dey|na so|omo|yarn|wahala|e choke)\b/i] },
-  { intent: 'teasing', patterns: [/\b(you are funny|you sef|you no get|see this one|you dey craze)\b/i] }
+  { intent: 'pidgin', patterns: [/\b(abeg|wetin|dey|na so|omo|yarn|wahala|e choke)\b/i, /\byou dey go (now|naw)\b/i] },
+  { intent: 'teasing', patterns: [/\b(you are funny|you sef|you no get|see this one|you dey craze|werey|wery|mumu|ode|you mad|mad bot)\b/i] }
 ];
 
 export function classifyIntent(text = '') {
@@ -245,7 +251,7 @@ export function getResponseEmoji(text = '', intent = classifyIntent(text)) {
     savage: ['😌', '😂'], flirty: ['😉', '❤️'], empathy: ['🫂', '❤️'],
     advice: ['💡', '🤝'], debate: ['🧐', '⚖️'], disagreement: ['🤝', '🧐'],
     definition: ['💡', '🧠'], slangDefinition: ['😄', '💬'],
-    activityInfo: ['📅', '👀'], thanks: ['🤝', '😊'], apology: ['🤝', '❤️'],
+    activityInfo: ['📅', '👀'], error: ['🛠️', '🔧'], thanks: ['🤝', '😊'], apology: ['🤝', '❤️'],
     agreement: ['💯', '🤝'], pidgin: ['😂', '😄'], yoruba: ['😊', '🤝'],
     boredom: ['👀', '😂'], group: ['😂', '👥']
   };
