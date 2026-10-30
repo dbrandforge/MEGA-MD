@@ -219,7 +219,7 @@ export const responseExpansion = {
     "What's the part you want us to focus on?",
     "I need one more detail before I can give a useful answer.",
     "Let's unpack that. Where should we begin?"
-  ]
+  ],
 
   relationships: [
     "That sounds like a conversation worth having honestly. Have you both been clear about what you want?",
