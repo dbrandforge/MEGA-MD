@@ -400,10 +400,12 @@ async function startQasimDev() {
         QasimDev.ev.on('creds.update', _saveCreds);
         store.bind(QasimDev.ev);
         QasimDev.ev.on('messages.upsert', async (chatUpdate) => {
+            // Log the raw event before filtering so delivery and sync events can
+            // be distinguished when diagnosing an unresponsive WhatsApp session.
+            printLog('info', `WhatsApp messages.upsert: type=${chatUpdate?.type || 'unknown'} count=${chatUpdate?.messages?.length || 0}`);
             // Baileys can deliver multiple messages in one upsert. Process each
             // independently; the old messages[0]-only handler silently dropped
             // every message after the first item in a batch.
-            for (const originalMessage of (chatUpdate?.messages || [])) {
                 const mek = originalMessage;
                 try {
                     if (!mek?.message || !mek?.key)
@@ -419,11 +421,10 @@ async function startQasimDev() {
                         await handleStatus(QasimDev, singleUpdate);
                         continue;
                     }
-                    if (!QasimDev.public && !mek.key.fromMe && chatUpdate.type === 'notify') {
-                        const isGroup = mek.key.remoteJid?.endsWith('@g.us');
-                        if (!isGroup)
-                            continue;
-                    }
+                    // Do not use the legacy QasimDev.public flag to suppress DMs.
+                    // DM/group access is enforced centrally by commandMode in
+                    // handleMessages; this socket-level filter blocked every
+                    // private command when QasimDev.public was unset.
                     if (mek.key.id?.startsWith('BAE5') && mek.key.id.length === 16)
                         continue;
                     QasimDev?.msgRetryCounterCache?.clear();
