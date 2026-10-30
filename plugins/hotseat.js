@@ -261,7 +261,8 @@ export default {
             startedBy: senderId,
             createdAt: Date.now(),
             adjustmentEndsAt: Date.now() + ADJUSTMENT_MS,
-            readerSelectionUsed: recentReaders.length >= MIN_PLAYERS,\n            manualSelection: false
+            readerSelectionUsed: recentReaders.length >= MIN_PLAYERS,
+            manualSelection: false
         };
         await saveSession(chatId, session);
         await sock.sendMessage(chatId, {
