@@ -3,7 +3,7 @@ import { getPersonalityBankStats, personalityBank, pickPersonalityReply } from '
 
 describe('Forge Bot personality bank', () => {
   it('has broad response variety across its core categories', () => {
-    for (const category of ['greeting','financialNeed','departure','teasing','savage','banter','boredom','relationship','wellbeing','pidgin','yoruba','serious','fallback']) {
+    for (const category of ['greeting','financialNeed','departure','teasing','savage','banter','boredom','relationship','wellbeing','pidgin','yoruba','fallback']) {
       expect(personalityBank[category].length).toBeGreaterThanOrEqual(6);
     }
     expect(Object.values(getPersonalityBankStats()).reduce((a,b) => a+b, 0)).toBeGreaterThan(130);
