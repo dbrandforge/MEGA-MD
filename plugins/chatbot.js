@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
-import { pickReply } from '../data/chatReplies.js';
+import { pickLibraryReply } from '../data/chatbotResponseLibrary.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -200,7 +200,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         // Keep the preset bank only as a fallback if all providers fail.
         const speakerName = message.pushName || senderId.split('@')[0];
         let response = await tryAI(cleanForHistory, history, speakerName);
-        if (!response) response = pickReply(cleanForHistory);
+        if (!response) response = pickLibraryReply(cleanForHistory);
 
         await sock.sendMessage(chatId, { text: response }, { quoted: message });
 
