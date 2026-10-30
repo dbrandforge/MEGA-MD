@@ -1,9 +1,26 @@
 import { responseExpansion } from './chatbotResponseExpansion.js';
 
-// Structured fallback response library for Forge Bot.
-// Keep entries conversational, distinct, and category-specific. AI remains the primary responder.
+// Primary curated response bank for Forge Bot. AI handles intents the bank cannot answer well.
 
 export const responseLibrary = {
+  definition: [
+    "Love is a deep feeling of care, respect, affection and commitment. It is more than attraction; it shows in how people treat one another. ❤️",
+    "Friendship is a relationship built on trust, mutual care, honesty and showing up for each other. 🤝",
+    "A relationship is a connection between people, shaped by communication, trust, respect and shared responsibility. ❤️",
+    "Emotional intelligence is the ability to recognise, understand and manage your emotions while responding thoughtfully to other people's feelings. 🧠",
+    "Self-respect means recognising your worth and maintaining standards for how you allow others to treat you. 💯"
+  ],
+  slangDefinition: [
+    "“Fra” is informal slang for “for real”. People use it to show they are serious, agree strongly or want to emphasise a point. 😄",
+    "“No cap” means no lie or genuinely telling the truth. 🧢",
+    "“Bet” is a casual way to say okay, agreed or sounds good. 🤝",
+    "“Lowkey” means quietly, subtly or to some extent, without making it too obvious. 👀",
+    "“FR” is short for “for real” — basically, seriously or honestly. 😄"
+  ],
+  activityInfo: [
+    "I don't have today's group activity schedule available yet. If an admin shares it here, I'll help keep everyone updated. 📅",
+    "No confirmed activity has been shared with me for today. Make una suggest something interesting. 👀"
+  ],
   greeting: [
     "How far? You don land 😄",
     "I dey here. Wetin dey happen?",
@@ -170,7 +187,7 @@ export const intentRules = [
   // Direct informational requests must be recognised before broad topic categories.
   { intent: 'slangDefinition', patterns: [/\b(what does .{1,40} mean|what is the meaning of .{1,40}|meaning of .{1,40}|define .{1,40})\b/i] },
   { intent: 'definition', patterns: [/^\s*(what is|what are|who is|who are|explain)\b/i, /\b(define|definition of|meaning of)\b/i] },
-  { intent: 'activityInfo', patterns: [/\b(what'?s|what is|any) (the )?(activity|activities|plan|plans|agenda) (for )?(today|tonight|this evening)\b/i] },
+  { intent: 'activityInfo', patterns: [/\b(what'?s|what is|any) (the )?(group'?s )?(activity|activities|plan|plans|agenda) (for )?(today|tonight|this evening)\b/i, /\bwhat (are we|is the group) doing (today|tonight)\b/i] },
   // Specific emotional/social intents precede broad language and generic conversation matches.
   { intent: 'disagreement', patterns: [/\b(i disagree|not true|you're wrong|you are wrong|i don't think so|i don't agree|that is incorrect)\b/i] },
   { intent: 'relationships', patterns: [/\b(relationship|dating|date|crush|boyfriend|girlfriend|partner|situationship|talking stage|breakup|break up|marriage|married|cheating|red flag|green flag)\b/i] },
@@ -222,10 +239,65 @@ export function getIntentExamples(text = '', limit = 4) {
   return selected;
 }
 
-export function pickLibraryReply(text = '') {
+export function getResponseEmoji(text = '', intent = classifyIntent(text)) {
+  const emojiByIntent = {
+    greeting: ['👋', '😄'], wellbeing: ['😊', '🤗'], teasing: ['😂', '😏'],
+    savage: ['😌', '😂'], flirty: ['😉', '❤️'], empathy: ['🫂', '❤️'],
+    advice: ['💡', '🤝'], debate: ['🧐', '⚖️'], disagreement: ['🤝', '🧐'],
+    definition: ['💡', '🧠'], slangDefinition: ['😄', '💬'],
+    activityInfo: ['📅', '👀'], thanks: ['🤝', '😊'], apology: ['🤝', '❤️'],
+    agreement: ['💯', '🤝'], pidgin: ['😂', '😄'], yoruba: ['😊', '🤝'],
+    boredom: ['👀', '😂'], group: ['😂', '👥']
+  };
+  const choices = emojiByIntent[intent] || ['😄', '💬'];
+  return choices[Math.floor(Math.random() * choices.length)];
+}
+
+export function ensureResponseEmoji(reply = '', text = '') {
+  const value = String(reply).trim();
+  if (!value) return value;
+  // Preserve an emoji already used naturally in the response.
+  if (/\p{Extended_Pictographic}/u.test(value)) return value;
+  return `${value} ${getResponseEmoji(text)}`;
+}
+
+export function pickLibraryReply(text = '', previousReply = '') {
   const intent = classifyIntent(text);
-  const replies = responseLibrary[intent] || responseLibrary.fallback;
-  return replies[Math.floor(Math.random() * replies.length)];
+  if (intent === 'fallback') return null;
+  let replies = responseLibrary[intent];
+  if (!Array.isArray(replies) || !replies.length) return null;
+
+  // Knowledge presets must match the requested term; never return a random definition.
+  const input = String(text).toLowerCase();
+  if (intent === 'definition') {
+    const termRules = [
+      [/\blove\b/, 0], [/\bfriendship\b/, 1], [/\brelationship\b/, 2],
+      [/\bemotional intelligence\b/, 3], [/\bself[- ]respect\b/, 4]
+    ];
+    const match = termRules.find(([pattern]) => pattern.test(input));
+    if (!match) return null;
+    replies = [replies[match[1]]].filter(Boolean);
+  }
+  if (intent === 'slangDefinition') {
+    const slangRules = [
+      [/\bfra\b|\bfr\b/, 0], [/\bno cap\b/, 1],
+      [/\bbet\b/, 2], [/\blowkey\b/, 3]
+    ];
+    const match = slangRules.find(([pattern]) => pattern.test(input));
+    if (!match) return null;
+    replies = [replies[match[1]]].filter(Boolean);
+  }
+  const alternatives = replies.filter(reply => reply !== previousReply);
+  const pool = alternatives.length ? alternatives : replies;
+  return ensureResponseEmoji(pool[Math.floor(Math.random() * pool.length)], text);
+}
+
+export function pickFallbackReply(previousReply = '') {
+  const replies = responseLibrary.fallback || [];
+  const alternatives = replies.filter(reply => reply !== previousReply);
+  const pool = alternatives.length ? alternatives : replies;
+  if (!pool.length) return ensureResponseEmoji("I'm here. Give me a little more to work with.", '');
+  return ensureResponseEmoji(pool[Math.floor(Math.random() * pool.length)], '');
 }
 
 export function getResponseLibraryStats() {
