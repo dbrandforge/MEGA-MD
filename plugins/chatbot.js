@@ -231,13 +231,20 @@ Reply as Forge Bot in context. Output only the message to send.`;
 
 export async function handleChatbotResponse(sock, chatId, message, userMessage, senderId) {
     const data = await loadUserGroupData();
-    const TARGET = '120363405434471171@g.us';
+    const isGroup = chatId.endsWith('@g.us');
     if (!data.chatbot) data.chatbot = {};
-    if (chatId === TARGET && data.chatbot[chatId] === undefined) {
-        data.chatbot[chatId] = true;
-        await saveUserGroupData(data);
+    if (!data.chatbotDM) data.chatbotDM = {};
+    const settingKey = isGroup ? chatId : senderId;
+    if (isGroup) {
+        const TARGET = '120363405434471171@g.us';
+        if (chatId === TARGET && data.chatbot[chatId] === undefined) {
+            data.chatbot[chatId] = true;
+            await saveUserGroupData(data);
+        }
+        if (data.chatbot[chatId] !== true) return;
+    } else if (data.chatbotDM[settingKey] !== true) {
+        return;
     }
-    if (!data.chatbot[chatId]) return;
 
     try {
         const botId = sock.user?.id || '';
@@ -282,7 +289,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             await saveChatHistory(chatId, history);
         }
 
-        if (!isMention && !isReply) return;
+        // In personal DMs, an enabled session responds naturally without requiring a mention or quoted reply.\n        if (isGroup && !isMention && !isReply) return;
         if (!cleanForHistory) return;
 
         await showTyping(sock, chatId);
@@ -320,30 +327,62 @@ export default {
     command: 'chatbot',
     aliases: ['bot', 'ai', 'achat'],
     category: 'admin',
-    description: 'Enable or disable chatbot',
-    usage: '.chatbot on/off',
-    groupOnly: true,
+    description: 'Enable or disable chatbot in groups and personal DMs',
+    usage: '.chatbot on/off | .chatbot group on/off | .chatbot dm on/off | .chatbot status',
     adminOnly: true,
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
-        const match = args.join(' ').toLowerCase();
+        const isGroup = context.isGroup ?? chatId.endsWith('@g.us');
+        const senderId = context.senderId || message.key.participant || chatId;
         const data = await loadUserGroupData();
         if (!data.chatbot) data.chatbot = {};
+        if (!data.chatbotDM) data.chatbotDM = {};
 
-        if (match === 'on') {
-            data.chatbot[chatId] = true;
-            await saveUserGroupData(data);
-            return sock.sendMessage(chatId, { text: '✅ Chatbot on. Tag me or reply my message.', quoted: message });
+        // DM controls are deliberately restricted to the bot owner/sudo account.
+        if (!isGroup && !context.isOwnerOrSudoCheck) {
+            return sock.sendMessage(chatId, { text: '🔒 Only the bot owner can change personal DM chatbot settings.' }, { quoted: message });
         }
-        if (match === 'off') {
-            delete data.chatbot[chatId];
-            await saveUserGroupData(data);
-            return sock.sendMessage(chatId, { text: '❌ Chatbot off.', quoted: message });
+
+        const parts = args.join(' ').toLowerCase().trim().split(/\\s+/).filter(Boolean);
+        let scope = parts[0];
+        let action = parts[1];
+        if (['on', 'off', 'status'].includes(scope || '')) {
+            action = scope;
+            scope = isGroup ? 'group' : 'dm';
         }
+        if (!scope) scope = isGroup ? 'group' : 'dm';
+        if (!action) action = 'status';
+
+        if (scope === 'group') {
+            if (!isGroup) {
+                return sock.sendMessage(chatId, { text: 'ℹ️ Group controls must be used inside the group: .chatbot group on/off' }, { quoted: message });
+            }
+            if (action === 'on' || action === 'off') {
+                data.chatbot[chatId] = action === 'on';
+                await saveUserGroupData(data);
+                return sock.sendMessage(chatId, { text: action === 'on' ? '✅ Group chatbot is ON. Tag me or reply to my message.' : '⏸️ Group chatbot is OFF.' }, { quoted: message });
+            }
+            if (action === 'status') {
+                const enabled = data.chatbot[chatId] === true;
+                return sock.sendMessage(chatId, { text: `Group chatbot: ${enabled ? '🟢 ON' : '🔴 OFF'}\\nUse .chatbot group on/off.` }, { quoted: message });
+            }
+        }
+
+        if (scope === 'dm') {
+            if (action === 'on' || action === 'off') {
+                data.chatbotDM[senderId] = action === 'on';
+                await saveUserGroupData(data);
+                return sock.sendMessage(chatId, { text: action === 'on' ? '✅ Personal DM chatbot is ON. Send me a message here to chat.' : '⏸️ Personal DM chatbot is OFF.' }, { quoted: message });
+            }
+            if (action === 'status') {
+                const enabled = data.chatbotDM[senderId] === true;
+                return sock.sendMessage(chatId, { text: `Personal DM chatbot: ${enabled ? '🟢 ON' : '🔴 OFF'}\\nUse .chatbot dm on/off.` }, { quoted: message });
+            }
+        }
+
         return sock.sendMessage(chatId, {
-            text: '*Chatbot*\n.chatbot on / off\n\nUses conversational AI with persistent recent group context.\nEnglish / Pidgin / Yoruba; playful when appropriate, thoughtful when needed.',
-            quoted: message
-        });
+            text: '*Forge Bot Controls*\\n.chatbot on/off — toggle this chat\\n.chatbot group on/off — group replies\\n.chatbot dm on/off — personal DM replies\\n.chatbot status — show current status',
+        }, { quoted: message });
     },
     handleChatbotResponse
 };
