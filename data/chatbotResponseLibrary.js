@@ -271,8 +271,8 @@ export function pickLibraryReply(text = '', previousReply = '') {
   const input = String(text).toLowerCase();
   if (intent === 'definition') {
     const termRules = [
-      [/\\blove\\b/, 0], [/\\bfriendship\\b/, 1], [/\\brelationship\\b/, 2],
-      [/\\bemotional intelligence\\b/, 3], [/\\bself[- ]respect\\b/, 4]
+      [/\blove\b/, 0], [/\bfriendship\b/, 1], [/\brelationship\b/, 2],
+      [/\bemotional intelligence\b/, 3], [/\bself[- ]respect\b/, 4]
     ];
     const match = termRules.find(([pattern]) => pattern.test(input));
     if (!match) return null;
@@ -280,8 +280,8 @@ export function pickLibraryReply(text = '', previousReply = '') {
   }
   if (intent === 'slangDefinition') {
     const slangRules = [
-      [/\\bfra\\b|\\bfr\\b/, 0], [/\\bno cap\\b/, 1],
-      [/\\bbet\\b/, 2], [/\\blowkey\\b/, 3]
+      [/\bfra\b|\bfr\b/, 0], [/\bno cap\b/, 1],
+      [/\bbet\b/, 2], [/\blowkey\b/, 3]
     ];
     const match = slangRules.find(([pattern]) => pattern.test(input));
     if (!match) return null;
