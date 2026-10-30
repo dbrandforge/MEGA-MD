@@ -25,6 +25,9 @@ describe('Forge Bot response library', () => {
     expect(classifyIntent('Would you rather live by the sea?')).toBe('hypotheticals');
     expect(classifyIntent('That film had a brilliant ending')).toBe('entertainment');
     expect(classifyIntent('I feel overwhelmed today')).toBe('empathy');
+    expect(classifyIntent('Werey bot')).toBe('teasing');
+    expect(classifyIntent('You dey go naw')).toBe('pidgin');
+    expect(classifyIntent('Error')).toBe('error');
   });
 
   it('recognises direct definitions, slang and activity questions', () => {
@@ -40,6 +43,9 @@ describe('Forge Bot response library', () => {
     expect(pickLibraryReply('What does rizz mean?')).toBeNull();
     expect(pickLibraryReply("What's the group's activity for today?")).toMatch(/schedule|activity/i);
     expect(pickLibraryReply('Can you analyse this unusual situation?')).toBeNull();
+    expect(pickLibraryReply('Error')).toMatch(/what exactly went wrong|which part is showing error|error where/i);
+    expect(pickLibraryReply('Werey bot')).toBeTruthy();
+    expect(pickLibraryReply('You dey go naw')).toBeTruthy();
   });
 
   it('adds a fitting emoji to preset and AI responses when missing', () => {
