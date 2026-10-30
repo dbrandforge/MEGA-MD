@@ -6,6 +6,7 @@ on:
       - 'data/chatbotResponseLibrary.js'
       - 'data/chatbotResponseExpansion.js'
       - 'plugins/chatbot.js'
+      - 'lib/messageHandler.js'
       - 'test/**'
       - '.github/workflows/forgebot-tests.yml'
       - 'package.json'
