@@ -63,7 +63,7 @@ async function muteUser(sock, chatId, userId) {
         return true;
     } catch { return false; }
 }
-async function askNextQuestion(sock, chatId) {
+async function sendPlayerQuestion(sock, chatId, player) {
     const session = await getSession(chatId);
     if (!session || session.status !== 'active') return;
     if (Date.now() - session.startedAt >= SESSION_MS) {
@@ -71,49 +71,65 @@ async function askNextQuestion(sock, chatId) {
         await sock.sendMessage(chatId, { text: '🛑 *Hot Seat ended* — 2-hour limit reached.', mentions: session.players });
         return;
     }
-    if (!session.players?.length) return;
-    // currentIndex advances after every answer or timeout, so every selected player gets a turn.
-    session.currentIndex = ((session.currentIndex || 0) % session.players.length + session.players.length) % session.players.length;
-    const player = session.players[session.currentIndex];
-    session.currentQuestion = shuffle(questions)[0];
-    session.waitingFor = player;
-    session.questionAskedAt = Date.now();
+
+    const state = session.playerStates?.[player];
+    if (!state || state.status !== 'active' || state.waiting) return;
+
+    const questionId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const question = shuffle(questions)[0];
+    state.waiting = true;
+    state.questionId = questionId;
+    state.questionAskedAt = Date.now();
+    state.currentQuestion = question;
     await saveSession(chatId, session);
+
     await sock.sendMessage(chatId, {
-        text: `🔥 *HOT SEAT*\n\n${mention(player)}, you are on the seat.\n\n*Question:*\n${session.currentQuestion}\n\n✅ Send any message to answer. The next selected player will then receive a question.\n⏰ 5 minutes — failure to answer results in a 10-hour mute.`,
+        text: `🔥 *HOT SEAT — YOUR QUESTION*\n\n${mention(player)}, your question is:\n\n*${question}*\n\n✅ Answer whenever you're ready. Your next question will arrive immediately after your answer.\n⏰ You have 5 minutes to answer. Failure to answer results in a 10-hour mute.`,
         mentions: [player]
     });
+
     setTimeout(async () => {
         const latest = await getSession(chatId);
-        if (!latest || latest.status !== 'active' || latest.waitingFor !== player || latest.questionAskedAt !== session.questionAskedAt) return;
-        await muteUser(sock, chatId, player);
-        await sock.sendMessage(chatId, { text: `⏰ ${mention(player)} did not answer in time and has received the 10-hour mute penalty.`, mentions: [player] });
-        latest.currentIndex = (latest.currentIndex + 1) % latest.players.length;
-        latest.round = (latest.round || 0) + 1;
-        latest.waitingFor = null;
+        if (!latest || latest.status !== 'active') return;
+        const latestState = latest.playerStates?.[player];
+        if (!latestState || latestState.status !== 'active' || !latestState.waiting || latestState.questionId !== questionId) return;
+
+        latestState.waiting = false;
+        latestState.status = 'timed_out';
+        latestState.timedOutAt = Date.now();
         await saveSession(chatId, latest);
-        setTimeout(() => askNextQuestion(sock, chatId), 1500);
+        await muteUser(sock, chatId, player);
+        await sock.sendMessage(chatId, {
+            text: `⏰ ${mention(player)} did not answer within 5 minutes and has received the 10-hour mute penalty. They are now out of this Hot Seat session.`,
+            mentions: [player]
+        });
+
+        const remaining = latest.players.filter(id => latest.playerStates?.[id]?.status === 'active');
+        if (remaining.length === 0) {
+            await clearSession(chatId);
+            await sock.sendMessage(chatId, { text: '🛑 *Hot Seat ended* — no participants remain active.' });
+        }
     }, ANSWER_TIMEOUT_MS);
 }
+
 export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
     if (chatId !== TARGET_GROUP || message?.key?.fromMe) return false;
     const session = await getSession(chatId);
-    if (!session || session.status !== 'active' || !session.waitingFor) return false;
-    if (session.waitingFor !== senderId) return false;
+    if (!session || session.status !== 'active') return false;
+    const state = session.playerStates?.[senderId];
+    if (!state || state.status !== 'active' || !state.waiting) return false;
     if (!message?.message || message.message.protocolMessage) return false;
 
-    session.waitingFor = null;
-    session.lastAnsweredAt = Date.now();
-    session.questionsAnswered = (session.questionsAnswered || 0) + 1;
-    // Move to the next participant in the configured order after each answer.
-    session.currentIndex = (session.currentIndex + 1) % session.players.length;
-    if (session.currentIndex === 0) session.round = (session.round || 0) + 1;
+    state.waiting = false;
+    state.lastAnsweredAt = Date.now();
+    state.questionsAnswered = (state.questionsAnswered || 0) + 1;
     await saveSession(chatId, session);
+
     await sock.sendMessage(chatId, {
-        text: `✅ ${mention(senderId)}'s response has been received. Passing the Hot Seat to the next participant.`,
-        mentions: [senderId, session.players[session.currentIndex]]
+        text: `✅ ${mention(senderId)}'s answer has been received. Your next question is coming now.`,
+        mentions: [senderId]
     });
-    await askNextQuestion(sock, chatId);
+    await sendPlayerQuestion(sock, chatId, senderId);
     return true;
 }
 
@@ -121,15 +137,22 @@ async function beginGame(sock, chatId, session) {
     session.status = 'active';
     session.startedAt = Date.now();
     session.adjustmentEndsAt = null;
-    session.currentIndex = 0;
     session.round = 0;
     session.waitingFor = null;
+    session.playerStates = Object.fromEntries(session.players.map(player => [player, {
+        status: 'active',
+        waiting: false,
+        questionsAnswered: 0
+    }]));
     await saveSession(chatId, session);
+
     await sock.sendMessage(chatId, {
-        text: `🔥 *HOT SEAT STARTED*\n\nTurn order:\n${formatPlayers(session.players)}\n\nEach participant gets a question in sequence. After an answer, the next participant takes the seat.\n\nMax 2 hours · any message counts as an answer · 5 minutes per question · Fail = 10-hour mute`,
+        text: `🔥 *HOT SEAT STARTED*\n\nAll selected participants will receive their first question at the same time:\n${formatPlayers(session.players)}\n\nEach participant has an independent question flow. Answering sends that person their next question immediately; nobody has to wait for another participant.\n\nMax 2 hours · 5 minutes to answer each question · No answer = 10-hour mute and removal from this session.`,
         mentions: session.players
     });
-    setTimeout(() => askNextQuestion(sock, chatId), 2500);
+
+    // Dispatch each participant's first question together; each then progresses independently.
+    await Promise.all(session.players.map(player => sendPlayerQuestion(sock, chatId, player)));
 }
 async function eligibleMembers(sock, chatId) {
     const meta = await sock.groupMetadata(chatId);
