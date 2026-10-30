@@ -60,3 +60,20 @@ export function classifyDeparture(update, participant) {
   const normalize = jid => String(jid || '').split(':')[0].replace(/@s\.whatsapp\.net$|@lid$/,'');
   return normalize(actor) === normalize(participant) ? 'left' : 'removed';
 }
+
+
+export const memberRemovedReturnMessages = [
+  'Stubborn goat, you don come back. Sha behave this time. 😂',
+  'See who don find road come back again. No wahala, behave yourself. 😂',
+  'You thought we would not notice your return? Welcome back, troublemaker. 😭',
+  'Omo, security don release you? This time, use your head small. 😂',
+  'You don collect second chance. No come turn am to third chance. 😏'
+];
+
+export const memberLeftReturnMessages = [
+  'Pastor pikin, you don come back. You sure say you go fit handle the pressure? 😂',
+  'Ah! The pressure outside no gree you? Welcome back. 😭',
+  'You don miss us abi na the wahala you miss? 😂',
+  'Welcome back, saint. Hope say outside don teach you patience. 😂',
+  'You don return to the congregation. Hope your testimony ready? 🙏🏽😂'
+];
