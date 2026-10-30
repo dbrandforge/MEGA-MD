@@ -70,8 +70,8 @@ export default {
                 || message.message?.videoMessage?.caption
                 || '';
             const reason = rawCommandText
-                .replace(/^\\s*\\S+\\s*/, '')
-                .replace(/@\\d+/g, '')
+                .replace(/^\s*\S+\s*/, '')
+                .replace(/@\d+/g, '')
                 .trim() || 'No reason provided.';
 
             const warnings = await getWarnings();
@@ -89,6 +89,7 @@ export default {
                 `👤 *User:* @${userToWarn.split('@')[0]}\n` +
                 `⚠️ *Warnings:* ${count}/${maxWarns}\n` +
                 `👑 *By:* @${senderId.split('@')[0]}\n` +
+                `📝 *Reason:* ${reason}\\n` +
                 `📅 *Date:* ${new Date().toLocaleString()}\n\n` +
                 (count >= maxWarns
                     ? `🔇 *Action:* Soft-muted for ${hours} hours (messages will be deleted).`
