@@ -38,6 +38,12 @@ export async function handleNewMember(sock, chatId, participants) {
                 : null;
             const mention = `@${userId.split('@')[0]}`;
 
+            // Register immediately on the join event, before sending welcome messages.
+            // This prevents a fast first message from arriving before the pending record exists.
+            const pending = await getPendingIntros(chatId);
+            pending[userId] = { joinedAt: Date.now(), reminded: false, introduced: false };
+            await savePendingIntros(chatId, pending);
+
             if (returningType) {
                 const bank = returningType === 'removed'
                     ? memberRemovedReturnMessages
@@ -76,9 +82,6 @@ export async function handleNewMember(sock, chatId, participants) {
 
             await logWelcome(chatId, userId).catch(() => {});
 
-            const pending = await getPendingIntros(chatId);
-            pending[userId] = { joinedAt: Date.now(), reminded: false, introduced: false };
-            await savePendingIntros(chatId, pending);
             history[userId] = { everJoined: true, status: 'active', firstJoinedAt: Date.now(), lastJoinedAt: Date.now() };
             await store.saveSetting(chatId, MEMBER_HISTORY_KEY, history);
 
