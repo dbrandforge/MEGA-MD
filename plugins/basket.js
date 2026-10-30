@@ -3,6 +3,7 @@ import store from '../lib/lightweight_store.js';
 import { getUserGender } from './gender.js';
 import { isGameAllowed } from './daylock.js';
 import config from '../config.js';
+import isAdmin from '../lib/isAdmin.js';
 
 const USED_KEY = 'devilsBasketUsed';
 const GENDER_PROMPT = 'You need to set your gender first before Devil’s Basket.\n\nType:\n.gender guy\nor\n.gender lady\n\n(You can only set this once. After that only an admin can change it.)';
@@ -38,8 +39,12 @@ export default {
         const { chatId, senderId, channelInfo, isSenderAdmin, senderIsOwnerOrSudo, isOwnerOrSudoCheck } = context;
         try {
             const input = (args[0] || '').toLowerCase();
-            const canAdmin = !!(isSenderAdmin || senderIsOwnerOrSudo || isOwnerOrSudoCheck ||
+            let canAdmin = !!(isSenderAdmin || senderIsOwnerOrSudo || isOwnerOrSudoCheck ||
                 message.key.fromMe || numMatch(senderId, config.ownerNumber));
+            if (!canAdmin && (input === 'list' || input === 'used' || input === 'reset' || input === 'clear')) {
+                const status = await isAdmin(sock, chatId, senderId);
+                canAdmin = !!status.isSenderAdmin;
+            }
 
             const used = await getUsed(chatId);
             if (input === 'list' || input === 'used') {
