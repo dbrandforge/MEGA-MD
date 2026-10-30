@@ -10,6 +10,12 @@ const MYSQL_URL = process.env.MYSQL_URL;
 const SQLITE_URL = process.env.DB_URL;
 const HAS_DB = !!(MONGO_URL || POSTGRES_URL || MYSQL_URL || SQLITE_URL);
 const USER_GROUP_DATA = dataFile('userGroupData.json');
+const CHAT_MEMORY_FILE = dataFile('chatbotConversationMemory.json');
+const PROVIDER_TIMEOUT_MS = 7500;
+const PROVIDER_TOTAL_BUDGET_MS = 20000;
+const PROVIDER_COOLDOWN_MS = 30000;
+const MAX_REPLY_CHARS = 1200;
+const providerHealth = new Map();
 
 // Rolling, per-group transcript with speaker labels for contextual replies.
 const chatMemory = { messages: new Map(), loaded: new Set() };
@@ -62,14 +68,17 @@ async function saveUserGroupData(data) {
 async function loadChatHistory(chatId) {
     if (chatMemory.loaded.has(chatId)) return chatMemory.messages.get(chatId) || [];
     try {
-        // Store each group's bounded transcript under its own setting key. The
-        // wrapper also keeps the lightweight file backend and DB adapters aligned.
-        const saved = await store.getSetting(chatId, MEMORY_SETTING);
-        let history = Array.isArray(saved) ? saved : (Array.isArray(saved?.[chatId]) ? saved[chatId] : []);
-        // Migrate the previous shared-map format when using a database adapter.
-        if (!history.length) {
-            const legacy = await store.getSetting('global', MEMORY_SETTING);
-            if (Array.isArray(legacy?.[chatId])) history = legacy[chatId];
+        let history = [];
+        if (HAS_DB) {
+            const saved = await store.getSetting(chatId, MEMORY_SETTING);
+            history = Array.isArray(saved) ? saved : (Array.isArray(saved?.[chatId]) ? saved[chatId] : []);
+            if (!history.length) {
+                const legacy = await store.getSetting('global', MEMORY_SETTING);
+                if (Array.isArray(legacy?.[chatId])) history = legacy[chatId];
+            }
+        } else if (fs.existsSync(CHAT_MEMORY_FILE)) {
+            const saved = JSON.parse(fs.readFileSync(CHAT_MEMORY_FILE, 'utf8'));
+            history = Array.isArray(saved?.[chatId]) ? saved[chatId] : [];
         }
         const fresh = history
             .filter(item => item && typeof item.text === 'string' &&
@@ -90,7 +99,26 @@ async function saveChatHistory(chatId, history) {
             .filter(item => item && typeof item.text === 'string' &&
                 (!item.at || Date.now() - item.at <= MAX_HISTORY_AGE_MS))
             .slice(-MAX_HISTORY_MESSAGES);
-        await store.saveSetting(chatId, MEMORY_SETTING, { [chatId]: fresh });
+        chatMemory.messages.set(chatId, fresh);
+        if (HAS_DB) {
+            await store.saveSetting(chatId, MEMORY_SETTING, fresh);
+        } else {
+            const dir = path.dirname(CHAT_MEMORY_FILE);
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+            let allGroups = {};
+            try {
+                if (fs.existsSync(CHAT_MEMORY_FILE)) {
+                    const parsed = JSON.parse(fs.readFileSync(CHAT_MEMORY_FILE, 'utf8'));
+                    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) allGroups = parsed;
+                }
+            } catch (readError) {
+                console.warn('[Chatbot] Existing memory file could not be parsed; rebuilding it:', readError.message);
+            }
+            allGroups[chatId] = fresh;
+            const tempFile = CHAT_MEMORY_FILE + '.tmp';
+            fs.writeFileSync(tempFile, JSON.stringify(allGroups));
+            fs.renameSync(tempFile, CHAT_MEMORY_FILE);
+        }
     } catch (error) {
         console.warn('[Chatbot] Could not save persistent conversation memory:', error.message);
     }
@@ -137,9 +165,12 @@ ${userMessage}
 
 Reply as Forge Bot in context. Output only the message to send.`;
 
+    const startedAt = Date.now();
     for (const api of API_ENDPOINTS) {
+        if (Date.now() - startedAt >= PROVIDER_TOTAL_BUDGET_MS) break;
+        if (providerHealth.get(api.name)?.retryAfter > Date.now()) continue;
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 12000);
+        const timeout = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
         try {
             const requestUrl = api.url(prompt);
             // Avoid sending an oversized GET query to providers with strict URL limits.
@@ -154,6 +185,7 @@ Reply as Forge Bot in context. Output only the message to send.`;
             });
             if (!res.ok) {
                 console.warn(`[Chatbot] ${api.name} returned HTTP ${res.status}.`);
+                providerHealth.set(api.name, { retryAfter: Date.now() + PROVIDER_COOLDOWN_MS });
                 continue;
             }
             const raw = await res.text();
@@ -162,21 +194,29 @@ Reply as Forge Bot in context. Output only the message to send.`;
                 data = JSON.parse(raw);
             } catch {
                 console.warn(`[Chatbot] ${api.name} returned non-JSON content (${raw.length} chars).`);
+                providerHealth.set(api.name, { retryAfter: Date.now() + PROVIDER_COOLDOWN_MS });
                 continue;
             }
             const result = api.parse(data);
-            if (typeof result === 'string' && result.trim().length > 1) {
-                console.info(`[Chatbot] ${api.name} generated a response successfully.`);
-                return result.trim()
+            if (typeof result === 'string' && result.trim().length > 1 && !data?.error) {
+                const cleaned = result.trim()
                     .replace(/qasim/gi, 'Forge')
                     .replace(/as an AI/gi, '')
                     .replace(/I am an AI/gi, '')
+                    .replace(/^\s*Forge Bot:\s*/i, '')
                     .trim();
+                if (cleaned.length > 1) {
+                    providerHealth.delete(api.name);
+                    console.info(`[Chatbot] ${api.name} generated a response successfully.`);
+                    return cleaned.slice(0, MAX_REPLY_CHARS);
+                }
             }
-            console.warn(`[Chatbot] ${api.name} returned JSON without a recognised reply field. Keys: ${Object.keys(data || {}).join(', ') || 'none'}.`);
+            console.warn(`[Chatbot] ${api.name} returned JSON without a usable reply. Keys: ${Object.keys(data || {}).join(', ') || 'none'}.`);
+            providerHealth.set(api.name, { retryAfter: Date.now() + PROVIDER_COOLDOWN_MS });
         } catch (error) {
-            const reason = error.name === 'AbortError' ? 'timed out after 12 seconds' : error.message;
+            const reason = error.name === 'AbortError' ? `timed out after ${PROVIDER_TIMEOUT_MS / 1000} seconds` : error.message;
             console.warn(`[Chatbot] ${api.name} request failed: ${reason}.`);
+            providerHealth.set(api.name, { retryAfter: Date.now() + PROVIDER_COOLDOWN_MS });
         } finally {
             clearTimeout(timeout);
         }
@@ -223,7 +263,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             || message.message?.videoMessage?.caption
             || '';
         const cleanForHistory = originalText
-            .replace(new RegExp(`@${botNumber}`, 'g'), '')
+            .replace(botNumber ? new RegExp(`@${botNumber}`, 'g') : /$^/, '')
             .trim();
 
         const history = await loadChatHistory(chatId);
@@ -246,7 +286,10 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         // Keep the preset bank only as a fallback if all providers fail.
         const speakerName = message.pushName || senderId.split('@')[0];
         let response = await tryAI(cleanForHistory, history, speakerName);
-        if (!response) response = pickLibraryReply(cleanForHistory);
+        if (!response) {
+            console.warn('[Chatbot] All AI providers unavailable; using curated fallback library.');
+            response = pickLibraryReply(cleanForHistory);
+        }
 
         await sock.sendMessage(chatId, { text: response }, { quoted: message });
 
