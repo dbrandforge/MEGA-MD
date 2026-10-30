@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
-import { classifyIntent, ensureResponseEmoji, pickLibraryReply } from '../data/chatbotResponseLibrary.js';
+import { classifyIntent, ensureResponseEmoji, pickFallbackReply, pickLibraryReply } from '../data/chatbotResponseLibrary.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -299,7 +299,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             response = await tryAI(cleanForHistory, history, speakerName);
             if (!response) {
                 console.warn('[Chatbot] AI providers unavailable and no matching preset; using general bank fallback.');
-                response = pickLibraryReply(''); 
+                response = pickFallbackReply(previousBotReply); 
             } else {
                 response = ensureResponseEmoji(response, cleanForHistory);
             }
