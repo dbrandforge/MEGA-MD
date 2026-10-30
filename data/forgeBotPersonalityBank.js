@@ -1,4 +1,5 @@
 import { classifyIntent, ensureResponseEmoji, pickLibraryReply } from './chatbotResponseLibrary.js';
+import { personalityBankExpansion } from './personalityBankExpansion.js';
 
 // Playful roast energy; never target protected traits or turn genuine distress into a joke.
 export const personalityBank = {
@@ -144,6 +145,11 @@ export const personalityBank = {
     "Sister, you came with premium gbas gbos today. 😭","Madam, allow the rest of us to breathe small. 😂"
   ]
 };
+
+// Merge the expanded curated pools without replacing the established core replies.
+for (const [category, replies] of Object.entries(personalityBankExpansion)) {
+  personalityBank[category] = [...(personalityBank[category] || []), ...replies];
+}
 
 const phraseRules = [
   { key: 'departure', patterns: [/\byou dey go naw\b/i,/\byou dey go now\b/i,/\bi am going\b/i,/\bi'm going\b/i,/^bye\b/i,/\bgotta go\b/i] },

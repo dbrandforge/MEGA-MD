@@ -6,11 +6,18 @@ describe('Forge Bot personality bank', () => {
     for (const category of ['greeting','financialNeed','departure','teasing','savage','banter','boredom','relationship','wellbeing','pidgin','yoruba','fallback']) {
       expect(personalityBank[category].length).toBeGreaterThanOrEqual(6);
     }
-    expect(Object.values(getPersonalityBankStats()).reduce((a,b) => a+b, 0)).toBeGreaterThan(130);
+    expect(Object.values(getPersonalityBankStats()).reduce((a,b) => a+b, 0)).toBeGreaterThan(220);
+    for (const category of ['flirty','thanks','apology','agreement','disagreement','workLife','debate','entertainment','nigerianCulture','storytelling','hypotheticals','group','random']) {
+      expect(personalityBank[category].length).toBeGreaterThanOrEqual(8);
+    }
   });
 
   it('recognises short Nigerian conversational messages without clarification loops', () => {
     expect(pickPersonalityReply('Yoo').length).toBeGreaterThan(5);
+    expect(personalityBank.flirty).toContain(pickPersonalityReply('I like you'));
+    expect(personalityBank.thanks).toContain(pickPersonalityReply('Thank you'));
+    expect(personalityBank.workLife).toContain(pickPersonalityReply('I have a deadline at work'));
+    expect(personalityBank.hypotheticals).toContain(pickPersonalityReply('What if you could travel anywhere?'));
     expect(personalityBank.departure.join(' ')).toMatch(/block you now/i);
     expect(personalityBank.financialNeed.join(' ')).toMatch(/OPay/i);
     expect(personalityBank.financialNeed.join(' ')).toMatch(/PalmPay/i);
