@@ -162,23 +162,38 @@ export const responseLibrary = {
 };
 
 for (const [category, entries] of Object.entries(responseExpansion)) {
-  if (Array.isArray(responseLibrary[category])) responseLibrary[category].push(...entries);
+  if (!Array.isArray(responseLibrary[category])) responseLibrary[category] = [];
+  responseLibrary[category].push(...entries);
 }
 
 export const intentRules = [
+  // Specific emotional/social intents precede broad language and generic conversation matches.
+  { intent: 'disagreement', patterns: [/\b(i disagree|not true|you're wrong|you are wrong|i don't think so|i don't agree|that is incorrect)\b/i] },
+  { intent: 'relationships', patterns: [/\b(relationship|dating|date|crush|boyfriend|girlfriend|partner|situationship|talking stage|breakup|break up|marriage|married|cheating|red flag|green flag)\b/i] },
+  { intent: 'friendship', patterns: [/\b(friendship|best friend|my friend|friends|falling out|beef with|betrayed|loyalty|fake friend)\b/i] },
+  { intent: 'boundaries', patterns: [/\b(boundary|boundaries|set limits|say no|personal space|respect my|access to me)\b/i] },
+  { intent: 'empathy', patterns: [/\b(i feel|i'm sad|i am sad|i'm tired|i am tired|rough day|heartbroken|stressed|depressed|anxious|overwhelmed|grieving|lost someone)\b/i] },
+  { intent: 'advice', patterns: [/\b(what should i do|need advice|advise me|any advice|what do you suggest|help me decide|should i)\b/i] },
+  { intent: 'workLife', patterns: [/\b(work|workplace|office|career|job|boss|colleague|client|salary|business|project|deadline|professional|volunteer|interview)\b/i] },
+  { intent: 'debate', patterns: [/\b(debate|unpopular opinion|hot take|i disagree|prove that|argument|controversial|what's your opinion|what is your opinion|do you think)\b/i] },
+  { intent: 'entertainment', patterns: [/\b(movie|film|series|episode|netflix|music|song|artist|album|concert|celebrity|actor|actress|football|match|show|anime|series)\b/i] },
+  { intent: 'nigerianCulture', patterns: [/\b(nigeria|naija|yoruba culture|igbo culture|hausa|tradition|tribe|state of origin|jollof|amala|egusi|suya|owambe|aso ebi)\b/i] },
+  { intent: 'storytelling', patterns: [/\b(let me tell you|story time|something happened|guess what happened|you won't believe|you will not believe|back in the day|one time)\b/i] },
+  { intent: 'hypotheticals', patterns: [/\b(what if|imagine if|suppose|hypothetically|would you rather|if you had|if you could|choose one)\b/i] },
+  { intent: 'mediaReaction', patterns: [/\b(this picture|this image|this video|this clip|look at this|see this|what do you see|caption|screenshot|meme)\b/i] },
+  { intent: 'humour', patterns: [/\b(lol|lmao|😂|🤣|that is funny|that's funny|joke|comedy|crack me up)\b/i] },
+  { intent: 'thanks', patterns: [/\b(thank(s| you)|appreciate it|grateful)\b/i] },
+  { intent: 'apology', patterns: [/\b(sorry|my bad|apolog(y|ise|ize)|i apologise|i apologize)\b/i] },
+  { intent: 'agreement', patterns: [/\b(i agree|exactly|true|facts|correct|you are right|na so)\b/i] },
   { intent: 'wellbeing', patterns: [/\bhow are you\b/i, /\bhow you dey\b/i, /\bhow body\b/i, /\bhow far\b/i, /\bhow is your day\b/i] },
   { intent: 'greeting', patterns: [/^\s*(hi|hello|hey|yo|good morning|good afternoon|good evening|good night)\b/i, /\bbawo ni\b/i] },
   { intent: 'clarification', patterns: [/\bwhat do you mean\b/i, /\bexplain\b/i, /\bclarify\b/i, /\bi don't understand\b/i, /\bwhat does that mean\b/i] },
   { intent: 'followup', patterns: [/\bwhy did you say\b/i, /\bwhy\b/i, /\bare you serious\b/i, /\bwhat happened next\b/i, /\bhow come\b/i] },
-  { intent: 'thanks', patterns: [/\bthank(s| you)\b/i, /\bappreciate it\b/i, /\bgrateful\b/i] },
-  { intent: 'apology', patterns: [/\bsorry\b/i, /\bmy bad\b/i, /\bapolog(y|ise|ize)\b/i] },
-  { intent: 'agreement', patterns: [/\b(i agree|exactly|true|facts|correct|you are right|na so)\b/i] },
-  { intent: 'disagreement', patterns: [/\b(i disagree|not true|you're wrong|you are wrong|i don't think so)\b/i] },
-  { intent: 'empathy', patterns: [/\b(i feel|i'm sad|i am sad|i'm tired|i am tired|rough day|heartbroken|stressed|depressed)\b/i] },
   { intent: 'boredom', patterns: [/\b(bored|boring|nothing to do|i'm idle|i am idle)\b/i] },
   { intent: 'group', patterns: [/\b(group|everybody|everyone|hot seat|truth or dare|who is online)\b/i] },
   { intent: 'yoruba', patterns: [/\b(mo n|bawo|kilode|soro|o ti|se o)\b/i] },
-  { intent: 'pidgin', patterns: [/\b(abeg|wetin|dey|na so|omo|yarn|wahala|e choke)\b/i] }
+  { intent: 'pidgin', patterns: [/\b(abeg|wetin|dey|na so|omo|yarn|wahala|e choke)\b/i] },
+  { intent: 'teasing', patterns: [/\b(you are funny|you sef|you no get|see this one|you dey craze)\b/i] }
 ];
 
 export function classifyIntent(text = '') {

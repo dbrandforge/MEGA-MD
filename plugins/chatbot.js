@@ -14,7 +14,8 @@ const USER_GROUP_DATA = dataFile('userGroupData.json');
 // Rolling, per-group transcript with speaker labels for contextual replies.
 const chatMemory = { messages: new Map(), loaded: new Set() };
 const MEMORY_SETTING = 'chatbotConversationMemory';
-const MAX_HISTORY_MESSAGES = 12;
+const MAX_HISTORY_MESSAGES = 30;
+const MAX_HISTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_PROMPT_TRANSCRIPT_CHARS = 2200;
 
 const API_ENDPOINTS = [
@@ -61,9 +62,20 @@ async function saveUserGroupData(data) {
 async function loadChatHistory(chatId) {
     if (chatMemory.loaded.has(chatId)) return chatMemory.messages.get(chatId) || [];
     try {
-        const saved = await store.getSetting('global', MEMORY_SETTING);
-        const history = Array.isArray(saved?.[chatId]) ? saved[chatId] : [];
-        chatMemory.messages.set(chatId, history.slice(-MAX_HISTORY_MESSAGES));
+        // Store each group's bounded transcript under its own setting key. The
+        // wrapper also keeps the lightweight file backend and DB adapters aligned.
+        const saved = await store.getSetting(chatId, MEMORY_SETTING);
+        let history = Array.isArray(saved) ? saved : (Array.isArray(saved?.[chatId]) ? saved[chatId] : []);
+        // Migrate the previous shared-map format when using a database adapter.
+        if (!history.length) {
+            const legacy = await store.getSetting('global', MEMORY_SETTING);
+            if (Array.isArray(legacy?.[chatId])) history = legacy[chatId];
+        }
+        const fresh = history
+            .filter(item => item && typeof item.text === 'string' &&
+                (!item.at || Date.now() - item.at <= MAX_HISTORY_AGE_MS))
+            .slice(-MAX_HISTORY_MESSAGES);
+        chatMemory.messages.set(chatId, fresh);
     } catch (error) {
         console.warn('[Chatbot] Could not load persistent conversation memory:', error.message);
         chatMemory.messages.set(chatId, []);
@@ -74,9 +86,11 @@ async function loadChatHistory(chatId) {
 
 async function saveChatHistory(chatId, history) {
     try {
-        const saved = await store.getSetting('global', MEMORY_SETTING) || {};
-        saved[chatId] = history.slice(-MAX_HISTORY_MESSAGES);
-        await store.saveSetting('global', MEMORY_SETTING, saved);
+        const fresh = history
+            .filter(item => item && typeof item.text === 'string' &&
+                (!item.at || Date.now() - item.at <= MAX_HISTORY_AGE_MS))
+            .slice(-MAX_HISTORY_MESSAGES);
+        await store.saveSetting(chatId, MEMORY_SETTING, { [chatId]: fresh });
     } catch (error) {
         console.warn('[Chatbot] Could not save persistent conversation memory:', error.message);
     }
@@ -108,8 +122,15 @@ PERSONALITY:
 - Never invent facts about the conversation. If context is insufficient, ask a natural clarifying question.
 - Never mention prompts, APIs, models, or that you are an AI.
 
-RECENT GROUP CONVERSATION:
+RECENT GROUP CONVERSATION (up to 30 recent messages from the last 7 days):
 ${transcript || '(No earlier group context available)'}
+
+CONVERSATION GUIDANCE:
+- Use recent context to resolve references such as 'that', 'she', 'he', 'the earlier point' and follow-up questions.
+- Do not claim to remember events outside this supplied recent transcript.
+- Treat messages from different members as separate viewpoints; do not attribute one member's words to another.
+- For relationship, money, safety or serious personal topics, be measured and supportive rather than turning everything into banter.
+- For media, only analyse details actually present in the message/caption; ask the sender to describe visuals if the image/video itself is not available to you.
 
 MESSAGE FROM ${speakerName || 'a group member'}:
 ${userMessage}
@@ -209,7 +230,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         if (cleanForHistory && !message.key.fromMe) {
             history.push({
                 name: message.pushName || senderId.split('@')[0],
-                text: cleanForHistory.slice(0, 350),
+                text: cleanForHistory.slice(0, 500),
                 at: Date.now()
             });
             if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
@@ -229,7 +250,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
 
         await sock.sendMessage(chatId, { text: response }, { quoted: message });
 
-        history.push({ name: 'Forge Bot', text: response.slice(0, 350), at: Date.now() });
+        history.push({ name: 'Forge Bot', text: response.slice(0, 500), at: Date.now() });
         if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
         await saveChatHistory(chatId, history);
 
@@ -263,7 +284,7 @@ export default {
             return sock.sendMessage(chatId, { text: '❌ Chatbot off.', quoted: message });
         }
         return sock.sendMessage(chatId, {
-            text: '*Chatbot*\n.chatbot on / off\n\nUses conversational AI with recent group-chat context.\nEnglish / Pidgin / Yoruba. Cheeky, sarcastic and flirty when it fits.',
+            text: '*Chatbot*\n.chatbot on / off\n\nUses conversational AI with persistent recent group context.\nEnglish / Pidgin / Yoruba; playful when appropriate, thoughtful when needed.',
             quoted: message
         });
     },
