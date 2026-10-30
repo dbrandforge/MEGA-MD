@@ -1,129 +1,94 @@
 import { guysBasket, ladiesBasket } from '../data/devilsBasket.js';
 import store from '../lib/lightweight_store.js';
+import { getUserGender } from './gender.js';
 import { isGameAllowed } from './daylock.js';
 import config from '../config.js';
 
 const USED_KEY = 'devilsBasketUsed';
+const GENDER_PROMPT = 'You need to set your gender first before Devil’s Basket.\n\nType:\n.gender guy\nor\n.gender lady\n\n(You can only set this once. After that only an admin can change it.)';
 
 function numMatch(a, b) {
-    const x = String(a || '').replace(/\D/g, '');
-    const y = String(b || '').replace(/\D/g, '');
+    const x = String(a || '').replace(/\\D/g, '');
+    const y = String(b || '').replace(/\\D/g, '');
     return x && y && (x === y || x.endsWith(y) || y.endsWith(x));
 }
-
-async function getUsedNumbers(chatId) {
-    return (await store.getSetting(chatId, USED_KEY)) || { guys: [], ladies: [] };
+async function getUsed(chatId) {
+    const saved = (await store.getSetting(chatId, USED_KEY)) || {};
+    return { guys: saved.guys || [], ladies: saved.ladies || [] };
 }
-async function saveUsedNumbers(chatId, used) {
+async function saveUsed(chatId, used) {
     await store.saveSetting(chatId, USED_KEY, used);
+}
+function poolFor(gender) {
+    const source = gender === 'lady' ? ladiesBasket : guysBasket;
+    return Object.values(source);
+}
+function usedKey(gender) {
+    return gender === 'lady' ? 'ladies' : 'guys';
 }
 
 export default {
     command: 'basket',
     aliases: ['devil', 'db', 'devilsbasket'],
     category: 'games',
-    description: "Devil's Basket",
+    description: "Devil's Basket — gender-aware random dare",
     usage: '.basket [number] | list | reset',
     groupOnly: true,
     async handler(sock, message, args, context) {
         const { chatId, senderId, channelInfo, isSenderAdmin, senderIsOwnerOrSudo, isOwnerOrSudoCheck } = context;
-
-        const allowed = await isGameAllowed(chatId, 'basket');
-        if (!allowed.ok) {
-            return sock.sendMessage(chatId, { text: allowed.msg, ...channelInfo }, { quoted: message });
-        }
-
         try {
-            const used = await getUsedNumbers(chatId);
             const input = (args[0] || '').toLowerCase();
-
             const canAdmin = !!(isSenderAdmin || senderIsOwnerOrSudo || isOwnerOrSudoCheck ||
                 message.key.fromMe || numMatch(senderId, config.ownerNumber));
 
+            const used = await getUsed(chatId);
             if (input === 'list' || input === 'used') {
-                const g = used.guys?.length ? used.guys.sort((a,b)=>a-b).join(', ') : 'none';
-                const l = used.ladies?.length ? used.ladies.sort((a,b)=>a-b).join(', ') : 'none';
-                const gLeft = Object.keys(guysBasket).filter(n => !used.guys.includes(Number(n))).length;
-                const lLeft = Object.keys(ladiesBasket).filter(n => !used.ladies.includes(Number(n))).length;
+                if (!canAdmin) return sock.sendMessage(chatId, { text: 'Only admins / owner can view the used Basket list.', ...channelInfo }, { quoted: message });
+                const guysLeft = poolFor('guy').length - used.guys.length;
+                const ladiesLeft = poolFor('lady').length - used.ladies.length;
                 return sock.sendMessage(chatId, {
-                    text: `*Devil's Basket — Used numbers*\n\n*Guys used:* ${g}\n*Ladies used:* ${l}\n\nLeft → Guys: ${gLeft} | Ladies: ${lLeft}\n\nAdmin reset: *.basket reset*`,
+                    text: `*Devil’s Basket — Admin status*\\n\\n*Guys used:* ${used.guys.length} | *Remaining:* ${guysLeft}\\n*Ladies used:* ${used.ladies.length} | *Remaining:* ${ladiesLeft}\\n\\nAdmin reset: *.basket reset*`,
                     ...channelInfo
                 }, { quoted: message });
             }
-
             if (input === 'reset' || input === 'clear') {
-                if (!canAdmin) {
-                    return sock.sendMessage(chatId, {
-                        text: 'Only admins / owner can reset Devil\'s Basket.',
-                        ...channelInfo
-                    }, { quoted: message });
+                if (!canAdmin) return sock.sendMessage(chatId, { text: "Only admins / owner can reset Devil's Basket.", ...channelInfo }, { quoted: message });
+                await saveUsed(chatId, { guys: [], ladies: [] });
+                return sock.sendMessage(chatId, { text: "✅ Devil's Basket reset. Both gender pools are available again.", ...channelInfo }, { quoted: message });
+            }
+
+            const allowed = await isGameAllowed(chatId, 'basket');
+            if (!allowed.ok) return sock.sendMessage(chatId, { text: allowed.msg, ...channelInfo }, { quoted: message });
+
+            const gender = await getUserGender(senderId);
+            if (!gender) return sock.sendMessage(chatId, { text: GENDER_PROMPT, ...channelInfo }, { quoted: message });
+
+            const pool = poolFor(gender);
+            const key = usedKey(gender);
+            const available = pool.map((dare, index) => ({ dare, number: index + 1 })).filter(item => !used[key].includes(item.number));
+            if (!available.length) return sock.sendMessage(chatId, { text: `All ${gender} Basket dares have been used. Ask an admin to run *.basket reset*.`, ...channelInfo }, { quoted: message });
+
+            let selected;
+            if (input) {
+                const number = Number.parseInt(input, 10);
+                if (!Number.isInteger(number) || number < 1 || number > pool.length) {
+                    return sock.sendMessage(chatId, { text: `Your ${gender} Basket has numbers 1–${pool.length}. Use *.basket* for a random dare.`, ...channelInfo }, { quoted: message });
                 }
-                await saveUsedNumbers(chatId, { guys: [], ladies: [] });
-                return sock.sendMessage(chatId, {
-                    text: '✅ Devil\'s Basket reset. All numbers 1–100 are free again.',
-                    ...channelInfo
-                }, { quoted: message });
+                if (used[key].includes(number)) return sock.sendMessage(chatId, { text: `Your Basket number ${number} has already been used. Try another number or ask an admin to reset.`, ...channelInfo }, { quoted: message });
+                selected = { number, dare: pool[number - 1] };
+            } else {
+                selected = available[Math.floor(Math.random() * available.length)];
             }
 
-            if (!args.length) {
-                const guysLeft = Object.keys(guysBasket).filter(n => !used.guys.includes(Number(n))).length;
-                const ladiesLeft = Object.keys(ladiesBasket).filter(n => !used.ladies.includes(Number(n))).length;
-                return sock.sendMessage(chatId, {
-                    text: `*Devil's Basket* 🎰\n\n*Guys:* 1–50 (${guysLeft} left)\n*Ladies:* 51–100 (${ladiesLeft} left)\n\n.basket 23\n.basket guys\n.basket ladies\n.basket list\n.basket reset *(admin)*`,
-                    ...channelInfo
-                }, { quoted: message });
-            }
-
-            if (['guys','guy','male'].includes(input)) {
-                const available = Object.keys(guysBasket).filter(n => !used.guys.includes(Number(n)));
-                if (!available.length) return sock.sendMessage(chatId, { text: 'All guy numbers used! .basket reset', ...channelInfo }, { quoted: message });
-                const num = Number(available[Math.floor(Math.random() * available.length)]);
-                used.guys.push(num);
-                await saveUsedNumbers(chatId, used);
-                return sock.sendMessage(chatId, {
-                    text: `*Devil's Basket — Guys #${num}*\n\n@${senderId.split('@')[0]}\n\n${guysBasket[num]}\n\nComplete this. Failure = 10h mute.`,
-                    mentions: [senderId], ...channelInfo
-                }, { quoted: message });
-            }
-
-            if (['ladies','lady','female','girl'].includes(input)) {
-                const available = Object.keys(ladiesBasket).filter(n => !used.ladies.includes(Number(n)));
-                if (!available.length) return sock.sendMessage(chatId, { text: 'All lady numbers used! .basket reset', ...channelInfo }, { quoted: message });
-                const num = Number(available[Math.floor(Math.random() * available.length)]);
-                used.ladies.push(num);
-                await saveUsedNumbers(chatId, used);
-                return sock.sendMessage(chatId, {
-                    text: `*Devil's Basket — Ladies #${num}*\n\n@${senderId.split('@')[0]}\n\n${ladiesBasket[num]}\n\nComplete this. Failure = 10h mute.`,
-                    mentions: [senderId], ...channelInfo
-                }, { quoted: message });
-            }
-
-            const num = parseInt(input);
-            if (isNaN(num) || num < 1 || num > 100) {
-                return sock.sendMessage(chatId, { text: 'Choose 1–100, or .basket list / reset', ...channelInfo }, { quoted: message });
-            }
-
-            if (num <= 50) {
-                if (used.guys.includes(num)) return sock.sendMessage(chatId, { text: `Number ${num} already used.`, ...channelInfo }, { quoted: message });
-                used.guys.push(num);
-                await saveUsedNumbers(chatId, used);
-                return sock.sendMessage(chatId, {
-                    text: `*Devil's Basket — Guys #${num}*\n\n@${senderId.split('@')[0]}\n\n${guysBasket[num]}\n\nComplete this. Failure = 10h mute.`,
-                    mentions: [senderId], ...channelInfo
-                }, { quoted: message });
-            }
-
-            if (used.ladies.includes(num)) return sock.sendMessage(chatId, { text: `Number ${num} already used.`, ...channelInfo }, { quoted: message });
-            used.ladies.push(num);
-            await saveUsedNumbers(chatId, used);
+            used[key].push(selected.number);
+            await saveUsed(chatId, used);
             return sock.sendMessage(chatId, {
-                text: `*Devil's Basket — Ladies #${num}*\n\n@${senderId.split('@')[0]}\n\n${ladiesBasket[num]}\n\nComplete this. Failure = 10h mute.`,
+                text: `*Devil’s Basket — ${gender === 'lady' ? 'Ladies' : 'Guys'} #${selected.number}* 🎰\\n\\n@${senderId.split('@')[0]}\\n\\n${selected.dare}\\n\\nComplete this. Failure = 10h mute.`,
                 mentions: [senderId], ...channelInfo
             }, { quoted: message });
-
         } catch (error) {
             console.error("Devil's Basket error:", error);
-            await sock.sendMessage(chatId, { text: "Something went wrong.", ...channelInfo }, { quoted: message });
+            await sock.sendMessage(chatId, { text: 'Something went wrong.', ...channelInfo }, { quoted: message });
         }
     }
 };
