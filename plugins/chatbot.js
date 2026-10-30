@@ -14,6 +14,7 @@ const USER_GROUP_DATA = dataFile('userGroupData.json');
 // Rolling, per-group transcript with speaker labels for contextual replies.
 const chatMemory = { messages: new Map() };
 const MAX_HISTORY_MESSAGES = 12;
+const MAX_PROMPT_TRANSCRIPT_CHARS = 2200;
 
 const API_ENDPOINTS = [
     {
@@ -67,7 +68,8 @@ async function showTyping(sock, chatId) {
 async function tryAI(userMessage, history, speakerName) {
     const transcript = history.slice(-MAX_HISTORY_MESSAGES)
         .map(item => `${item.name}: ${item.text}`)
-        .join('\n');
+        .join('\n')
+        .slice(-MAX_PROMPT_TRANSCRIPT_CHARS);
 
     const prompt = `You are Forge Bot, a real-feeling participant in the Mature Minded WhatsApp group.
 
@@ -93,19 +95,42 @@ Reply as Forge Bot in context. Output only the message to send.`;
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 12000);
         try {
-            const res = await fetch(api.url(prompt), { signal: controller.signal });
-            if (!res.ok) continue;
-            const data = await res.json();
+            const requestUrl = api.url(prompt);
+            // Avoid sending an oversized GET query to providers with strict URL limits.
+            if (requestUrl.length > 7000) {
+                console.warn(`[Chatbot] ${api.name} skipped: request URL too long (${requestUrl.length} chars).`);
+                continue;
+            }
+            const res = await fetch(requestUrl, {
+                method: 'GET',
+                headers: { accept: 'application/json' },
+                signal: controller.signal
+            });
+            if (!res.ok) {
+                console.warn(`[Chatbot] ${api.name} returned HTTP ${res.status}.`);
+                continue;
+            }
+            const raw = await res.text();
+            let data;
+            try {
+                data = JSON.parse(raw);
+            } catch {
+                console.warn(`[Chatbot] ${api.name} returned non-JSON content (${raw.length} chars).`);
+                continue;
+            }
             const result = api.parse(data);
             if (typeof result === 'string' && result.trim().length > 1) {
+                console.info(`[Chatbot] ${api.name} generated a response successfully.`);
                 return result.trim()
                     .replace(/qasim/gi, 'Forge')
                     .replace(/as an AI/gi, '')
                     .replace(/I am an AI/gi, '')
                     .trim();
             }
-        } catch {
-            // Try the next configured provider.
+            console.warn(`[Chatbot] ${api.name} returned JSON without a recognised reply field. Keys: ${Object.keys(data || {}).join(', ') || 'none'}.`);
+        } catch (error) {
+            const reason = error.name === 'AbortError' ? 'timed out after 12 seconds' : error.message;
+            console.warn(`[Chatbot] ${api.name} request failed: ${reason}.`);
         } finally {
             clearTimeout(timeout);
         }
