@@ -263,11 +263,20 @@ export function ensureResponseEmoji(reply = '', text = '') {
 
 export function pickLibraryReply(text = '', previousReply = '') {
   const intent = classifyIntent(text);
+  if (intent === 'fallback') return null;
   const replies = responseLibrary[intent];
   if (!Array.isArray(replies) || !replies.length) return null;
   const alternatives = replies.filter(reply => reply !== previousReply);
   const pool = alternatives.length ? alternatives : replies;
   return ensureResponseEmoji(pool[Math.floor(Math.random() * pool.length)], text);
+}
+
+export function pickFallbackReply(previousReply = '') {
+  const replies = responseLibrary.fallback || [];
+  const alternatives = replies.filter(reply => reply !== previousReply);
+  const pool = alternatives.length ? alternatives : replies;
+  if (!pool.length) return ensureResponseEmoji("I'm here. Give me a little more to work with.", '');
+  return ensureResponseEmoji(pool[Math.floor(Math.random() * pool.length)], '');
 }
 
 export function getResponseLibraryStats() {
