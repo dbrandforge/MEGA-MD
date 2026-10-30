@@ -90,7 +90,7 @@ async function handleMemberDeparture(sock, chatId, update) {
             continue;
         }
 
-                const mention = `@${userId.split('@')[0]}`;
+        const mention = `@${userId.split('@')[0]}`;
         const templateBank = departureType === 'left' ? memberLeftMessages : memberRemovedMessages;
         const indexes = (await store.getSetting(chatId, DEPARTURE_INDEX_KEY)) || {};
         const key = departureType;
