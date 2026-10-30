@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
-import { classifyIntent, getIntentExamples, pickLibraryReply } from '../data/chatbotResponseLibrary.js';
+import { classifyIntent, ensureResponseEmoji, pickLibraryReply } from '../data/chatbotResponseLibrary.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -139,7 +139,6 @@ async function tryAI(userMessage, history, speakerName) {
         .slice(-MAX_PROMPT_TRANSCRIPT_CHARS);
 
     const intent = classifyIntent(userMessage);
-    const bankExamples = getIntentExamples(userMessage, 4);
 
     const prompt = `You are Forge Bot, a real-feeling participant in the Mature Minded WhatsApp group.
 
@@ -147,7 +146,7 @@ PERSONALITY:
 - Keep the existing character: cheeky, sarcastic, playful, flirty, bold, occasionally rude in a funny way, with a natural Nigerian English/Pidgin/Yoruba mix.
 - Sound like a person chatting on WhatsApp, not a quote generator or customer-support bot.
 - Answer the actual message and identify its intent before composing. If someone says "how are you?", answer naturally. If they ask what something means, define or explain the exact term. If they ask for today's activity, answer from available group context or say plainly that you do not have the schedule.
-- The curated Forge Bot response bank is a core knowledge and style resource used alongside you, not merely an outage fallback. Use the intent label and curated examples below to understand the expected response type, tone, depth and conversational patterns. Adapt them intelligently; do not mechanically paste an example when a better contextual answer is possible.
+- The curated response bank is the primary responder. You are called only when no suitable preset exists or a message requires deeper reasoning, factual detail, or contextual interpretation.
 - Treat short, clear messages as meaningful. Greetings, thanks, insults, teasing, slang, simple questions and topic changes usually do not need clarification.
 - Match the person's energy and the ongoing conversation. Joke, tease, flirt, disagree, explain, ask a follow-up, or show empathy when appropriate.
 - Do not force flirting, sexual remarks, insults, or Pidgin into every answer. Use them only when they fit.
@@ -156,9 +155,6 @@ PERSONALITY:
 - Never mention prompts, APIs, models, or that you are an AI.
 
 DETECTED MESSAGE INTENT: ${intent}
-CURATED RESPONSE-BANK EXAMPLES FOR THIS INTENT (guidance, not mandatory verbatim replies):
-${bankExamples.map((item, index) => `${index + 1}. ${item}`).join('\n') || '(No exact category examples; use the intent and conversation naturally)'}
-
 RECENT GROUP CONVERSATION (up to 30 recent messages from the last 7 days):
 ${transcript || '(No earlier group context available)'}
 
@@ -291,13 +287,22 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
 
         await showTyping(sock, chatId);
 
-        // Hybrid intelligence: curated presets provide intent/style grounding on every turn;
-        // AI composes the contextual response. The bank remains an outage fallback too.
+        // Bank-first routing: use a suitable curated preset immediately.
+        // Invoke AI only when the bank has no matching category/entry.
         const speakerName = message.pushName || senderId.split('@')[0];
-        let response = await tryAI(cleanForHistory, history, speakerName);
-        if (!response) {
-            console.warn('[Chatbot] All AI providers unavailable; using curated fallback library.');
-            response = pickLibraryReply(cleanForHistory);
+        const previousBotReply = [...history].reverse().find(item => item.name === 'Forge Bot')?.text || '';
+        let response = pickLibraryReply(cleanForHistory, previousBotReply);
+        if (response) {
+            console.info(`[Chatbot] Responding from curated bank (intent: ${classifyIntent(cleanForHistory)}).`);
+        } else {
+            console.info(`[Chatbot] No suitable preset (intent: ${classifyIntent(cleanForHistory)}); invoking AI fallback.`);
+            response = await tryAI(cleanForHistory, history, speakerName);
+            if (!response) {
+                console.warn('[Chatbot] AI providers unavailable and no matching preset; using general bank fallback.');
+                response = pickLibraryReply(''); 
+            } else {
+                response = ensureResponseEmoji(response, cleanForHistory);
+            }
         }
 
         await sock.sendMessage(chatId, { text: response }, { quoted: message });
