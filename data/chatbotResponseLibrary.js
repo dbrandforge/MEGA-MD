@@ -166,19 +166,19 @@ for (const [category, entries] of Object.entries(responseExpansion)) {
 }
 
 export const intentRules = [
-  { intent: 'wellbeing', patterns: [/\\bhow are you\\b/i, /\\bhow you dey\\b/i, /\\bhow body\\b/i, /\\bhow far\\b/i, /\\bhow is your day\\b/i] },
-  { intent: 'greeting', patterns: [/^\\s*(hi|hello|hey|yo|good morning|good afternoon|good evening|good night)\\b/i, /\\bbawo ni\\b/i] },
-  { intent: 'clarification', patterns: [/\\bwhat do you mean\\b/i, /\\bexplain\\b/i, /\\bclarify\\b/i, /\\bi don't understand\\b/i, /\\bwhat does that mean\\b/i] },
-  { intent: 'followup', patterns: [/\\bwhy did you say\\b/i, /\\bwhy\\b/i, /\\bare you serious\\b/i, /\\bwhat happened next\\b/i, /\\bhow come\\b/i] },
-  { intent: 'thanks', patterns: [/\\bthank(s| you)\\b/i, /\\bappreciate it\\b/i, /\\bgrateful\\b/i] },
-  { intent: 'apology', patterns: [/\\bsorry\\b/i, /\\bmy bad\\b/i, /\\bapolog(y|ise|ize)\\b/i] },
-  { intent: 'agreement', patterns: [/\\b(i agree|exactly|true|facts|correct|you are right|na so)\\b/i] },
-  { intent: 'disagreement', patterns: [/\\b(i disagree|not true|you're wrong|you are wrong|i don't think so)\\b/i] },
-  { intent: 'empathy', patterns: [/\\b(i feel|i'm sad|i am sad|i'm tired|i am tired|rough day|heartbroken|stressed|depressed)\\b/i] },
-  { intent: 'boredom', patterns: [/\\b(bored|boring|nothing to do|i'm idle|i am idle)\\b/i] },
-  { intent: 'group', patterns: [/\\b(group|everybody|everyone|hot seat|truth or dare|who is online)\\b/i] },
-  { intent: 'yoruba', patterns: [/\\b(mo n|bawo|kilode|soro|o ti|se o)\\b/i] },
-  { intent: 'pidgin', patterns: [/\\b(abeg|wetin|dey|na so|omo|yarn|wahala|e choke)\\b/i] }
+  { intent: 'wellbeing', patterns: [/\bhow are you\b/i, /\bhow you dey\b/i, /\bhow body\b/i, /\bhow far\b/i, /\bhow is your day\b/i] },
+  { intent: 'greeting', patterns: [/^\s*(hi|hello|hey|yo|good morning|good afternoon|good evening|good night)\b/i, /\bbawo ni\b/i] },
+  { intent: 'clarification', patterns: [/\bwhat do you mean\b/i, /\bexplain\b/i, /\bclarify\b/i, /\bi don't understand\b/i, /\bwhat does that mean\b/i] },
+  { intent: 'followup', patterns: [/\bwhy did you say\b/i, /\bwhy\b/i, /\bare you serious\b/i, /\bwhat happened next\b/i, /\bhow come\b/i] },
+  { intent: 'thanks', patterns: [/\bthank(s| you)\b/i, /\bappreciate it\b/i, /\bgrateful\b/i] },
+  { intent: 'apology', patterns: [/\bsorry\b/i, /\bmy bad\b/i, /\bapolog(y|ise|ize)\b/i] },
+  { intent: 'agreement', patterns: [/\b(i agree|exactly|true|facts|correct|you are right|na so)\b/i] },
+  { intent: 'disagreement', patterns: [/\b(i disagree|not true|you're wrong|you are wrong|i don't think so)\b/i] },
+  { intent: 'empathy', patterns: [/\b(i feel|i'm sad|i am sad|i'm tired|i am tired|rough day|heartbroken|stressed|depressed)\b/i] },
+  { intent: 'boredom', patterns: [/\b(bored|boring|nothing to do|i'm idle|i am idle)\b/i] },
+  { intent: 'group', patterns: [/\b(group|everybody|everyone|hot seat|truth or dare|who is online)\b/i] },
+  { intent: 'yoruba', patterns: [/\b(mo n|bawo|kilode|soro|o ti|se o)\b/i] },
+  { intent: 'pidgin', patterns: [/\b(abeg|wetin|dey|na so|omo|yarn|wahala|e choke)\b/i] }
 ];
 
 export function classifyIntent(text = '') {
