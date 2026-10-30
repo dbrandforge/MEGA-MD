@@ -205,6 +205,7 @@ export const intentRules = [
   { intent: 'activityInfo', patterns: [/\b(what'?s|what is|any) (the )?(group'?s )?(activity|activities|plan|plans|agenda) (for )?(today|tonight|this evening)\b/i, /\bwhat (are we|is the group) doing (today|tonight)\b/i] },
   // Specific emotional/social intents precede broad language and generic conversation matches.
   { intent: 'disagreement', patterns: [/\b(i disagree|not true|you're wrong|you are wrong|i don't think so|i don't agree|that is incorrect)\b/i] },
+  { intent: 'flirty', patterns: [/\\b(flirt|flirting|you are cute|you're cute|you are fine|you're fine|i like you|i have a crush|rizz|shoot your shot)\\b/i] },
   { intent: 'relationships', patterns: [/\b(relationship|dating|date|crush|boyfriend|girlfriend|partner|situationship|talking stage|breakup|break up|marriage|married|cheating|red flag|green flag)\b/i] },
   { intent: 'friendship', patterns: [/\b(friendship|best friend|my friend|friends|falling out|beef with|betrayed|loyalty|fake friend)\b/i] },
   { intent: 'boundaries', patterns: [/\b(boundary|boundaries|set limits|say no|personal space|respect my|access to me)\b/i] },
