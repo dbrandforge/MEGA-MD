@@ -90,16 +90,14 @@ async function handleMemberDeparture(sock, chatId, update) {
             continue;
         }
 
-        const contact = sock.store?.contacts?.[userId] || {};
-        const displayName = contact.name || contact.notify || contact.verifiedName || userId.split('@')[0];
-        const mention = `@${userId.split('@')[0]}`;
+                const mention = `@${userId.split('@')[0]}`;
         const templateBank = departureType === 'left' ? memberLeftMessages : memberRemovedMessages;
         const indexes = (await store.getSetting(chatId, DEPARTURE_INDEX_KEY)) || {};
         const key = departureType;
         const selected = pickRotatingMessage(templateBank, indexes[key] ?? -1);
         indexes[key] = selected.index;
         await store.saveSetting(chatId, DEPARTURE_INDEX_KEY, indexes);
-        const text = selected.text.replace(/\\{name\\}/g, mention);
+        const text = selected.text.replaceAll('{name}', mention);
         await sock.sendMessage(chatId, { text, mentions: [userId] });
         console.log(`[Welcome] ${departureType} announcement sent for ${userId}`);
     }
