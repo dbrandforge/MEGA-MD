@@ -14,6 +14,10 @@ describe('Forge Bot personality bank', () => {
 
   it('recognises short Nigerian conversational messages without clarification loops', () => {
     expect(pickPersonalityReply('Yoo').length).toBeGreaterThan(5);
+    expect(personalityBank.flirty).toContain(pickPersonalityReply('I like you'));
+    expect(personalityBank.thanks).toContain(pickPersonalityReply('Thank you'));
+    expect(personalityBank.workLife).toContain(pickPersonalityReply('I have a deadline at work'));
+    expect(personalityBank.hypotheticals).toContain(pickPersonalityReply('What if you could travel anywhere?'));
     expect(personalityBank.departure.join(' ')).toMatch(/block you now/i);
     expect(personalityBank.financialNeed.join(' ')).toMatch(/OPay/i);
     expect(personalityBank.financialNeed.join(' ')).toMatch(/PalmPay/i);
