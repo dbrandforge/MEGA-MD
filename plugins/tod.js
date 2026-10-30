@@ -1,5 +1,5 @@
 import store from '../lib/lightweight_store.js';
-import { getUserGender, getOppositeGender } from './gender.js';
+import { getUserGender } from './gender.js';
 import { getTruths, getDares, randomFrom } from '../data/todLists.js';
 import { isGameAllowed } from './daylock.js';
 
@@ -43,15 +43,19 @@ async function startRound(sock, chatId, session) {
     if (session.mode === 'paired') {
         const idx = (session.round - 1) % 2;
         answerer = session.players[idx];
-        // First player gender known; partner = opposite
-        if (idx === 0) {
-            gender = session.starterGender || 'guy';
-        } else {
-            gender = session.partnerGender || (session.starterGender === 'guy' ? 'lady' : 'guy');
+        // Each participant receives prompts from their own saved gender.
+        gender = idx === 0 ? session.starterGender : session.partnerGender;
+        if (gender !== 'guy' && gender !== 'lady') {
+            await endSession(sock, chatId, session, 'ended');
+            return;
         }
     } else {
         answerer = session.players[0];
-        gender = session.starterGender || 'guy';
+        gender = session.starterGender;
+        if (gender !== 'guy' && gender !== 'lady') {
+            await endSession(sock, chatId, session, 'ended');
+            return;
+        }
     }
 
     const type = session.mode === 'solo'
@@ -101,8 +105,7 @@ async function startSolo(sock, chatId, senderId, gender) {
     await startRound(sock, chatId, session);
 }
 
-async function startPaired(sock, chatId, senderId, partnerId, starterGender) {
-    const partnerGender = starterGender === 'guy' ? 'lady' : 'guy';
+async function startPaired(sock, chatId, senderId, partnerId, starterGender, partnerGender) {
     const sessions = await getSessions(chatId);
     const sessionId = `tod_${Date.now()}_${senderId.split('@')[0]}`;
     const session = {
@@ -179,11 +182,18 @@ export default {
             if (partner === senderId) {
                 return sock.sendMessage(chatId, { text: `Cannot pair with yourself.`, ...channelInfo }, { quoted: message });
             }
-            return startPaired(sock, chatId, senderId, partner, gender);
+            const partnerGender = await getUserGender(partner);
+            if (!partnerGender) {
+                return sock.sendMessage(chatId, {
+                    text: `Your tagged partner must set their gender first:\\n*.gender guy*\\n*.gender lady*\\n\\nAsk them to set it, then start the paired game again.`,
+                    ...channelInfo
+                }, { quoted: message });
+            }
+            return startPaired(sock, chatId, senderId, partner, gender, partnerGender);
         }
 
         await sock.sendMessage(chatId, {
-            text: `🔥 *Truth or Dare*\n\nYour gender: *${gender}*\n\n• *.tod solo*\n• *.tod paired @partner*\n\nPaired: partner treated as opposite gender.\nAfter answers: *.done*`,
+            text: `🔥 *Truth or Dare*\n\nYour gender: *${gender}*\n\n• *.tod solo*\n• *.tod paired @partner*\n\nPaired: each player receives prompts from their own saved-gender list.\nAfter answers: *.done*`,
             ...channelInfo
         }, { quoted: message });
     }
