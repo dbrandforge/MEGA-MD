@@ -6,7 +6,9 @@ import { memberLeftMessages, memberRemovedMessages, memberLeftReturnMessages, me
 
 const TARGET_GROUP = '120363405434471171@g.us';
 const PENDING_INTRO_KEY = 'pendingIntros';
-const DEPARTURE_INDEX_KEY = 'groupDepartureMessageIndexes';\nconst MEMBER_HISTORY_KEY = 'groupMemberHistory';\nconst RETURN_INDEX_KEY = 'groupReturnMessageIndexes';
+const DEPARTURE_INDEX_KEY = 'groupDepartureMessageIndexes';
+const MEMBER_HISTORY_KEY = 'groupMemberHistory';
+const RETURN_INDEX_KEY = 'groupReturnMessageIndexes';
 
 function getLagosDay() {
     const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
