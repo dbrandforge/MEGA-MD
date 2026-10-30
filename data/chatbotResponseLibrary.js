@@ -219,8 +219,8 @@ export const intentRules = [
   { intent: 'boredom', patterns: [/\b(bored|boring|nothing to do|i'm idle|i am idle)\b/i] },
   { intent: 'group', patterns: [/\b(group|everybody|everyone|hot seat|truth or dare|who is online)\b/i] },
   { intent: 'yoruba', patterns: [/\b(mo n|bawo|kilode|soro|o ti|se o)\b/i] },
-  { intent: 'pidgin', patterns: [/\b(abeg|wetin|dey|na so|omo|yarn|wahala|e choke)\b/i] },
-  { intent: 'teasing', patterns: [/\b(you are funny|you sef|you no get|see this one|you dey craze)\b/i] }
+  { intent: 'pidgin', patterns: [/\b(abeg|wetin|dey|na so|omo|yarn|wahala|e choke)\b/i, /\byou dey go (now|naw)\b/i] },
+  { intent: 'teasing', patterns: [/\b(you are funny|you sef|you no get|see this one|you dey craze|werey|wery|mumu|ode|you mad|mad bot)\b/i] }
 ];
 
 export function classifyIntent(text = '') {
