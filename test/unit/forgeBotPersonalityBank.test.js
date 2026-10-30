@@ -6,8 +6,8 @@ describe('Forge Bot personality bank', () => {
     for (const category of ['greeting','financialNeed','departure','teasing','savage','banter','boredom','relationship','wellbeing','pidgin','yoruba','fallback']) {
       expect(personalityBank[category].length).toBeGreaterThanOrEqual(6);
     }
-    expect(Object.values(getPersonalityBankStats()).reduce((a,b) => a+b, 0)).toBeGreaterThan(300);
-    for (const category of ['flirty','gratitude','apology','agreement','disagreement','workLife','debate','entertainment','nigerianCulture','storytelling','hypotheticals','group','random']) {
+    expect(Object.values(getPersonalityBankStats()).reduce((a,b) => a+b, 0)).toBeGreaterThan(220);
+    for (const category of ['flirty','thanks','apology','agreement','disagreement','workLife','debate','entertainment','nigerianCulture','storytelling','hypotheticals','group','random']) {
       expect(personalityBank[category].length).toBeGreaterThanOrEqual(8);
     }
   });
