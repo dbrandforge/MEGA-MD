@@ -77,7 +77,7 @@ async function askNextQuestion(sock, chatId) {
     session.questionAskedAt = Date.now();
     await saveSession(chatId, session);
     await sock.sendMessage(chatId, {
-        text: `🔥 *HOT SEAT*\n\n${mention(player)}, you are on the seat.\n\n*Question:*\n${session.currentQuestion}\n\n✅ Answer then *.done*\n⏰ 5 minutes — failure to answer results in a 10-hour mute.`,
+        text: `🔥 *HOT SEAT*\n\n${mention(player)}, you are on the seat.\n\n*Question:*\n${session.currentQuestion}\n\n✅ Send any message to answer and receive your next question automatically.\n⏰ 5 minutes — failure to answer results in a 10-hour mute.`,
         mentions: [player]
     });
     setTimeout(async () => {
@@ -121,7 +121,7 @@ async function beginGame(sock, chatId, session) {
     session.waitingFor = null;
     await saveSession(chatId, session);
     await sock.sendMessage(chatId, {
-        text: `🔥 *HOT SEAT STARTED*\n\n${formatPlayers(session.players)}\n\nMax 2 hours · *.done* after answering · 5 minutes per turn · Fail = 10-hour mute`,
+        text: `🔥 *HOT SEAT STARTED*\n\n${formatPlayers(session.players)}\n\nMax 2 hours · any message counts as an answer · 5 minutes per question · Fail = 10-hour mute`,
         mentions: session.players
     });
     setTimeout(() => askNextQuestion(sock, chatId), 2500);
