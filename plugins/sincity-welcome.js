@@ -34,12 +34,16 @@ export async function handleNewMember(sock, chatId, participants) {
             const history = (await store.getSetting(chatId, MEMBER_HISTORY_KEY)) || {};
             const prior = history[userId] || history[userId.split('@')[0]];
             const returningType = prior?.everJoined
-                ? (prior.lastDeparture === 'removed' ? 'removed' : 'left')
+                ? (prior.lastDeparture === 'removed' || prior.lastDeparture === 'left' ? prior.lastDeparture : 'unknown')
                 : null;
             const mention = `@${userId.split('@')[0]}`;
 
             if (returningType) {
-                const bank = returningType === 'removed' ? memberRemovedReturnMessages : memberLeftReturnMessages;
+                const bank = returningType === 'removed'
+                    ? memberRemovedReturnMessages
+                    : returningType === 'left'
+                        ? memberLeftReturnMessages
+                        : ['Welcome back. 👋'];
                 const indexes = (await store.getSetting(chatId, RETURN_INDEX_KEY)) || {};
                 const selected = pickRotatingMessage(bank, indexes[returningType] ?? -1);
                 indexes[returningType] = selected.index;
@@ -53,7 +57,7 @@ export async function handleNewMember(sock, chatId, participants) {
 
             const welcomeText = welcomeMessage
                 .replace(/@user/g, mention)
-                .replace(/\\{user\\}/g, mention);
+                .replace(/\{user\}/g, mention);
 
             await sock.sendMessage(chatId, { text: welcomeText, mentions: [userId] });
             await new Promise(r => setTimeout(r, 1000));
@@ -64,7 +68,7 @@ export async function handleNewMember(sock, chatId, participants) {
                 const day = getLagosDay();
                 const activity = dailyActivities[day];
                 if (activity?.full) {
-                    await sock.sendMessage(chatId, { text: `📅 *Today's activity*\\n\\n${activity.full}` });
+                    await sock.sendMessage(chatId, { text: `📅 *Today's activity*\n\n${activity.full}` });
                 }
             } catch (e) {
                 console.error('Activity send error:', e.message);
