@@ -26,23 +26,7 @@ const MAX_HISTORY_MESSAGES = 30;
 const MAX_HISTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_PROMPT_TRANSCRIPT_CHARS = 2200;
 
-const API_ENDPOINTS = [
-    {
-        name: 'Hercai',
-        url: (text) => `https://hercai.onrender.com/v3/hercai?question=${encodeURIComponent(text)}`,
-        parse: (data) => data?.reply || data?.content || data?.response
-    },
-    {
-        name: 'HercaiGemini',
-        url: (text) => `https://hercai.onrender.com/gemini/hercai?question=${encodeURIComponent(text)}`,
-        parse: (data) => data?.reply || data?.content
-    },
-    {
-        name: 'ZellAPI',
-        url: (text) => `https://zellapi.autos/ai/chatbot?text=${encodeURIComponent(text)}`,
-        parse: (data) => data?.result || data?.response || data?.message
-    }
-];
+const API_ENDPOINTS = []; // Retained as an empty compatibility placeholder; never called.
 
 async function loadUserGroupData() {
     try {
