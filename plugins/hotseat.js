@@ -92,6 +92,26 @@ async function askNextQuestion(sock, chatId) {
         setTimeout(() => askNextQuestion(sock, chatId), 1500);
     }, ANSWER_TIMEOUT_MS);
 }
+export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
+    if (chatId !== TARGET_GROUP || message?.key?.fromMe) return false;
+    const session = await getSession(chatId);
+    if (!session || session.status !== 'active' || !session.waitingFor) return false;
+    if (session.waitingFor !== senderId) return false;
+    // Any participant message (text, image, voice note, sticker, etc.) is an answer.
+    if (!message?.message || message.message.protocolMessage) return false;
+
+    session.waitingFor = null;
+    session.lastAnsweredAt = Date.now();
+    session.questionsAnswered = (session.questionsAnswered || 0) + 1;
+    await saveSession(chatId, session);
+    await sock.sendMessage(chatId, {
+        text: `✅ ${mention(senderId)}'s response has been received. Here's the next question:`,
+        mentions: [senderId]
+    });
+    await askNextQuestion(sock, chatId);
+    return true;
+}
+
 async function beginGame(sock, chatId, session) {
     session.status = 'active';
     session.startedAt = Date.now();
