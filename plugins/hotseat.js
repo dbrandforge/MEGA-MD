@@ -151,8 +151,10 @@ async function beginGame(sock, chatId, session) {
         mentions: session.players
     });
 
-    // Dispatch each participant's first question together; each then progresses independently.
-    await Promise.all(session.players.map(player => sendPlayerQuestion(sock, chatId, player)));
+    // Dispatch the initial prompts in a tight sequence so each participant has an independent timeout.
+    for (const player of session.players) {
+        await sendPlayerQuestion(sock, chatId, player);
+    }
 }
 async function eligibleMembers(sock, chatId) {
     const meta = await sock.groupMetadata(chatId);
