@@ -60,6 +60,15 @@ describe('handleMessages', () => {
         await expect(handleMessages(sock, { messages: [msg], type: 'notify' })).resolves.not.toThrow();
     });
 
+    it('routes personal DM messages to Forge Bot when inbox mode is allowed', async () => {
+        const { handleChatbotResponse } = await import('../../plugins/chatbot.js');
+        const msg = createMockMessage({ text: 'Hello Forge Bot', isGroup: false });
+        await handleMessages(sock, { messages: [msg], type: 'notify' });
+        expect(handleChatbotResponse).toHaveBeenCalledWith(
+            sock, msg.key.remoteJid, msg, 'hello forge bot', msg.key.remoteJid
+        );
+    });
+
     it('calls storeMessage for every valid message', async () => {
         const { storeMessage } = await import('../../plugins/antidelete.js');
         const msg = createMockMessage({ text: 'hello' });
