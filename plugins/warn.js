@@ -64,6 +64,16 @@ export default {
                 }, { quoted: message });
             }
 
+            const rawCommandText = message.message?.conversation
+                || message.message?.extendedTextMessage?.text
+                || message.message?.imageMessage?.caption
+                || message.message?.videoMessage?.caption
+                || '';
+            const reason = rawCommandText
+                .replace(/^\\s*\\S+\\s*/, '')
+                .replace(/@\\d+/g, '')
+                .trim() || 'No reason provided.';
+
             const warnings = await getWarnings();
             if (!warnings[chatId]) warnings[chatId] = {};
             if (!warnings[chatId][userToWarn]) warnings[chatId][userToWarn] = 0;
