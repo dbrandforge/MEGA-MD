@@ -264,8 +264,29 @@ export function ensureResponseEmoji(reply = '', text = '') {
 export function pickLibraryReply(text = '', previousReply = '') {
   const intent = classifyIntent(text);
   if (intent === 'fallback') return null;
-  const replies = responseLibrary[intent];
+  let replies = responseLibrary[intent];
   if (!Array.isArray(replies) || !replies.length) return null;
+
+  // Knowledge presets must match the requested term; never return a random definition.
+  const input = String(text).toLowerCase();
+  if (intent === 'definition') {
+    const termRules = [
+      [/\\blove\\b/, 0], [/\\bfriendship\\b/, 1], [/\\brelationship\\b/, 2],
+      [/\\bemotional intelligence\\b/, 3], [/\\bself[- ]respect\\b/, 4]
+    ];
+    const match = termRules.find(([pattern]) => pattern.test(input));
+    if (!match) return null;
+    replies = [replies[match[1]]].filter(Boolean);
+  }
+  if (intent === 'slangDefinition') {
+    const slangRules = [
+      [/\\bfra\\b|\\bfr\\b/, 0], [/\\bno cap\\b/, 1],
+      [/\\bbet\\b/, 2], [/\\blowkey\\b/, 3]
+    ];
+    const match = slangRules.find(([pattern]) => pattern.test(input));
+    if (!match) return null;
+    replies = [replies[match[1]]].filter(Boolean);
+  }
   const alternatives = replies.filter(reply => reply !== previousReply);
   const pool = alternatives.length ? alternatives : replies;
   return ensureResponseEmoji(pool[Math.floor(Math.random() * pool.length)], text);
