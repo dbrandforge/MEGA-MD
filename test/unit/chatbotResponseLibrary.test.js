@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifyIntent, getResponseLibraryStats, responseLibrary } from '../../data/chatbotResponseLibrary.js';
+import { classifyIntent, getIntentExamples, getResponseLibraryStats, responseLibrary } from '../../data/chatbotResponseLibrary.js';
 
 describe('Forge Bot response library', () => {
   it('contains more than 2,000 curated fallback replies', () => {
@@ -21,5 +21,17 @@ describe('Forge Bot response library', () => {
     expect(classifyIntent('Would you rather live by the sea?')).toBe('hypotheticals');
     expect(classifyIntent('That film had a brilliant ending')).toBe('entertainment');
     expect(classifyIntent('I feel overwhelmed today')).toBe('empathy');
+  });
+
+  it('recognises direct definitions, slang and activity questions', () => {
+    expect(classifyIntent('What is love?')).toBe('definition');
+    expect(classifyIntent("What's the meaning of fra?")).toBe('slangDefinition');
+    expect(classifyIntent("What's the activity for today?")).toBe('activityInfo');
+  });
+
+  it('supplies curated examples to ground the AI response on every turn', () => {
+    const examples = getIntentExamples('What is love?', 4);
+    expect(examples).toHaveLength(4);
+    expect(examples.every(item => typeof item === 'string' && item.length > 0)).toBe(true);
   });
 });
