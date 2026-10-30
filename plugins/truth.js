@@ -20,7 +20,7 @@ export default {
         const gender = await getUserGender(senderId);
         if (!gender) {
             return sock.sendMessage(chatId, {
-                text: `Please set your gender first:\n*.gender guy*\n*.gender lady*\n\nThen use .truth again.`,
+                text: `You need to set your gender first before Truth & Dare.\n\nType:\n.gender guy\nor\n.gender lady\n\n(You can only set this once. After that only an admin can change it.)`,
                 ...channelInfo
             }, { quoted: message });
         }
