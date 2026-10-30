@@ -21,6 +21,8 @@ describe('Forge Bot response library', () => {
 
   it('routes representative messages to specific intents', () => {
     expect(classifyIntent('I need advice about my career')).toBe('advice');
+    expect(classifyIntent('I need money')).toBe('financialNeed');
+    expect(classifyIntent('I am broke')).toBe('financialNeed');
     expect(classifyIntent('My friend betrayed my trust')).toBe('friendship');
     expect(classifyIntent('Would you rather live by the sea?')).toBe('hypotheticals');
     expect(classifyIntent('That film had a brilliant ending')).toBe('entertainment');
@@ -38,6 +40,7 @@ describe('Forge Bot response library', () => {
 
   it('uses a matching preset first and sends unknown intents to the AI layer', () => {
     expect(pickLibraryReply('What is love?')).toMatch(/Love is/);
+    expect(pickLibraryReply('I need money')).toMatch(/amount|how much|deadline|raise/i);
     expect(pickLibraryReply("What's the meaning of fra?")).toMatch(/fra/i);
     expect(pickLibraryReply('What is quantum mechanics?')).toBeNull();
     expect(pickLibraryReply('What does rizz mean?')).toBeNull();
