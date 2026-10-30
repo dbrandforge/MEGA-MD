@@ -23,7 +23,7 @@ export default {
         }
         const lines = entries.map(([jid], index) => `${index + 1}. @${jid.split('@')[0]}`);
         return sock.sendMessage(chatId, {
-            text: `⏳ *Members yet to introduce*\\n\\n${lines.join('\\n')}\\n\\nTotal: ${entries.length}`,
+            text: `⏳ *Members yet to introduce*\n\n${lines.join('\n')}\n\nTotal: ${entries.length}`,
             mentions: entries.map(([jid]) => jid),
             ...channelInfo
         }, { quoted: message });
