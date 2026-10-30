@@ -399,6 +399,26 @@ async function startQasimDev() {
         };
         QasimDev.ev.on('creds.update', _saveCreds);
         store.bind(QasimDev.ev);
+        // Record group read receipts for Hot Seat's recent-reader selection.
+        // Keep a compact rolling map per group; stealth mode intentionally suppresses receipts upstream.
+        QasimDev.ev.on('message-receipt.update', async (updates = []) => {
+            for (const update of updates) {
+                try {
+                    const groupId = update?.key?.remoteJid;
+                    const reader = update?.receipt?.userJid || update?.receipt?.participant || update?.key?.participant;
+                    if (groupId !== '120363405434471171@g.us' || !reader) continue;
+                    const key = 'hotseatRecentReaders';
+                    const data = (await store.getSetting(groupId, key)) || {};
+                    const timestamp = Number(update?.receipt?.readTimestamp || update?.receipt?.receiptTimestamp || Math.floor(Date.now() / 1000)) * 1000;
+                    data[reader] = Math.max(Number(data[reader] || 0), timestamp);
+                    const cutoff = Date.now() - 5 * 60 * 60 * 1000;
+                    for (const [jid, seenAt] of Object.entries(data)) if (Number(seenAt) < cutoff) delete data[jid];
+                    await store.saveSetting(groupId, key, data);
+                } catch (error) {
+                    printLog('warning', `Hot Seat receipt tracking skipped: ${error.message}`);
+                }
+            }
+        });
         QasimDev.ev.on('messages.upsert', async (chatUpdate) => {
             // Log the raw event before filtering so delivery and sync events can
             // be distinguished when diagnosing an unresponsive WhatsApp session.
