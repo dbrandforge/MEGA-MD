@@ -32,6 +32,12 @@ const config = {
     // Warn + Mute system
     warnCount: 3,
     muteDurationHours: 10,          // 10 hours mute after 3 warnings or failed activity
+    // Hot Seat lifecycle settings (environment-overridable)
+    hotseatReaderWindowHours: Number(process.env.HOTSEAT_READER_WINDOW_HOURS) || 5,
+    hotseatAdjustmentMinutes: Number(process.env.HOTSEAT_ADJUSTMENT_MINUTES) || 10,
+    hotseatSessionHours: Number(process.env.HOTSEAT_SESSION_HOURS) || 2,
+    hotseatAnswerMinutes: Number(process.env.HOTSEAT_ANSWER_MINUTES) || 5,
+    hotseatMuteHours: Number(process.env.HOTSEAT_MUTE_HOURS) || 10,
     // Group Activity Settings
     groupLockEnabled: true,
     dailyActivityPinHours: 24,
