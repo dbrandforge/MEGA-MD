@@ -202,7 +202,8 @@ export default {
             if (invalid.length) return reply('Every participant must be a non-admin member of this group. Please check the tagged accounts and try again.');
             const basePlayers = session.manualSelection ? session.players : [];
             const additions = tagged.filter(id => !basePlayers.includes(id));
-            if (basePlayers.length + additions.length > MAX_PLAYERS) return reply(`Hot Seat supports a maximum of ${MAX_PLAYERS} participants. Current list:\\n${formatPlayers(basePlayers)}`);
+            if (!session.manualSelection && additions.length < MIN_PLAYERS) return reply(`Choose at least ${MIN_PLAYERS} people when setting the manual Hot Seat list.`);
+            if (basePlayers.length + additions.length > MAX_PLAYERS) return reply(`Hot Seat supports a maximum of ${MAX_PLAYERS} participants. Current list:\n${formatPlayers(basePlayers)}`);
             if (!additions.length) return reply('Those people are already on the Hot Seat list.');
             session.players = [...basePlayers, ...additions];
             session.manualSelection = true;
@@ -243,6 +244,7 @@ export default {
         }
         if (sub === 'start') {
             if (!session || session.status !== 'pending') return reply('There is no Hot Seat selection window to start.');
+            if (session.players.length < MIN_PLAYERS) return reply(`Hot Seat needs at least ${MIN_PLAYERS} participants. Use *.hotseat add @user1 @user2* to choose them manually.`);
             await beginGame(sock, chatId, session);
             return;
         }
