@@ -8,8 +8,8 @@ const USED_KEY = 'devilsBasketUsed';
 const GENDER_PROMPT = 'You need to set your gender first before Devil’s Basket.\n\nType:\n.gender guy\nor\n.gender lady\n\n(You can only set this once. After that only an admin can change it.)';
 
 function numMatch(a, b) {
-    const x = String(a || '').replace(/\\D/g, '');
-    const y = String(b || '').replace(/\\D/g, '');
+    const x = String(a || '').replace(/\D/g, '');
+    const y = String(b || '').replace(/\D/g, '');
     return x && y && (x === y || x.endsWith(y) || y.endsWith(x));
 }
 async function getUsed(chatId) {
@@ -47,7 +47,7 @@ export default {
                 const guysLeft = poolFor('guy').length - used.guys.length;
                 const ladiesLeft = poolFor('lady').length - used.ladies.length;
                 return sock.sendMessage(chatId, {
-                    text: `*Devil’s Basket — Admin status*\\n\\n*Guys used:* ${used.guys.length} | *Remaining:* ${guysLeft}\\n*Ladies used:* ${used.ladies.length} | *Remaining:* ${ladiesLeft}\\n\\nAdmin reset: *.basket reset*`,
+                    text: `*Devil’s Basket — Admin status*\n\n*Guys used:* ${used.guys.length} | *Remaining:* ${guysLeft}\n*Ladies used:* ${used.ladies.length} | *Remaining:* ${ladiesLeft}\n\nAdmin reset: *.basket reset*`,
                     ...channelInfo
                 }, { quoted: message });
             }
@@ -83,7 +83,7 @@ export default {
             used[key].push(selected.number);
             await saveUsed(chatId, used);
             return sock.sendMessage(chatId, {
-                text: `*Devil’s Basket — ${gender === 'lady' ? 'Ladies' : 'Guys'} #${selected.number}* 🎰\\n\\n@${senderId.split('@')[0]}\\n\\n${selected.dare}\\n\\nComplete this. Failure = 10h mute.`,
+                text: `*Devil’s Basket — ${gender === 'lady' ? 'Ladies' : 'Guys'} #${selected.number}* 🎰\n\n@${senderId.split('@')[0]}\n\n${selected.dare}\n\nComplete this. Failure = 10h mute.`,
                 mentions: [senderId], ...channelInfo
             }, { quoted: message });
         } catch (error) {
