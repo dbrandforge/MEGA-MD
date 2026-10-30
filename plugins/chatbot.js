@@ -13,7 +13,7 @@ const USER_GROUP_DATA = dataFile('userGroupData.json');
 
 // Rolling, per-group transcript with speaker labels for contextual replies.
 const chatMemory = { messages: new Map() };
-const MAX_HISTORY_MESSAGES = 24;
+const MAX_HISTORY_MESSAGES = 12;
 
 const API_ENDPOINTS = [
     {
@@ -160,7 +160,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         if (cleanForHistory && !message.key.fromMe) {
             history.push({
                 name: message.pushName || senderId.split('@')[0],
-                text: cleanForHistory.slice(0, 700),
+                text: cleanForHistory.slice(0, 350),
                 at: Date.now()
             });
             if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
@@ -179,7 +179,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
 
         await sock.sendMessage(chatId, { text: response }, { quoted: message });
 
-        history.push({ name: 'Forge Bot', text: response.slice(0, 700), at: Date.now() });
+        history.push({ name: 'Forge Bot', text: response.slice(0, 350), at: Date.now() });
         if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
 
     } catch (e) {
