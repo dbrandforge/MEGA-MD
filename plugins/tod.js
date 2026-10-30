@@ -43,15 +43,19 @@ async function startRound(sock, chatId, session) {
     if (session.mode === 'paired') {
         const idx = (session.round - 1) % 2;
         answerer = session.players[idx];
-        // First player gender known; partner = opposite
-        if (idx === 0) {
-            gender = session.starterGender || 'guy';
-        } else {
-            gender = session.partnerGender || (session.starterGender === 'guy' ? 'lady' : 'guy');
+        // Each participant receives prompts from their own saved gender.
+        gender = idx === 0 ? session.starterGender : session.partnerGender;
+        if (gender !== 'guy' && gender !== 'lady') {
+            await endSession(sock, chatId, session, 'ended');
+            return;
         }
     } else {
         answerer = session.players[0];
-        gender = session.starterGender || 'guy';
+        gender = session.starterGender;
+        if (gender !== 'guy' && gender !== 'lady') {
+            await endSession(sock, chatId, session, 'ended');
+            return;
+        }
     }
 
     const type = session.mode === 'solo'
