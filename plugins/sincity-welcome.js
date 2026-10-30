@@ -2,9 +2,11 @@ import { welcomeMessage, groupRules, introReminder } from '../data/welcomeData.j
 import { dailyActivities } from '../data/dailyActivities.js';
 import store from '../lib/lightweight_store.js';
 import { logWelcome } from './welcomelog.js';
+import { memberLeftMessages, memberRemovedMessages, pickRotatingMessage, classifyDeparture } from '../data/groupLifecycleMessages.js';
 
 const TARGET_GROUP = '120363405434471171@g.us';
 const PENDING_INTRO_KEY = 'pendingIntros';
+const DEPARTURE_INDEX_KEY = 'groupDepartureMessageIndexes';
 
 function getLagosDay() {
     const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -76,15 +78,49 @@ export async function handleNewMember(sock, chatId, participants) {
     }
 }
 
+
+async function handleMemberDeparture(sock, chatId, update) {
+    if (chatId !== TARGET_GROUP) return;
+    for (const participant of update.participants || []) {
+        const userId = typeof participant === 'string' ? participant : participant?.id;
+        if (!userId) continue;
+        const departureType = classifyDeparture(update, userId);
+        if (departureType === 'unknown') {
+            console.warn('[Welcome] Departure actor missing; skipping unverified leave/kick announcement.');
+            continue;
+        }
+
+        const contact = sock.store?.contacts?.[userId] || {};
+        const displayName = contact.name || contact.notify || contact.verifiedName || userId.split('@')[0];
+        const mention = `@${userId.split('@')[0]}`;
+        const templateBank = departureType === 'left' ? memberLeftMessages : memberRemovedMessages;
+        const indexes = (await store.getSetting(chatId, DEPARTURE_INDEX_KEY)) || {};
+        const key = departureType;
+        const selected = pickRotatingMessage(templateBank, indexes[key] ?? -1);
+        indexes[key] = selected.index;
+        await store.saveSetting(chatId, DEPARTURE_INDEX_KEY, indexes);
+        const text = selected.text.replace(/\\{name\\}/g, mention);
+        await sock.sendMessage(chatId, { text, mentions: [userId] });
+        console.log(`[Welcome] ${departureType} announcement sent for ${userId}`);
+    }
+}
+
 export async function processGroupParticipantsUpdate(sock, update) {
     try {
         if (!update?.id || !update.participants) return;
         if (update.id !== TARGET_GROUP) return;
-        if (update.action !== 'add') return;
-        console.log('[Welcome] Join event:', update.participants);
-        handleNewMember(sock, update.id, update.participants).catch(e =>
-            console.error('Welcome async error:', e.message)
-        );
+        if (update.action === 'add') {
+            console.log('[Welcome] Join event:', update.participants);
+            handleNewMember(sock, update.id, update.participants).catch(e =>
+                console.error('Welcome async error:', e.message)
+            );
+            return;
+        }
+        if (update.action === 'remove') {
+            handleMemberDeparture(sock, update.id, update).catch(e =>
+                console.error('Departure announcement error:', e.message)
+            );
+        }
     } catch (e) {
         console.error('Welcome handler error:', e.message);
     }
