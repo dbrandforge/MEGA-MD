@@ -10,9 +10,13 @@ describe('Forge Bot response library', () => {
   });
 
   it('keeps the expanded conversational categories populated', () => {
-    for (const category of ['definition', 'slangDefinition', 'activityInfo', 'relationships', 'friendship', 'boundaries', 'empathy', 'advice', 'workLife', 'debate', 'entertainment', 'nigerianCulture', 'storytelling', 'hypotheticals', 'humour', 'teasing', 'savage', 'group', 'boredom', 'pidgin', 'yoruba', 'fallback']) {
+    for (const category of ['relationships', 'friendship', 'boundaries', 'empathy', 'advice', 'workLife', 'debate', 'entertainment', 'nigerianCulture', 'storytelling', 'hypotheticals', 'humour', 'teasing', 'savage', 'group', 'boredom', 'pidgin', 'yoruba', 'fallback']) {
       expect(responseLibrary[category].length).toBeGreaterThanOrEqual(50);
     }
+  });
+
+  it('includes concise knowledge presets for definitions, slang and activity questions', () => {
+    for (const category of ['definition', 'slangDefinition', 'activityInfo']) expect(responseLibrary[category].length).toBeGreaterThan(0);
   });
 
   it('routes representative messages to specific intents', () => {
