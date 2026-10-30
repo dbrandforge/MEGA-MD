@@ -36,6 +36,8 @@ describe('Forge Bot response library', () => {
   it('uses a matching preset first and sends unknown intents to the AI layer', () => {
     expect(pickLibraryReply('What is love?')).toMatch(/Love is/);
     expect(pickLibraryReply("What's the meaning of fra?")).toMatch(/fra/i);
+    expect(pickLibraryReply('What is quantum mechanics?')).toBeNull();
+    expect(pickLibraryReply('What does rizz mean?')).toBeNull();
     expect(pickLibraryReply("What's the group's activity for today?")).toMatch(/schedule|activity/i);
     expect(pickLibraryReply('Can you analyse this unusual situation?')).toBeNull();
   });
