@@ -51,7 +51,7 @@ export default {
     category: 'owner',
     description: 'Owner-only diagnostic menu with live command status',
     usage: '.smenu',
-    ownerOnly: true,
+    strictOwnerOnly: true,
     isPrefixless: true,
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
