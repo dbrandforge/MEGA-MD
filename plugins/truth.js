@@ -30,8 +30,9 @@ export default {
 
         await startSoloSession(chatId, senderId, 'truth', gender);
 
-        await sock.sendMessage(chatId, {
+        const sent = await sock.sendMessage(chatId, {
             text: `🔥 *TRUTH* (${gender}) 🔥\n\n${truthMessage}\n\n_Reply to this message or tag me to get another one. Type *stop* to end._`
         }, { quoted: message });
+        await setSoloQuestionMessage(chatId, senderId, sent?.key?.id);
     }
 };
