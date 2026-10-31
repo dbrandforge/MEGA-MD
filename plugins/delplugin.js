@@ -1,5 +1,6 @@
 import { join } from 'path';
 import { unlinkSync, readdirSync } from 'fs';
+import commandHandler from '../lib/commandHandler.js';
 
 export default {
     command: 'delplugin',
@@ -29,6 +30,7 @@ export default {
                 }, { quoted: message });
             }
             unlinkSync(join(pluginDir, `${name}.js`));
+            commandHandler.unregisterCommand(name);
             await sock.sendMessage(chatId, { text: `⚠️ Plugin "${name}.js" has been deleted.` }, { quoted: message });
         } catch (err) {
             console.error('rmplugin error:', err);
