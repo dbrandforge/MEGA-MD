@@ -1,18 +1,18 @@
 /**
  * Anonymous Night
- * Admin: .anonymous on | off | link
+ * Admin: .anonymous on | off | link | status
  */
 import store from '../lib/lightweight_store.js';
 import { isGameAllowed } from './daylock.js';
 import config from '../config.js';
 import isAdmin from '../lib/isAdmin.js';
+import { isFeatureGroup } from '../lib/featureGroups.js';
 
-const TARGET_GROUP = '120363405434471171@g.us';
 const ANON_KEY = 'anonymousState';
 
 function numMatch(a, b) {
-    const x = String(a || '').replace(/\D/g, '');
-    const y = String(b || '').replace(/\D/g, '');
+    const x = String(a || '').replace(/\\D/g, '');
+    const y = String(b || '').replace(/\\D/g, '');
     return x && y && (x === y || x.endsWith(y) || y.endsWith(x));
 }
 
@@ -21,6 +21,13 @@ async function getState(chatId) {
 }
 async function saveState(chatId, state) {
     await store.saveSetting(chatId, ANON_KEY, state);
+}
+
+function getPublicBaseUrl() {
+    return (process.env.RENDER_EXTERNAL_URL || process.env.APP_URL || 'https://mega-md-bot-9o7f.onrender.com').replace(/\\/$/, '');
+}
+function getAnonymousLink(chatId) {
+    return `${getPublicBaseUrl()}/anon/${chatId.split('@')[0]}`;
 }
 
 export default {
@@ -34,19 +41,18 @@ export default {
         const { chatId, senderId, channelInfo, isSenderAdmin, senderIsOwnerOrSudo, isOwnerOrSudoCheck } = context;
         const action = (args[0] || '').toLowerCase();
 
-        if (chatId !== TARGET_GROUP) {
+        if (!isFeatureGroup(chatId)) {
             return sock.sendMessage(chatId, {
-                text: 'Anonymous Night is for Mature minded only.',
+                text: 'Anonymous Night is not enabled for this group.',
                 ...channelInfo
             }, { quoted: message });
         }
 
-        // Fresh admin check (context.isSenderAdmin is only set for adminOnly commands)
         let adminNow = !!(isSenderAdmin || senderIsOwnerOrSudo || isOwnerOrSudoCheck || message.key.fromMe);
         if (!adminNow) {
             try {
                 const st = await isAdmin(sock, chatId, senderId);
-                adminNow = !!(st.isSenderAdmin);
+                adminNow = !!st.isSenderAdmin;
             } catch {}
         }
         if (!adminNow && numMatch(senderId, config.ownerNumber)) adminNow = true;
@@ -55,12 +61,11 @@ export default {
 
         if (!action || action === 'status' || action === 'link') {
             const state = await getState(chatId);
-            const base = process.env.RENDER_EXTERNAL_URL || process.env.APP_URL || 'https://mega-md-bot-rky6.onrender.com';
-            const link = `${base.replace(/\/$/, '')}/anon/${chatId.split('@')[0]}`;
+            const link = getAnonymousLink(chatId);
             return sock.sendMessage(chatId, {
-                text: `🕵️ *Anonymous Night*\n\nStatus: ${state.enabled ? '🟢 OPEN' : '🔴 CLOSED'}\n\n` +
+                text: `🕵️ *Anonymous Night*\\n\\nStatus: ${state.enabled ? '🟢 OPEN' : '🔴 CLOSED'}\\n\\n` +
                     (state.enabled
-                        ? `Submit anonymously:\n${link}\n\nPosted here without your name.`
+                        ? `Submit anonymously:\\n${link}\\n\\nPosted here without your name.`
                         : `Admin: *.anonymous on* (Saturday or with bypass).`),
                 ...channelInfo
             }, { quoted: message });
@@ -74,15 +79,13 @@ export default {
         }
 
         if (action === 'on') {
-            // Admins may force open even off-day
             const state = await getState(chatId);
             state.enabled = true;
             await saveState(chatId, state);
-            const base = process.env.RENDER_EXTERNAL_URL || process.env.APP_URL || 'https://mega-md-bot-rky6.onrender.com';
-            const link = `${base.replace(/\/$/, '')}/anon/${chatId.split('@')[0]}`;
+            const link = getAnonymousLink(chatId);
             return sock.sendMessage(chatId, {
-                text: `🟢 *Anonymous Night is OPEN*\n\nSubmit here:\n${link}\n\nClose: *.anonymous off*` +
-                    (!allowed.ok ? `\n\n_(Opened by admin off scheduled day)_` : ''),
+                text: `🟢 *Anonymous Night is OPEN*\\n\\nSubmit here:\\n${link}\\n\\nClose: *.anonymous off*` +
+                    (!allowed.ok ? `\\n\\n_(Opened by admin off scheduled day)_` : ''),
                 ...channelInfo
             }, { quoted: message });
         }
