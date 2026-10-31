@@ -35,10 +35,15 @@ export default {
                 return await sock.sendMessage(chatId, { text: '❌ No valid files found in the Gist.' }, { quoted: message });
             }
             const pluginDir = path.join(process.cwd(), 'plugins');
-            for (const file of Object.values(gistData.files)) {
-                const pluginName = file.filename;
-                const pluginPath = path.join(pluginDir, pluginName);
-                await fs.promises.writeFile(pluginPath, file.content);
+            const files = Object.values(gistData.files);
+            if (!files.length || files.length > 5) throw new Error('A Gist must contain between 1 and 5 plugin files.');
+            for (const file of files) {
+                const pluginName = String(file.filename || '');
+                if (!/^[a-z0-9][a-z0-9._-]{0,79}\.js$/i.test(pluginName) || pluginName.includes('..')) throw new Error('Unsafe plugin filename rejected.');
+                if (file.truncated || typeof file.content !== 'string' || Buffer.byteLength(file.content, 'utf8') > 256 * 1024) throw new Error('Plugin file is missing, truncated, or exceeds 256 KB.');
+                const pluginPath = path.resolve(pluginDir, pluginName);
+                if (!pluginPath.startsWith(path.resolve(pluginDir) + path.sep)) throw new Error('Plugin path is outside the plugins directory.');
+                await fs.promises.writeFile(pluginPath, file.content, { flag: 'wx' });
             }
             await sock.sendMessage(chatId, { text: '*✅ Successfully installed plugin from Gist.*' }, { quoted: message });
         }
