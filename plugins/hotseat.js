@@ -218,7 +218,7 @@ export default {
     adminOnly: true,
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
-        if (chatId !== TARGET_GROUP) {
+        if (!isFeatureGroup(chatId)) {
             return sock.sendMessage(chatId, { text: 'Hot Seat is enabled only in the authorized feature groups.' }, { quoted: message });
         }
         const senderId = context.senderId || message.key.participant || message.key.remoteJid;
