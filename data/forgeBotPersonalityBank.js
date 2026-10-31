@@ -6,11 +6,10 @@
  */
 import { classifyIntent, ensureResponseEmoji, pickLibraryReply } from './chatbotResponseLibrary.js';
 import { personalityBankExpansion } from './personalityBankExpansion.js';
-import { chatbotResponseExpansion } from './chatbotResponseExpansion.js';
+import { responseExpansion } from './chatbotResponseExpansion.js';
 import { replyBank as chatRepliesBank } from './chatReplies.js';
 import { moreDirty, morePidgin, moreSavage, moreSocial } from './chatRepliesMore.js';
 
-// ---------- Core bank (existing tone + explicit dirty pool) ----------
 export const personalityBank = {
   greeting: [
     "Yoo! You don remember say this group dey exist? 😂","Oya, who send you and wetin you want? 😏",
@@ -190,31 +189,10 @@ export const personalityBank = {
     "You dey test boundaries. Correct. 😏","I dey game if you dey game. 🔥",
     "No half measures with me. 👀","Your last line get heat. 🔥","Raise the temperature small. 😏"
   ],
-  thanks: [
-    "You're welcome. Don't let it get to your head. 😂","Anytime. Now behave. 😏",
-    "No stress. Just don't make me regret helping. 😭","Accepted. Go and use the sense. 😌",
-    "You're welcome o. Soft life continues. ✨","E easy. Come back when you get better gist. 😂",
-    "My pleasure. Rare sentence from me, enjoy it. 😏","Alright. You owe me good vibes. 🔥",
-    "Welcome. Now stop forming. 👀","Noted. You good. ❤️"
-  ],
-  apology: [
-    "Apology accepted. Don't repeat the nonsense. 😏","Okay. We move. Learn from am. 😌",
-    "I hear you. Next time use sense earlier. 😂","Fine. Drama closed. 👀",
-    "Accepted. Soft reset. ❤️","Okay o. No more of that energy. 😭",
-    "We good. Don't make it a habit. 😏","Alright. Gist continue. 🔥"
-  ],
-  agreement: [
-    "Facts. No argument. 😂","Exactly. You get sense today. 😏",
-    "Na so. Continue. 👀","Correct. I concur with stress. 😭",
-    "True talk. 🔥","I agree. Rare moment. 😌",
-    "Yes. Land the point fully. 😏","Say that again for the people at the back. 😂"
-  ],
-  disagreement: [
-    "I no gree. Explain better. 😏","Hmm. That one soft. 👀",
-    "Respectfully, no. 😂","I hear you but I no buy am. 😌",
-    "Counterpoint: sense. 🔥","We go disagree here. Talk more. 😭",
-    "Not it. Try another angle. 😏","I reject that thesis. 😂"
-  ],
+  thanks: ["You're welcome. Don't let it get to your head. 😂","Anytime. Now behave. 😏","No stress. Just don't make me regret helping. 😭","Accepted. Go and use the sense. 😌","You're welcome o. Soft life continues. ✨","E easy. Come back when you get better gist. 😂","My pleasure. Rare sentence from me, enjoy it. 😏","Alright. You owe me good vibes. 🔥","Welcome. Now stop forming. 👀","Noted. You good. ❤️"],
+  apology: ["Apology accepted. Don't repeat the nonsense. 😏","Okay. We move. Learn from am. 😌","I hear you. Next time use sense earlier. 😂","Fine. Drama closed. 👀","Accepted. Soft reset. ❤️","Okay o. No more of that energy. 😭","We good. Don't make it a habit. 😏","Alright. Gist continue. 🔥"],
+  agreement: ["Facts. No argument. 😂","Exactly. You get sense today. 😏","Na so. Continue. 👀","Correct. I concur with stress. 😭","True talk. 🔥","I agree. Rare moment. 😌","Yes. Land the point fully. 😏","Say that again for the people at the back. 😂"],
+  disagreement: ["I no gree. Explain better. 😏","Hmm. That one soft. 👀","Respectfully, no. 😂","I hear you but I no buy am. 😌","Counterpoint: sense. 🔥","We go disagree here. Talk more. 😭","Not it. Try another angle. 😏","I reject that thesis. 😂"],
   fallback: [
     "You just dropped that and expected me to decode the universe? 😂",
     "I hear you. Continue, don't leave the gist halfway. 👀",
@@ -266,7 +244,6 @@ export const personalityBank = {
   ]
 };
 
-// ---------- Merge helpers ----------
 function uniqPush(target, items) {
   if (!Array.isArray(items)) return;
   const seen = new Set(target.map(s => String(s).toLowerCase().trim()));
@@ -285,7 +262,6 @@ function ensureCat(name) {
   return personalityBank[name];
 }
 
-// Map expansion categories into our bank keys
 const CATEGORY_ALIASES = {
   relationships: 'relationship',
   friendship: 'relationship',
@@ -311,18 +287,15 @@ const CATEGORY_ALIASES = {
 function mergePack(pack) {
   if (!pack || typeof pack !== 'object') return;
   for (const [rawKey, replies] of Object.entries(pack)) {
+    if (!Array.isArray(replies)) continue;
     const key = CATEGORY_ALIASES[rawKey] || rawKey;
     uniqPush(ensureCat(key), replies);
   }
 }
 
-// Merge personality expansion
 mergePack(personalityBankExpansion);
+try { mergePack(responseExpansion); } catch (e) { console.warn('[ForgeBank] responseExpansion merge skipped:', e.message); }
 
-// Merge large chatbot expansion library
-try { mergePack(chatbotResponseExpansion); } catch {}
-
-// Merge older chatReplies banks
 try {
   if (chatRepliesBank) {
     uniqPush(ensureCat('greeting'), chatRepliesBank.greeting);
@@ -334,25 +307,20 @@ try {
     uniqPush(ensureCat('group'), chatRepliesBank.social);
     uniqPush(ensureCat('fallback'), chatRepliesBank.fallback);
   }
-} catch {}
+} catch (e) { console.warn('[ForgeBank] chatReplies merge skipped:', e.message); }
 
 try {
   uniqPush(ensureCat('dirty'), moreDirty);
   uniqPush(ensureCat('pidgin'), morePidgin);
   uniqPush(ensureCat('savage'), moreSavage);
   uniqPush(ensureCat('group'), moreSocial);
-} catch {}
+} catch (e) { console.warn('[ForgeBank] more* merge skipped:', e.message); }
 
-// ---------- Anti-repeat: shuffle bags + recent history ----------
-const recentSelections = new Map(); // key -> string[]
-const shuffleBags = new Map(); // key -> remaining replies
+const recentSelections = new Map();
+const shuffleBags = new Map();
 
 function normalize(text) {
-  return String(text || '')
-    .toLowerCase()
-    .replace(/[\u200B-\u200D\uFEFF]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return String(text || '').toLowerCase().replace(/[\u200B-\u200D\uFEFF]/g, '').replace(/\s+/g, ' ').trim();
 }
 
 function shuffle(arr) {
@@ -369,11 +337,7 @@ function choose(chatId, category, pool, previousReply) {
   const key = `${chatId || 'global'}:${category}`;
   const recent = recentSelections.get(key) || [];
   const recentGlobal = recentSelections.get(`${chatId || 'global'}:__all`) || [];
-  const blocked = new Set([
-    previousReply,
-    ...recent,
-    ...recentGlobal.slice(-20)
-  ].filter(Boolean).map(s => String(s)));
+  const blocked = new Set([previousReply, ...recent, ...recentGlobal.slice(-20)].filter(Boolean).map(String));
 
   let bag = shuffleBags.get(key);
   if (!bag || !bag.length) {
@@ -381,10 +345,8 @@ function choose(chatId, category, pool, previousReply) {
     shuffleBags.set(key, bag);
   }
 
-  // Prefer bag item not in blocked
   let idx = bag.findIndex(r => !blocked.has(r));
   if (idx === -1) {
-    // refill bag excluding only previousReply
     bag = shuffle(pool.filter(r => r !== previousReply));
     if (!bag.length) bag = shuffle(pool);
     shuffleBags.set(key, bag);
@@ -393,14 +355,12 @@ function choose(chatId, category, pool, previousReply) {
 
   const reply = bag.splice(idx, 1)[0];
   shuffleBags.set(key, bag);
-
-  const nextRecent = [...recent, reply].slice(-25);
-  recentSelections.set(key, nextRecent);
+  recentSelections.set(key, [...recent, reply].slice(-25));
   recentSelections.set(`${chatId || 'global'}:__all`, [...recentGlobal, reply].slice(-40));
   return reply;
 }
 
-const DIRTY_RE = /\b(fuck|sex|dick|pussy|ass|cum|horny|wet|hard|stroke|suck|ride|nudes?|naked|boobs?|nipple|throat|moan|orgasm|fantasy|blowjob|handjob|creampie|edge|edging|spank|choke|slut|whore|daddy|mommy|bed|touch me|make me|use me|ruin me)\b/i;
+const DIRTY_RE = /\b(fuck|sex|dick|pussy|ass|cum|horny|wet|hard|stroke|suck|ride|nudes?|naked|boobs?|nipple|throat|moan|orgasm|fantasy|blowjob|handjob|creampie|edge|edging|spank|choke|slut|whore|daddy|mommy|touch me|make me|use me|ruin me)\b/i;
 const FLIRTY_RE = /\b(fine|beautiful|handsome|crush|sexy|babe|baby|attracted|like you|miss you|want you)\b/i;
 const GREETING_RE = /\b(hi|hello|hey|how far|good morning|good evening|good night|bawo|sup|how body|yoo|yo)\b/i;
 const SERIOUS_RE = /\b(suicid|self harm|hurt myself|abuse|assault|rape|unsafe|in danger|emergency|someone died|passed away|grieving|depressed|I want to die)\b/i;
@@ -410,12 +370,9 @@ export function pickPersonalityReply(text, options = {}) {
   const { chatId = 'global', previousReply = '', gender = null, history = [] } = options;
   const norm = normalize(input);
 
-  // Hard safety first
   if (SERIOUS_RE.test(norm)) {
     return ensureResponseEmoji(choose(chatId, 'serious', personalityBank.serious, previousReply), input);
   }
-
-  // Explicit Mature minded routing
   if (DIRTY_RE.test(norm)) {
     return ensureResponseEmoji(choose(chatId, 'dirty', personalityBank.dirty, previousReply), input);
   }
@@ -423,7 +380,6 @@ export function pickPersonalityReply(text, options = {}) {
   let intent = 'fallback';
   try { intent = classifyIntent(input) || 'fallback'; } catch { intent = 'fallback'; }
 
-  // Phrase / keyword boosts
   let category = intent;
   if (GREETING_RE.test(norm) && norm.split(/\s+/).length <= 6) category = 'greeting';
   else if (FLIRTY_RE.test(norm)) category = 'flirty';
@@ -444,7 +400,6 @@ export function pickPersonalityReply(text, options = {}) {
     category = 'moneyFollowup';
   }
 
-  // Map unknown intents
   if (!personalityBank[category] || !personalityBank[category].length) {
     if (['relationships', 'friendship', 'boundaries'].includes(intent)) category = 'relationship';
     else if (['humour', 'group', 'random', 'storytelling', 'hypotheticals', 'entertainment'].includes(intent)) category = 'banter';
@@ -479,8 +434,6 @@ export function getPersonalityBankTotal() {
   return Object.values(personalityBank).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
 }
 
-// Log size once at load (visible in Render logs)
 try {
-  const total = getPersonalityBankTotal();
-  console.info(`[ForgeBank] Unified personality bank loaded: ${total} replies across ${Object.keys(personalityBank).length} categories`);
+  console.info(`[ForgeBank] Unified personality bank loaded: ${getPersonalityBankTotal()} replies across ${Object.keys(personalityBank).length} categories`);
 } catch {}
