@@ -85,10 +85,12 @@ async function sendPlayerQuestion(sock, chatId, player) {
     state.gender = gender;
     await saveSession(chatId, session);
 
-    await sock.sendMessage(chatId, {
-        text: `🔥 *HOT SEAT — YOUR QUESTION*\n\n${mention(player)}, your question is:\n\n*${question}*\n\n✅ Answer by *tagging the bot* in your reply.\nOnly *your* tagged message counts.\n⏰ 5 minutes or 10-hour mute.\n⏳ After answer, next question in *60 seconds*.`,
+    const sentQuestion = await sock.sendMessage(chatId, {
+        text: `🔥 *HOT SEAT — YOUR QUESTION*\n\n${mention(player)}, your question is:\n\n*${question}*\n\n✅ *Reply directly to this question* (swipe/reply), or tag the bot.\nOnly your answer to this active question counts.\n⏰ 5 minutes or 10-hour mute.\n⏳ After answer, next question in *60 seconds*.`,
         mentions: [player]
     });
+    state.questionMessageId = sentQuestion?.key?.id || null;
+    await saveSession(chatId, session);
 
     setTimeout(async () => {
         const latest = await getSession(chatId);
@@ -136,7 +138,8 @@ export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
         (botNum && String(ctx.participant).startsWith(botNum)) ||
         (botLid && String(ctx.participant) === botLid)
     ));
-    if (!taggedBot && !repliedToBot) return false;
+    const repliedToCurrentQuestion = !!(ctx.stanzaId && state.questionMessageId && ctx.stanzaId === state.questionMessageId);
+    if (!taggedBot && !repliedToBot && !repliedToCurrentQuestion) return false;
 
     state.waiting = false;
     state.lastAnsweredAt = Date.now();
@@ -171,7 +174,7 @@ async function beginGame(sock, chatId, session) {
     session.usedLady = [];
     session.playerStates = Object.fromEntries(session.players.map(id => [id, {
         status: 'active', waiting: false, questionsAnswered: 0,
-        lastAnsweredAt: null, questionId: null, currentQuestion: null
+        lastAnsweredAt: null, questionId: null, questionMessageId: null, currentQuestion: null
     }]));
     await saveSession(chatId, session);
     await sock.sendMessage(chatId, {
