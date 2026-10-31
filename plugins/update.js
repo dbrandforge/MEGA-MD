@@ -218,7 +218,7 @@ export default {
     category: 'owner',
     description: 'Update bot from git or zip without stopping',
     usage: '.update [zip_url]',
-    ownerOnly: true,
+    strictOwnerOnly: true,
     async handler(sock, message, args, context) {
         const { chatId, channelInfo } = context;
         try {
