@@ -41,13 +41,22 @@ export default {
             const pluginDir = path.join(process.cwd(), 'plugins');
             const files = Object.values(gistData.files);
             if (!files.length || files.length > 5) throw new Error('A Gist must contain between 1 and 5 plugin files.');
+            const validatedFiles = [];
+            const seenNames = new Set();
             for (const file of files) {
                 const pluginName = String(file.filename || '');
-                if (!/^[a-z0-9][a-z0-9._-]{0,79}\.js$/i.test(pluginName) || pluginName.includes('..')) throw new Error('Unsafe plugin filename rejected.');
+                if (!/^[a-z0-9][a-z0-9._-]{0,79}\\.js$/i.test(pluginName) || pluginName.includes('..')) throw new Error('Unsafe plugin filename rejected.');
                 if (file.truncated || typeof file.content !== 'string' || Buffer.byteLength(file.content, 'utf8') > 256 * 1024) throw new Error('Plugin file is missing, truncated, or exceeds 256 KB.');
                 const pluginPath = path.resolve(pluginDir, pluginName);
                 if (!pluginPath.startsWith(path.resolve(pluginDir) + path.sep)) throw new Error('Plugin path is outside the plugins directory.');
-                await fs.promises.writeFile(pluginPath, file.content, { flag: 'wx' });
+                if (seenNames.has(pluginName.toLowerCase())) throw new Error('Duplicate plugin filename in Gist.');
+                seenNames.add(pluginName.toLowerCase());
+                if (fs.existsSync(pluginPath)) throw new Error(`Plugin ${pluginName} already exists; refusing to overwrite.`);
+                validatedFiles.push({ pluginPath, content: file.content });
+            }
+            // Validate every file before writing any of them.
+            for (const file of validatedFiles) {
+                await fs.promises.writeFile(file.pluginPath, file.content, { flag: 'wx' });
             }
             await sock.sendMessage(chatId, { text: '*✅ Successfully installed plugin from Gist.*' }, { quoted: message });
         }
