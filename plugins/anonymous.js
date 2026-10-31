@@ -63,9 +63,9 @@ export default {
             const state = await getState(chatId);
             const link = getAnonymousLink(chatId);
             return sock.sendMessage(chatId, {
-                text: `🕵️ *Anonymous Night*\\n\\nStatus: ${state.enabled ? '🟢 OPEN' : '🔴 CLOSED'}\\n\\n` +
+                text: `🕵️ *Anonymous Night*\n\nStatus: ${state.enabled ? '🟢 OPEN' : '🔴 CLOSED'}\n\n` +
                     (state.enabled
-                        ? `Submit anonymously:\\n${link}\\n\\nPosted here without your name.`
+                        ? `Submit anonymously:\n${link}\n\nPosted here without your name.`
                         : `Admin: *.anonymous on* (Saturday or with bypass).`),
                 ...channelInfo
             }, { quoted: message });
@@ -84,8 +84,8 @@ export default {
             await saveState(chatId, state);
             const link = getAnonymousLink(chatId);
             return sock.sendMessage(chatId, {
-                text: `🟢 *Anonymous Night is OPEN*\\n\\nSubmit here:\\n${link}\\n\\nClose: *.anonymous off*` +
-                    (!allowed.ok ? `\\n\\n_(Opened by admin off scheduled day)_` : ''),
+                text: `🟢 *Anonymous Night is OPEN*\n\nSubmit here:\n${link}\n\nClose: *.anonymous off*` +
+                    (!allowed.ok ? `\n\n_(Opened by admin off scheduled day)_` : ''),
                 ...channelInfo
             }, { quoted: message });
         }
