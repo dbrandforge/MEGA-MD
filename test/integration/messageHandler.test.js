@@ -148,6 +148,7 @@ describe('handleMessages', () => {
         });
         const msg = createMockMessage({
             text: '.ownerprobeok', isGroup: false,
+            chatId: '923001234567@s.whatsapp.net',
             senderId: '923001234567@s.whatsapp.net'
         });
         await handleMessages(sock, { messages: [msg], type: 'notify' });
