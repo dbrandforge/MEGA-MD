@@ -25,7 +25,7 @@ import { writeErrorLog } from './lib/logger.js';
 import { handleMessages, handleGroupParticipantUpdate, handleStatus, handleCall } from './lib/messageHandler.js';
 import commandHandler from './lib/commandHandler.js';
 import { startSchedulerEngine, trackGroup } from './plugins/schedule.js';
-import { TARGET_GROUP } from './plugins/grouplock.js';
+import { FEATURE_GROUPS } from './lib/featureGroups.js';
 store.readFromFile();
 setInterval(() => store.writeToFile(), config.storeWriteInterval || 10000);
 setInterval(() => {
@@ -405,7 +405,7 @@ async function startQasimDev() {
                 try {
                     const groupId = update?.key?.remoteJid;
                     const reader = update?.receipt?.userJid || update?.receipt?.participant || update?.key?.participant;
-                    if (groupId !== '120363405434471171@g.us' || !reader) continue;
+                    if (!FEATURE_GROUPS.includes(groupId) || !reader) continue;
                     const key = 'hotseatRecentReaders';
                     const data = (await store.getSetting(groupId, key)) || {};
                     const timestamp = Number(update?.receipt?.readTimestamp || update?.receipt?.receiptTimestamp || Math.floor(Date.now() / 1000)) * 1000;
@@ -594,7 +594,7 @@ async function startQasimDev() {
                 startSessionBackupLoop();
                 // Start background schedulers on every successful WhatsApp connection.
                 // Group automation must not depend on someone running .schedule manually.
-                trackGroup(TARGET_GROUP);
+                for (const groupId of FEATURE_GROUPS) trackGroup(groupId);
                 startSchedulerEngine(QasimDev);
                 try {
                     const setbioModule = await import('./plugins/setbio.js');

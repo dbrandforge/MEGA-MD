@@ -2,6 +2,7 @@ import { dailyActivities, lockSchedule } from '../data/dailyActivities.js';
 import store from '../lib/lightweight_store.js';
 import config from '../config.js';
 import { goodnightMessages, goodmorningMessages, pickRotatingMessage } from '../data/groupLifecycleMessages.js';
+import { PRIMARY_FEATURE_GROUP, isFeatureGroup } from '../lib/featureGroups.js';
 
 /**
  * Group Lock / Unlock + Daily Activity Announcer
@@ -28,7 +29,7 @@ import { goodnightMessages, goodmorningMessages, pickRotatingMessage } from '../
  * never fights it.
  */
 
-export const TARGET_GROUP = '120363405434471171@g.us';
+export const TARGET_GROUP = PRIMARY_FEATURE_GROUP;
 const LOCK_STATE_KEY = 'groupLockState';
 const LAST_ACTION_KEY = 'groupLockLastAction';
 const ACTIVITY_SENT_KEY = 'groupLockActivitySent';
@@ -179,7 +180,7 @@ async function unlockGroup(sock, chatId, { manual = false } = {}) {
  */
 export async function checkGroupLockSchedule(sock, chatId) {
     // Only run for the target group
-    if (chatId !== TARGET_GROUP) return;
+    if (!isFeatureGroup(chatId)) return;
 
     try {
         const day = getCurrentDay();
@@ -268,9 +269,9 @@ export default {
         const { chatId } = context;
         const action = (args[0] || '').toLowerCase();
 
-        if (chatId !== TARGET_GROUP) {
+        if (!isFeatureGroup(chatId)) {
             return sock.sendMessage(chatId, {
-                text: 'This command is configured for the Mature minded group only.'
+                text: 'This command is enabled only in the authorized feature groups.'
             }, { quoted: message });
         }
 
