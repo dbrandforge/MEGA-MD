@@ -11,8 +11,8 @@ import { isFeatureGroup } from '../lib/featureGroups.js';
 const ANON_KEY = 'anonymousState';
 
 function numMatch(a, b) {
-    const x = String(a || '').replace(/\\D/g, '');
-    const y = String(b || '').replace(/\\D/g, '');
+    const x = String(a || '').replace(/\D/g, '');
+    const y = String(b || '').replace(/\D/g, '');
     return x && y && (x === y || x.endsWith(y) || y.endsWith(x));
 }
 
@@ -24,7 +24,7 @@ async function saveState(chatId, state) {
 }
 
 function getPublicBaseUrl() {
-    return (process.env.RENDER_EXTERNAL_URL || process.env.APP_URL || 'https://mega-md-bot-9o7f.onrender.com').replace(/\\/$/, '');
+    return (process.env.RENDER_EXTERNAL_URL || process.env.APP_URL || 'https://mega-md-bot-9o7f.onrender.com').replace(/\/$/, '');
 }
 function getAnonymousLink(chatId) {
     return `${getPublicBaseUrl()}/anon/${chatId.split('@')[0]}`;
