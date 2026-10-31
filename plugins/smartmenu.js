@@ -48,9 +48,10 @@ function formatTime() {
 export default {
     command: 'smenu',
     aliases: ['shelp', 'smart', 'help2'],
-    category: 'general',
-    description: 'Interactive smart menu with live status',
+    category: 'owner',
+    description: 'Owner-only diagnostic menu with live command status',
     usage: '.smenu',
+    ownerOnly: true,
     isPrefixless: true,
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
