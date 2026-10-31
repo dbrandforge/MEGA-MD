@@ -28,7 +28,7 @@ const askAI = async (query) => {
 
 export default {
     command: 'gpt',
-    aliases: ['ai', 'chat', 'ask', 'mistral', 'llama'],
+    aliases: ['ai', 'chat', 'ask'],
     category: 'ai',
     description: 'Ask a question to AI (updated for 2026)',
     usage: '.gpt <question>',
