@@ -39,6 +39,7 @@ export default {
     category: 'admin',
     description: 'Ban a user from using the bot',
     usage: '.ban @user or reply to message',
+    ownerOnly: true,
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
         const channelInfo = context.channelInfo || {};
