@@ -22,7 +22,11 @@ export default {
                 text: 'Please provide a plugin URL.\nExample: .addplugin https://gist.github.com/username/gistid'
             }, { quoted: message });
         }
-        const gistMatch = text.match(/(?:\/|gist\.github\.com\/)([a-fA-F0-9]+)/);
+        let gistUrl;
+        try { gistUrl = new URL(text); } catch { gistUrl = null; }
+        const gistMatch = gistUrl && gistUrl.protocol === 'https:' && gistUrl.hostname === 'gist.github.com'
+            ? gistUrl.pathname.match(/^\/[^/]+\/([a-fA-F0-9]{20,40})\/?$/)
+            : null;
         if (!gistMatch) {
             return await sock.sendMessage(chatId, { text: '❌ Invalid plugin URL.' }, { quoted: message });
         }
