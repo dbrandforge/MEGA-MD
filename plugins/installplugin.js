@@ -7,6 +7,7 @@ export default {
     category: 'owner',
     description: 'Install a plugin from a GitHub Gist URL (owner only)',
     usage: '.addplugin <Gist URL>',
+    ownerOnly: true,
     /**
      * @param {object} sock - Baileys sock
      * @param {object} message - the original message object
@@ -28,7 +29,7 @@ export default {
         const gistId = gistMatch[1];
         const gistURL = `https://api.github.com/gists/${gistId}`;
         try {
-            const response = await axios.get(gistURL);
+            const response = await axios.get(gistURL, { timeout: 15000, maxContentLength: 1024 * 1024, headers: { Accept: 'application/vnd.github+json' } });
             const gistData = response.data;
             if (!gistData || !gistData.files) {
                 return await sock.sendMessage(chatId, { text: '❌ No valid files found in the Gist.' }, { quoted: message });
