@@ -7,7 +7,7 @@ export default {
     category: 'owner',
     description: 'Delete a plugin by name (owner only)',
     usage: '.delplugin <plugin_name>',
-    ownerOnly: true,
+    strictOwnerOnly: true,
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
         try {
