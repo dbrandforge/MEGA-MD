@@ -96,10 +96,13 @@ async function sendNext(sock, chatId, senderId, session, sessions) {
     sessions[senderId] = session;
     await saveSessions(chatId, sessions);
 
-    await sock.sendMessage(chatId, {
+    const sent = await sock.sendMessage(chatId, {
         text: `${label} (${session.gender}) 🔥\n\n${content}\n\n_Reply to this message or tag me to get another one. Type *stop* to end._`,
         mentions: [senderId]
     });
+    session.questionMessageId = sent?.key?.id || null;
+    sessions[senderId] = session;
+    await saveSessions(chatId, sessions);
 }
 
 /**
