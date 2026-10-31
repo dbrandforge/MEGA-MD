@@ -15,7 +15,10 @@ export default {
                     text: `*🌟Example usage:*\n.delplugin main-menu`
                 }, { quoted: message });
             }
-            if (!/^[a-z0-9][a-z0-9._-]{0,79}$/i.test(args[0]) || args[0].includes('..')) {\n                return await sock.sendMessage(chatId, { text: '❌ Invalid plugin name.' }, { quoted: message });\n            }\n            const pluginDir = join(process.cwd(), 'plugins');
+            if (!/^[a-z0-9][a-z0-9._-]{0,79}$/i.test(args[0]) || args[0].includes('..')) {\n                return await sock.sendMessage(chatId, { text: '❌ Invalid plugin name.' }, { quoted: message });\n            }\n            if (!/^[a-z0-9][a-z0-9._-]{0,79}$/i.test(args[0]) || args[0].includes('..')) {
+                return await sock.sendMessage(chatId, { text: '❌ Invalid plugin name.' }, { quoted: message });
+            }
+            const pluginDir = join(process.cwd(), 'plugins');
             const pluginFiles = readdirSync(pluginDir).filter(f => f.endsWith('.js'));
             const pluginNames = pluginFiles.map(f => f.replace('.js', ''));
             if (!pluginNames.includes(args[0])) {
