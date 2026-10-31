@@ -134,12 +134,8 @@ export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
         || message?.message?.videoMessage?.contextInfo
         || message?.message?.audioMessage?.contextInfo
         || {};
-    const repliedToBot = !!(ctx.participant && (
-        (botNum && String(ctx.participant).startsWith(botNum)) ||
-        (botLid && String(ctx.participant) === botLid)
-    ));
     const repliedToCurrentQuestion = !!(ctx.stanzaId && state.questionMessageId && ctx.stanzaId === state.questionMessageId);
-    if (!taggedBot && !repliedToBot && !repliedToCurrentQuestion) return false;
+    if (!taggedBot && !repliedToCurrentQuestion) return false;
 
     state.waiting = false;
     state.lastAnsweredAt = Date.now();
