@@ -3,8 +3,9 @@ import config from '../config.js';
 import { isGameAllowed } from './daylock.js';
 import { getHotSeatQuestions } from '../data/hotseatQuestions.js';
 import { getUserGender } from './gender.js';
+import { isFeatureGroup } from '../lib/featureGroups.js';
 
-const TARGET_GROUP = '120363405434471171@g.us';
+
 const HOTSEAT_KEY = 'hotseatSession';
 const READERS_KEY = 'hotseatRecentReaders';
 const READER_WINDOW_MS = Number(config.hotseatReaderWindowHours || 5) * 60 * 60 * 1000;
@@ -112,7 +113,7 @@ async function sendPlayerQuestion(sock, chatId, player) {
 }
 
 export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
-    if (chatId !== TARGET_GROUP || message?.key?.fromMe) return false;
+    if (!isFeatureGroup(chatId) || message?.key?.fromMe) return false;
     const session = await getSession(chatId);
     if (!session || session.status !== 'active') return false;
     const state = session.playerStates?.[senderId];
@@ -218,7 +219,7 @@ export default {
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
         if (chatId !== TARGET_GROUP) {
-            return sock.sendMessage(chatId, { text: 'Hot Seat is only for the main Mature Minded group.' }, { quoted: message });
+            return sock.sendMessage(chatId, { text: 'Hot Seat is enabled only in the authorized feature groups.' }, { quoted: message });
         }
         const senderId = context.senderId || message.key.participant || message.key.remoteJid;
         const reply = (text) => sock.sendMessage(chatId, { text }, { quoted: message });
