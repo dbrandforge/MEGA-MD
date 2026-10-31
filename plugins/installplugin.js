@@ -45,7 +45,7 @@ export default {
             const seenNames = new Set();
             for (const file of files) {
                 const pluginName = String(file.filename || '');
-                if (!/^[a-z0-9][a-z0-9._-]{0,79}\\.js$/i.test(pluginName) || pluginName.includes('..')) throw new Error('Unsafe plugin filename rejected.');
+                if (!/^[a-z0-9][a-z0-9._-]{0,79}\.js$/i.test(pluginName) || pluginName.includes('..')) throw new Error('Unsafe plugin filename rejected.');
                 if (file.truncated || typeof file.content !== 'string' || Buffer.byteLength(file.content, 'utf8') > 256 * 1024) throw new Error('Plugin file is missing, truncated, or exceeds 256 KB.');
                 const pluginPath = path.resolve(pluginDir, pluginName);
                 if (!pluginPath.startsWith(path.resolve(pluginDir) + path.sep)) throw new Error('Plugin path is outside the plugins directory.');
