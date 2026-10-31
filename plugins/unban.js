@@ -35,7 +35,7 @@ export default {
     category: 'admin',
     description: 'Unban a user from using the bot',
     usage: '.unban [@user] or reply to message',
-    ownerOnly: false,
+    ownerOnly: true,
     async handler(sock, message, args, context) {
         const { chatId, isGroup, channelInfo, senderIsOwnerOrSudo, isSenderAdmin, isBotAdmin } = context;
         if (isGroup) {

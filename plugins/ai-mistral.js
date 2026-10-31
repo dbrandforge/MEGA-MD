@@ -21,7 +21,7 @@ const askAI = async (query) => {
 };
 export default {
     command: 'mistral',
-    aliases: ['ai', 'chat', 'ask'],
+    aliases: ['askmistral'],
     category: 'ai',
     description: 'Ask a question to AI',
     usage: '.mistral <question>',

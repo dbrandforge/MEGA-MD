@@ -88,11 +88,11 @@ export async function handleSoftMuteMessage(sock, chatId, message, senderId) {
 }
 
 export default {
-    command: 'mute',
-    aliases: ['softmute'],
+    command: 'softmute',
+    aliases: ['smute'],
     category: 'admin',
     description: 'Mute a user for 10 hours (soft mute - deletes their messages)',
-    usage: '.mute @user',
+    usage: '.softmute @user',
     groupOnly: true,
     adminOnly: true,
     async handler(sock, message, args, context) {

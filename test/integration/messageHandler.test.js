@@ -107,6 +107,54 @@ describe('handleMessages', () => {
         expect(cmdReplies).toHaveLength(0);
     });
 
+    it('blocks non-owner users from strictOwnerOnly commands', async () => {
+        const commandHandler = (await import('../../lib/commandHandler.js')).default;
+        const handler = vi.fn(async () => {});
+        commandHandler.registerCommand({
+            command: 'strictprobe', aliases: [], category: 'owner',
+            strictOwnerOnly: true, handler
+        });
+        const msg = createMockMessage({
+            text: '.strictprobe', isGroup: false,
+            senderId: '923009999999@s.whatsapp.net'
+        });
+        await handleMessages(sock, { messages: [msg], type: 'notify' });
+        expect(handler).not.toHaveBeenCalled();
+        expect(sock._lastMessage()?.content?.text).toContain('restricted to the bot owner');
+    });
+
+    it('blocks non-owner users from ownerOnly commands', async () => {
+        const commandHandler = (await import('../../lib/commandHandler.js')).default;
+        const handler = vi.fn(async () => {});
+        commandHandler.registerCommand({
+            command: 'ownerprobe', aliases: [], category: 'owner',
+            ownerOnly: true, handler
+        });
+        const msg = createMockMessage({
+            text: '.ownerprobe', isGroup: false,
+            senderId: '923009999999@s.whatsapp.net'
+        });
+        await handleMessages(sock, { messages: [msg], type: 'notify' });
+        expect(handler).not.toHaveBeenCalled();
+        expect(sock._lastMessage()?.content?.text).toContain('restricted to the bot owner');
+    });
+
+    it('allows the configured owner to use strictOwnerOnly commands', async () => {
+        const commandHandler = (await import('../../lib/commandHandler.js')).default;
+        const handler = vi.fn(async () => {});
+        commandHandler.registerCommand({
+            command: 'ownerprobeok', aliases: [], category: 'owner',
+            strictOwnerOnly: true, handler
+        });
+        const msg = createMockMessage({
+            text: '.ownerprobeok', isGroup: false,
+            chatId: '923001234567@s.whatsapp.net',
+            senderId: '923001234567@s.whatsapp.net'
+        });
+        await handleMessages(sock, { messages: [msg], type: 'notify' });
+        expect(handler).toHaveBeenCalledTimes(1);
+    });
+
     it('does not crash on malformed message structure', async () => {
         await expect(handleMessages(sock, { messages: [{ key: {} }], type: 'notify' })).resolves.not.toThrow();
     });

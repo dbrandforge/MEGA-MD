@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 const PLUGINS_DIR = path.join(process.cwd(), 'plugins');
+const HELPER_FILES = new Set(['tod-handler.js', 'tod.js', 'welcome-handler.js']);
 
 describe('Plugin Loading', () => {
     let pluginFiles = [];
@@ -10,7 +11,7 @@ describe('Plugin Loading', () => {
     const errors = [] = [];
 
     beforeAll(async () => {
-        pluginFiles = fs.readdirSync(PLUGINS_DIR).filter(f => f.endsWith('.js'));
+        pluginFiles = fs.readdirSync(PLUGINS_DIR).filter(f => f.endsWith('.js') && !HELPER_FILES.has(f));
         for (const file of pluginFiles) {
             try {
                 const mod = await import(path.join(PLUGINS_DIR, file));

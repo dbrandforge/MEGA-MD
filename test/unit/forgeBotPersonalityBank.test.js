@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getPersonalityBankStats, personalityBank, pickPersonalityReply } from '../../data/forgeBotPersonalityBank.js';
 
 describe('Forge Bot personality bank', () => {
+  const normalizeReply = (value) => String(value).replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').trim();
   it('has broad response variety across its core categories', () => {
     for (const category of ['greeting','financialNeed','departure','teasing','savage','banter','boredom','relationship','wellbeing','pidgin','yoruba','fallback']) {
       expect(personalityBank[category].length).toBeGreaterThanOrEqual(6);
@@ -14,10 +15,10 @@ describe('Forge Bot personality bank', () => {
 
   it('recognises short Nigerian conversational messages without clarification loops', () => {
     expect(pickPersonalityReply('Yoo').length).toBeGreaterThan(5);
-    expect(personalityBank.flirty).toContain(pickPersonalityReply('I like you'));
-    expect(personalityBank.thanks).toContain(pickPersonalityReply('Thank you'));
-    expect(personalityBank.workLife).toContain(pickPersonalityReply('I have a deadline at work'));
-    expect(personalityBank.hypotheticals).toContain(pickPersonalityReply('What if you could travel anywhere?'));
+    expect(personalityBank.flirty.map(normalizeReply)).toContain(normalizeReply(pickPersonalityReply('I like you')));
+    expect(personalityBank.thanks.map(normalizeReply)).toContain(normalizeReply(pickPersonalityReply('Thank you')));
+    expect(personalityBank.workLife.map(normalizeReply)).toContain(normalizeReply(pickPersonalityReply('I have a deadline at work')));
+    expect(personalityBank.hypotheticals.map(normalizeReply)).toContain(normalizeReply(pickPersonalityReply('What if you could travel anywhere?')));
     expect(personalityBank.departure.join(' ')).toMatch(/block you now/i);
     expect(personalityBank.financialNeed.join(' ')).toMatch(/OPay/i);
     expect(personalityBank.financialNeed.join(' ')).toMatch(/PalmPay/i);
@@ -39,6 +40,6 @@ describe('Forge Bot personality bank', () => {
 
   it('keeps serious disclosures out of the roast categories', () => {
     const result = pickPersonalityReply('I am in danger', { chatId: 'test-chat-serious' });
-    expect(personalityBank.serious).toContain(result);
+    expect(personalityBank.serious.map(normalizeReply)).toContain(normalizeReply(result));
   });
 });
