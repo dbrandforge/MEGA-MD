@@ -13,8 +13,10 @@ const generateImage = async (prompt) => {
                 maxContentLength: 10 * 1024 * 1024
             });
             const buf = Buffer.from(data);
-            if (buf[0] === 0x89 || buf[0] === 0xFF)
-                return buf;
+            const isPng = buf.length >= 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]));
+            const isJpeg = buf.length >= 3 && buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF;
+            const isWebp = buf.length >= 12 && buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP';
+            if (isPng || isJpeg || isWebp) return buf;
         }
         catch {
             continue;
