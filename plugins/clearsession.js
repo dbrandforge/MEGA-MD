@@ -8,6 +8,7 @@ export default {
     category: 'owner',
     description: 'Clear session files',
     usage: '.clearsession',
+    strictOwnerOnly: true,
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
         try {
