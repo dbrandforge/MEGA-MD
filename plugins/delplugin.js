@@ -1,5 +1,6 @@
 import { join } from 'path';
 import { unlinkSync, readdirSync } from 'fs';
+
 export default {
     command: 'delplugin',
     aliases: ['deleteplugin', 'rmplugin'],
@@ -10,29 +11,29 @@ export default {
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
         try {
-            if (!args || !args[0]) {
+            const name = String(args?.[0] || '');
+            if (!name) {
                 return await sock.sendMessage(chatId, {
-                    text: `*🌟Example usage:*\n.delplugin main-menu`
+                    text: '*🌟 Example usage:*\n.delplugin main-menu'
                 }, { quoted: message });
             }
-            if (!/^[a-z0-9][a-z0-9._-]{0,79}$/i.test(args[0]) || args[0].includes('..')) {\n                return await sock.sendMessage(chatId, { text: '❌ Invalid plugin name.' }, { quoted: message });\n            }\n            if (!/^[a-z0-9][a-z0-9._-]{0,79}$/i.test(args[0]) || args[0].includes('..')) {
+            if (!/^[a-z0-9][a-z0-9._-]{0,79}$/i.test(name) || name.includes('..')) {
                 return await sock.sendMessage(chatId, { text: '❌ Invalid plugin name.' }, { quoted: message });
             }
             const pluginDir = join(process.cwd(), 'plugins');
-            const pluginFiles = readdirSync(pluginDir).filter(f => f.endsWith('.js'));
-            const pluginNames = pluginFiles.map(f => f.replace('.js', ''));
-            if (!pluginNames.includes(args[0])) {
+            const pluginFiles = readdirSync(pluginDir).filter(file => file.endsWith('.js'));
+            const pluginNames = pluginFiles.map(file => file.slice(0, -3));
+            if (!pluginNames.includes(name)) {
                 return await sock.sendMessage(chatId, {
-                    text: `🗃️ This plugin doesn't exist!\n\nAvailable plugins:\n${pluginNames.join('\n')}`
+                    text: `🗃️ Plugin not found.\n\nAvailable plugins:\n${pluginNames.join('\n')}`
                 }, { quoted: message });
             }
-            const filePath = join(pluginDir, `${args[0]}.js`);
-            unlinkSync(filePath);
-            await sock.sendMessage(chatId, { text: `⚠️ Plugin "${args[0]}.js" has been deleted.` }, { quoted: message });
-        }
-        catch (err) {
+            unlinkSync(join(pluginDir, `${name}.js`));
+            await sock.sendMessage(chatId, { text: `⚠️ Plugin "${name}.js" has been deleted.` }, { quoted: message });
+        } catch (err) {
             console.error('rmplugin error:', err);
-            await sock.sendMessage(chatId, { text: `❌ Failed to delete plugin: ${err.message}`
+            await sock.sendMessage(chatId, {
+                text: `❌ Failed to delete plugin: ${err.message}`
             }, { quoted: message });
         }
     }
