@@ -26,7 +26,6 @@ import { handleMessages, handleGroupParticipantUpdate, handleStatus, handleCall 
 import commandHandler from './lib/commandHandler.js';
 import { startSchedulerEngine, trackGroup } from './plugins/schedule.js';
 import { FEATURE_GROUPS } from './lib/featureGroups.js';
-import { TARGET_GROUP } from './plugins/grouplock.js';
 store.readFromFile();
 setInterval(() => store.writeToFile(), config.storeWriteInterval || 10000);
 setInterval(() => {
