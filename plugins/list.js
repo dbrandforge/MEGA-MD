@@ -2,202 +2,136 @@ import config from '../config.js';
 import commandHandler from '../lib/commandHandler.js';
 import path from 'path';
 import fs from 'fs';
+import { isOwnerOnly } from '../lib/isOwner.js';
+
+const PUBLIC_CATEGORIES = new Set([
+    'general', 'ai', 'download', 'downloader', 'utility', 'games',
+    'stickers', 'tools', 'images', 'search', 'fun', 'quotes', 'music', 'info'
+]);
+
+const INTERNAL_COMMANDS = new Set([
+    'hsdone_legacy', 'toddone_legacy', 'welcomemember_legacy',
+    'bindsocket_internal', 'truthcontinue'
+]);
+
 function formatTime() {
-    const now = new Date();
-    const options = {
+    return new Date().toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
-        timeZone: config.timeZone || 'UTC'
-    };
-    return now.toLocaleTimeString('en-US', options);
+        timeZone: config.timeZone || 'Africa/Lagos'
+    });
 }
-const menuStyles = [
-    {
-        render({ _title, info, categories, prefix }) {
-            let t = `╭━━『 *FORGE MENU* 』━⬣\n`;
-            t += `┃ ✨ *Bot: ${info.bot}*\n`;
-            t += `┃ 🔧 *Prefix: ${info.prefix}*\n`;
-            t += `┃ 📦 *Plugin: ${info.total}*\n`;
-            t += `┃ 💎 *Version: ${info.version}*\n`;
-            t += `┃ ⏰ *Time: ${info.time}*\n`;
-            for (const [cat, cmds] of categories) {
-                t += `┃━━━ *${cat.toUpperCase()}* ━✦\n`;
-                for (const c of cmds)
-                    t += `┃ ➤ ${prefix}${c}\n`;
-            }
-            t += `╰━━━━━━━━━━━━━⬣`;
-            return t;
+
+function isInternal(plugin) {
+    const name = String(plugin.command || '').toLowerCase();
+    return plugin.internal === true ||
+        plugin.hidden === true ||
+        INTERNAL_COMMANDS.has(name) ||
+        name.endsWith('_internal') ||
+        name.endsWith('_legacy');
+}
+
+function getVisibleCategories(ownerView) {
+    const categories = new Map();
+    for (const plugin of commandHandler.commands.values()) {
+        const category = String(plugin.category || 'misc').toLowerCase();
+        if (isInternal(plugin)) continue;
+        if (!ownerView) {
+            if (!PUBLIC_CATEGORIES.has(category)) continue;
+            if (plugin.ownerOnly || plugin.strictOwnerOnly || plugin.adminOnly) continue;
+            if (plugin.publicMenu === false) continue;
         }
-    },
-    {
-        render({ _title, info, categories, prefix }) {
-            let t = `◈╭─❍「 *FORGE MENU* 」❍\n`;
-            t += `◈├• 🌟 *Bot: ${info.bot}*\n`;
-            t += `◈├• ⚙️ *Prefix: ${info.prefix}*\n`;
-            t += `◈├• 🍫 *Plugins: ${info.total}*\n`;
-            t += `◈├• 💎 *Version: ${info.version}*\n`;
-            t += `◈├• ⏰ *Time: ${info.time}*\n`;
-            for (const [cat, cmds] of categories) {
-                t += `◈├─❍「 *${cat.toUpperCase()}* 」❍\n`;
-                for (const c of cmds)
-                    t += `◈├• ${prefix}${c}\n`;
-            }
-            t += `◈╰──★─☆──♪♪─❍`;
-            return t;
-        }
-    },
-    {
-        render({ _title, info, categories, prefix }) {
-            let t = `┏━━━━ *FORGE MENU* ━━━┓\n`;
-            t += `┃• *Bot : ${info.bot}*\n`;
-            t += `┃• *Prefixes : ${info.prefix}*\n`;
-            t += `┃• *Plugins : ${info.total}*\n`;
-            t += `┃• *Version : ${info.version}*\n`;
-            t += `┃• *Time : ${info.time}*\n`;
-            for (const [cat, cmds] of categories) {
-                t += `┃━━━━ *${cat.toUpperCase()}* ━━◆\n`;
-                for (const c of cmds)
-                    t += `┃ ▸ ${prefix}${c}\n`;
-            }
-            t += `┗━━━━━━━━━━━━━━━┛`;
-            return t;
-        }
-    },
-    {
-        render({ _title, info, categories, prefix }) {
-            let t = `✦═══ *FORGE MENU* ═══✦\n`;
-            t += `║➩ *Bot: ${info.bot}*\n`;
-            t += `║➩ *Prefixes: ${info.prefix}*\n`;
-            t += `║➩ *Plugins: ${info.total}*\n`;
-            t += `║➩ *Version: ${info.version}*\n`;
-            t += `║➩ *Time: ${info.time}*\n`;
-            for (const [cat, cmds] of categories) {
-                t += `║══ *${cat.toUpperCase()}* ══✧\n`;
-                for (const c of cmds)
-                    t += `║ ✦ ${prefix}${c}\n`;
-            }
-            t += `✦══════════════✦`;
-            return t;
-        }
-    },
-    {
-        render({ _title, info, categories, prefix }) {
-            let t = `❀━━━ *FORGE MENU* ━━━❀\n`;
-            t += `┃☞ *Bot: ${info.bot}*\n`;
-            t += `┃☞ *Prefixes: ${info.prefix}*\n`;
-            t += `┃☞ *Plugins: ${info.total}*\n`;
-            t += `┃☞ *Version: ${info.version}*\n`;
-            t += `┃☞ *Time: ${info.time}*\n`;
-            for (const [cat, cmds] of categories) {
-                t += `┃━━━〔 *${cat.toUpperCase()}* 〕━❀\n`;
-                for (const c of cmds)
-                    t += `┃☞ ${prefix}${c}\n`;
-            }
-            t += `❀━━━━━━━━━━━━━━❀`;
-            return t;
-        }
-    },
-    {
-        render({ _title, info, categories, prefix }) {
-            let t = `◆━━━ *FORGE MENU* ━━━◆\n`;
-            t += `┃ ¤ *Bot: ${info.bot}*\n`;
-            t += `┃ ¤ *Prefixes: ${info.prefix}*\n`;
-            t += `┃ ¤ *Plugins: ${info.total}*\n`;
-            t += `┃ ¤ *Version: ${info.version}*\n`;
-            t += `┃ ¤ *Time: ${info.time}*\n`;
-            for (const [cat, cmds] of categories) {
-                t += `┃━━ *${cat.toUpperCase()}* ━━◆◆\n`;
-                for (const c of cmds)
-                    t += `┃ ¤ ${prefix}${c}\n`;
-            }
-            t += `◆━━━━━━━━━━━━━━━━◆`;
-            return t;
-        }
-    },
-    {
-        render({ _title, info, categories, prefix }) {
-            let t = `╭───⬣ *FORGE MENU* ──⬣\n`;
-            t += ` | ● *Bot: ${info.bot}*\n`;
-            t += ` | ● *Prefixes: ${info.prefix}*\n`;
-            t += ` | ● *Plugins: ${info.total}*\n`;
-            t += ` | ● *Version: ${info.version}*\n`;
-            t += ` | ● *Time: ${info.time}*\n`;
-            for (const [cat, cmds] of categories) {
-                t += ` |───⬣ *${cat.toUpperCase()}* ──⬣\n`;
-                for (const c of cmds)
-                    t += ` | ● ${prefix}${c}\n`;
-            }
-            t += `╰──────────⬣`;
-            return t;
-        }
+        if (!categories.has(category)) categories.set(category, []);
+        categories.get(category).push(plugin.command);
     }
-];
-const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    for (const [category, commands] of categories) {
+        categories.set(category, commands.sort((a, b) => a.localeCompare(b)));
+    }
+    return [...categories.entries()].sort(([a], [b]) => a.localeCompare(b));
+}
+
+function buildMenu(ownerView) {
+    const prefix = config.prefixes?.[0] || '.';
+    const categories = getVisibleCategories(ownerView);
+    const lines = [
+        ownerView ? '╭━━━『 *FORGE GUARD • OWNER* 』━━━⬣' : '╭━━━『 *FORGE GUARD* 』━━━⬣',
+        `┃ 🤖 *Bot:* ${config.botName || 'Forge Guard'}`,
+        `┃ 🔧 *Prefix:* ${(config.prefixes || ['.']).join(', ')}`,
+        `┃ 💎 *Version:* ${config.version || '6.1.0'}`,
+        `┃ ⏰ *Time:* ${formatTime()}`,
+        `┃ 📦 *Commands:* ${categories.reduce((n, [, cmds]) => n + cmds.length, 0)}`,
+        '┣━━━━━━━━━━━━━━━━━━━━'
+    ];
+    for (const [category, commands] of categories) {
+        lines.push(`┃ ${category.toUpperCase()}`);
+        for (const command of commands) lines.push(`┃  • ${prefix}${command}`);
+        lines.push('┃');
+    }
+    lines.push('╰━━━━━━━━━━━━━━━━━━━━⬣');
+    return lines.join('\n');
+}
+
 export default {
     command: 'menu',
     aliases: ['help', 'commands', 'h', 'list'],
     category: 'general',
-    description: 'Show all commands',
-    usage: '.menu [command]',
+    description: 'Show public commands. Owner: .menu owner',
+    usage: '.menu [owner|command]',
     async handler(sock, message, args, context) {
-        const { chatId, channelInfo } = context;
-        const prefix = config.prefixes[0];
+        const { chatId, channelInfo, senderId } = context;
+        const prefix = config.prefixes?.[0] || '.';
         const imagePath = path.join(process.cwd(), 'assets/thumb.png');
-        if (args.length) {
-            const searchTerm = args[0].toLowerCase();
-            let cmd = commandHandler.commands.get(searchTerm);
-            if (!cmd && commandHandler.aliases.has(searchTerm)) {
-                const mainCommand = commandHandler.aliases.get(searchTerm);
-                cmd = commandHandler.commands.get(mainCommand);
-            }
-            if (!cmd) {
-                return sock.sendMessage(chatId, {
-                    text: `❌ Command "${args[0]}" not found.\n\nUse ${prefix}menu to see all commands.`,
-                    ...channelInfo
-                }, { quoted: message });
-            }
-            const text = `╭━━━━━━━━━━━━━━⬣
-┃ 📌 *COMMAND INFO*
-┃
-┃ ⚡ *Command:* ${prefix}${cmd.command}
-┃ 📝 *Desc:* ${cmd.description || 'No description'}
-┃ 📖 *Usage:* ${cmd.usage || `${prefix}${cmd.command}`}
-┃ 🏷️ *Category:* ${cmd.category || 'misc'}
-┃ 🔖 *Aliases:* ${cmd.aliases?.length ? cmd.aliases.map((a) => prefix + a).join(', ') : 'None'}
-┃
-╰━━━━━━━━━━━━━━⬣`;
-            if (fs.existsSync(imagePath)) {
-                return sock.sendMessage(chatId, {
-                    image: { url: imagePath },
-                    caption: text,
-                    ...channelInfo
-                }, { quoted: message });
-            }
-            return sock.sendMessage(chatId, { text, ...channelInfo }, { quoted: message });
-        }
-        const style = pick(menuStyles);
-        const text = style.render({
-            title: config.botName,
-            prefix,
-            info: {
-                bot: config.botName,
-                prefix: config.prefixes.join(', '),
-                total: commandHandler.commands.size,
-                version: config.version || "6.0.0",
-                time: formatTime()
-            },
-            categories: commandHandler.categories
-        });
-        if (fs.existsSync(imagePath)) {
-            await sock.sendMessage(chatId, {
-                image: { url: imagePath },
-                caption: text,
+        const ownerView = String(args?.[0] || '').toLowerCase() === 'owner';
+
+        if (ownerView && !message.key.fromMe && !isOwnerOnly(senderId)) {
+            return sock.sendMessage(chatId, {
+                text: '⛔ This menu is restricted to the bot owner.',
                 ...channelInfo
             }, { quoted: message });
         }
-        else {
-            await sock.sendMessage(chatId, { text, ...channelInfo }, { quoted: message });
+
+        if (args.length && !ownerView) {
+            const searchTerm = String(args[0]).toLowerCase();
+            let plugin = commandHandler.commands.get(searchTerm);
+            if (!plugin && commandHandler.aliases.has(searchTerm)) {
+                plugin = commandHandler.commands.get(commandHandler.aliases.get(searchTerm));
+            }
+            if (!plugin || isInternal(plugin) ||
+                (!ownerView && (
+                    !PUBLIC_CATEGORIES.has(String(plugin.category || '').toLowerCase()) ||
+                    plugin.ownerOnly || plugin.strictOwnerOnly || plugin.adminOnly ||
+                    plugin.publicMenu === false
+                ))) {
+                return sock.sendMessage(chatId, {
+                    text: `❌ Public command "${args[0]}" not found. Use ${prefix}menu to view available commands.`,
+                    ...channelInfo
+                }, { quoted: message });
+            }
+            const detail = [
+                '╭━━━━━━━━━━━━━━⬣',
+                '┃ 📌 *COMMAND INFO*',
+                `┃ ⚡ *Command:* ${prefix}${plugin.command}`,
+                `┃ 📝 *Description:* ${plugin.description || 'No description'}`,
+                `┃ 📖 *Usage:* ${plugin.usage || prefix + plugin.command}`,
+                `┃ 🏷️ *Category:* ${plugin.category || 'misc'}`,
+                `┃ 🔖 *Aliases:* ${plugin.aliases?.length ? plugin.aliases.map(a => prefix + a).join(', ') : 'None'}`,
+                '╰━━━━━━━━━━━━━━⬣'
+            ].join('\n');
+            if (fs.existsSync(imagePath)) {
+                return sock.sendMessage(chatId, {
+                    image: { url: imagePath }, caption: detail, ...channelInfo
+                }, { quoted: message });
+            }
+            return sock.sendMessage(chatId, { text: detail, ...channelInfo }, { quoted: message });
         }
+
+        const menuText = buildMenu(ownerView);
+        if (fs.existsSync(imagePath)) {
+            return sock.sendMessage(chatId, {
+                image: { url: imagePath }, caption: menuText, ...channelInfo
+            }, { quoted: message });
+        }
+        return sock.sendMessage(chatId, { text: menuText, ...channelInfo }, { quoted: message });
     }
 };
