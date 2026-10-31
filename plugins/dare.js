@@ -1,7 +1,7 @@
 import { getUserGender } from './gender.js';
 import { getDares, randomFrom } from '../data/todLists.js';
 import { isGameAllowed } from './daylock.js';
-import { startSoloSession } from './truth-continue.js';
+import { startSoloSession, setSoloQuestionMessage } from './truth-continue.js';
 
 export default {
     command: 'dare',
