@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getPersonalityBankStats, personalityBank, pickPersonalityReply } from '../../data/forgeBotPersonalityBank.js';
 
 describe('Forge Bot personality bank', () => {
-  const normalizeReply = (value) => String(value).replace(/[\\p{Extended_Pictographic}\\uFE0F\\u200D]/gu, '').trim();
+  const normalizeReply = (value) => String(value).replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').trim();
   it('has broad response variety across its core categories', () => {
     for (const category of ['greeting','financialNeed','departure','teasing','savage','banter','boredom','relationship','wellbeing','pidgin','yoruba','fallback']) {
       expect(personalityBank[category].length).toBeGreaterThanOrEqual(6);
