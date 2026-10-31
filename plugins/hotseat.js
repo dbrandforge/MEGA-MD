@@ -1,6 +1,8 @@
 import store from '../lib/lightweight_store.js';
 import config from '../config.js';
 import { isGameAllowed } from './daylock.js';
+import { getHotSeatQuestions } from '../data/hotseatQuestions.js';
+import { getUserGender } from './gender.js';
 
 const TARGET_GROUP = '120363405434471171@g.us';
 const HOTSEAT_KEY = 'hotseatSession';
@@ -13,39 +15,6 @@ const MUTE_MS = Number(config.hotseatMuteHours || config.muteDurationHours || 10
 const NEXT_QUESTION_MS = Number(config.hotseatNextQuestionSeconds || 60) * 1000;
 const MIN_PLAYERS = 2;
 const MAX_PLAYERS = 4;
-
-const questions = [
-    "What is one childhood secret you have never told anyone in this group?",
-    "Have you ever cheated or been cheated on? Tell the real story.",
-    "How old were you when you first had sex, and how was the experience?",
-    "What is your body count (be honest)?",
-    "What is the freakiest place you have ever had sex?",
-    "Who in this group would you actually consider dating if there were no consequences?",
-    "What is your biggest sexual fantasy that you have not fulfilled yet?",
-    "Have you ever sent nudes to the wrong person? What happened?",
-    "Do you prefer to dominate or be dominated? Explain.",
-    "What is the most jealous you have ever felt because of someone in this group?",
-    "Have you ever had sex with someone from this group or someone the group knows?",
-    "What is your biggest turn-on that most people would find strange?",
-    "If you had to rate your own sex life out of 10 right now, what would you give and why?",
-    "What is the dirtiest text you have ever sent someone?",
-    "Who in this group do you secretly find attractive?",
-    "What is the longest situationship you have ever been in and why did it not become official?",
-    "Have you ever dated two people at the same time? How did you manage it?",
-    "What is one lie you have told people in this group?",
-    "Have you ever been caught having sex or masturbating? Tell the story.",
-    "What is the most toxic thing you have done in a relationship?",
-    "What is the wildest thing you have done just to get someone's attention?",
-    "Have you ever hooked up with a friend's ex?",
-    "What is your go-to move in bed that always works?",
-    "Describe the most intense orgasm you have ever had.",
-    "Have you ever had a one-night stand you still think about?",
-    "What is one sexual boundary you used to have that you no longer have?",
-    "Who would you pick for a private truth-or-dare if you could only choose one person here?",
-    "Have you ever been in love and refused to admit it?",
-    "What is the most embarrassing thing that has happened to you during sex?",
-    "If the whole group disappeared for one night and only two of you remained, who would you want it to be and why?"
-];
 
 function shuffle(items) { return [...items].sort(() => Math.random() - 0.5); }
 function mention(jid) { return '@' + String(jid || '').split('@')[0]; }
@@ -66,7 +35,6 @@ function getMentions(message) {
     return context.mentionedJid || [];
 }
 function formatPlayers(players) { return players.map((p, i) => `${i + 1}. ${mention(p)}`).join('\n'); }
-function unique(items) { return items.length === new Set(items).size; }
 async function muteUser(sock, chatId, userId) {
     try {
         const { softMuteUser } = await import('./softmute.js');
@@ -82,29 +50,42 @@ async function sendPlayerQuestion(sock, chatId, player) {
         await sock.sendMessage(chatId, { text: '🛑 *Hot Seat ended* — 2-hour limit reached.', mentions: session.players });
         return;
     }
-
     const state = session.playerStates?.[player];
     if (!state || state.status !== 'active' || state.waiting) return;
 
-    const questionId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    let gender = null;
+    try { gender = await getUserGender(player); } catch {}
+    // If no gender set, prompt once and skip question until they register
+    if (!gender) {
+        await sock.sendMessage(chatId, {
+            text: `${mention(player)} set your gender first to get Hot Seat questions:\n.gender guy\nor\n.gender lady`,
+            mentions: [player]
+        });
+        return;
+    }
+    const bank = getHotSeatQuestions(gender === 'lady' ? 'lady' : 'guy');
+    const usedKey = gender === 'lady' ? 'usedLady' : 'usedGuy';
+    if (!Array.isArray(session[usedKey])) session[usedKey] = [];
     if (!Array.isArray(session.usedQuestions)) session.usedQuestions = [];
-    let pool = questions.filter(q => !session.usedQuestions.includes(q));
+    let pool = bank.filter(q => !session[usedKey].includes(q));
     if (!pool.length) {
-        session.usedQuestions = [];
-        pool = [...questions];
+        session[usedKey] = [];
+        pool = [...bank];
     }
     const question = shuffle(pool)[0];
+    session[usedKey].push(question);
     session.usedQuestions.push(question);
 
+    const questionId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     state.waiting = true;
     state.questionId = questionId;
     state.questionAskedAt = Date.now();
     state.currentQuestion = question;
-    state.cooldownUntil = null;
+    state.gender = gender;
     await saveSession(chatId, session);
 
     await sock.sendMessage(chatId, {
-        text: `🔥 *HOT SEAT — YOUR QUESTION*\n\n${mention(player)}, your question is:\n\n*${question}*\n\n✅ Answer by *tagging the bot* in your reply.\nOnly *your* tagged message counts as the answer.\n⏰ You have 5 minutes. No answer = 10-hour mute.\n⏳ After you answer, next question drops in *60 seconds*.`,
+        text: `🔥 *HOT SEAT — YOUR QUESTION*\n\n${mention(player)}, your question is:\n\n*${question}*\n\n✅ Answer by *tagging the bot* in your reply.\nOnly *your* tagged message counts.\n⏰ 5 minutes or 10-hour mute.\n⏳ After answer, next question in *60 seconds*.`,
         mentions: [player]
     });
 
@@ -119,13 +100,13 @@ async function sendPlayerQuestion(sock, chatId, player) {
         await saveSession(chatId, latest);
         await muteUser(sock, chatId, player);
         await sock.sendMessage(chatId, {
-            text: `⏰ ${mention(player)} did not answer within 5 minutes and has received the 10-hour mute penalty. They are now out of this Hot Seat session.`,
+            text: `⏰ ${mention(player)} did not answer in 5 minutes → 10-hour mute. Out of Hot Seat.`,
             mentions: [player]
         });
         const remaining = latest.players.filter(id => latest.playerStates?.[id]?.status === 'active');
-        if (remaining.length === 0) {
+        if (!remaining.length) {
             await clearSession(chatId);
-            await sock.sendMessage(chatId, { text: '🛑 *Hot Seat ended* — no participants remain active.' });
+            await sock.sendMessage(chatId, { text: '🛑 *Hot Seat ended* — no active players left.' });
         }
     }, ANSWER_TIMEOUT_MS);
 }
@@ -154,12 +135,10 @@ export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
         (botNum && String(ctx.participant).startsWith(botNum)) ||
         (botLid && String(ctx.participant) === botLid)
     ));
-
     if (!taggedBot && !repliedToBot) return false;
 
     state.waiting = false;
     state.lastAnsweredAt = Date.now();
-    state.cooldownUntil = Date.now() + NEXT_QUESTION_MS;
     state.questionsAnswered = (state.questionsAnswered || 0) + 1;
     await saveSession(chatId, session);
 
@@ -178,7 +157,6 @@ export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
         if (st.waiting) return;
         await sendPlayerQuestion(sock, chatId, senderId);
     }, NEXT_QUESTION_MS);
-
     return true;
 }
 
@@ -187,19 +165,16 @@ async function beginGame(sock, chatId, session) {
     session.startedAt = Date.now();
     session.adjustmentEndsAt = null;
     session.round = 0;
-    session.waitingFor = null;
     session.usedQuestions = [];
+    session.usedGuy = [];
+    session.usedLady = [];
     session.playerStates = Object.fromEntries(session.players.map(id => [id, {
-        status: 'active',
-        waiting: false,
-        questionsAnswered: 0,
-        lastAnsweredAt: null,
-        questionId: null,
-        currentQuestion: null
+        status: 'active', waiting: false, questionsAnswered: 0,
+        lastAnsweredAt: null, questionId: null, currentQuestion: null
     }]));
     await saveSession(chatId, session);
     await sock.sendMessage(chatId, {
-        text: `🔥 *HOT SEAT STARTED*\n\nPlayers:\n${formatPlayers(session.players)}\n\nEach person gets their own questions.\nAnswer by *tagging the bot*.\nNext question after each answer: *60 seconds*.\nSession lasts up to 2 hours.\nNo answer in 5 minutes = 10-hour mute.`,
+        text: `🔥 *HOT SEAT STARTED*\n\nPlayers:\n${formatPlayers(session.players)}\n\nGender-based questions (300 each).\nAnswer by *tagging the bot*.\nNext question: *60 seconds* after answer.\n2-hour session max. 5 min timeout = 10h mute.`,
         mentions: session.players
     });
     for (const player of session.players) {
@@ -247,15 +222,12 @@ export default {
         }
         const senderId = context.senderId || message.key.participant || message.key.remoteJid;
         const reply = (text) => sock.sendMessage(chatId, { text }, { quoted: message });
-
         const allowed = await isGameAllowed(chatId, 'hotseat');
         if (!allowed.ok && !(args[0] || '').toLowerCase().includes('end')) {
             return reply(allowed.msg || 'Hot Seat is day-locked.');
         }
-
         const sub = (args[0] || '').toLowerCase();
         let session = await getSession(chatId);
-
         if (sub === 'end' || context.command === 'endhotseat') {
             await clearSession(chatId);
             return reply('🛑 Hot Seat ended by admin.');
@@ -274,13 +246,13 @@ export default {
             return sendList(sock, chatId, session);
         }
         if (sub === 'start') {
-            if (!session || session.status !== 'pending') return reply('There is no Hot Seat selection window to start.');
-            if (session.players.length < MIN_PLAYERS) return reply(`Hot Seat needs at least ${MIN_PLAYERS} participants.`);
+            if (!session || session.status !== 'pending') return reply('No selection window to start.');
+            if (session.players.length < MIN_PLAYERS) return reply(`Need at least ${MIN_PLAYERS} participants.`);
             await beginGame(sock, chatId, session);
             return;
         }
         if (session && ['pending', 'active'].includes(session.status)) {
-            return reply(session.status === 'pending' ? 'Hot Seat selection is already open. Use *.hotseat list*.' : 'Hot Seat already running. *.endhotseat*');
+            return reply(session.status === 'pending' ? 'Selection already open. *.hotseat list*' : 'Already running. *.endhotseat*');
         }
         const members = await eligibleMembers(sock, chatId);
         if (members.length < MIN_PLAYERS) return reply('Not enough non-admin members.');
@@ -296,11 +268,11 @@ export default {
             adjustmentEndsAt: Date.now() + ADJUSTMENT_MS,
             readerSelectionUsed: recentReaders.length >= MIN_PLAYERS,
             manualSelection: false,
-            usedQuestions: []
+            usedQuestions: [], usedGuy: [], usedLady: []
         };
         await saveSession(chatId, session);
         await sock.sendMessage(chatId, {
-            text: `🎟️ *HOT SEAT SELECTION OPEN*\n\nSelected participants:\n${formatPlayers(session.players)}\n\n${session.readerSelectionUsed ? 'Selection prioritised members who read recent bot messages.' : 'Selected randomly from eligible non-admin members.'}\n\nAdmins have 10 minutes to inspect or adjust.\n*.hotseat list* · *.hotseat add @user1 @user2* · *.hotseat start*\n\nThe game starts automatically when the window closes.`,
+            text: `🎟️ *HOT SEAT SELECTION OPEN*\n\n${formatPlayers(session.players)}\n\n10 min to adjust.\n*.hotseat list* · *.hotseat add @user* · *.hotseat start*`,
             mentions: session.players
         });
         setTimeout(async () => {
@@ -314,7 +286,6 @@ export const endhotseat = {
     command: 'endhotseat',
     aliases: ['stophotseat'],
     category: 'admin',
-    description: 'End Hot Seat session',
     groupOnly: true,
     adminOnly: true,
     async handler(sock, message, args, context) {
