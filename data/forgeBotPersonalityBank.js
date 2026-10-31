@@ -279,6 +279,17 @@ try {
   uniqPush(ensureCat('group'), moreSocial);
 } catch (e) { console.warn('[ForgeBank] more* merge skipped:', e.message); }
 
+// Expose legacy/category aliases without double-counting them in bank statistics.
+for (const [alias, target] of Object.entries(CATEGORY_ALIASES)) {
+  if (!Object.prototype.hasOwnProperty.call(personalityBank, alias)) {
+    Object.defineProperty(personalityBank, alias, {
+      value: ensureCat(target),
+      enumerable: false,
+      configurable: true
+    });
+  }
+}
+
 for (const key of Object.keys(personalityBank)) {
   if (!Array.isArray(personalityBank[key])) continue;
   personalityBank[key] = personalityBank[key].filter(r => !CS_POLLUTION.test(String(r)));
