@@ -40,6 +40,18 @@ describe('CommandHandler', () => {
         expect(handler.aliases.has('tst')).toBe(true);
     });
 
+    it('unregisterCommand removes command, aliases, category and stats', () => {
+        handler.registerCommand({
+            command: 'removeprobe', aliases: ['rp'], category: 'temporary',
+            description: 'test', async handler() {}
+        });
+        expect(handler.unregisterCommand('removeprobe')).toBe(true);
+        expect(handler.commands.has('removeprobe')).toBe(false);
+        expect(handler.aliases.has('rp')).toBe(false);
+        expect(handler.categories.has('temporary')).toBe(false);
+        expect(handler.stats.has('removeprobe')).toBe(false);
+    });
+
     it('getCommand finds by prefix', () => {
         handler.registerCommand({ command: 'hello', aliases: [], category: 'general', description: 'test', async handler() {} });
         const result = handler.getCommand('.hello', ['.']);
