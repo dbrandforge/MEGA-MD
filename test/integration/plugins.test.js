@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 const PLUGINS_DIR = path.join(process.cwd(), 'plugins');
-const HELPER_FILES = new Set(['tod-handler.js', 'tod.js']);
+const HELPER_FILES = new Set(['tod-handler.js', 'tod.js', 'welcome-handler.js']);
 
 describe('Plugin Loading', () => {
     let pluginFiles = [];
