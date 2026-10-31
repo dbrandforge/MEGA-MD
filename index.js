@@ -200,11 +200,10 @@ function startWatchdog() {
         }
     }, WATCHDOG_INTERVAL_MS);
 }
-// Periodically uploads the full ./session folder to MongoDB (when
-// MONGO_URL is configured) so pre-keys and per-contact Signal sessions
-// survive a redeploy, not just the long-term identity in creds.json.
+// Periodically checks the local session and sends only changed files to MongoDB.
+// A full baseline is synced once per process; later snapshots are deltas.
 let sessionBackupTimer = null;
-const SESSION_BACKUP_INTERVAL_MS = 8 * 1000;
+const SESSION_BACKUP_INTERVAL_MS = 5 * 60 * 1000;
 function startSessionBackupLoop() {
     if (!isMongoBackupEnabled())
         return;
