@@ -200,7 +200,7 @@ async function sendList(sock, chatId, session) {
 }
 
 export async function trackHotSeatReader(chatId, userId) {
-    if (chatId !== TARGET_GROUP || !userId) return;
+    if (!isFeatureGroup(chatId) || !userId) return;
     try {
         const readers = await getReaders(chatId);
         readers[userId] = Date.now();
