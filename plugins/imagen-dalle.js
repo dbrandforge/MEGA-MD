@@ -34,7 +34,7 @@ const enhancePrompt = (prompt) => {
 };
 export default {
     command: 'dalle',
-    aliases: ['aiimage', 'draw', 'genimage'],
+    aliases: ['aiimage', 'drawdalle'],
     category: 'ai',
     description: 'Generate an AI image based on your prompt',
     usage: '.dalle <prompt>',
@@ -47,8 +47,7 @@ export default {
         await sock.sendMessage(chatId, { react: { text: '🎨', key: message.key } });
         await sock.sendMessage(chatId, { text: '🎨 Generating your image... Please wait.' }, { quoted: message });
         try {
-            const enhanced = enhancePrompt(imagePrompt);
-            const imageBuffer = await generateImage(enhanced);
+            const imageBuffer = await generateImage(imagePrompt);
             await sock.sendMessage(chatId, {
                 image: imageBuffer,
                 caption: `🎨 *Generated Image*\n📝 Prompt: _${imagePrompt}_`
