@@ -9,7 +9,8 @@ const generateImage = async (prompt) => {
         try {
             const { data } = await axios.get(apiUrl(prompt), {
                 responseType: 'arraybuffer',
-                timeout: 30000
+                timeout: 30000,
+                maxContentLength: 10 * 1024 * 1024
             });
             const buf = Buffer.from(data);
             if (buf[0] === 0x89 || buf[0] === 0xFF)
@@ -20,16 +21,6 @@ const generateImage = async (prompt) => {
         }
     }
     throw new Error('All image generation APIs failed');
-};
-const enhancePrompt = (prompt) => {
-    const enhancers = [
-        'high quality', 'detailed', 'masterpiece', 'best quality',
-        'ultra realistic', '4k', 'highly detailed', 'cinematic lighting'
-    ];
-    const selected = enhancers
-        .sort(() => Math.random() - 0.5)
-        .slice(0, Math.floor(Math.random() * 2) + 3);
-    return `${prompt}, ${selected.join(', ')}`;
 };
 export default {
     command: 'diffusion',
