@@ -37,7 +37,18 @@ async function saveSessions(chatId, sessions) {
 // first prompt, so continuity has something to track.
 export async function startSoloSession(chatId, senderId, type, gender) {
     const sessions = await getSessions(chatId);
-    sessions[senderId] = { type, gender, startedAt: Date.now(), lastActivity: Date.now() };
+    sessions[senderId] = { type, gender, startedAt: Date.now(), lastActivity: Date.now(), questionMessageId: null };
+    await saveSessions(chatId, sessions);
+}
+
+export async function setSoloQuestionMessage(chatId, senderId, messageId) {
+    if (!messageId) return;
+    const sessions = await getSessions(chatId);
+    const session = sessions[senderId];
+    if (!session) return;
+    session.questionMessageId = messageId;
+    session.lastActivity = Date.now();
+    sessions[senderId] = session;
     await saveSessions(chatId, sessions);
 }
 
@@ -85,10 +96,13 @@ async function sendNext(sock, chatId, senderId, session, sessions) {
     sessions[senderId] = session;
     await saveSessions(chatId, sessions);
 
-    await sock.sendMessage(chatId, {
+    const sent = await sock.sendMessage(chatId, {
         text: `${label} (${session.gender}) 🔥\n\n${content}\n\n_Reply to this message or tag me to get another one. Type *stop* to end._`,
         mentions: [senderId]
     });
+    session.questionMessageId = sent?.key?.id || null;
+    sessions[senderId] = session;
+    await saveSessions(chatId, sessions);
 }
 
 /**
@@ -126,11 +140,16 @@ export async function handleTruthDareContinue(sock, chatId, message, userMessage
 
         if (!session) return false;
 
-        // Advance on either a reply-quote of the last truth/dare, or a
-        // plain tag/mention of the bot - whichever the user actually did.
-        const quotedType = quotesTruthOrDare(message);
+        // Advance only when this user replies to their exact active prompt,
+        // or explicitly mentions the bot. Unrelated messages and old prompt
+        // replies must never advance the session.
+        const contextInfo = message.message?.extendedTextMessage?.contextInfo ||
+            message.message?.imageMessage?.contextInfo ||
+            message.message?.videoMessage?.contextInfo;
+        const stanzaId = contextInfo?.stanzaId || null;
+        const repliedToCurrentPrompt = !!(stanzaId && session.questionMessageId && stanzaId === session.questionMessageId);
         const mentioned = isBotMentioned(sock, message, userMessage);
-        if (!quotedType && !mentioned) return false;
+        if (!repliedToCurrentPrompt && !mentioned) return false;
 
         await sendNext(sock, chatId, senderId, session, sessions);
         return true;

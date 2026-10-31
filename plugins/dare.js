@@ -1,7 +1,7 @@
 import { getUserGender } from './gender.js';
 import { getDares, randomFrom } from '../data/todLists.js';
 import { isGameAllowed } from './daylock.js';
-import { startSoloSession } from './truth-continue.js';
+import { startSoloSession, setSoloQuestionMessage } from './truth-continue.js';
 
 export default {
     command: 'dare',
@@ -30,8 +30,9 @@ export default {
 
         await startSoloSession(chatId, senderId, 'dare', gender);
 
-        await sock.sendMessage(chatId, {
+        const sent = await sock.sendMessage(chatId, {
             text: `🔥 *DARE* (${gender}) 🔥\n\n${dareMessage}\n\n_Reply to this message or tag me to get another one. Type *stop* to end._`
         }, { quoted: message });
+        await setSoloQuestionMessage(chatId, senderId, sent?.key?.id);
     }
 };
