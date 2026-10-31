@@ -40,6 +40,21 @@ describe('CommandHandler', () => {
         expect(handler.aliases.has('tst')).toBe(true);
     });
 
+    it('re-registering a plugin removes its stale aliases and category', () => {
+        handler.registerCommand({
+            command: 'replaceprobe', aliases: ['oldprobe'], category: 'oldcategory',
+            description: 'old', async handler() {}
+        });
+        handler.registerCommand({
+            command: 'replaceprobe', aliases: ['newprobe'], category: 'newcategory',
+            description: 'new', async handler() {}
+        });
+        expect(handler.aliases.has('oldprobe')).toBe(false);
+        expect(handler.aliases.get('newprobe')).toBe('replaceprobe');
+        expect(handler.categories.has('oldcategory')).toBe(false);
+        expect(handler.categories.get('newcategory')).toContain('replaceprobe');
+    });
+
     it('unregisterCommand removes command, aliases, category and stats', () => {
         handler.registerCommand({
             command: 'removeprobe', aliases: ['rp'], category: 'temporary',
