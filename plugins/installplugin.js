@@ -7,7 +7,7 @@ export default {
     category: 'owner',
     description: 'Install a plugin from a GitHub Gist URL (owner only)',
     usage: '.addplugin <Gist URL>',
-    ownerOnly: true,
+    strictOwnerOnly: true,
     /**
      * @param {object} sock - Baileys sock
      * @param {object} message - the original message object
