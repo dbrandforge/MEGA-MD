@@ -117,6 +117,10 @@ export default {
         );
 
         if (session && session.waitingFor === senderId) {
+            session.questionsCompleted = session.questionsCompleted || {};
+            session.questionsCompleted[senderId] = (session.questionsCompleted[senderId] || 0) + 1;
+            session.lastCompletedBy = senderId;
+            session.lastCompletedAt = Date.now();
             session.lastActivity = Date.now();
             session.warningSent = false;
             await saveTodSessions(chatId, sessions);
