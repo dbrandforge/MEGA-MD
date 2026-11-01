@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { getLagosDay } from '../../plugins/daylock.js';
 import { WORDS, QUESTIONS_PER_ROUND } from '../../plugins/hangman.js';
+import { FALLBACK } from '../../data/wyrPairs.js';
+import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
 
 describe('game quality foundations', () => {
   it('uses Lagos local weekday for day-lock calculations', () => {
@@ -9,7 +11,7 @@ describe('game quality foundations', () => {
   });
 
   it('provides a substantial mature Hangman clue bank', () => {
-    expect(WORDS.length).toBeGreaterThanOrEqual(40);
+    expect(WORDS.length).toBeGreaterThanOrEqual(500);
     expect(new Set(WORDS.map(entry => entry.word)).size).toBe(WORDS.length);
     for (const entry of WORDS) {
       expect(entry.word).toMatch(/^[a-z]+$/);
@@ -23,7 +25,7 @@ describe('game quality foundations', () => {
     expect(WORDS.every(entry => entry.synonymHint && entry.synonymHint.length > 10)).toBe(true);
   });
 
-  it('provides progressive extra hints for long words', () => {
+  it('provides a 500-pair mature WYR bank and a twenty-question session cap', () => {\n    expect(FALLBACK.length).toBe(500);\n    expect(new Set(FALLBACK.map(pair => pair.map(v => v.toLowerCase()).sort().join('|'))).size).toBe(500);\n    expect(MAX_QUESTIONS_PER_SESSION).toBe(20);\n  });\n\n  it('provides progressive extra hints for long words', () => {
     const longWords = WORDS.filter(entry => entry.word.length >= 9);
     expect(longWords.length).toBeGreaterThan(10);
     expect(longWords.every(entry => entry.extraHints.length >= 1)).toBe(true);
