@@ -77,8 +77,6 @@ async function postQuestion(sock, chatId, game, quoted) {
 async function advance(sock, chatId, message, senderId, answer, skip = false) {
   const access = await isGameAllowed(chatId, 'trivia');
   if (!access.ok) { await sock.sendMessage(chatId, { text: access.msg }, { quoted: message }); return true; }
-  const access = await isGameAllowed(chatId, 'trivia');
-  if (!access.ok) { await sock.sendMessage(chatId, { text: access.msg }, { quoted: message }); return true; }
   const game = await getGame(chatId);
   if (!game) return false;
   let feedback = '⏭️ Question skipped.';
