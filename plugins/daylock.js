@@ -26,7 +26,41 @@ async function getBypasses(chatId) {
 async function saveBypasses(chatId, data) {
   await store.saveSetting(chatId, BYPASS_KEY, data);
 }
+const MANUAL_LOCK_KEY = 'manualGameLocks';
+const MANUAL_GAMES = {
+  hangman: 'Hangman',
+  trivia: 'Trivia',
+  wyr: 'Would You Rather',
+  tictactoe: 'Tic Tac Toe',
+  truth: 'Truth',
+  dare: 'Dare'
+};
+
+export function getManualLockableGames() {
+  return { ...MANUAL_GAMES };
+}
+export async function getManualGameLocks(chatId) {
+  return (await store.getSetting(chatId, MANUAL_LOCK_KEY)) || {};
+}
+export async function setManualGameLock(chatId, gameKey, locked) {
+  if (!Object.hasOwn(MANUAL_GAMES, gameKey)) throw new Error('This game is not eligible for a manual lock.');
+  const locks = await getManualGameLocks(chatId);
+  if (locked) locks[gameKey] = { locked: true, updatedAt: Date.now() };
+  else delete locks[gameKey];
+  await store.saveSetting(chatId, MANUAL_LOCK_KEY, locks);
+  return locks;
+}
+
 export async function isGameAllowed(chatId, gameKey) {
+  const locks = await getManualGameLocks(chatId);
+  if (locks[gameKey]?.locked) {
+    return {
+      ok: false,
+      locked: true,
+      msg: `🔒 *${MANUAL_GAMES[gameKey] || gameKey} is currently locked by an admin.*\\n\\nAn admin can unlock it with *.gamelock ${gameKey} off*.`
+    };
+  }
+
   const allowedDays = GAME_DAYS[gameKey];
   if (!allowedDays) return { ok: true };
   const bypasses = await getBypasses(chatId);
@@ -40,7 +74,7 @@ export async function isGameAllowed(chatId, gameKey) {
   const names = allowedDays.map(day => DAY_NAMES[day]).join('/');
   return {
     ok: false,
-    msg: `⏳ *${GAME_NAMES[gameKey] || gameKey}* only runs on *${names}*.\n\nAsk an admin to bypass:\n.bypass ${gameKey} 1h`
+    msg: `⏳ *${GAME_NAMES[gameKey] || gameKey}* only runs on *${names}*.\\n\\nAsk an admin to bypass:\\n.bypass ${gameKey} 1h`
   };
 }
 function parseDuration(value) {
