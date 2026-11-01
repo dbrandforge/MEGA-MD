@@ -84,7 +84,7 @@ export async function handleBasketContinuity(sock, chatId, message, senderId) {
         text: `*Devil’s Basket — ${gender === 'lady' ? 'Ladies' : 'Guys'} #${selected.number}* 🎰\n\n@${senderId.split('@')[0]}\n\n${selected.dare}\n\nComplete this. Failure = 10h mute.\n\n_Reply to this dare or tag the bot for another._`,
         mentions: [senderId]
     }, { quoted: message });
-    sessions[senderId] = { questionMessageId: sent?.key?.id || null, updatedAt: Date.now(), attempts: (session.attempts || 0) + 1, lastAttemptAt: Date.now() };
+    sessions[senderId] = { questionMessageId: sent?.key?.id || null, updatedAt: Date.now(), attempts: session.attempts || 0, lastAttemptAt: session.lastAttemptAt || Date.now() };
     await store.saveSetting(chatId, SESSION_KEY, sessions);
     return true;
 }
