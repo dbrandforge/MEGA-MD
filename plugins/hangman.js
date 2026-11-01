@@ -9,7 +9,7 @@ const STATE_KEY = 'hangmanGame';
 const USED_KEY = 'hangmanUsedWords';
 const RECORD_KEY = 'hangmanHighScores';
 const MAX_WRONG = 6;
-export const QUESTIONS_PER_ROUND = 5;
+export const QUESTIONS_PER_ROUND = 20;
 
 // Mature, adult-oriented vocabulary suited to the feature groups.
 // Word list lives in data/hangmanWords.js (500 explicit entries).
@@ -95,7 +95,7 @@ async function advanceOrEnd(sock, chatId, game, message, channelInfo, solvedBy) 
       : '_No points this round._';
     const mentions = scores.map(([id]) => id);
     await sock.sendMessage(chatId, {
-      text: `🏁 *HANGMAN ROUND COMPLETE*\n\n${solvedBy ? `Last word solved by @${solvedBy.split('@')[0]}.\n\n` : ''}*Round scores:*\n${scoreLines}\n\n_Use *.hangman* for another five._`,
+      text: `🏁 *HANGMAN ROUND COMPLETE*\n\n${solvedBy ? `Last word solved by @${solvedBy.split('@')[0]}.\n\n` : ''}*Round scores:*\n${scoreLines}\n\n_Use *.hangman* for another 20-question round._`,
       mentions,
       ...channelInfo
     }, { quoted: message });
@@ -114,6 +114,7 @@ async function advanceOrEnd(sock, chatId, game, message, channelInfo, solvedBy) 
   game.wrongWordGuesses = 0;
   game.wordGuesses = [];
   game.lastMoveAt = Date.now();
+  game.expiresAt = Date.now() + 30 * 60 * 1000;
   await writeGame(chatId, game);
   await sock.sendMessage(chatId, {
     text: renderBoard(game, solvedBy ? `✅ @${solvedBy.split('@')[0]} solved it. Next question:\n` : ''),
@@ -249,7 +250,7 @@ export default {
     };
     await writeGame(chatId, game);
     return sock.sendMessage(chatId, {
-      text: `🎮 *FORGE GUARD — HANGMAN CHALLENGE*\n\nFive questions. Shared board. Points per solved word. Pool: *${WORDS.length}* mature words.\n\n${renderBoard(game)}\n\n_Type *.guess <letter>* or *.guess <whole-word>*._`,
+      text: `🎮 *FORGE GUARD — HANGMAN CHALLENGE*\n\nTwenty questions. Shared board. Points per solved word. Pool: *${WORDS.length}* mature words.\n\n${renderBoard(game)}\n\n_Type *.guess <letter>* or *.guess <whole-word>*._`,
       ...channelInfo
     }, { quoted: message });
   }
