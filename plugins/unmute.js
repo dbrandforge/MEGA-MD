@@ -24,14 +24,23 @@ export default {
         }
 
         if (!user) {
-            return sock.sendMessage(chatId, {
-                text: 'Tag or reply to the user to unmute.\nExample: *.unmute @user*',
-                ...channelInfo
-            }, { quoted: message });
+            try {
+                await sock.groupSettingUpdate(chatId, 'not_announcement');
+                await store.saveSetting(chatId, 'timedGroupMute', { until: null, clearedAt: Date.now() });
+                return sock.sendMessage(chatId, {
+                    text: '🔊 *Group unlocked.* Members can send messages again.',
+                    ...channelInfo
+                }, { quoted: message });
+            } catch (error) {
+                console.error('[UNMUTE] Failed to unlock group:', error);
+                return sock.sendMessage(chatId, {
+                    text: '❌ Could not unlock the group. Confirm the bot is a group admin and try again.',
+                    ...channelInfo
+                }, { quoted: message });
+            }
         }
 
         await softUnmuteUser(chatId, user);
-
         await sock.sendMessage(chatId, {
             text: `🔊 ${mention(user)} has been unmuted.`,
             mentions: [user],
