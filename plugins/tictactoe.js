@@ -1,7 +1,10 @@
 import TicTacToe from '../lib/tictactoe.js';
+import { isGameAllowed } from './daylock.js';
 const games = {};
 export async function handleTicTacToeMove(sock, chatId, senderId, text) {
     try {
+        const access = await isGameAllowed(chatId, 'tictactoe');
+        if (!access.ok) { await sock.sendMessage(chatId, { text: access.msg }); return; }
         const room = Object.values(games).find((room) => room.id.startsWith('tictactoe') &&
             [room.game.playerX, room.game.playerO].includes(senderId) &&
             room.state === 'PLAYING');
@@ -105,6 +108,8 @@ export default {
         const chatId = context.chatId || message.key.remoteJid;
         const senderId = context.senderId || message.key.participant || message.key.remoteJid;
         const text = args.join(' ').trim();
+        const access = await isGameAllowed(chatId, 'tictactoe');
+        if (!access.ok) return sock.sendMessage(chatId, { text: access.msg }, { quoted: message });
         try {
             if (Object.values(games).find((room) => room.id.startsWith('tictactoe') &&
                 [room.game.playerX, room.game.playerO].includes(senderId))) {

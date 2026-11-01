@@ -36,6 +36,7 @@ function getMentions(message) {
     return context.mentionedJid || [];
 }
 function formatPlayers(players) { return players.map((p, i) => `${i + 1}. ${mention(p)}`).join('\n'); }
+function unique(items) { return items.length === new Set(items).size; }
 async function muteUser(sock, chatId, userId) {
     try {
         const { softMuteUser } = await import('./softmute.js');
@@ -112,6 +113,17 @@ async function sendPlayerQuestion(sock, chatId, player) {
             await sock.sendMessage(chatId, { text: '🛑 *Hot Seat ended* — no active players left.' });
         }
     }, ANSWER_TIMEOUT_MS);
+}
+
+
+export async function resumeHotSeatPlayer(sock, chatId, player) {
+    if (!isFeatureGroup(chatId) || !player) return false;
+    const session = await getSession(chatId);
+    if (!session || session.status !== 'active') return false;
+    const state = session.playerStates?.[player];
+    if (!state || state.status !== 'active' || state.waiting) return false;
+    await sendPlayerQuestion(sock, chatId, player);
+    return true;
 }
 
 export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
@@ -192,12 +204,12 @@ async function eligibleMembers(sock, chatId) {
 }
 
 async function sendList(sock, chatId, session) {
+    const remaining = Math.max(0, Math.ceil(((session.adjustmentEndsAt || Date.now()) - Date.now()) / 60000));
     await sock.sendMessage(chatId, {
-        text: `🎟️ *HOT SEAT LIST*\n\n${formatPlayers(session.players)}\n\nStatus: *${session.status}*`,
+        text: `🎟️ *HOT SEAT LIST*\n\nCurrent turn order:\n${formatPlayers(session.players)}\n\nStatus: *${session.status}*\nAdjustment time remaining: ${remaining} minute(s).\n\n*.hotseat add @user1 @user2* · *.hotseat change @current @replacement* · *.hotseat arrange @user1 @user2* · *.hotseat start*`,
         mentions: session.players
     });
 }
-
 export async function trackHotSeatReader(chatId, userId) {
     if (!isFeatureGroup(chatId) || !userId) return;
     try {
@@ -212,7 +224,7 @@ export default {
     aliases: ['hs', 'hot'],
     category: 'admin',
     description: 'Start Hot Seat confession game',
-    usage: '.hotseat | .hotseat list | .hotseat add @users | .hotseat start | .endhotseat',
+    usage: '.hotseat | .hotseat list | .hotseat add @users | .hotseat change @current @replacement | .hotseat arrange @users | .hotseat start | .endhotseat',
     groupOnly: true,
     adminOnly: true,
     async handler(sock, message, args, context) {
@@ -237,11 +249,56 @@ export default {
             return sendList(sock, chatId, session);
         }
         if (sub === 'add') {
-            if (!session || session.status !== 'pending') return reply('Open selection first with *.hotseat*');
-            const mentions = getMentions(message);
-            if (!mentions.length) return reply('Tag users: *.hotseat add @user1 @user2*');
-            session.players = [...new Set([...(session.players || []), ...mentions])].slice(0, MAX_PLAYERS);
+            if (!session || session.status !== 'pending') return reply('Open a Hot Seat selection first with *.hotseat*. Participants can only be added during the 10-minute selection window.');
+            if (Date.now() >= session.adjustmentEndsAt) {
+                await beginGame(sock, chatId, session);
+                return reply('The adjustment window has closed. Hot Seat is starting.');
+            }
+            const tagged = getMentions(message);
+            if (!tagged.length) return reply('Tag 1 to 4 people in the same message: *.hotseat add @user1 @user2 @user3 @user4*');
+            if (tagged.length > MAX_PLAYERS || !unique(tagged)) return reply(`Tag no more than ${MAX_PLAYERS} different people per command.`);
+            const members = await eligibleMembers(sock, chatId);
+            const invalid = tagged.filter(id => !members.includes(id));
+            if (invalid.length) return reply('Every participant must be a non-admin member of this group. Check the tagged accounts and try again.');
+            const basePlayers = session.manualSelection ? session.players : [];
+            const additions = tagged.filter(id => !basePlayers.includes(id));
+            if (!session.manualSelection && additions.length < MIN_PLAYERS) return reply(`Choose at least ${MIN_PLAYERS} people when setting the manual Hot Seat list.`);
+            if (basePlayers.length + additions.length > MAX_PLAYERS) return reply(`Hot Seat supports a maximum of ${MAX_PLAYERS} participants. Current list:\n${formatPlayers(basePlayers)}`);
+            if (!additions.length) return reply('Those people are already on the Hot Seat list.');
+            session.players = [...basePlayers, ...additions];
             session.manualSelection = true;
+            await saveSession(chatId, session);
+            return sendList(sock, chatId, session);
+        }
+        if (sub === 'change') {
+            if (!session || session.status !== 'pending') return reply('Participants can only be changed during the 10-minute selection window.');
+            if (Date.now() >= session.adjustmentEndsAt) {
+                await beginGame(sock, chatId, session);
+                return reply('The adjustment window has closed. Hot Seat is starting.');
+            }
+            const tagged = getMentions(message);
+            if (tagged.length !== 2) return reply('To replace one participant, tag both the current participant and replacement: *.hotseat change @current @replacement*');
+            const [current, replacement] = tagged;
+            const index = session.players.indexOf(current);
+            if (index === -1) return reply('The first tagged person is not in the current Hot Seat selection. Check *.hotseat list*.');
+            if (session.players.includes(replacement)) return reply('The replacement is already on the Hot Seat list.');
+            const members = await eligibleMembers(sock, chatId);
+            if (!members.includes(replacement)) return reply('The replacement must be a non-admin member of this group.');
+            session.players[index] = replacement;
+            await saveSession(chatId, session);
+            return sendList(sock, chatId, session);
+        }
+        if (sub === 'arrange' || sub === 'order') {
+            if (!session || session.status !== 'pending') return reply('The turn order can only be arranged during the 10-minute selection window.');
+            if (Date.now() >= session.adjustmentEndsAt) {
+                await beginGame(sock, chatId, session);
+                return reply('The adjustment window has closed. Hot Seat is starting.');
+            }
+            const order = getMentions(message);
+            if (order.length !== session.players.length || !unique(order) || !session.players.every(id => order.includes(id))) {
+                return reply(`Tag every selected participant exactly once, in their intended order. Current list:\n${formatPlayers(session.players)}`);
+            }
+            session.players = order;
             await saveSession(chatId, session);
             return sendList(sock, chatId, session);
         }
