@@ -1,9 +1,21 @@
 import { setAntitag, getAntitag, removeAntitag } from '../lib/index.js';
+import isOwnerOrSudo from '../lib/isOwner.js';
+import isAdmin from '../lib/isAdmin.js';
 export async function handleTagDetection(sock, chatId, message, senderId) {
     try {
         const antitagSetting = await getAntitag(chatId, 'on');
-        if (!antitagSetting || !antitagSetting.enabled)
+        if (!antitagSetting || !antitagSetting.enabled) return;
+        // Never moderate privileged senders. If role verification fails, fail open.
+        if (await isOwnerOrSudo(senderId, sock, chatId)) return;
+        let senderAdmin = false;
+        try {
+            const status = await isAdmin(sock, chatId, senderId);
+            senderAdmin = !!status?.isSenderAdmin;
+        } catch (error) {
+            console.warn('[ANTITAG] Could not verify sender role; skipping enforcement:', error.message);
             return;
+        }
+        if (senderAdmin) return;
         const mentionedJids = message.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
         const messageText = (message.message?.conversation ||
             message.message?.extendedTextMessage?.text ||
