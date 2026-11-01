@@ -8,8 +8,8 @@ export default {
     command: 'unmute',
     aliases: ['unsoftmute'],
     category: 'admin',
-    description: 'Unmute a soft-muted user',
-    usage: '.unmute @user',
+    description: 'Unlock the group or unmute a soft-muted user',
+    usage: '.unmute | .unmute @user',
     groupOnly: true,
     adminOnly: true,
     async handler(sock, message, args, context) {
