@@ -80,6 +80,8 @@ async function advance(sock, chatId, message, senderId, answer, skip = false) {
   if (!game) return false;
   let feedback = '⏭️ Question skipped.';
   if (!skip) {
+    game.attempts = game.attempts || {};
+    game.attempts[senderId] = (game.attempts[senderId] || 0) + 1;
     const key = normalize(answer);
     const index = ['a','b','c','d'].indexOf(key);
     const selected = index >= 0 ? game.options[index] : answer;
@@ -132,7 +134,9 @@ export default {
     let game = await getGame(chatId);
     if (['stop','end'].includes(action)) {
       if (!game) return sock.sendMessage(chatId, { text: 'There is no active trivia round.', ...channelInfo }, { quoted: message });
-      game.active = false; game.endedAt = Date.now(); game.reason = 'stopped';
+      const admin = !!(context.isSenderAdmin || context.senderIsOwnerOrSudo || context.isOwnerOrSudoCheck || message.key.fromMe);
+      if (!admin && !(game.attempts?.[senderId] > 0)) return sock.sendMessage(chatId, { text: 'Only an admin can end Trivia independently. Players can end it after answering at least one question.', ...channelInfo }, { quoted: message });
+      game.active = false; game.endedAt = Date.now(); game.reason = admin ? 'admin-stopped' : 'player-stopped';
       await saveGame(chatId, game);
       const scores = Object.entries(game.scores || {}).sort((a,b)=>b[1]-a[1]).slice(0,5);
       return sock.sendMessage(chatId, { text: `🛑 *Trivia ended.*\n\n🏆 *Top scores*\n${scores.map(([id,n],i)=>`${i+1}. @${id.split('@')[0]} — ${n}`).join('\n') || 'No scores recorded.'}`, mentions: scores.map(([id])=>id), ...channelInfo }, { quoted: message });
