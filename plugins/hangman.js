@@ -108,6 +108,8 @@ async function applyGuess(sock, message, context, rawGuess) {
   if (!game) {
     return sock.sendMessage(chatId, { text: 'There is no active Hangman round. Start one with *.hangman*.', ...channelInfo }, { quoted: message });
   }
+  game.attemptedBy = game.attemptedBy || {};
+  game.attemptedBy[senderId] = (game.attemptedBy[senderId] || 0) + 1;
   const guess = normalize(rawGuess);
   if (!guess || (guess.length !== 1 && guess.length !== game.word.length)) {
     return sock.sendMessage(chatId, { text: `Enter one letter or a complete ${game.word.length}-letter word. Example: *.guess a* or *.guess ${game.word}* (just an example format).`, ...channelInfo }, { quoted: message });
@@ -183,7 +185,9 @@ export default {
     const current = await readGame(chatId);
     if (action === 'stop' || action === 'end') {
       if (!current) return sock.sendMessage(chatId, { text: 'There is no active Hangman round to stop.', ...channelInfo }, { quoted: message });
-      await writeGame(chatId, { status: 'ended', endedAt: Date.now(), reason: 'stopped', word: current.word });
+      const admin = !!(context.isSenderAdmin || context.senderIsOwnerOrSudo || context.isOwnerOrSudoCheck || message.key.fromMe);
+      if (!admin && !(current.attemptedBy?.[context.senderId] > 0)) return sock.sendMessage(chatId, { text: 'Only an admin can stop Hangman independently. Players can stop it after making at least one guess.', ...channelInfo }, { quoted: message });
+      await writeGame(chatId, { status: 'ended', endedAt: Date.now(), reason: admin ? 'admin-stopped' : 'player-stopped', word: current.word });
       return sock.sendMessage(chatId, { text: `🛑 Hangman stopped. The word was *${current.word}*.`, ...channelInfo }, { quoted: message });
     }
     if (action === 'status' || action === 'hint') {
