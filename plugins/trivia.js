@@ -3,6 +3,7 @@ import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
 import isAdmin from '../lib/isAdmin.js';
+import isAdmin from '../lib/isAdmin.js';
 
 const KEY = 'triviaGame';
 const EXPIRY_MS = 45 * 60 * 1000;
