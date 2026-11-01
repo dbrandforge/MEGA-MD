@@ -1,65 +1,81 @@
 import axios from 'axios';
 import store from '../lib/lightweight_store.js';
+import { isFeatureGroup } from '../lib/featureGroups.js';
 
-const WYR_KEY = 'wouldYouRatherSessions';
-
-async function getSessions(chatId) {
-    return (await store.getSetting(chatId, WYR_KEY)) || {};
-}
-async function saveSessions(chatId, sessions) {
-    await store.saveSetting(chatId, WYR_KEY, sessions);
-}
+const KEY = 'wouldYouRatherSessions';
+const EXPIRY_MS = 30 * 60 * 1000;
+const FALLBACK = [
+ ['Have unlimited free travel','Have unlimited free food'],
+ ['Be respected by everyone','Be loved by everyone'],
+ ['Know every language','Play every musical instrument'],
+ ['Build a successful business','Have a dream career with no stress'],
+ ['Relive your best memory','Erase your worst memory'],
+ ['Always tell the truth','Always know when someone is lying'],
+ ['Live by the beach','Live in a beautiful mountain home'],
+ ['Have more time','Have more money'],
+ ['Be famous for something meaningful','Be privately wealthy'],
+ ['Give brilliant advice','Always know the right question to ask'],
+ ['Never need sleep','Never need to eat'],
+ ['Explore outer space','Explore the deepest ocean'],
+ ['Have a photographic memory','Learn any skill in a week'],
+ ['Change one decision from your past','See one major event in your future'],
+ ['Own a small thriving business','Lead a large global company'],
+ ['Spend a year travelling','Spend a year building something lasting'],
+ ['Be able to pause time','Be able to rewind time'],
+ ['Have perfect confidence','Have perfect discipline'],
+ ['Live without social media','Live without streaming entertainment'],
+ ['Be the funniest person in the room','Be the wisest person in the room']
+];
+const choose = () => FALLBACK[Math.floor(Math.random()*FALLBACK.length)];
+const getSessions = async chatId => (await store.getSetting(chatId, KEY)) || {};
+const saveSessions = (chatId, sessions) => store.saveSetting(chatId, KEY, sessions);
 function botMentioned(sock, message) {
-    const bot = sock.user?.id || '';
-    const botNumber = bot.split(':')[0].split('@')[0];
-    const mentions = message.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-    return mentions.some(jid => jid.split('@')[0].split(':')[0] === botNumber);
+ const number=(sock.user?.id||'').split(':')[0].split('@')[0];
+ return (message.message?.extendedTextMessage?.contextInfo?.mentionedJid||[]).some(j=>j.split('@')[0].split(':')[0]===number);
 }
-async function sendQuestion(sock, chatId, senderId, quoted) {
-    const res = await axios.get('https://discardapi.dpdns.org/api/quote/wyr?apikey=guru', { timeout: 12000 });
-    if (!res.data || res.data.status !== true) throw new Error('Question provider returned an invalid response');
-    const opt1 = res.data.question?.option1 || 'Option 1 not found';
-    const opt2 = res.data.question?.option2 || 'Option 2 not found';
-    const sent = await sock.sendMessage(chatId, {
-        text: `🤔 *Would You Rather*\n\n◍ ${opt1}\n◍ ${opt2}\n\n_Reply to this question or tag the bot for another._`
-    }, quoted ? { quoted } : undefined);
-    const sessions = await getSessions(chatId);
-    sessions[senderId] = { questionMessageId: sent?.key?.id || null, updatedAt: Date.now() };
-    await saveSessions(chatId, sessions);
+async function fetchOptions() {
+ const res=await axios.get('https://discardapi.dpdns.org/api/quote/wyr?apikey=guru',{timeout:7000});
+ const q=res.data?.question;
+ if(res.data?.status!==true || !q?.option1 || !q?.option2) throw new Error('Invalid WYR response');
+ return [String(q.option1).trim(),String(q.option2).trim()];
 }
-
-export async function handleWyrContinuity(sock, chatId, message, senderId) {
-    if (!chatId?.endsWith('@g.us') || message?.key?.fromMe) return false;
-    const sessions = await getSessions(chatId);
-    const session = sessions[senderId];
-    if (!session) return false;
-    const ctx = message.message?.extendedTextMessage?.contextInfo
-        || message.message?.imageMessage?.contextInfo
-        || message.message?.videoMessage?.contextInfo || {};
-    const replied = !!(ctx.stanzaId && session.questionMessageId && ctx.stanzaId === session.questionMessageId);
-    if (!replied && !botMentioned(sock, message)) return false;
-    try {
-        await sendQuestion(sock, chatId, senderId, message);
-    } catch (error) {
-        await sock.sendMessage(chatId, { text: '❌ Could not fetch the next question. Try .wyr again.' }, { quoted: message });
-    }
-    return true;
+async function sendQuestion(sock,chatId,senderId,quoted) {
+ let options, source='community bank';
+ try { options=await fetchOptions(); source='live question'; }
+ catch { options=choose(); }
+ const sent=await sock.sendMessage(chatId,{text:`🤔 *WOULD YOU RATHER?*\n\n🅰️ ${options[0]}\n\n🅱️ ${options[1]}\n\n_Reply to this message to get another dilemma, or tag me._\n\n<text>Source: ${source}</text>`},quoted?{quoted}:undefined);
+ const sessions=await getSessions(chatId);
+ sessions[senderId]={questionMessageId:sent?.key?.id||null,updatedAt:Date.now(),expiresAt:Date.now()+EXPIRY_MS};
+ await saveSessions(chatId,sessions);
 }
-
+export async function handleWyrContinuity(sock,chatId,message,senderId) {
+ if(!chatId?.endsWith('@g.us')||message?.key?.fromMe||!isFeatureGroup(chatId)) return false;
+ const sessions=await getSessions(chatId), session=sessions[senderId];
+ if(!session) return false;
+ if(session.expiresAt && session.expiresAt<Date.now()){delete sessions[senderId];await saveSessions(chatId,sessions);return false;}
+ const ctx=message.message?.extendedTextMessage?.contextInfo||message.message?.imageMessage?.contextInfo||{};
+ const replied=!!(ctx.stanzaId&&session.questionMessageId&&ctx.stanzaId===session.questionMessageId);
+ if(!replied&&!botMentioned(sock,message)) return false;
+ await sendQuestion(sock,chatId,senderId,message);
+ return true;
+}
 export default {
-    command: 'wyr',
-    aliases: ['wouldyourather'],
-    category: 'games',
-    description: 'Get a Would You Rather question; reply or tag the bot for another',
-    usage: '.wyr',
-    async handler(sock, message, args, context) {
-        const chatId = context.chatId || message.key.remoteJid;
-        const senderId = context.senderId || message.key.participant || message.key.remoteJid;
-        try {
-            await sendQuestion(sock, chatId, senderId, message);
-        } catch (err) {
-            console.error('WYR plugin error:', err);
-            await sock.sendMessage(chatId, { text: '❌ Error while fetching question.' }, { quoted: message });
-        }
-    }
+ command:'wyr', aliases:['wouldyourather'], category:'games',
+ description:'Would You Rather with resilient question-provider fallback.',
+ usage:'.wyr',
+ groupOnly:true,
+ async handler(sock,message,args,context) {
+  const chatId=context.chatId||message.key.remoteJid;
+  const senderId=context.senderId||message.key.participant||message.key.remoteJid;
+  if(!isFeatureGroup(chatId)) return sock.sendMessage(chatId,{text:'Would You Rather is available in the designated game groups.'},{quoted:message});
+  const sessions=await getSessions(chatId);
+  if(sessions[senderId]?.expiresAt>Date.now()) {
+   return sock.sendMessage(chatId,{text:'You already have an active dilemma. Reply to it or tag me for another.'},{quoted:message});
+  }
+  try { await sendQuestion(sock,chatId,senderId,message); }
+  catch(error) {
+   console.error('WYR send failed:',error);
+   await sock.sendMessage(chatId,{text:'Could not send a Would You Rather question. Please try again.'},{quoted:message});
+  }
+ }
 };
