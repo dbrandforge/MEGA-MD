@@ -1,0 +1,198 @@
+/** Would You Rather — Mature Minded explicit (500 pairs) */
+const SEEDS = [
+  ['Get throatfucked until your eyes water', 'Get edged for an hour and denied at the end'],
+  ['Be filmed during sex by a trusted person', 'Have only the audio shared with one friend as a joke'],
+  ['Fuck your crush with the lights on', 'Get fucked by your crush in the dark with no talking'],
+  ['Only finish inside for a full month', 'Only finish on the body for a full month'],
+  ['Risky car sex that almost gets caught', 'Hotel sex so loud the next room complains'],
+  ['Partner who is rough and talks filthy', 'Partner who is slow, teasing, and makes you beg'],
+  ['Swallow every time for a week', 'Take it on the face every time for a week'],
+  ['Be someone\'s dirty secret', 'Have someone be your dirty secret'],
+  ['One night with no limits (safeword only)', 'A weekend of slow teasing with limited finishing'],
+  ['Let the group vote on your next dare', 'Let one person you choose write your next dare'],
+  ['Be plugged in public under clothes all day', 'Send a filthy voice note to the group right now'],
+  ['Wake someone up with your mouth', 'Be woken up already being used'],
+  ['Only be allowed to edge, never finish, for 48 hours', 'Finish five times in one night no matter how sensitive'],
+  ['Sex with a mirror so you watch everything', 'Blindfolded the entire time so you feel everything'],
+  ['Leave visible marks where clothes hide them', 'Leave one mark where people might notice'],
+  ['Be praised the entire time', 'Be degraded the entire time'],
+  ['Give up control for one full night', 'Take full control for one full night'],
+  ['Sex outdoors with real risk of being seen', 'Sex at home with the windows open and lights on'],
+  ['Partner who lasts very long', 'Partner who gets intense and finishes fast but goes again'],
+  ['Only oral for a week', 'Only penetration for a week'],
+  ['Be tied up and used', 'Tie someone up and use them'],
+  ['Share a detailed fantasy about someone in this group', 'Receive a detailed fantasy someone wrote about you'],
+  ['Quickie in a bathroom during a party', 'Slow sex that takes the whole afternoon'],
+  ['Be told exactly what to do', 'Be asked what you want every step'],
+  ['Finish from dirty talk alone', 'Finish without any talking at all'],
+  ['Let someone choose what you wear under clothes today', 'Send a photo of what you are wearing under right now'],
+  ['Be edged on camera for a partner', 'Watch a partner edge for you on camera'],
+  ['One free use night inside agreed limits', 'One night where you must ask permission for everything'],
+  ['Sex so rough you walk funny tomorrow', 'Sex so soft you almost cry'],
+  ['Confess your body count honestly in group', 'Confess the filthiest thing you have done in group'],
+  ['Be the secret third in a couple for one night', 'Have a couple be your secret for one night'],
+  ['Only finish with a toy for a week', 'No toys at all for a week'],
+  ['Public teasing with no release until home', 'Private release with no teasing buildup'],
+  ['Have your hands tied during oral', 'Have their hands in your hair controlling the pace'],
+  ['Be recorded for private replay only', 'Never record but describe the night in filthy detail after'],
+  ['Sleep over after sex', 'Leave right after finishing'],
+  ['Morning sex before phones', 'Late-night sex after scrolling thirst'],
+  ['Be told you are owned during sex', 'Be told you are free to take what you want'],
+  ['One partner for a year of filthy monogamy', 'Multiple partners with strict honesty rules'],
+  ['Show the group a thirst photo (tasteful but hot)', 'Read a filthy paragraph out loud in voice note'],
+  ['Be spanked until you beg', 'Spank someone until they beg'],
+  ['Wear a plug to a social event', 'Stay empty but send updates of how needy you are'],
+  ['Let someone pick your orgasm count tonight', 'You pick theirs and enforce it'],
+  ['Kiss only for 30 minutes before any other touch', 'Skip kissing and go straight to the point'],
+  ['Be used while someone else watches by agreement', 'Watch two people and not be allowed to touch'],
+  ['Tell your crush what you want in one sentence', 'Hear your crush tell you what they want in one sentence'],
+  ['Finish on the stomach', 'Finish on the back'],
+  ['Be overstimulated after climax', 'Be left alone immediately after climax'],
+  ['Have a partner who dirty texts all day', 'Have a partner who saves it all for in person'],
+  ['Roleplay strangers meeting for the first time', 'Roleplay long-term partners breaking a dry spell'],
+  ['Be the one who asks for the nudes', 'Be the one who decides whether to send them'],
+  ['Keep the lights on and eyes open', 'Lights off and faces hidden'],
+  ['Slow oral until you shake', 'Fast and messy oral until you finish'],
+  ['Be told to stay quiet', 'Be told to be loud on purpose'],
+  ['Be collared for a night', 'Hold the leash for a night'],
+  ['Use only hands', 'Use only mouth'],
+  ['Describe your last orgasm in filthy detail', 'Demonstrate with a voice note how you sound'],
+  ['Let the group choose soft or rough for you tonight', 'You choose soft or rough for someone else'],
+  ['Be someone\'s first for an act', 'Have someone be your first for an act'],
+  ['Keep a filthy secret with one member', 'Expose a mild thirst to the whole group'],
+  ['Wear something slutty under normal clothes all day', 'Wear something slutty only at home for a partner'],
+  ['Be fucked in missionary looking at them', 'Be fucked from behind gripping the sheets'],
+  ['Receive detailed instructions by text mid-day', 'Send detailed instructions by text mid-day'],
+  ['Have aftercare that is soft and quiet', 'Have aftercare that is still filthy and teasing'],
+  ['Be the prey in a chase scene', 'Be the hunter in a chase scene'],
+  ['One hour of teasing no penetration', 'One hour of penetration minimal teasing'],
+  ['Be rated out of 10 by a partner after sex', 'Rate them out of 10 knowing they hear it'],
+  ['Have a partner who is louder than you', 'Have a partner who makes you the loud one'],
+  ['Get messy with lube and fluids', 'Keep everything as clean as possible'],
+  ['Be told when you are allowed to touch yourself', 'Decide when they are allowed to touch themselves'],
+  ['Kiss after oral', 'Clean up before any kissing'],
+  ['Have a strict dominant for a night', 'Have a soft dominant for a night'],
+  ['Be a brat on purpose', 'Be perfectly obedient on purpose'],
+  ['Finish together', 'Finish one after the other on command'],
+  ['Talk about breeding during sex', 'Stay silent about anything beyond pure sensation'],
+  ['Use a toy on someone until they beg', 'Have a toy used on you until you beg'],
+  ['Be edge-only for three days', 'Full release every day for three days'],
+  ['Have sex in the shower', 'Have sex right after the shower on clean sheets'],
+  ['Let someone pick the porn you watch together', 'You pick what they have to watch with you'],
+  ['Be face-down and used', 'Be on your back with full eye contact'],
+  ['A partner who marks you', 'A partner you mark'],
+  ['Whisper only', 'Filthy talk at full volume'],
+  ['Have your orgasm ruined', 'Have your orgasm drawn out as long as possible'],
+  ['Be the first to undress', 'Be the last to undress'],
+  ['Be edged by voice notes all day', 'Send edge-inducing voice notes all day'],
+  ['One partner\'s hands only', 'One partner\'s mouth only'],
+  ['Make someone finish in under five minutes', 'Last as long as you can on purpose'],
+  ['Be told you are a good boy/girl', 'Be told you are filthy and desperate'],
+  ['Have a free-use agreement for a night', 'Have a permission-only agreement for a night'],
+  ['Show thighs in a photo', 'Show collarbone/neck in a photo'],
+  ['Be interrupted mid-sex and forced to wait', 'Be allowed to finish even if someone knocks'],
+  ['Roleplay boss and employee', 'Roleplay strangers in a hotel'],
+  ['Be soaked and ashamed in a hot way', 'Be composed and controlled the whole time'],
+  ['Have sex once tonight perfectly', 'Have sex three times messily'],
+  ['Be the secret texting partner', 'Be the person someone risks getting caught texting'],
+  ['Kneel', 'Make someone kneel'],
+  ['Stay dressed while they are naked', 'Be naked while they stay dressed'],
+  ['A long kiss after you finish', 'No kissing after you finish'],
+  ['Describe how you taste', 'Describe how they taste'],
+  ['Have someone choose your underwear', 'Choose theirs and make them prove it'],
+  ['Only climax with permission words', 'Climax whenever you want without asking'],
+  ['Be overstimulated with a wand', 'Be denied any toy contact'],
+  ['Take a risk in a car', 'Take a risk on a balcony'],
+  ['Be told to open your mouth', 'Be told to spread your legs'],
+  ['A partner focused only on your pleasure', 'A partner using you only for theirs (agreed)'],
+  ['Filthy morning texts', 'Filthy texts right before bed'],
+  ['Have your hair pulled', 'Pull someone\'s hair'],
+  ['Be fucked through an orgasm', 'Stop everything the second you finish'],
+  ['Share a turn-on you have never said here', 'Share a limit you will never cross'],
+  ['Be someone\'s dirty habit', 'Have a dirty habit focused on one person'],
+  ['Listen to them finish on a call', 'Let them listen to you finish on a call'],
+  ['Keep socks on', 'Everything off no exceptions'],
+  ['A slow strip', 'Clothes ripped aside in a hurry'],
+  ['Be the subject of a dare', 'Write the dare someone else must do'],
+  ['Have soft lights', 'Have bright lights'],
+  ['Be told to beg with full sentences', 'Only be allowed one-word answers'],
+  ['Finish on your knees', 'Finish on your back'],
+  ['Be late-night free use', 'Be morning-only availability'],
+  ['Talk through every kink you want', 'Show without explaining'],
+  ['Be kissed while being fucked', 'Turn your head away on purpose'],
+  ['Be the one who cleans up', 'Be the one who makes the mess'],
+  ['Have a collar for the night', 'Have a mark instead of a collar'],
+  ['Sex with laughter mid-way', 'Sex so intense nobody laughs'],
+  ['Confess a jealous thought', 'Confess a possessive thought'],
+  ['Be told to hold climax', 'Be forced over the edge on purpose'],
+  ['Hands tied in front', 'Hands tied behind'],
+  ['Only respond to commands for an hour', 'Only give commands for an hour'],
+  ['Be left wet and waiting', 'Be finished and tucked in'],
+  ['Sneak sex while others sleep nearby', 'Wait until the house is empty'],
+  ['A long oral session as the main event', 'Oral only as a short warm-up'],
+  ['Be rated on obedience', 'Be rated on how filthy you talked'],
+  ['Keep eye contact when you finish', 'Close your eyes when you finish'],
+  ['Finish with your hands behind your back', 'Finish gripping the headboard'],
+  ['Be ordered to kneel on arrival', 'Order someone to kneel on arrival'],
+  ['A partner who is verbally gentle and physically rough', 'A partner who is verbally rough and physically gentle'],
+  ['Keep a plug in during dinner at home', 'Remove it only when told'],
+  ['Open relationship with strict rules', 'Closed relationship with filthy variety inside'],
+  ['Only filthy compliments', 'Only filthy insults (agreed)'],
+  ['Be edged by fingers', 'Be edged by mouth'],
+  ['Have sex once a day for a week', 'Have one day with as many rounds as possible'],
+];
+
+const SUFFIX_A = [
+  ' with eye contact the whole time',
+  ' while they record audio only',
+  ' without using your hands',
+  ' after being edged for twenty minutes',
+  ' in a place you might get caught',
+  ' with filthy praise only',
+  ' with filthy degradation only',
+  ' and no kissing until after',
+  ' and kissing the entire time',
+  ' knowing the group will get a vague update after',
+];
+const SUFFIX_B = [
+  ' then switch roles the next night',
+  ' with a strict time limit',
+  ' with no time limit',
+  ' while staying as quiet as possible',
+  ' while being as loud as you want',
+  ' and keep it completely secret',
+  ' after a full day of teasing texts',
+  ' first thing in the morning',
+  ' right before sleep',
+  ' with aftercare required after',
+];
+
+function expandPairs(seeds, target = 500) {
+  const out = [];
+  const seen = new Set();
+  const keyOf = (a, b) => [a, b].map(s => s.toLowerCase()).sort().join('||');
+  for (const [a, b] of seeds) {
+    const k = keyOf(a, b);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push([a, b]);
+  }
+  let i = 0;
+  while (out.length < target && i < target * 30) {
+    const [a, b] = seeds[i % seeds.length];
+    const sa = SUFFIX_A[(Math.floor(i / seeds.length)) % SUFFIX_A.length];
+    const sb = SUFFIX_B[(Math.floor(i / seeds.length)) % SUFFIX_B.length];
+    const aa = a + sa;
+    const bb = b + sb;
+    const k = keyOf(aa, bb);
+    if (!seen.has(k)) {
+      seen.add(k);
+      out.push([aa, bb]);
+    }
+    i++;
+  }
+  return out.slice(0, target);
+}
+
+export const FALLBACK = expandPairs(SEEDS, 500);
+export default FALLBACK;
