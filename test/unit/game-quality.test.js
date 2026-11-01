@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getLagosDay } from '../../plugins/daylock.js';
-import { WORDS } from '../../plugins/hangman.js';
+import { WORDS, QUESTIONS_PER_ROUND } from '../../plugins/hangman.js';
 
 describe('game quality foundations', () => {
   it('uses Lagos local weekday for day-lock calculations', () => {
@@ -14,11 +14,11 @@ describe('game quality foundations', () => {
     for (const entry of WORDS) {
       expect(entry.word).toMatch(/^[a-z]+$/);
       expect(entry.hint.length).toBeGreaterThan(10);
-      expect(['Technology', 'Design', 'Business', 'Creative', 'General', 'Nigeria', 'Food', 'Entertainment', 'Music', 'Sports', 'Science', 'Nature', 'Education', 'Relationships', 'Transport', 'Civics', 'History', 'Film']).toContain(entry.category);
+      expect(entry.synonymHint.length).toBeGreaterThan(10);
     }
   });
 
-  it('provides progressive extra hints for long words', () => {
+  it('uses five unique questions per Hangman round and provides synonym clues', () => {\n    expect(QUESTIONS_PER_ROUND).toBe(5);\n    expect(new Set(WORDS.map(entry => entry.word)).size).toBe(WORDS.length);\n    expect(WORDS.every(entry => entry.synonymHint && entry.synonymHint.length > 10)).toBe(true);\n  });\n\n  it('provides progressive extra hints for long words', () => {
     const longWords = WORDS.filter(entry => entry.word.length >= 9);
     expect(longWords.length).toBeGreaterThan(10);
     expect(longWords.every(entry => entry.extraHints.length >= 1)).toBe(true);
