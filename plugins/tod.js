@@ -37,6 +37,7 @@ async function endSession(sock, chatId, session, reason = 'ended') {
 }
 
 async function startRound(sock, chatId, session) {
+    session.advancing = false;
     session.round += 1;
     session.lastActivity = Date.now();
     session.warningSent = false;
