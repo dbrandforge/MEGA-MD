@@ -65,7 +65,7 @@ export default {
                 const name = cleanName(rawName);
                 const gender = await getUserGender(userId).catch(() => null);
                 const title = (TITLES[gender] || TITLES.unknown)[Math.min(i, 4)];
-                output += `${medals[i]} *${title} — ${name}*\\n@${userId.split('@')[0]}\\n💬 *${count.toLocaleString()} messages*\\n\\n`;
+                output += `${medals[i]} *${title} — ${name}*\n@${userId.split('@')[0]}\n💬 *${count.toLocaleString()} messages*\n\n`;
                 mentions.push(userId);
             }
             output += '_Weekly scores reset automatically at the start of each new week. Stickers are excluded._';
