@@ -36,13 +36,11 @@ async function chooseFreshOptions(chatId) {
   let used = (await store.getSetting(chatId, USED_KEY)) || [];
   let available = FALLBACK.filter(options => !used.includes(questionKey(options)));
   if (!available.length) {
-    // Start a new cycle only after every pair in the bank has been used.
     used = [];
     available = [...FALLBACK];
   }
   const options = choose(available);
   used.push(questionKey(options));
-  // Keep the complete 500-question cycle so no earlier dilemma leaks back in.
   await store.saveSetting(chatId, USED_KEY, used);
   return options;
 }
@@ -50,7 +48,7 @@ async function chooseFreshOptions(chatId) {
 async function sendQuestion(sock, chatId, senderId, quoted) {
   const options = await chooseFreshOptions(chatId);
   const sent = await sock.sendMessage(chatId, {
-    text: `😈 *WOULD YOU RATHER? — MATURE MINDED*\n\n🅰️ ${options[0]}\n\n🅱️ ${options[1]}\n\n_Choose A or B. Reply to this question or tag me for the next dilemma. Your session has a 20-question limit._`
+    text: `😈 *WOULD YOU RATHER? — MATURE MINDED*\n\n🅰️ ${options[0]}\n\n🅱️ ${options[1]}\n\n_Choose A or B. Reply to this question or tag me with your choice for the next dilemma. Session limit: 20 questions._`
   }, quoted ? { quoted } : undefined);
   const sessions = await getSessions(chatId);
   const previous = sessions[senderId] || {};
@@ -59,6 +57,7 @@ async function sendQuestion(sock, chatId, senderId, quoted) {
     questionMessageId: sent?.key?.id || null,
     questionsAsked: (previous.questionsAsked || 0) + 1,
     questionsAttempted: previous.questionsAttempted || 0,
+    answers: previous.answers || [],
     updatedAt: Date.now(),
     expiresAt: Date.now() + EXPIRY_MS
   };
@@ -70,6 +69,7 @@ export async function handleWyrContinuity(sock, chatId, message, senderId) {
   const sessions = await getSessions(chatId);
   const session = sessions[senderId];
   if (!session) return false;
+
   const access = await isGameAllowed(chatId, 'wyr');
   if (!access.ok) {
     await sock.sendMessage(chatId, { text: access.msg }, { quoted: message });
@@ -80,24 +80,44 @@ export async function handleWyrContinuity(sock, chatId, message, senderId) {
     await saveSessions(chatId, sessions);
     return false;
   }
+
   const ctx = message.message?.extendedTextMessage?.contextInfo
     || message.message?.imageMessage?.contextInfo
     || {};
   const replied = !!(ctx.stanzaId && session.questionMessageId && ctx.stanzaId === session.questionMessageId);
   const tagged = botMentioned(sock, message);
   if (!replied && !tagged) return false;
-  const body = message.message?.conversation || message.message?.extendedTextMessage?.text || message.message?.imageMessage?.caption || message.message?.videoMessage?.caption || '';
-  const answerMatch = body.match(/(?:^|\\b)(?:option\\s*)?([ab12])(?:\\b|$)/i);
-  if (!answerMatch) {\n    await sock.sendMessage(chatId, { text: 'Choose *A* or *B* in your reply, then I will serve the next dilemma.', }, { quoted: message });\n    return true;\n  }\n  const answer = answerMatch[1].toUpperCase();\n\n  session.answers = session.answers || [];\n  session.answers.push(answer);\n  session.questionsAttempted = (session.questionsAttempted || 0) + 1;
-  session.updatedAt = Date.now();
-  if (session.questionsAttempted >= MAX_QUESTIONS_PER_SESSION) {
-    delete sessions[senderId];
-    await saveSessions(chatId, sessions);
+
+  const body = message.message?.conversation
+    || message.message?.extendedTextMessage?.text
+    || message.message?.imageMessage?.caption
+    || message.message?.videoMessage?.caption
+    || '';
+  const answerMatch = body.match(/(?:^|\b)(?:option\s*)?([ab12])(?:\b|$)/i);
+  if (!answerMatch) {
     await sock.sendMessage(chatId, {
-      text: `🏁 *WYR SESSION COMPLETE*\n\nYou have attempted all *${MAX_QUESTIONS_PER_SESSION}* dilemmas. Use *.wyr* to start a fresh session.`
+      text: 'Choose *A* or *B* in your reply, then I will serve the next dilemma.'
     }, { quoted: message });
     return true;
   }
+
+  const answer = answerMatch[1].toUpperCase();
+  session.answers = session.answers || [];
+  session.answers.push(answer);
+  session.questionsAttempted = (session.questionsAttempted || 0) + 1;
+  session.updatedAt = Date.now();
+
+  if (session.questionsAttempted >= MAX_QUESTIONS_PER_SESSION) {
+    delete sessions[senderId];
+    await saveSessions(chatId, sessions);
+    const countA = session.answers.filter(v => v === 'A' || v === '1').length;
+    const countB = session.answers.filter(v => v === 'B' || v === '2').length;
+    await sock.sendMessage(chatId, {
+      text: `🏁 *WYR SESSION COMPLETE*\n\nYou completed all *${MAX_QUESTIONS_PER_SESSION}* dilemmas.\nA: *${countA}* · B: *${countB}*\n\nUse *.wyr* to start a fresh session.`
+    }, { quoted: message });
+    return true;
+  }
+
   await saveSessions(chatId, sessions);
   await sendQuestion(sock, chatId, senderId, message);
   return true;
@@ -117,12 +137,26 @@ export default {
     if (!isFeatureGroup(chatId)) {
       return sock.sendMessage(chatId, { text: 'Would You Rather is available in the designated game groups.', ...channelInfo }, { quoted: message });
     }
+
     const access = await isGameAllowed(chatId, 'wyr');
     if (!access.ok) return sock.sendMessage(chatId, { text: access.msg, ...channelInfo }, { quoted: message });
 
     const sessions = await getSessions(chatId);
     const action = (args[0] || '').toLowerCase();
-    if (action === 'status') {\n      const session = sessions[senderId];\n      return sock.sendMessage(chatId, { text: session ? `📊 *WYR SESSION*\\n\\nAttempted: *${session.questionsAttempted || 0}/${MAX_QUESTIONS_PER_SESSION}*\\nQuestions issued: *${session.questionsAsked || 1}*\\nA: *${(session.answers || []).filter(v => v === 'A' || v === '1').length}* · B: *${(session.answers || []).filter(v => v === 'B' || v === '2').length}*` : 'No active WYR session. Use *.wyr* to start.', ...channelInfo }, { quoted: message });\n    }\n    if (action === 'stop' || action === 'end') {
+
+    if (action === 'status') {
+      const session = sessions[senderId];
+      const countA = (session?.answers || []).filter(v => v === 'A' || v === '1').length;
+      const countB = (session?.answers || []).filter(v => v === 'B' || v === '2').length;
+      return sock.sendMessage(chatId, {
+        text: session
+          ? `📊 *WYR SESSION*\n\nAttempted: *${session.questionsAttempted || 0}/${MAX_QUESTIONS_PER_SESSION}*\nQuestions issued: *${session.questionsAsked || 1}*\nA: *${countA}* · B: *${countB}*`
+          : 'No active WYR session. Use *.wyr* to start.',
+        ...channelInfo
+      }, { quoted: message });
+    }
+
+    if (action === 'stop' || action === 'end') {
       let admin = !!(context.isSenderAdmin || context.senderIsOwnerOrSudo || context.isOwnerOrSudoCheck || message.key.fromMe);
       if (!admin) {
         try { admin = !!(await isAdmin(sock, chatId, senderId)).isSenderAdmin; } catch {}
@@ -131,7 +165,9 @@ export default {
         await saveSessions(chatId, {});
         return sock.sendMessage(chatId, { text: '🛑 Admin ended all active WYR sessions in this group.', ...channelInfo }, { quoted: message });
       }
-      if (!sessions[senderId]) return sock.sendMessage(chatId, { text: 'You do not have an active WYR session.', ...channelInfo }, { quoted: message });
+      if (!sessions[senderId]) {
+        return sock.sendMessage(chatId, { text: 'You do not have an active WYR session.', ...channelInfo }, { quoted: message });
+      }
       if (!(sessions[senderId].questionsAttempted > 0)) {
         return sock.sendMessage(chatId, { text: 'Attempt your current dilemma first. You can end your session after attempting at least one question.', ...channelInfo }, { quoted: message });
       }
@@ -141,9 +177,12 @@ export default {
     }
 
     if (sessions[senderId]?.expiresAt > Date.now()) {
-      return sock.sendMessage(chatId, { text: `You have an active WYR session: *${sessions[senderId].questionsAttempted || 0}/${MAX_QUESTIONS_PER_SESSION} attempted*. Reply to the current dilemma or tag me for the next one.`, ...channelInfo }, { quoted: message });
+      return sock.sendMessage(chatId, {
+        text: `You have an active WYR session: *${sessions[senderId].questionsAttempted || 0}/${MAX_QUESTIONS_PER_SESSION} attempted*. Reply to the current dilemma with *A* or *B*, or tag me with your choice.`,
+        ...channelInfo
+      }, { quoted: message });
     }
-    // A new command after expiry starts a clean session, not a continuation.
+
     if (sessions[senderId]) {
       delete sessions[senderId];
       await saveSessions(chatId, sessions);
