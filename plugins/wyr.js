@@ -1,4 +1,3 @@
-import axios from 'axios';
 import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
@@ -27,53 +26,39 @@ function botMentioned(sock, message) {
     || message.message?.imageMessage?.contextInfo
     || message.message?.videoMessage?.contextInfo
     || {};
-  const mentions = ctx.mentionedJid || [];
-  return mentions.some(j => {
+  return (ctx.mentionedJid || []).some(j => {
     const n = String(j || '');
     return (botNum && n.startsWith(botNum)) || (botLid && n === botLid);
   });
 }
 
-async function fetchOptions() {
-  // Live API optional; mature group prefers local FALLBACK bank
-  return null;
-}
-
 async function chooseFreshOptions(chatId) {
   let used = (await store.getSetting(chatId, USED_KEY)) || [];
-  try {
-    const options = await fetchOptions();
-    if (options?.length === 2) {
-      const key = questionKey(options);
-      if (!used.includes(key)) {
-        used.push(key);
-        if (used.length > FALLBACK.length) used.splice(0, used.length - FALLBACK.length);
-        await store.saveSetting(chatId, USED_KEY, used);
-        return { options, source: 'live question' };
-      }
-    }
-  } catch {}
   let available = FALLBACK.filter(options => !used.includes(questionKey(options)));
   if (!available.length) {
+    // Start a new cycle only after every pair in the bank has been used.
+    used = [];
     available = [...FALLBACK];
-    await store.saveSetting(chatId, USED_KEY, []);
   }
   const options = choose(available);
-  const key = questionKey(options);
-  used.push(key);
-  if (used.length > FALLBACK.length) used.splice(0, used.length - FALLBACK.length);
+  used.push(questionKey(options));
+  // Keep the complete 500-question cycle so no earlier dilemma leaks back in.
   await store.saveSetting(chatId, USED_KEY, used);
-  return { options, source: `local bank (${FALLBACK.length})` };
+  return options;
 }
 
 async function sendQuestion(sock, chatId, senderId, quoted) {
-  const { options, source } = await chooseFreshOptions(chatId);
+  const options = await chooseFreshOptions(chatId);
   const sent = await sock.sendMessage(chatId, {
-    text: `😈 *WOULD YOU RATHER? — AFTER DARK*\n\n🅰️ ${options[0]}\n\n🅱️ ${options[1]}\n\n_Choose your poison. Reply to this message for another dilemma, or tag me._\n\n_Source: ${source}_`
+    text: `😈 *WOULD YOU RATHER? — MATURE MINDED*\n\n🅰️ ${options[0]}\n\n🅱️ ${options[1]}\n\n_Choose A or B. Reply to this question or tag me for the next dilemma. Your session has a 20-question limit._`
   }, quoted ? { quoted } : undefined);
   const sessions = await getSessions(chatId);
+  const previous = sessions[senderId] || {};
   sessions[senderId] = {
+    ...previous,
     questionMessageId: sent?.key?.id || null,
+    questionsAsked: (previous.questionsAsked || 0) + 1,
+    questionsAttempted: previous.questionsAttempted || 0,
     updatedAt: Date.now(),
     expiresAt: Date.now() + EXPIRY_MS
   };
@@ -100,6 +85,18 @@ export async function handleWyrContinuity(sock, chatId, message, senderId) {
     || {};
   const replied = !!(ctx.stanzaId && session.questionMessageId && ctx.stanzaId === session.questionMessageId);
   if (!replied && !botMentioned(sock, message)) return false;
+
+  session.questionsAttempted = (session.questionsAttempted || 0) + 1;
+  session.updatedAt = Date.now();
+  if (session.questionsAttempted >= MAX_QUESTIONS_PER_SESSION) {
+    delete sessions[senderId];
+    await saveSessions(chatId, sessions);
+    await sock.sendMessage(chatId, {
+      text: `🏁 *WYR SESSION COMPLETE*\n\nYou have attempted all *${MAX_QUESTIONS_PER_SESSION}* dilemmas. Use *.wyr* to start a fresh session.`
+    }, { quoted: message });
+    return true;
+  }
+  await saveSessions(chatId, sessions);
   await sendQuestion(sock, chatId, senderId, message);
   return true;
 }
@@ -108,26 +105,52 @@ export default {
   command: 'wyr',
   aliases: ['wouldyourather'],
   category: 'games',
-  description: 'Mature Would You Rather with 20-dilemma sessions and group-wide duplicate prevention.',
+  description: 'Mature Minded Would You Rather with 20-question sessions and group-wide no-repeat tracking.',
   usage: '.wyr | .wyr stop',
   groupOnly: true,
   async handler(sock, message, args, context) {
     const chatId = context.chatId || message.key.remoteJid;
     const senderId = context.senderId || message.key.participant || message.key.remoteJid;
+    const channelInfo = context.channelInfo || {};
     if (!isFeatureGroup(chatId)) {
-      return sock.sendMessage(chatId, { text: 'Would You Rather is available in the designated game groups.' }, { quoted: message });
+      return sock.sendMessage(chatId, { text: 'Would You Rather is available in the designated game groups.', ...channelInfo }, { quoted: message });
     }
     const access = await isGameAllowed(chatId, 'wyr');
-    if (!access.ok) return sock.sendMessage(chatId, { text: access.msg }, { quoted: message });
+    if (!access.ok) return sock.sendMessage(chatId, { text: access.msg, ...channelInfo }, { quoted: message });
+
     const sessions = await getSessions(chatId);
+    const action = (args[0] || '').toLowerCase();
+    if (action === 'stop' || action === 'end') {
+      let admin = !!(context.isSenderAdmin || context.senderIsOwnerOrSudo || context.isOwnerOrSudoCheck || message.key.fromMe);
+      if (!admin) {
+        try { admin = !!(await isAdmin(sock, chatId, senderId)).isSenderAdmin; } catch {}
+      }
+      if (admin) {
+        await saveSessions(chatId, {});
+        return sock.sendMessage(chatId, { text: '🛑 Admin ended all active WYR sessions in this group.', ...channelInfo }, { quoted: message });
+      }
+      if (!sessions[senderId]) return sock.sendMessage(chatId, { text: 'You do not have an active WYR session.', ...channelInfo }, { quoted: message });
+      if (!(sessions[senderId].questionsAttempted > 0)) {
+        return sock.sendMessage(chatId, { text: 'Attempt your current dilemma first. You can end your session after attempting at least one question.', ...channelInfo }, { quoted: message });
+      }
+      delete sessions[senderId];
+      await saveSessions(chatId, sessions);
+      return sock.sendMessage(chatId, { text: '✅ Your WYR session has ended. Use *.wyr* to start again.', ...channelInfo }, { quoted: message });
+    }
+
     if (sessions[senderId]?.expiresAt > Date.now()) {
-      return sock.sendMessage(chatId, { text: 'You already have an active dilemma. Reply to it or tag me for another.' }, { quoted: message });
+      return sock.sendMessage(chatId, { text: `You have an active WYR session: *${sessions[senderId].questionsAttempted || 0}/${MAX_QUESTIONS_PER_SESSION} attempted*. Reply to the current dilemma or tag me for the next one.`, ...channelInfo }, { quoted: message });
+    }
+    // A new command after expiry starts a clean session, not a continuation.
+    if (sessions[senderId]) {
+      delete sessions[senderId];
+      await saveSessions(chatId, sessions);
     }
     try {
       await sendQuestion(sock, chatId, senderId, message);
     } catch (error) {
       console.error('WYR send failed:', error);
-      await sock.sendMessage(chatId, { text: 'Could not send a Would You Rather question. Please try again.' }, { quoted: message });
+      await sock.sendMessage(chatId, { text: 'Could not send a Would You Rather question. Please try again.', ...channelInfo }, { quoted: message });
     }
   }
 };
