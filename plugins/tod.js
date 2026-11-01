@@ -29,10 +29,15 @@ async function endSession(sock, chatId, session, reason = 'ended') {
     let text = `🛑 *Truth or Dare session ended*\n\n${session.players.map(mention).join(' & ')}`;
     if (reason === 'timeout') text += `\n\nEnded due to 10 minutes inactivity.`;
     else if (reason === 'manual') text += `\n\nEnded by a player.`;
-    await sock.sendMessage(chatId, { text, mentions: session.players });
+    const sent = await sock.sendMessage(chatId, { text: text + '\n\n_Reply directly to this question (swipe/reply), or tag the bot when you are done._', mentions: session.players });
+    session.questionMessageId = sent?.key?.id || null;
+    session.lastActivity = Date.now();
+    sessions[session.id] = session;
+    await saveSessions(chatId, sessions);
 }
 
 async function startRound(sock, chatId, session) {
+    session.advancing = false;
     session.round += 1;
     session.lastActivity = Date.now();
     session.warningSent = false;
@@ -220,6 +225,55 @@ export async function checkTodTimeouts(sock, chatId) {
     }
 }
 
-export async function handleTodReply() {
-    return false;
+function isBotMentioned(sock, message, text = '') {
+    const botId = sock.user?.id || '';
+    const botNumber = botId.split(':')[0].split('@')[0];
+    const botLid = sock.user?.lid || '';
+    const mentions = message?.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+    return mentions.some(jid => {
+        const id = String(jid || '').split(':')[0].split('@')[0];
+        return (botNumber && id === botNumber) || (botLid && jid === botLid);
+    }) || (!!botNumber && String(text).includes('@' + botNumber));
+}
+
+export async function advanceTodSession(sock, chatId, senderId, quotedMessage = null) {
+    const sessions = await getSessions(chatId);
+    const entry = Object.entries(sessions).find(([, s]) =>
+        s.status === 'active' && s.waitingFor === senderId
+    );
+    if (!entry) return false;
+
+    const [sessionId, session] = entry;
+    // Claim this prompt before advancing so a reply + mention cannot double-advance.
+    if (session.advancing) return true;
+    session.advancing = true;
+    session.lastActivity = Date.now();
+    session.warningSent = false;
+    sessions[sessionId] = session;
+    await saveSessions(chatId, sessions);
+
+    await sock.sendMessage(chatId, {
+        text: `✅ ${mention(senderId)} has responded.\n\nNext round coming up...`,
+        mentions: [senderId]
+    }, quotedMessage ? { quoted: quotedMessage } : undefined);
+
+    await startRound(sock, chatId, session);
+    return true;
+}
+
+export async function handleTodReply(sock, chatId, senderId, text, message) {
+    if (!chatId?.endsWith('@g.us') || message?.key?.fromMe || !senderId) return false;
+    const sessions = await getSessions(chatId);
+    const session = Object.values(sessions).find(s =>
+        s.status === 'active' && s.waitingFor === senderId
+    );
+    if (!session?.questionMessageId) return false;
+
+    const ctx = message?.message?.extendedTextMessage?.contextInfo
+        || message?.message?.imageMessage?.contextInfo
+        || message?.message?.videoMessage?.contextInfo || {};
+    const replied = ctx.stanzaId === session.questionMessageId;
+    const tagged = isBotMentioned(sock, message, text);
+    if (!replied && !tagged) return false;
+    return advanceTodSession(sock, chatId, senderId, message);
 }
