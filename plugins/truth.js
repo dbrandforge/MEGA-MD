@@ -12,6 +12,8 @@ export default {
     async handler(sock, message, args, context) {
         const { chatId, senderId, channelInfo } = context;
 
+        const manualAllowed = await isGameAllowed(chatId, 'truth');
+        if (!manualAllowed.ok) return sock.sendMessage(chatId, { text: manualAllowed.msg, ...channelInfo }, { quoted: message });
         const allowed = await isGameAllowed(chatId, 'tod');
         if (!allowed.ok) {
             return sock.sendMessage(chatId, { text: allowed.msg, ...channelInfo }, { quoted: message });
