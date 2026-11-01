@@ -4,7 +4,7 @@ export default {
   command: 'gamelock',
   aliases: ['lockgame'],
   category: 'admin',
-  description: 'Lock or unlock games that are normally available every day.',
+  description: 'Admin controls for locking or unlocking any group game.',
   usage: '.gamelock list | .gamelock <game> on|off',
   groupOnly: true,
   adminOnly: true,
@@ -38,7 +38,7 @@ export default {
     return sock.sendMessage(chatId, {
       text: locked
         ? `🔒 *${games[game]} locked.* Members cannot start or continue it until an admin unlocks it.`
-        : `🟢 *${games[game]} unlocked.* It is available every day again.`,
+        : `🟢 *${games[game]} unlocked.* Its normal availability rules now apply${['basket', 'wcw', 'hotseat', 'anonymous', 'tod'].includes(game) ? ' (scheduled day restrictions remain in force)' : ''}.`,
       ...channelInfo
     }, { quoted: message });
   }

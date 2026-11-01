@@ -29,9 +29,14 @@ async function saveBypasses(chatId, data) {
 const MANUAL_LOCK_KEY = 'manualGameLocks';
 const MANUAL_GAMES = {
   hangman: 'Hangman',
-  trivia: 'Trivia',
   wyr: 'Would You Rather',
+  trivia: 'Trivia',
   tictactoe: 'Tic Tac Toe',
+  basket: "Devil's Basket",
+  wcw: 'Women Crush Wednesday',
+  hotseat: 'Hot Seat',
+  anonymous: 'Anonymous Night',
+  tod: 'Truth or Dare',
 };
 
 export function getManualLockableGames() {
