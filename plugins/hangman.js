@@ -1,5 +1,6 @@
 import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
+import { isGameAllowed } from './daylock.js';
 
 const STATE_KEY = 'hangmanGame';
 const MAX_WRONG = 6;
@@ -101,6 +102,8 @@ function renderBoard(game, intro = '') {
 
 async function applyGuess(sock, message, context, rawGuess) {
   const { chatId, senderId, channelInfo } = context;
+  const access = await isGameAllowed(chatId, 'hangman');
+  if (!access.ok) return sock.sendMessage(chatId, { text: access.msg, ...channelInfo }, { quoted: message });
   const game = await readGame(chatId);
   if (!game) {
     return sock.sendMessage(chatId, { text: 'There is no active Hangman round. Start one with *.hangman*.', ...channelInfo }, { quoted: message });
@@ -173,6 +176,10 @@ export default {
       return sock.sendMessage(chatId, { text: 'This game is available in the designated feature groups.', ...channelInfo }, { quoted: message });
     }
     const action = (args[0] || '').toLowerCase();
+    if (!['stop', 'end', 'status', 'hint'].includes(action)) {
+      const access = await isGameAllowed(chatId, 'hangman');
+      if (!access.ok) return sock.sendMessage(chatId, { text: access.msg, ...channelInfo }, { quoted: message });
+    }
     const current = await readGame(chatId);
     if (action === 'stop' || action === 'end') {
       if (!current) return sock.sendMessage(chatId, { text: 'There is no active Hangman round to stop.', ...channelInfo }, { quoted: message });
