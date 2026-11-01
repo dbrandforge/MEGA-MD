@@ -37,7 +37,7 @@ async function saveSessions(chatId, sessions) {
 // first prompt, so continuity has something to track.
 export async function startSoloSession(chatId, senderId, type, gender) {
     const sessions = await getSessions(chatId);
-    sessions[senderId] = { type, gender, startedAt: Date.now(), lastActivity: Date.now(), questionMessageId: null };
+    sessions[senderId] = { type, gender, startedAt: Date.now(), lastActivity: Date.now(), questionMessageId: null, questionsAnswered: 0 };
     await saveSessions(chatId, sessions);
 }
 
@@ -48,6 +48,7 @@ export async function setSoloQuestionMessage(chatId, senderId, messageId) {
     if (!session) return;
     session.questionMessageId = messageId;
     session.lastActivity = Date.now();
+    session.questionsAnswered = (session.questionsAnswered || 0) + 1;
     sessions[senderId] = session;
     await saveSessions(chatId, sessions);
 }
@@ -117,6 +118,10 @@ export async function handleTruthDareContinue(sock, chatId, message, userMessage
 
         // Stop/end: the session owner can always end their own session.
         if (session && (lower === 'stop' || lower === 'end' || lower === '.stop')) {
+            if (!(session.questionsAnswered > 0)) {
+                await sock.sendMessage(chatId, { text: 'Reply to or tag the bot on your current Truth/Dare prompt first. You can end your session after attempting at least one prompt.' }, { quoted: message });
+                return true;
+            }
             delete sessions[senderId];
             await saveSessions(chatId, sessions);
             await sock.sendMessage(chatId, {
