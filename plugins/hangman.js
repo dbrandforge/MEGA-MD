@@ -2,6 +2,7 @@ import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
 import isAdmin from '../lib/isAdmin.js';
+import isAdmin from '../lib/isAdmin.js';
 
 const STATE_KEY = 'hangmanGame';
 const MAX_WRONG = 6;
@@ -120,6 +121,8 @@ async function applyGuess(sock, message, context, rawGuess) {
     return sock.sendMessage(chatId, { text: 'That whole-word guess has already been tried.', ...channelInfo }, { quoted: message });
   }
 
+  game.attemptedBy = game.attemptedBy || {};
+  game.attemptedBy[senderId] = (game.attemptedBy[senderId] || 0) + 1;
   game.attemptedBy = game.attemptedBy || {};
   game.attemptedBy[senderId] = (game.attemptedBy[senderId] || 0) + 1;
   let feedback;
