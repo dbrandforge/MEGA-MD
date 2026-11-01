@@ -109,6 +109,8 @@ async function advance(sock, chatId, message, senderId, answer, skip = false) {
 
 export async function handleTriviaContinuity(sock, chatId, message, senderId) {
   if (!chatId?.endsWith('@g.us') || message?.key?.fromMe || !isFeatureGroup(chatId)) return false;
+  const access = await isGameAllowed(chatId, 'trivia');
+  if (!access.ok) { await sock.sendMessage(chatId, { text: access.msg }, { quoted: message }); return true; }
   const game = await getGame(chatId);
   if (!game) return false;
   const ctx = message.message?.extendedTextMessage?.contextInfo || message.message?.imageMessage?.contextInfo || {};
