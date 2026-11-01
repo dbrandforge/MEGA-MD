@@ -61,7 +61,7 @@ export default {
                 const participant = participants.find(p => p.id === userId || p.lid === userId) || {};
                 const rawName = (message.key.participant === userId ? message.pushName : '') ||
                     contact.name || contact.notify || participant.notify || participant.name ||
-                    await sock.getName(userId).catch(() => '');
+                    await Promise.resolve(sock.getName(userId)).catch(() => '');
                 const name = cleanName(rawName);
                 const gender = await getUserGender(userId).catch(() => null);
                 const title = (TITLES[gender] || TITLES.unknown)[Math.min(i, 4)];
