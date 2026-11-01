@@ -1,5 +1,5 @@
 import { isFeatureGroup } from '../lib/featureGroups.js';
-import { applyGuess } from './hangman.js';
+import { handleHangmanGuess } from './hangman.js';
 
 export default {
   command: 'guess',
@@ -16,6 +16,7 @@ export default {
     if (!args.length) {
       return sock.sendMessage(chatId, { text: 'Use *.guess <letter>* or *.guess <whole-word>*.', ...channelInfo }, { quoted: message });
     }
-    return applyGuess(sock, message, context, args.join(' '));
+    const senderId = context.senderId || message.key.participant || message.key.remoteJid;
+    return handleHangmanGuess(sock, chatId, message, senderId, args.join(' '), channelInfo);
   }
 };
