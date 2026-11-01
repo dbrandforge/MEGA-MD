@@ -19,7 +19,7 @@ export default {
         `${locks[key]?.locked ? '🔒 LOCKED' : '🟢 OPEN'} — ${name} (\`.gamelock ${key} ${locks[key]?.locked ? 'off' : 'on'}\`)`
       );
       return sock.sendMessage(chatId, {
-        text: `🎮 *MANUAL GAME ACCESS*\\n\\n${lines.join('\\n')}\\n\\nScheduled games keep their existing day restrictions. These controls apply only to games that are otherwise open every day.`,
+        text: `🎮 *MANUAL GAME ACCESS*\n\n${lines.join('\n')}\n\nScheduled games keep their existing day restrictions. These controls apply only to games that are otherwise open every day.`,
         ...channelInfo
       }, { quoted: message });
     }
@@ -28,7 +28,7 @@ export default {
     const state = (args[1] || '').toLowerCase();
     if (!Object.hasOwn(games, game) || !['on', 'off', 'lock', 'unlock'].includes(state)) {
       return sock.sendMessage(chatId, {
-        text: `Usage: *.gamelock list* or *.gamelock <game> on|off*\\n\\nGames: ${Object.keys(games).join(' | ')}\\n\\nUse *on* to lock and *off* to unlock.`,
+        text: `Usage: *.gamelock list* or *.gamelock <game> on|off*\n\nGames: ${Object.keys(games).join(' | ')}\n\nUse *on* to lock and *off* to unlock.`,
         ...channelInfo
       }, { quoted: message });
     }
