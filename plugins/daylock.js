@@ -57,7 +57,7 @@ export async function isGameAllowed(chatId, gameKey) {
     return {
       ok: false,
       locked: true,
-      msg: `🔒 *${MANUAL_GAMES[gameKey] || gameKey} is currently locked by an admin.*\\n\\nAn admin can unlock it with *.gamelock ${gameKey} off*.`
+      msg: `🔒 *${MANUAL_GAMES[gameKey] || gameKey} is currently locked by an admin.*\n\nAn admin can unlock it with *.gamelock ${gameKey} off*.`
     };
   }
 
@@ -74,7 +74,7 @@ export async function isGameAllowed(chatId, gameKey) {
   const names = allowedDays.map(day => DAY_NAMES[day]).join('/');
   return {
     ok: false,
-    msg: `⏳ *${GAME_NAMES[gameKey] || gameKey}* only runs on *${names}*.\\n\\nAsk an admin to bypass:\\n.bypass ${gameKey} 1h`
+    msg: `⏳ *${GAME_NAMES[gameKey] || gameKey}* only runs on *${names}*.\n\nAsk an admin to bypass:\n.bypass ${gameKey} 1h`
   };
 }
 function parseDuration(value) {
