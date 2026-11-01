@@ -85,10 +85,31 @@ let _engineStarted = false;
 let _engineTimer = null;
 let _activeSocket = null;
 let _trackedGroups = new Set();
+const TRACKED_GROUPS_KEY = 'forgeGuardTrackedGroups';
+const TIMED_GROUP_MUTE_KEY = 'timedGroupMute';
 
 export function trackGroup(chatId) {
-    if (chatId?.endsWith('@g.us')) {
-        _trackedGroups.add(chatId);
+    if (!chatId?.endsWith('@g.us')) return;
+    _trackedGroups.add(chatId);
+    store.getSetting('global', TRACKED_GROUPS_KEY).then(saved => {
+        const groups = new Set(Array.isArray(saved) ? saved : []);
+        groups.add(chatId);
+        return store.saveSetting('global', TRACKED_GROUPS_KEY, [...groups]);
+    }).catch(error => console.error('[SCHEDULE] Could not persist tracked group:', error.message));
+}
+
+async function checkTimedGroupMute(sock, chatId) {
+    const mute = await store.getSetting(chatId, TIMED_GROUP_MUTE_KEY);
+    if (!mute?.until || Date.now() < mute.until) return;
+    // Clear first to prevent repeated unlock attempts/messages on every tick.
+    await store.saveSetting(chatId, TIMED_GROUP_MUTE_KEY, { until: null, clearedAt: Date.now() });
+    try {
+        await sock.groupSettingUpdate(chatId, 'not_announcement');
+        await sock.sendMessage(chatId, { text: '🔊 *Timed group mute expired.* Members can send messages again.' });
+    } catch (error) {
+        // Restore the due record so the next scheduler tick can retry.
+        await store.saveSetting(chatId, TIMED_GROUP_MUTE_KEY, mute);
+        console.error(`[SCHEDULE] Timed group unlock failed for ${chatId}:`, error.message);
     }
 }
 
@@ -108,6 +129,10 @@ export function startSchedulerEngine(sock) {
             return;
         }
         try {
+            // Restore group registrations after a process restart.
+            const persistedGroups = await store.getSetting('global', TRACKED_GROUPS_KEY);
+            if (Array.isArray(persistedGroups)) persistedGroups.forEach(id => { if (id?.endsWith('@g.us')) _trackedGroups.add(id); });
+
             // 1. Regular scheduled messages
             const now = Date.now();
             const schedules = await loadSchedules();
@@ -131,6 +156,11 @@ export function startSchedulerEngine(sock) {
 
             // 2. Group Lock + TOD timeouts
             for (const chatId of _trackedGroups) {
+                try {
+                    await checkTimedGroupMute(activeSocket, chatId);
+                } catch (e) {
+                    console.error(`[SCHEDULE] Timed group mute check failed for ${chatId}: ${e.stack || e.message}`);
+                }
                 try {
                     const { checkGroupLockSchedule } = await import('./grouplock.js');
                     await checkGroupLockSchedule(activeSocket, chatId);
