@@ -1,6 +1,7 @@
 import axios from 'axios';
 import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
+import { isGameAllowed } from './daylock.js';
 
 const KEY = 'triviaGame';
 const EXPIRY_MS = 45 * 60 * 1000;
@@ -73,6 +74,8 @@ async function postQuestion(sock, chatId, game, quoted) {
   await saveGame(chatId, game);
 }
 async function advance(sock, chatId, message, senderId, answer, skip = false) {
+  const access = await isGameAllowed(chatId, 'trivia');
+  if (!access.ok) { await sock.sendMessage(chatId, { text: access.msg }, { quoted: message }); return true; }
   const game = await getGame(chatId);
   if (!game) return false;
   let feedback = '⏭️ Question skipped.';
@@ -122,6 +125,10 @@ export default {
     const { chatId, senderId, channelInfo } = context;
     if (!isFeatureGroup(chatId)) return sock.sendMessage(chatId, { text: 'Trivia is available in the designated game groups.', ...channelInfo }, { quoted: message });
     const action = (args[0] || 'start').toLowerCase();
+    if (!['stop', 'end', 'status', 'score'].includes(action)) {
+      const access = await isGameAllowed(chatId, 'trivia');
+      if (!access.ok) return sock.sendMessage(chatId, { text: access.msg, ...channelInfo }, { quoted: message });
+    }
     let game = await getGame(chatId);
     if (['stop','end'].includes(action)) {
       if (!game) return sock.sendMessage(chatId, { text: 'There is no active trivia round.', ...channelInfo }, { quoted: message });
