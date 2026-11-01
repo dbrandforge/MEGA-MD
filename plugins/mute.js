@@ -44,7 +44,6 @@ export default {
                     until: Date.now() + durationInMinutes * 60 * 1000,
                     startedAt: Date.now()
                 });
-                const durationInMilliseconds = durationInMinutes * 60 * 1000;
                 await sock.sendMessage(chatId, {
                     text: `The group has been muted for ${durationInMinutes} minutes.`,
                     ...channelInfo
