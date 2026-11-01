@@ -32,8 +32,6 @@ const MANUAL_GAMES = {
   trivia: 'Trivia',
   wyr: 'Would You Rather',
   tictactoe: 'Tic Tac Toe',
-  truth: 'Truth',
-  dare: 'Dare'
 };
 
 export function getManualLockableGames() {
