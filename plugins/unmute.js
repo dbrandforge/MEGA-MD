@@ -1,4 +1,5 @@
 import { softUnmuteUser } from './softmute.js';
+import store from '../lib/lightweight_store.js';
 
 function mention(jid) {
     return `@${(jid || '').split('@')[0]}`;
