@@ -130,6 +130,54 @@ async function startPaired(sock, chatId, senderId, partnerId, starterGender, par
     await startRound(sock, chatId, session);
 }
 
+
+export async function completeTodTurn(sock, chatId, senderId, options = {}) {
+    const sessions = await getSessions(chatId);
+    const session = Object.values(sessions).find(s =>
+        s.players?.includes(senderId) && s.status === 'active' && s.waitingFor === senderId
+    );
+    if (!session) return false;
+
+    session.questionsCompleted = session.questionsCompleted || {};
+    session.questionsCompleted[senderId] = (session.questionsCompleted[senderId] || 0) + 1;
+    session.lastCompletedBy = senderId;
+    session.lastCompletedAt = Date.now();
+    session.lastActivity = Date.now();
+    session.warningSent = false;
+
+    if (options.endAfter) {
+        session.status = 'ended';
+        session.endedAt = Date.now();
+        session.endedBy = senderId;
+        sessions[session.id] = session;
+        await saveSessions(chatId, sessions);
+        await sock.sendMessage(chatId, {
+            text: '🛑 Your Truth or Dare session has ended after completing that prompt.',
+            mentions: session.players
+        }, options.message ? { quoted: options.message } : undefined);
+        return true;
+    }
+
+    sessions[session.id] = session;
+    await saveSessions(chatId, sessions);
+    await sock.sendMessage(chatId, {
+        text: `✅ ${mention(senderId)} is done!\\n\\nNext round coming up...`,
+        mentions: session.players
+    }, options.message ? { quoted: options.message } : undefined);
+
+    setTimeout(async () => {
+        try {
+            const latestSessions = await getSessions(chatId);
+            const latest = latestSessions[session.id];
+            if (!latest || latest.status !== 'active') return;
+            await startRound(sock, chatId, latest);
+        } catch (error) {
+            console.error('TOD next-round error:', error);
+        }
+    }, 1500);
+    return true;
+}
+
 export default {
     command: 'tod',
     aliases: ['truthordare'],
