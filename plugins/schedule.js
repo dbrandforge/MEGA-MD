@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
+import { FEATURE_GROUPS } from '../lib/featureGroups.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -86,6 +87,59 @@ let _engineTimer = null;
 let _activeSocket = null;
 let _trackedGroups = new Set();
 const TRACKED_GROUPS_KEY = 'forgeGuardTrackedGroups';
+
+const DAY_GREETING_KEY = 'dayUnlockGreetingDate';
+const LAGOS_TIME_ZONE = 'Africa/Lagos';
+
+export function getLagosCalendarParts(date = new Date()) {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: LAGOS_TIME_ZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        weekday: 'long'
+    }).formatToParts(date);
+    return Object.fromEntries(parts.filter(part => part.type !== 'literal').map(part => [part.type, part.value]));
+}
+
+export function buildDayUnlockGreeting(date = new Date()) {
+    const { year, month, day, weekday } = getLagosCalendarParts(date);
+    const dateLabel = new Intl.DateTimeFormat('en-GB', {
+        timeZone: LAGOS_TIME_ZONE,
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    }).format(date);
+
+    // The first day of a month takes priority over the weekday greeting.
+    if (day === '01') {
+        return `🎉 *NEW MONTH. SAME PEOPLE. NEW OPPORTUNITIES TO DISAPPOINT YOURSELVES.*\n\nWelcome to *${new Intl.DateTimeFormat('en-US', { timeZone: LAGOS_TIME_ZONE, month: 'long' }).format(date)}*, everyone! May this month bring progress, good news, money and the discipline to stop postponing the things you swore you'd do last month.\n\nFresh calendar. Fresh chances. Please try not to carry last month's nonsense forward. 😌\n\n📅 ${dateLabel}`;
+    }
+    if (weekday === 'Sunday') {
+        return `☀️ *HAPPY SUNDAY, PEOPLE OF QUESTIONABLE SCHEDULING.*\n\nA new Sunday has arrived. Rest, reset, recharge and prepare for the week ahead. May your peace be uninterrupted, your plans behave themselves and your Monday arrive with reasonable manners.\n\nEnjoy the day. Even this group deserves a little quiet. 😏\n\n📅 ${dateLabel}`;
+    }
+    if (weekday === 'Monday') {
+        return `🚀 *HAPPY NEW WEEK, DISTINGUISHED PROFESSIONALS IN PROCRASTINATION.*\n\nMonday is here again, which means another opportunity to turn those plans into actual results. May the week favour your hustle, reward your effort and reduce the number of excuses we will have to hear.\n\nGet up, get moving and make the week count. Your goals are not going to achieve themselves. 😌\n\n📅 ${dateLabel}`;
+    }
+    return null;
+}
+
+async function sendDayUnlockGreeting(sock, chatId, now = new Date()) {
+    const { year, month, day } = getLagosCalendarParts(now);
+    const dateKey = `${year}-${month}-${day}`;
+    const previousDate = await store.getSetting(chatId, DAY_GREETING_KEY);
+    if (previousDate === dateKey) return false;
+
+    const greeting = buildDayUnlockGreeting(now);
+    if (!greeting) return false;
+
+    await sock.sendMessage(chatId, { text: greeting });
+    // Save only after a successful send, so transient WhatsApp failures retry next tick.
+    await store.saveSetting(chatId, DAY_GREETING_KEY, dateKey);
+    console.log(`[SCHEDULE] Day-unlock greeting sent to ${chatId} for ${dateKey}`);
+    return true;
+}
+
 const TIMED_GROUP_MUTE_KEY = 'timedGroupMute';
 
 export function trackGroup(chatId) {
@@ -154,8 +208,15 @@ export function startSchedulerEngine(sock) {
             }
             if (changed) await saveSchedules(remaining);
 
-            // 2. Group Lock + TOD timeouts
-            for (const chatId of _trackedGroups) {
+            // 2. Day-unlock greetings + group lock + TOD timeouts.
+            // Feature groups are always checked, even if nobody has used .schedule.
+            const groupsToCheck = new Set([..._trackedGroups, ...FEATURE_GROUPS]);
+            for (const chatId of groupsToCheck) {
+                try {
+                    await sendDayUnlockGreeting(activeSocket, chatId, new Date());
+                } catch (e) {
+                    console.error(`[SCHEDULE] Day-unlock greeting failed for ${chatId}: ${e.stack || e.message}`);
+                }
                 try {
                     await checkTimedGroupMute(activeSocket, chatId);
                 } catch (e) {
