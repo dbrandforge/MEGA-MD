@@ -79,7 +79,7 @@ async function writeGame(chatId, game) {
 }
 function renderBoard(game, intro = '') {
   const word = maskWord(game.word, game.guessed);
-  const misses = game.wrong.length;
+  const misses = game.wrong.length + (game.wrongWordGuesses || 0);
   const revealed = game.hintsRevealed || 0;
   const lines = [
     intro,
@@ -128,6 +128,7 @@ async function applyGuess(sock, message, context, rawGuess) {
     else {
       game.wordGuesses = game.wordGuesses || [];
       game.wordGuesses.push(guess);
+      game.wrongWordGuesses = (game.wrongWordGuesses || 0) + 1;
     }
     feedback = '❌ Not this time. A wrong guess costs one life.';
   }
@@ -140,7 +141,7 @@ async function applyGuess(sock, message, context, rawGuess) {
   }
 
   const solved = !maskWord(game.word, game.guessed).includes('_');
-  const lost = game.wrong.length >= MAX_WRONG;
+  const lost = game.wrong.length + (game.wrongWordGuesses || 0) >= MAX_WRONG;
   if (solved || lost) {
     game.status = 'ended';
     game.endedAt = Date.now();
@@ -207,6 +208,7 @@ export default {
       difficulty: difficulty || (selected.word.length <= 7 ? 'easy' : selected.word.length <= 10 ? 'medium' : 'hard'),
       guessed: [],
       wrong: [],
+      wrongWordGuesses: 0,
       wordGuesses: [],
       startedAt: Date.now(),
       lastMoveAt: Date.now(),
