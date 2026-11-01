@@ -40,7 +40,6 @@ export const WORDS = [
   {word:'boundaries',category:'Consent',hint:'Personal limits that define what feels acceptable.',synonymHint:'Limits, ground rules, or personal lines.',extraHints:['They should be communicated clearly.','Respecting them is essential.']},
   {word:'monogamy',category:'Relationships',hint:'A relationship structure involving one partner at a time.',synonymHint:'Exclusive partnership or pair-bonding.',extraHints:['It is one relationship model among several.','It is often contrasted with non-monogamy.']},
   {word:'polyamory',category:'Relationships',hint:'The practice of having multiple consensual romantic relationships.',synonymHint:'Consensual non-monogamy or multiple loving partnerships.',extraHints:['Honesty and communication are central.','It is different from cheating.']},
-  {word:'chemistry',category:'Attraction',hint:'A compelling spark or connection between people.',synonymHint:'Rapport, compatibility, or magnetism.',extraHints:['It may be mutual.','People sometimes describe it as undeniable.']},
   {word:'intoxicate',category:'Desire',hint:'To excite or overwhelm someone, almost like a powerful influence.',synonymHint:'Enthrall, captivate, or exhilarate.',extraHints:['A scent or presence can be described this way.','It can also refer to alcohol or drugs.']}
 ];
 
@@ -119,8 +118,10 @@ async function finishRound(sock, chatId, message, game, channelInfo) {
   const leader = ranked[0];
   if (leader) {
     const previousBest = records[leader[0]].highestScore;
-    records.groupRecord = Math.max(records.groupRecord || 0, previousBest);
-    records.groupRecordHolder = leader[0];
+    if (previousBest > (records.groupRecord || 0)) {
+      records.groupRecord = previousBest;
+      records.groupRecordHolder = leader[0];
+    }
   }
   await saveRecords(chatId, records);
   await writeGame(chatId, game);
