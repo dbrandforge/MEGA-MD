@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getLagosDay } from '../../plugins/daylock.js';
+import { getLagosDay, getManualLockableGames } from '../../plugins/daylock.js';
 import { WORDS, QUESTIONS_PER_ROUND } from '../../plugins/hangman.js';
 import { FALLBACK } from '../../data/wyrPairs.js';
 import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
@@ -30,6 +30,12 @@ describe('game quality foundations', () => {
     expect(FALLBACK.length).toBe(500);
     expect(new Set(FALLBACK.map(pair => pair.map(v => v.toLowerCase()).sort().join('|'))).size).toBe(500);
     expect(MAX_QUESTIONS_PER_SESSION).toBe(20);
+  });
+
+  it('exposes admin lock controls for every game, including scheduled games', () => {
+    expect(Object.keys(getManualLockableGames()).sort()).toEqual([
+      'anonymous', 'basket', 'hangman', 'hotseat', 'tictactoe', 'tod', 'trivia', 'wcw', 'wyr'
+    ]);
   });
 
   it('provides progressive extra hints for long words', () => {
