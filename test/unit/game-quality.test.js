@@ -3,11 +3,17 @@ import { getLagosDay, getManualLockableGames } from '../../plugins/daylock.js';
 import { WORDS, QUESTIONS_PER_ROUND } from '../../plugins/hangman.js';
 import { FALLBACK } from '../../data/wyrPairs.js';
 import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
+import { getLagosWeekKey } from '../../plugins/rank.js';
 
 describe('game quality foundations', () => {
   it('uses Lagos local weekday for day-lock calculations', () => {
     expect(getLagosDay(new Date('2026-11-01T12:00:00.000Z'))).toBe(0);
     expect(getLagosDay(new Date('2026-11-02T00:30:00.000Z'))).toBe(1);
+  });
+
+  it('uses a Monday-to-Sunday weekly ranking cycle in Lagos time', () => {
+    expect(getLagosWeekKey(new Date('2026-11-01T12:00:00.000Z'))).toBe('2026-W44');
+    expect(getLagosWeekKey(new Date('2026-11-02T00:00:00.000Z'))).toBe('2026-W45');
   });
 
   it('provides at least 500 unique mature Hangman words with full clues', () => {
