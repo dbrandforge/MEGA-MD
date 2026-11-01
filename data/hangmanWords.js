@@ -1,14 +1,16 @@
 import { SEEDS_A } from './hangmanSeedsA.js';
 import { SEEDS_B } from './hangmanSeedsB.js';
 import { SEEDS_C } from './hangmanSeedsC.js';
+import { SEEDS_D } from './hangmanSeedsD.js';
 
 export const WORDS = (() => {
   const out = [];
   const seen = new Set();
-  for (const row of [...SEEDS_A, ...SEEDS_B, ...SEEDS_C]) {
+  for (const row of [...SEEDS_A, ...SEEDS_B, ...SEEDS_C, ...SEEDS_D]) {
     const [word, category, hint, synonymHint, e1, e2] = row;
+    // Hangman needs single tokens — strip spaces and non-letters
     const key = String(word || '').toLowerCase().replace(/[^a-z]/g, '');
-    if (!key || seen.has(key)) continue;
+    if (!key || key.length < 3 || seen.has(key)) continue;
     seen.add(key);
     out.push({
       word: key,
