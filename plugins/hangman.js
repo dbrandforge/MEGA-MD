@@ -39,7 +39,7 @@ async function selectRoundWords(chatId) {
     available = [...WORDS];
   }
   const selected = [];
-  while (selected.length < QUESTIONS_PER_ROUND && available.length) {
+  const roundSize = Math.min(QUESTIONS_PER_ROUND, available.length);\n  while (selected.length < roundSize && available.length) {
     const item = pick(available);
     selected.push(item);
     available = available.filter(entry => entry.word !== item.word);
@@ -55,7 +55,7 @@ function renderBoard(game, intro = '') {
   const revealed = game.hintsRevealed || 0;
   const lines = [
     intro,
-    `🧩 *FORGE GUARD — HANGMAN · QUESTION ${game.questionNumber}/${QUESTIONS_PER_ROUND}*`,
+    `🧩 *FORGE GUARD — HANGMAN · QUESTION ${game.questionNumber}/${game.roundWords?.length || QUESTIONS_PER_ROUND}*`,
     `Category: *${game.category}*  |  Letters: *${game.word.length}*`,
     '',
     `*Word:*  ${word.join(' ')}`,
@@ -117,7 +117,7 @@ async function advanceOrEnd(sock, chatId, game, message, channelInfo, solvedBy) 
     }
     await saveRecords(chatId, records);
     const scoreLines = scores.length
-      ? scores.map(([id, n], i) => `${i + 1}. @${id.split('@')[0]} — *${n}/${QUESTIONS_PER_ROUND}*`).join('\n')
+      ? scores.map(([id, n], i) => `${i + 1}. @${id.split('@')[0]} — *${n}/${game.roundWords?.length || QUESTIONS_PER_ROUND}*`).join('\n')
       : '_No points this round._';
     const mentions = scores.map(([id]) => id);
     await sock.sendMessage(chatId, {
