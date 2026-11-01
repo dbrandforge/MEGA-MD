@@ -48,7 +48,6 @@ export async function setSoloQuestionMessage(chatId, senderId, messageId) {
     if (!session) return;
     session.questionMessageId = messageId;
     session.lastActivity = Date.now();
-    session.questionsAnswered = (session.questionsAnswered || 0) + 1;
     sessions[senderId] = session;
     await saveSessions(chatId, sessions);
 }
@@ -94,6 +93,7 @@ async function sendNext(sock, chatId, senderId, session, sessions) {
     const label = session.type === 'truth' ? '🔥 *TRUTH*' : '🔥 *DARE*';
 
     session.lastActivity = Date.now();
+    session.questionsAnswered = (session.questionsAnswered || 0) + 1;
     sessions[senderId] = session;
     await saveSessions(chatId, sessions);
 
