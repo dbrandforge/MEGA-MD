@@ -515,7 +515,7 @@ async function startQasimDev() {
         QasimDev.public = true;
         QasimDev.serializeM = (m) => smsg(QasimDev, m, store);
         const isRegistered = state.creds?.registered === true;
-        if (pairingCode && !isRegistered) {
+        if (pairingCode && !isRegistered && process.env.EXTERNAL_SESSION_ONLY !== 'true') {
             if (useMobile)
                 throw new Error('Cannot use pairing code with mobile api');
             let phoneNumberInput;
