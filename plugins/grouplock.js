@@ -38,6 +38,59 @@ const GOODNIGHT_SENT_KEY = 'groupLockGoodnightSent';
 const GOODMORNING_SENT_KEY = 'groupLockGoodmorningSent';
 const GOODNIGHT_INDEX_KEY = 'groupLockGoodnightIndex';
 const GOODMORNING_INDEX_KEY = 'groupLockGoodmorningIndex';
+const DAY_UNLOCK_GREETING_KEY = 'groupDayUnlockGreeting';
+
+function getLagosCalendarParts(date = new Date()) {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Africa/Lagos',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        weekday: 'long'
+    }).formatToParts(date);
+    return Object.fromEntries(parts.filter(part => part.type !== 'literal').map(part => [part.type, part.value]));
+}
+
+export function buildDayUnlockGreeting(date = new Date()) {
+    const { year, month, day, weekday } = getLagosCalendarParts(date);
+    const dateLabel = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Africa/Lagos',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    }).format(date);
+
+    // New Month takes priority when it falls on a Sunday or Monday.
+    if (day === '01') {
+        const monthName = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Africa/Lagos',
+            month: 'long'
+        }).format(date);
+        return `🎉 *NEW MONTH. SAME PEOPLE. NEW OPPORTUNITIES TO DISAPPOINT YOURSELVES.*\\n\\nWelcome to *${monthName}*, everyone! May this month bring progress, good news, money and the discipline to stop postponing the things you swore you'd do last month.\\n\\nFresh calendar. Fresh chances. Please try not to carry last month's nonsense forward. 😌\\n\\n📅 ${dateLabel}`;
+    }
+    if (weekday === 'Sunday') {
+        return `☀️ *HAPPY SUNDAY, PEOPLE OF QUESTIONABLE SCHEDULING.*\\n\\nA new Sunday has arrived. Rest, reset, recharge and prepare for the week ahead. May your peace be uninterrupted, your plans behave themselves and your Monday arrive with reasonable manners.\\n\\nEnjoy the day. Even this group deserves a little quiet. 😏\\n\\n📅 ${dateLabel}`;
+    }
+    if (weekday === 'Monday') {
+        return `🚀 *HAPPY NEW WEEK, DISTINGUISHED PROFESSIONALS IN PROCRASTINATION.*\\n\\nMonday is here again, which means another opportunity to turn those plans into actual results. May the week favour your hustle, reward your effort and reduce the number of excuses we will have to hear.\\n\\nGet up, get moving and make the week count. Your goals are not going to achieve themselves. 😌\\n\\n📅 ${dateLabel}`;
+    }
+    return null;
+}
+
+async function sendDayUnlockGreetingOnce(sock, chatId) {
+    const { year, month, day } = getLagosCalendarParts();
+    const dateKey = `${year}-${month}-${day}`;
+    if (await store.getSetting(chatId, DAY_UNLOCK_GREETING_KEY) === dateKey) return false;
+
+    const greeting = buildDayUnlockGreeting();
+    if (!greeting) return false;
+
+    await sock.sendMessage(chatId, { text: greeting });
+    await store.saveSetting(chatId, DAY_UNLOCK_GREETING_KEY, dateKey);
+    console.log(`[GroupLock] Occasion greeting sent to ${chatId} for ${dateKey}`);
+    return true;
+}
+
 
 function getLagosNow() {
     // Reliable way to get Africa/Lagos time
@@ -109,6 +162,14 @@ async function unlockGroupSetting(sock, chatId) {
 // what the lock state is. This is the piece that used to be stuck behind
 // `state.locked === true`.
 async function sendDailyActivityOnce(sock, chatId, day) {
+    // Occasion greeting is a separate, best-effort message. It must never
+    // block, replace, delay, or change the daily activity message or pin.
+    try {
+        await sendDayUnlockGreetingOnce(sock, chatId);
+    } catch (greetingError) {
+        console.error(`[GroupLock] Occasion greeting failed for ${chatId}:`, greetingError.message);
+    }
+
     const dateKey = getCurrentDateKey();
     const sentRecord = (await store.getSetting(chatId, ACTIVITY_SENT_KEY)) || {};
     if (sentRecord.date === dateKey) return false; // already sent today
