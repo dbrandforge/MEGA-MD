@@ -64,6 +64,7 @@ export default {
             const target = mentioned[0];
             const g = (arg1 === 'guy' || arg1 === 'lady') ? arg1 : arg0;
             await setUserGender(target, g);
+            try { const { resumeHotSeatPlayer } = await import('./hotseat.js'); await resumeHotSeatPlayer(sock, chatId, target); } catch (error) { console.error('Hot Seat gender resume failed:', error.message); }
             return sock.sendMessage(chatId, {
                 text: `✅ Gender for @${target.split('@')[0]} set to *${g}* (admin).`,
                 mentions: [target],
@@ -101,6 +102,7 @@ export default {
         }
 
         await setUserGender(senderId, arg0);
+        try { const { resumeHotSeatPlayer } = await import('./hotseat.js'); await resumeHotSeatPlayer(sock, chatId, senderId); } catch (error) { console.error('Hot Seat gender resume failed:', error.message); }
         await sock.sendMessage(chatId, {
             text: existing && isAdmin
                 ? `✅ Gender updated to *${arg0}* (admin).`
