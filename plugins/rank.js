@@ -1,195 +1,78 @@
 import store from '../lib/lightweight_store.js';
-/**
- * Increment message count for a user in a chat
- * Now uses the unified store system (backward compatible)
- */
-async function incrementMessageCount(chatId, userId) {
-    try {
-        await store.incrementMessageCount(chatId, userId);
-    }
-    catch (error) {
-        console.error('Error incrementing message count:', error);
-    }
+import { getUserGender } from './gender.js';
+
+export function getLagosWeekKey(date = new Date()) {
+    const local = new Date(date.getTime() + 60 * 60 * 1000);
+    const day = local.getUTCDay() || 7;
+    local.setUTCDate(local.getUTCDate() + 4 - day);
+    const year = local.getUTCFullYear();
+    const yearStart = new Date(Date.UTC(year, 0, 1));
+    const week = Math.ceil((((local - yearStart) / 86400000) + 1) / 7);
+    return `${year}-W${String(week).padStart(2, '0')}`;
 }
-/**
- * Load all message counts (backward compatible)
- * Returns same format as old JSON file
- */
-async function loadMessageCounts() {
-    try {
-        const data = await store.getAllMessageCounts();
-        return data.messageCount || {};
-    }
-    catch (error) {
-        console.error('Error loading message counts:', error);
-        return {};
-    }
+
+const TITLES = {
+    guy: ['King of the Group', 'Chairman of the Week', 'Chief of Cruise', 'Top G of the Week', 'Vibe General'],
+    lady: ['Queen of the Group', 'Madam of the Week', 'Duchess of Vibes', 'Queen of Cruise', 'Group Sweetheart'],
+    unknown: ['Group Champion', 'Top Contributor', 'Conversation Starter', 'Active Member', 'Group Regular']
+};
+
+function cleanName(value) {
+    return (value || '').toString().replace(/[\r\n@]/g, '').trim().split(/\s+/)[0] || 'Member';
 }
-/**
- * Save message counts (backward compatible, but now a no-op)
- * Data is auto-saved by the store system
- */
-function saveMessageCounts(_messageCounts) {
-    console.log('[RANK] saveMessageCounts called (no-op - auto-saved by store)');
-}
+
 export default {
     command: 'rank',
     aliases: ['top', 'topusers', 'leaderboard', 'ranks'],
     category: 'group',
-    description: 'Show top 5 most active members based on message count',
+    description: 'Show the top five group contributors for the current Lagos week.',
     usage: '.rank',
     groupOnly: true,
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
         try {
-            const messageCounts = await loadMessageCounts();
-            const groupCounts = messageCounts[chatId] || {};
-            // Build lid -> real JID map from group participants
+            const weekKey = getLagosWeekKey();
+            const counts = await store.getWeeklyMessageCounts(chatId, weekKey);
+            const entries = Object.entries(counts).filter(([, count]) => Number(count) > 0);
+            const metadata = await sock.groupMetadata(chatId).catch(() => null);
+            const participants = metadata?.participants || [];
             const lidMap = {};
-            let meta = null;
-            try {
-                meta = await sock.groupMetadata(chatId);
-                for (const p of meta.participants) {
-                    if (p.lid)
-                        lidMap[p.lid] = p.id;
-                    if (p.id)
-                        lidMap[p.id] = p.id;
-                }
+            for (const participant of participants) {
+                if (participant.lid && participant.id) lidMap[participant.lid] = participant.id;
+                if (participant.id) lidMap[participant.id] = participant.id;
             }
-            catch { }
-            // Resolve lid JIDs in groupCounts
-            const resolvedCounts = {};
-            for (const [uid, count] of Object.entries(groupCounts)) {
-                const resolved = lidMap[uid] || uid;
-                resolvedCounts[resolved] = (resolvedCounts[resolved] || 0) + count;
+            const resolved = {};
+            for (const [id, count] of entries) {
+                const userId = lidMap[id] || id;
+                resolved[userId] = (resolved[userId] || 0) + Number(count);
             }
-            const sortedMembers = Object.entries(resolvedCounts)
-                .sort(([, a], [, b]) => b - a)
-                .slice(0, 5);
-            if (sortedMembers.length === 0) {
-                await sock.sendMessage(chatId, {
-                    text: '📊 *No message activity recorded yet*\n\nStart chatting to appear on the leaderboard!'
+            const sorted = Object.entries(resolved).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            if (!sorted.length) {
+                return sock.sendMessage(chatId, {
+                    text: '📊 *No weekly activity recorded yet.*\n\nMessages count from Monday to Sunday (Lagos time). Stickers do not count.'
                 }, { quoted: message });
-                return;
             }
             const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
-            let messageText = '🏆 *TOP MEMBERS LEADERBOARD*\n\n';
-            for (let index = 0; index < sortedMembers.length; index++) {
-                const [userId, count] = sortedMembers[index];
-                // Try all sources for name
-                const c = sock.store?.contacts?.[userId];
-                const participant = meta?.participants?.find((p) => p.id === userId || p.lid === userId);
-                const username = c?.name || c?.notify
-                    || participant?.notify || participant?.name
-                    || await sock.getName(userId)
-                    || (userId.includes('@s.whatsapp.net') ? `+${ userId.replace('@s.whatsapp.net', '')}` : 'Unknown');
-                messageText += `${medals[index]} @${username}\n💬 ${count} messages\n\n`;
+            let output = `🏆 *WEEKLY GROUP RANKING*\n📅 ${weekKey} · Lagos time\n\n`;
+            const mentions = [];
+            for (let i = 0; i < sorted.length; i++) {
+                const [userId, count] = sorted[i];
+                const contact = sock.store?.contacts?.[userId] || {};
+                const participant = participants.find(p => p.id === userId || p.lid === userId) || {};
+                const rawName = (message.key.participant === userId ? message.pushName : '') ||
+                    contact.name || contact.notify || participant.notify || participant.name ||
+                    await Promise.resolve(sock.getName(userId)).catch(() => '');
+                const name = cleanName(rawName);
+                const gender = await getUserGender(userId).catch(() => null);
+                const title = (TITLES[gender] || TITLES.unknown)[Math.min(i, 4)];
+                output += `${medals[i]} *${title} — ${name}*\n@${userId.split('@')[0]}\n💬 *${count.toLocaleString()} messages*\n\n`;
+                mentions.push(userId);
             }
-            messageText += '_Keep chatting to climb the ranks!_';
-            await sock.sendMessage(chatId, {
-                text: messageText,
-                mentions: sortedMembers.map(([userId]) => userId)
-            }, { quoted: message });
+            output += '_Weekly scores reset automatically at the start of each new week. Stickers are excluded._';
+            return sock.sendMessage(chatId, { text: output, mentions }, { quoted: message });
+        } catch (error) {
+            console.error('[RANK] Weekly leaderboard error:', error);
+            return sock.sendMessage(chatId, { text: '❌ Could not load the weekly ranking. Please try again.' }, { quoted: message });
         }
-        catch (error) {
-            console.error('Rank Command Error:', error);
-            await sock.sendMessage(chatId, {
-                text: '❌ Failed to load leaderboard. Please try again later.'
-            }, { quoted: message });
-        }
-    },
-    incrementMessageCount,
-    loadMessageCounts,
-    saveMessageCounts
+    }
 };
-/*
-import fs from 'fs';
-import path from 'path';
-import { dataFile } from '../lib/paths.js';
-
-const dataFilePath = dataFile('messageCount.json');
-
-function loadMessageCounts() {
-    if (fs.existsSync(dataFilePath)) {
-        const data = fs.readFileSync(dataFilePath);
-        return JSON.parse(data);
-    }
-    return {};
-}
-
-function saveMessageCounts(messageCounts) {
-    fs.writeFileSync(dataFilePath, JSON.stringify(messageCounts, null, 2));
-}
-
-function incrementMessageCount(groupId, userId) {
-    const messageCounts = loadMessageCounts();
-
-    if (!messageCounts[groupId]) {
-        messageCounts[groupId] = {};
-    }
-
-    if (!messageCounts[groupId][userId]) {
-        messageCounts[groupId][userId] = 0;
-    }
-
-    messageCounts[groupId][userId] += 1;
-
-    saveMessageCounts(messageCounts);
-}
-
-export default {
-    command: 'rank',
-    aliases: ['top', 'topusers', 'leaderboard', 'ranks'],
-    category: 'group',
-    description: 'Show top 5 most active members based on message count',
-    usage: '.rank',
-    groupOnly: true,
-
-    async handler(sock, message, args, context: BotContext) {
-        const chatId = context.chatId || message.key.remoteJid;
-
-        const messageCounts = loadMessageCounts();
-        const groupCounts = messageCounts[chatId] || {};
-
-        const sortedMembers = Object.entries(groupCounts)
-            .sort(([, a], [, b]) => (b) - (a))
-            .slice(0, 5);
-
-        if (sortedMembers.length === 0) {
-            await sock.sendMessage(chatId, {
-                text: '📊 *No message activity recorded yet*\n\nStart chatting to appear on the leaderboard!'
-            }, { quoted: message });
-            return;
-        }
-
-        const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
-        let messageText = '🏆 *TOP MEMBERS LEADERBOARD*\n\n';
-
-        for (let index = 0; index < sortedMembers.length; index++) {
-            const [userId, count] = sortedMembers[index];
-            let username;
-            if (userId.includes('@lid')) {
-                const c = sock.store?.contacts?.[userId];
-                username = c?.name || c?.notify || 'Unknown User';
-            } else {
-                username = await sock.getName(userId) || '+' + userId.replace('@s.whatsapp.net', '');
-            }
-            messageText += `${medals[index]} @${username}
-💬 ${count} messages
-
-`;
-        }
-
-        messageText += '_Keep chatting to climb the ranks!_';
-
-        await sock.sendMessage(chatId, {
-            text: messageText,
-            mentions: sortedMembers.map(([userId]) => userId)
-        }, { quoted: message });
-    },
-
-    incrementMessageCount,
-    loadMessageCounts,
-    saveMessageCounts
-};
-*/
