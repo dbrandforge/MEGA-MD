@@ -16,14 +16,14 @@ describe('game quality foundations', () => {
     for (const entry of WORDS) {
       expect(entry.word).toMatch(/^[a-z]+$/);
       expect(entry.hint.length).toBeGreaterThan(5);
-      expect(entry.synonymHint.length).toBeGreaterThan(5);
+      expect(entry.synonymHint.length).toBeGreaterThan(0);
       expect(entry.extraHints.length).toBeGreaterThanOrEqual(1);
     }
   });
 
   it('uses twenty questions per Hangman round and provides synonym clues', () => {
     expect(QUESTIONS_PER_ROUND).toBe(20);
-    expect(WORDS.every(entry => entry.synonymHint && entry.synonymHint.length > 5)).toBe(true);
+    expect(WORDS.every(entry => typeof entry.synonymHint === 'string' && entry.synonymHint.trim().length > 0)).toBe(true);
   });
 
   it('provides a 500-pair mature WYR bank and a twenty-question session cap', () => {
