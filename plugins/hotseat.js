@@ -115,6 +115,17 @@ async function sendPlayerQuestion(sock, chatId, player) {
     }, ANSWER_TIMEOUT_MS);
 }
 
+
+export async function resumeHotSeatPlayer(sock, chatId, player) {
+    if (!isFeatureGroup(chatId) || !player) return false;
+    const session = await getSession(chatId);
+    if (!session || session.status !== 'active') return false;
+    const state = session.playerStates?.[player];
+    if (!state || state.status !== 'active' || state.waiting) return false;
+    await sendPlayerQuestion(sock, chatId, player);
+    return true;
+}
+
 export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
     if (!isFeatureGroup(chatId) || message?.key?.fromMe) return false;
     const session = await getSession(chatId);
@@ -195,7 +206,7 @@ async function eligibleMembers(sock, chatId) {
 async function sendList(sock, chatId, session) {
     const remaining = Math.max(0, Math.ceil(((session.adjustmentEndsAt || Date.now()) - Date.now()) / 60000));
     await sock.sendMessage(chatId, {
-        text: `🎟️ *HOT SEAT LIST*\\n\\nCurrent turn order:\\n${formatPlayers(session.players)}\\n\\nStatus: *${session.status}*\\nAdjustment time remaining: ${remaining} minute(s).\\n\\n*.hotseat add @user1 @user2* · *.hotseat change @current @replacement* · *.hotseat arrange @user1 @user2* · *.hotseat start*`,
+        text: `🎟️ *HOT SEAT LIST*\n\nCurrent turn order:\n${formatPlayers(session.players)}\n\nStatus: *${session.status}*\nAdjustment time remaining: ${remaining} minute(s).\n\n*.hotseat add @user1 @user2* · *.hotseat change @current @replacement* · *.hotseat arrange @user1 @user2* · *.hotseat start*`,
         mentions: session.players
     });
 }
@@ -252,7 +263,7 @@ export default {
             const basePlayers = session.manualSelection ? session.players : [];
             const additions = tagged.filter(id => !basePlayers.includes(id));
             if (!session.manualSelection && additions.length < MIN_PLAYERS) return reply(`Choose at least ${MIN_PLAYERS} people when setting the manual Hot Seat list.`);
-            if (basePlayers.length + additions.length > MAX_PLAYERS) return reply(`Hot Seat supports a maximum of ${MAX_PLAYERS} participants. Current list:\\n${formatPlayers(basePlayers)}`);
+            if (basePlayers.length + additions.length > MAX_PLAYERS) return reply(`Hot Seat supports a maximum of ${MAX_PLAYERS} participants. Current list:\n${formatPlayers(basePlayers)}`);
             if (!additions.length) return reply('Those people are already on the Hot Seat list.');
             session.players = [...basePlayers, ...additions];
             session.manualSelection = true;
@@ -285,7 +296,7 @@ export default {
             }
             const order = getMentions(message);
             if (order.length !== session.players.length || !unique(order) || !session.players.every(id => order.includes(id))) {
-                return reply(`Tag every selected participant exactly once, in their intended order. Current list:\\n${formatPlayers(session.players)}`);
+                return reply(`Tag every selected participant exactly once, in their intended order. Current list:\n${formatPlayers(session.players)}`);
             }
             session.players = order;
             await saveSession(chatId, session);
