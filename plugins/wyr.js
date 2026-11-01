@@ -43,7 +43,7 @@ async function sendQuestion(sock,chatId,senderId,quoted) {
  let options, source='community bank';
  try { options=await fetchOptions(); source='live question'; }
  catch { options=choose(); }
- const sent=await sock.sendMessage(chatId,{text:`🤔 *WOULD YOU RATHER?*\n\n🅰️ ${options[0]}\n\n🅱️ ${options[1]}\n\n_Reply to this message to get another dilemma, or tag me._\n\n<text>Source: ${source}</text>`},quoted?{quoted}:undefined);
+ const sent=await sock.sendMessage(chatId,{text:`🤔 *WOULD YOU RATHER?*\n\n🅰️ ${options[0]}\n\n🅱️ ${options[1]}\n\n_Reply to this message to get another dilemma, or tag me._\n\n_Source: ${source}_`},quoted?{quoted}:undefined);
  const sessions=await getSessions(chatId);
  sessions[senderId]={questionMessageId:sent?.key?.id||null,updatedAt:Date.now(),expiresAt:Date.now()+EXPIRY_MS};
  await saveSessions(chatId,sessions);
