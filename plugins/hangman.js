@@ -1,6 +1,7 @@
 import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
+import isAdmin from '../lib/isAdmin.js';
 
 const STATE_KEY = 'hangmanGame';
 const MAX_WRONG = 6;
@@ -108,8 +109,6 @@ async function applyGuess(sock, message, context, rawGuess) {
   if (!game) {
     return sock.sendMessage(chatId, { text: 'There is no active Hangman round. Start one with *.hangman*.', ...channelInfo }, { quoted: message });
   }
-  game.attemptedBy = game.attemptedBy || {};
-  game.attemptedBy[senderId] = (game.attemptedBy[senderId] || 0) + 1;
   const guess = normalize(rawGuess);
   if (!guess || (guess.length !== 1 && guess.length !== game.word.length)) {
     return sock.sendMessage(chatId, { text: `Enter one letter or a complete ${game.word.length}-letter word. Example: *.guess a* or *.guess ${game.word}* (just an example format).`, ...channelInfo }, { quoted: message });
@@ -121,6 +120,8 @@ async function applyGuess(sock, message, context, rawGuess) {
     return sock.sendMessage(chatId, { text: 'That whole-word guess has already been tried.', ...channelInfo }, { quoted: message });
   }
 
+  game.attemptedBy = game.attemptedBy || {};
+  game.attemptedBy[senderId] = (game.attemptedBy[senderId] || 0) + 1;
   let feedback;
   if (guess.length === 1 && game.word.includes(guess)) {
     game.guessed.push(guess);
@@ -185,7 +186,8 @@ export default {
     const current = await readGame(chatId);
     if (action === 'stop' || action === 'end') {
       if (!current) return sock.sendMessage(chatId, { text: 'There is no active Hangman round to stop.', ...channelInfo }, { quoted: message });
-      const admin = !!(context.isSenderAdmin || context.senderIsOwnerOrSudo || context.isOwnerOrSudoCheck || message.key.fromMe);
+      let admin = !!(context.isSenderAdmin || context.senderIsOwnerOrSudo || context.isOwnerOrSudoCheck || message.key.fromMe);
+      if (!admin) { try { admin = !!(await isAdmin(sock, chatId, context.senderId)).isSenderAdmin; } catch {} }
       if (!admin && !(current.attemptedBy?.[context.senderId] > 0)) return sock.sendMessage(chatId, { text: 'Only an admin can stop Hangman independently. Players can stop it after making at least one guess.', ...channelInfo }, { quoted: message });
       await writeGame(chatId, { status: 'ended', endedAt: Date.now(), reason: admin ? 'admin-stopped' : 'player-stopped', word: current.word });
       return sock.sendMessage(chatId, { text: `🛑 Hangman stopped. The word was *${current.word}*.`, ...channelInfo }, { quoted: message });
