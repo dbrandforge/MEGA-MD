@@ -3,6 +3,7 @@ import path from 'path';
 import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
 import { channelInfo } from '../lib/messageConfig.js';
+import { softMuteUser } from './softmute.js';
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
 const MYSQL_URL = process.env.MYSQL_URL;
@@ -202,20 +203,21 @@ export async function handleAntiSpam(sock, chatId, message, senderId, senderIsOw
             return true;
         }
         if (groupConfig.action === 'mute') {
-            if (!isBotAdmin) {
+            try {
+                const durationHours = 10;
+                await softMuteUser(sock, chatId, senderId, durationHours);
                 await sock.sendMessage(chatId, {
-                    text: `⚠️ Spam from @${senderId.split('@')[0]} — bot needs admin to mute.`,
+                    text: `🔇 @${senderId.split('@')[0]} has been *soft-muted for ${durationHours} hours* for repeated spamming. Their messages will be deleted automatically.`,
                     mentions: [senderId],
                     ...channelInfo
                 });
-            }
-            else {
+            } catch (muteError) {
+                console.error('[ANTISPAM] Failed to soft-mute spammer:', muteError.message);
                 await sock.sendMessage(chatId, {
-                    text: `🔇 @${senderId.split('@')[0]} removed for spamming.`,
+                    text: `⚠️ Could not soft-mute @${senderId.split('@')[0]} for spam. Please check bot storage and permissions.`,
                     mentions: [senderId],
                     ...channelInfo
                 });
-                await sock.groupParticipantsUpdate(chatId, [senderId], 'remove');
             }
             return true;
         }
