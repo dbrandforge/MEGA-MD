@@ -1,6 +1,7 @@
 import axios from 'axios';
 import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
+import { isGameAllowed } from './daylock.js';
 
 const KEY = 'wouldYouRatherSessions';
 const EXPIRY_MS = 30 * 60 * 1000;
@@ -52,6 +53,8 @@ export async function handleWyrContinuity(sock,chatId,message,senderId) {
  if(!chatId?.endsWith('@g.us')||message?.key?.fromMe||!isFeatureGroup(chatId)) return false;
  const sessions=await getSessions(chatId), session=sessions[senderId];
  if(!session) return false;
+ const access = await isGameAllowed(chatId, 'wyr');
+ if(!access.ok){await sock.sendMessage(chatId,{text:access.msg},{quoted:message});return true;}
  if(session.expiresAt && session.expiresAt<Date.now()){delete sessions[senderId];await saveSessions(chatId,sessions);return false;}
  const ctx=message.message?.extendedTextMessage?.contextInfo||message.message?.imageMessage?.contextInfo||{};
  const replied=!!(ctx.stanzaId&&session.questionMessageId&&ctx.stanzaId===session.questionMessageId);
@@ -68,6 +71,8 @@ export default {
   const chatId=context.chatId||message.key.remoteJid;
   const senderId=context.senderId||message.key.participant||message.key.remoteJid;
   if(!isFeatureGroup(chatId)) return sock.sendMessage(chatId,{text:'Would You Rather is available in the designated game groups.'},{quoted:message});
+  const access=await isGameAllowed(chatId,'wyr');
+  if(!access.ok) return sock.sendMessage(chatId,{text:access.msg},{quoted:message});
   const sessions=await getSessions(chatId);
   if(sessions[senderId]?.expiresAt>Date.now()) {
    return sock.sendMessage(chatId,{text:'You already have an active dilemma. Reply to it or tag me for another.'},{quoted:message});
