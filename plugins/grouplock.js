@@ -52,7 +52,7 @@ function getLagosCalendarParts(date = new Date()) {
 }
 
 export function buildDayUnlockGreeting(date = new Date()) {
-    const { year, month, day, weekday } = getLagosCalendarParts(date);
+    const { day, weekday } = getLagosCalendarParts(date);
     const dateLabel = new Intl.DateTimeFormat('en-GB', {
         timeZone: 'Africa/Lagos',
         day: 'numeric',
@@ -66,13 +66,13 @@ export function buildDayUnlockGreeting(date = new Date()) {
             timeZone: 'Africa/Lagos',
             month: 'long'
         }).format(date);
-        return `🎉 *NEW MONTH. SAME PEOPLE. NEW OPPORTUNITIES TO DISAPPOINT YOURSELVES.*\\n\\nWelcome to *${monthName}*, everyone! May this month bring progress, good news, money and the discipline to stop postponing the things you swore you'd do last month.\\n\\nFresh calendar. Fresh chances. Please try not to carry last month's nonsense forward. 😌\\n\\n📅 ${dateLabel}`;
+        return `🎉 *NEW MONTH. SAME PEOPLE. NEW OPPORTUNITIES TO DISAPPOINT YOURSELVES.*\n\nWelcome to *${monthName}*, everyone! May this month bring progress, good news, money and the discipline to stop postponing the things you swore you'd do last month.\n\nFresh calendar. Fresh chances. Please try not to carry last month's nonsense forward. 😌\n\n📅 ${dateLabel}`;
     }
     if (weekday === 'Sunday') {
-        return `☀️ *HAPPY SUNDAY, PEOPLE OF QUESTIONABLE SCHEDULING.*\\n\\nA new Sunday has arrived. Rest, reset, recharge and prepare for the week ahead. May your peace be uninterrupted, your plans behave themselves and your Monday arrive with reasonable manners.\\n\\nEnjoy the day. Even this group deserves a little quiet. 😏\\n\\n📅 ${dateLabel}`;
+        return `☀️ *HAPPY SUNDAY, PEOPLE OF QUESTIONABLE SCHEDULING.*\n\nA new Sunday has arrived. Rest, reset, recharge and prepare for the week ahead. May your peace be uninterrupted, your plans behave themselves and your Monday arrive with reasonable manners.\n\nEnjoy the day. Even this group deserves a little quiet. 😏\n\n📅 ${dateLabel}`;
     }
     if (weekday === 'Monday') {
-        return `🚀 *HAPPY NEW WEEK, DISTINGUISHED PROFESSIONALS IN PROCRASTINATION.*\\n\\nMonday is here again, which means another opportunity to turn those plans into actual results. May the week favour your hustle, reward your effort and reduce the number of excuses we will have to hear.\\n\\nGet up, get moving and make the week count. Your goals are not going to achieve themselves. 😌\\n\\n📅 ${dateLabel}`;
+        return `🚀 *HAPPY NEW WEEK, DISTINGUISHED PROFESSIONALS IN PROCRASTINATION.*\n\nMonday is here again, which means another opportunity to turn those plans into actual results. May the week favour your hustle, reward your effort and reduce the number of excuses we will have to hear.\n\nGet up, get moving and make the week count. Your goals are not going to achieve themselves. 😌\n\n📅 ${dateLabel}`;
     }
     return null;
 }
