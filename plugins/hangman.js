@@ -9,7 +9,7 @@ const STATE_KEY = 'hangmanGame';
 const USED_KEY = 'hangmanUsedWords';
 const RECORD_KEY = 'hangmanHighScores';
 const MAX_WRONG = 6;
-export const QUESTIONS_PER_ROUND = 5;
+export const QUESTIONS_PER_ROUND = 20;
 
 // Mature, adult-oriented vocabulary suited to the feature groups.
 // Word list lives in data/hangmanWords.js (500 explicit entries).
@@ -34,12 +34,14 @@ const writeGame = (chatId, game) => store.saveSetting(chatId, STATE_KEY, game);
 async function selectRoundWords(chatId) {
   let used = (await store.getSetting(chatId, USED_KEY)) || [];
   let available = WORDS.filter(item => !used.includes(item.word));
-  if (available.length < QUESTIONS_PER_ROUND) {
+  // Preserve the tail of a cycle instead of repeating unused words just to fill twenty.
+  if (!available.length) {
     used = [];
     available = [...WORDS];
   }
   const selected = [];
-  while (selected.length < QUESTIONS_PER_ROUND && available.length) {
+  const roundSize = Math.min(QUESTIONS_PER_ROUND, available.length);
+  while (selected.length < roundSize && available.length) {
     const item = pick(available);
     selected.push(item);
     available = available.filter(entry => entry.word !== item.word);
@@ -55,7 +57,7 @@ function renderBoard(game, intro = '') {
   const revealed = game.hintsRevealed || 0;
   const lines = [
     intro,
-    `🧩 *FORGE GUARD — HANGMAN · QUESTION ${game.questionNumber}/${QUESTIONS_PER_ROUND}*`,
+    `🧩 *FORGE GUARD — HANGMAN · QUESTION ${game.questionNumber}/${game.roundWords?.length || QUESTIONS_PER_ROUND}*`,
     `Category: *${game.category}*  |  Letters: *${game.word.length}*`,
     '',
     `*Word:*  ${word.join(' ')}`,
@@ -78,7 +80,12 @@ async function awardPoint(chatId, solverId, game) {
   game.scores = game.scores || {};
   game.scores[solverId] = (game.scores[solverId] || 0) + 1;
   const records = await getRecords(chatId);
-  records[solverId] = (records[solverId] || 0) + 1;
+  const previous = records[solverId];
+  const totalSolved = typeof previous === 'number' ? previous : (previous?.totalSolved || previous?.highestScore || 0);
+  records[solverId] = {
+    ...(typeof previous === 'object' && previous ? previous : {}),
+    totalSolved: totalSolved + 1
+  };
   await saveRecords(chatId, records);
 }
 
@@ -90,12 +97,33 @@ async function advanceOrEnd(sock, chatId, game, message, channelInfo, solvedBy) 
     game.reason = 'completed';
     await writeGame(chatId, game);
     const scores = Object.entries(game.scores || {}).sort((a, b) => b[1] - a[1]);
+    const records = await getRecords(chatId);
+    for (const [jid, score] of scores) {
+      const previous = records[jid];
+      const totalSolved = typeof previous === 'number' ? previous : (previous?.totalSolved || previous?.highestScore || 0);
+      const bestRoundScore = Math.max(previous?.bestRoundScore || previous?.highestScore || 0, score);
+      records[jid] = {
+        ...(typeof previous === 'object' && previous ? previous : {}),
+        totalSolved,
+        bestRoundScore,
+        highestScore: bestRoundScore,
+        rounds: (previous?.rounds || 0) + 1,
+        lastRoundScore: score,
+        lastPlayedAt: Date.now()
+      };
+    }
+    const leader = scores[0];
+    if (leader && leader[1] > (records.groupRecord || 0)) {
+      records.groupRecord = leader[1];
+      records.groupRecordHolder = leader[0];
+    }
+    await saveRecords(chatId, records);
     const scoreLines = scores.length
-      ? scores.map(([id, n], i) => `${i + 1}. @${id.split('@')[0]} — *${n}*`).join('\n')
+      ? scores.map(([id, n], i) => `${i + 1}. @${id.split('@')[0]} — *${n}/${game.roundWords?.length || QUESTIONS_PER_ROUND}*`).join('\n')
       : '_No points this round._';
     const mentions = scores.map(([id]) => id);
     await sock.sendMessage(chatId, {
-      text: `🏁 *HANGMAN ROUND COMPLETE*\n\n${solvedBy ? `Last word solved by @${solvedBy.split('@')[0]}.\n\n` : ''}*Round scores:*\n${scoreLines}\n\n_Use *.hangman* for another five._`,
+      text: `🏁 *HANGMAN ROUND COMPLETE*\n\n${solvedBy ? `Last word solved by @${solvedBy.split('@')[0]}.\n\n` : ''}*Round scores:*\n${scoreLines}\n\n_Use *.hangman* for another 20-question round._`,
       mentions,
       ...channelInfo
     }, { quoted: message });
@@ -114,6 +142,7 @@ async function advanceOrEnd(sock, chatId, game, message, channelInfo, solvedBy) 
   game.wrongWordGuesses = 0;
   game.wordGuesses = [];
   game.lastMoveAt = Date.now();
+  game.expiresAt = Date.now() + 30 * 60 * 1000;
   await writeGame(chatId, game);
   await sock.sendMessage(chatId, {
     text: renderBoard(game, solvedBy ? `✅ @${solvedBy.split('@')[0]} solved it. Next question:\n` : ''),
@@ -136,6 +165,7 @@ export async function handleHangmanGuess(sock, chatId, message, senderId, guessR
   if (!guess) return true;
   game.attemptedBy = game.attemptedBy || {};
   game.lastMoveAt = Date.now();
+  game.expiresAt = Date.now() + 30 * 60 * 1000;
 
   if (guess.length === 1) {
     if (game.guessed.includes(guess) || game.wrong.includes(guess)) {
@@ -214,11 +244,22 @@ export default {
     const current = await readGame(chatId);
     if (action === 'score' || action === 'scores' || action === 'record') {
       const records = await getRecords(chatId);
-      const ranked = Object.entries(records).sort((a, b) => b[1] - a[1]).slice(0, 10);
+      const ranked = Object.entries(records)
+        .filter(([id]) => !['groupRecord', 'groupRecordHolder'].includes(id))
+        .sort((a, b) => {
+          const av = typeof a[1] === 'number' ? a[1] : (a[1]?.totalSolved || 0);
+          const bv = typeof b[1] === 'number' ? b[1] : (b[1]?.totalSolved || 0);
+          return bv - av;
+        }).slice(0, 10);
       const text = ranked.length
-        ? ranked.map(([id, n], i) => `${i + 1}. @${id.split('@')[0]} — *${n}*`).join('\n')
+        ? ranked.map(([id, record], i) => {
+            const total = typeof record === 'number' ? record : (record.totalSolved || 0);
+            const best = typeof record === 'number' ? record : (record.bestRoundScore || record.highestScore || 0);
+            return `${i + 1}. @${id.split('@')[0]} — ${total} solved · best round ${best}/${QUESTIONS_PER_ROUND}`;
+          }).join('\n')
         : '_No scores yet._';
-      return sock.sendMessage(chatId, { text: `🏆 *HANGMAN RECORDS*\n\n${text}`, mentions: ranked.map(([id]) => id), ...channelInfo }, { quoted: message });
+      const holder = records.groupRecordHolder ? `\n\nGroup record: @${records.groupRecordHolder.split('@')[0]} — ${records.groupRecord}/${QUESTIONS_PER_ROUND}` : '';
+      return sock.sendMessage(chatId, { text: `🏆 *HANGMAN ALL-TIME RECORDS*\n\n${text}${holder}`, mentions: [...ranked.map(([id]) => id), ...(records.groupRecordHolder ? [records.groupRecordHolder] : [])], ...channelInfo }, { quoted: message });
     }
     if (action === 'stop' || action === 'end') {
       if (!current) return sock.sendMessage(chatId, { text: 'There is no active Hangman round to stop.', ...channelInfo }, { quoted: message });
@@ -249,7 +290,7 @@ export default {
     };
     await writeGame(chatId, game);
     return sock.sendMessage(chatId, {
-      text: `🎮 *FORGE GUARD — HANGMAN CHALLENGE*\n\nFive questions. Shared board. Points per solved word. Pool: *${WORDS.length}* mature words.\n\n${renderBoard(game)}\n\n_Type *.guess <letter>* or *.guess <whole-word>*._`,
+      text: `🎮 *FORGE GUARD — HANGMAN CHALLENGE*\n\nTwenty questions. Shared board. Points per solved word. Pool: *${WORDS.length}* mature words.\n\n${renderBoard(game)}\n\n_Type *.guess <letter>* or *.guess <whole-word>*._`,
       ...channelInfo
     }, { quoted: message });
   }
