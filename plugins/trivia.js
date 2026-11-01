@@ -2,6 +2,7 @@ import axios from 'axios';
 import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
+import isAdmin from '../lib/isAdmin.js';
 
 const KEY = 'triviaGame';
 const EXPIRY_MS = 45 * 60 * 1000;
@@ -134,7 +135,8 @@ export default {
     let game = await getGame(chatId);
     if (['stop','end'].includes(action)) {
       if (!game) return sock.sendMessage(chatId, { text: 'There is no active trivia round.', ...channelInfo }, { quoted: message });
-      const admin = !!(context.isSenderAdmin || context.senderIsOwnerOrSudo || context.isOwnerOrSudoCheck || message.key.fromMe);
+      let admin = !!(context.isSenderAdmin || context.senderIsOwnerOrSudo || context.isOwnerOrSudoCheck || message.key.fromMe);
+      if (!admin) { try { admin = !!(await isAdmin(sock, chatId, senderId)).isSenderAdmin; } catch {} }
       if (!admin && !(game.attempts?.[senderId] > 0)) return sock.sendMessage(chatId, { text: 'Only an admin can end Trivia independently. Players can end it after answering at least one question.', ...channelInfo }, { quoted: message });
       game.active = false; game.endedAt = Date.now(); game.reason = admin ? 'admin-stopped' : 'player-stopped';
       await saveGame(chatId, game);
