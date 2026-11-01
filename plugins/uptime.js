@@ -13,11 +13,11 @@
  *                                                                           *
  *****************************************************************************/
 export default {
-    command: 'uptime',
-    aliases: ['runtime'],
+    command: 'status',
+    aliases: ['uptime', 'runtime'],
     category: 'general',
-    description: 'Show bot status information',
-    usage: '.uptime',
+    description: 'Show the technical bot status report',
+    usage: '.status',
     isPrefixless: true,
     async handler(sock, message) {
         const chatId = message.key.remoteJid;
