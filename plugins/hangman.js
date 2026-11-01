@@ -34,12 +34,14 @@ const writeGame = (chatId, game) => store.saveSetting(chatId, STATE_KEY, game);
 async function selectRoundWords(chatId) {
   let used = (await store.getSetting(chatId, USED_KEY)) || [];
   let available = WORDS.filter(item => !used.includes(item.word));
-  if (available.length < QUESTIONS_PER_ROUND) {
+  // Preserve the tail of a cycle instead of repeating unused words just to fill twenty.
+  if (!available.length) {
     used = [];
     available = [...WORDS];
   }
   const selected = [];
-  const roundSize = Math.min(QUESTIONS_PER_ROUND, available.length);\n  while (selected.length < roundSize && available.length) {
+  const roundSize = Math.min(QUESTIONS_PER_ROUND, available.length);
+  while (selected.length < roundSize && available.length) {
     const item = pick(available);
     selected.push(item);
     available = available.filter(entry => entry.word !== item.word);
