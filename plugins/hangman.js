@@ -219,7 +219,7 @@ export default {
       if(!current) return sock.sendMessage(chatId,{text:'There is no active Hangman round to stop.',...channelInfo},{quoted:message});
       let admin=!!(context.isSenderAdmin||context.senderIsOwnerOrSudo||context.isOwnerOrSudoCheck||message.key.fromMe);
       if(!admin){try{admin=!!(await isAdmin(sock,chatId,senderId)).isSenderAdmin;}catch{}}
-      if(!admin&&!(current.attemptedBy?.[senderId]>0)) return sock.sendMessage(chatId,{text:'Only an admin can stop Hangman independently. Players must attempt at least one guess first.',...channelInfo},{quoted:message});
+      if(!admin) return sock.sendMessage(chatId,{text:'Only an admin can stop an active Hangman round. The round ends automatically when all five questions are completed.',...channelInfo},{quoted:message});
       current.status='ended';current.endedAt=Date.now();current.reason=admin?'admin-stopped':'player-stopped';
       await writeGame(chatId,current);
       return sock.sendMessage(chatId,{text:`🛑 Hangman round stopped at question ${current.questionNumber}/${QUESTIONS_PER_ROUND}. The word was *${current.word}*.`,...channelInfo},{quoted:message});
