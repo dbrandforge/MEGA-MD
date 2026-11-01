@@ -1,5 +1,7 @@
 import { softMuteUser } from './softmute.js';
 import config from '../config.js';
+import store from '../lib/lightweight_store.js';
+import { trackGroup } from './schedule.js';
 
 export default {
     command: 'mute',
@@ -36,26 +38,20 @@ export default {
         }
         try {
             await sock.groupSettingUpdate(chatId, 'announcement');
+            trackGroup(chatId);
             if (durationInMinutes !== undefined) {
-                const durationInMilliseconds = durationInMinutes * 60 * 1000;
+                await store.saveSetting(chatId, 'timedGroupMute', {
+                    until: Date.now() + durationInMinutes * 60 * 1000,
+                    startedAt: Date.now()
+                });
                 await sock.sendMessage(chatId, {
                     text: `The group has been muted for ${durationInMinutes} minutes.`,
                     ...channelInfo
                 }, { quoted: message });
-                setTimeout(async () => {
-                    try {
-                        await sock.groupSettingUpdate(chatId, 'not_announcement');
-                        await sock.sendMessage(chatId, {
-                            text: 'The group has been unmuted.',
-                            ...channelInfo
-                        });
-                    }
-                    catch (unmuteError) {
-                        console.error('Error unmuting group:', unmuteError);
-                    }
-                }, durationInMilliseconds);
+
             }
             else {
+                await store.saveSetting(chatId, 'timedGroupMute', { until: null, clearedAt: Date.now() });
                 await sock.sendMessage(chatId, {
                     text: 'The group has been muted.',
                     ...channelInfo
