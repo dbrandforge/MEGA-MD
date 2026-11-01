@@ -3,9 +3,11 @@ import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
 import { FALLBACK } from '../data/wyrPairs.js';
+import isAdmin from '../lib/isAdmin.js';
 
 const KEY = 'wouldYouRatherSessions';
 const EXPIRY_MS = 30 * 60 * 1000;
+export const MAX_QUESTIONS_PER_SESSION = 20;
 const USED_KEY = 'wouldYouRatherUsedQuestions';
 
 const questionKey = options => options.map(value => String(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()).sort().join('|');
@@ -38,14 +40,14 @@ async function fetchOptions() {
 }
 
 async function chooseFreshOptions(chatId) {
-  const used = (await store.getSetting(chatId, USED_KEY)) || [];
+  let used = (await store.getSetting(chatId, USED_KEY)) || [];
   try {
     const options = await fetchOptions();
     if (options?.length === 2) {
       const key = questionKey(options);
       if (!used.includes(key)) {
         used.push(key);
-        if (used.length > 400) used.splice(0, used.length - 400);
+        if (used.length > FALLBACK.length) used.splice(0, used.length - FALLBACK.length);
         await store.saveSetting(chatId, USED_KEY, used);
         return { options, source: 'live question' };
       }
@@ -59,7 +61,7 @@ async function chooseFreshOptions(chatId) {
   const options = choose(available);
   const key = questionKey(options);
   used.push(key);
-  if (used.length > 400) used.splice(0, used.length - 400);
+  if (used.length > FALLBACK.length) used.splice(0, used.length - FALLBACK.length);
   await store.saveSetting(chatId, USED_KEY, used);
   return { options, source: `local bank (${FALLBACK.length})` };
 }
@@ -106,8 +108,8 @@ export default {
   command: 'wyr',
   aliases: ['wouldyourather'],
   category: 'games',
-  description: 'Mature Would You Rather with group-wide duplicate prevention.',
-  usage: '.wyr',
+  description: 'Mature Would You Rather with 20-dilemma sessions and group-wide duplicate prevention.',
+  usage: '.wyr | .wyr stop',
   groupOnly: true,
   async handler(sock, message, args, context) {
     const chatId = context.chatId || message.key.remoteJid;
