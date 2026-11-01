@@ -84,9 +84,11 @@ export async function handleWyrContinuity(sock, chatId, message, senderId) {
     || message.message?.imageMessage?.contextInfo
     || {};
   const replied = !!(ctx.stanzaId && session.questionMessageId && ctx.stanzaId === session.questionMessageId);
-  if (!replied && !botMentioned(sock, message)) return false;
-
-  session.questionsAttempted = (session.questionsAttempted || 0) + 1;
+  const tagged = botMentioned(sock, message);
+  if (!replied && !tagged) return false;
+  const body = message.message?.conversation || message.message?.extendedTextMessage?.text || message.message?.imageMessage?.caption || message.message?.videoMessage?.caption || '';
+  const answerMatch = body.match(/(?:^|\\b)(?:option\\s*)?([ab12])(?:\\b|$)/i);
+  if (!answerMatch) {\n    await sock.sendMessage(chatId, { text: 'Choose *A* or *B* in your reply, then I will serve the next dilemma.', }, { quoted: message });\n    return true;\n  }\n  const answer = answerMatch[1].toUpperCase();\n\n  session.answers = session.answers || [];\n  session.answers.push(answer);\n  session.questionsAttempted = (session.questionsAttempted || 0) + 1;
   session.updatedAt = Date.now();
   if (session.questionsAttempted >= MAX_QUESTIONS_PER_SESSION) {
     delete sessions[senderId];
@@ -106,7 +108,7 @@ export default {
   aliases: ['wouldyourather'],
   category: 'games',
   description: 'Mature Minded Would You Rather with 20-question sessions and group-wide no-repeat tracking.',
-  usage: '.wyr | .wyr stop',
+  usage: '.wyr | .wyr status | .wyr stop',
   groupOnly: true,
   async handler(sock, message, args, context) {
     const chatId = context.chatId || message.key.remoteJid;
@@ -120,7 +122,7 @@ export default {
 
     const sessions = await getSessions(chatId);
     const action = (args[0] || '').toLowerCase();
-    if (action === 'stop' || action === 'end') {
+    if (action === 'status') {\n      const session = sessions[senderId];\n      return sock.sendMessage(chatId, { text: session ? `📊 *WYR SESSION*\\n\\nAttempted: *${session.questionsAttempted || 0}/${MAX_QUESTIONS_PER_SESSION}*\\nQuestions issued: *${session.questionsAsked || 1}*\\nA: *${(session.answers || []).filter(v => v === 'A' || v === '1').length}* · B: *${(session.answers || []).filter(v => v === 'B' || v === '2').length}*` : 'No active WYR session. Use *.wyr* to start.', ...channelInfo }, { quoted: message });\n    }\n    if (action === 'stop' || action === 'end') {
       let admin = !!(context.isSenderAdmin || context.senderIsOwnerOrSudo || context.isOwnerOrSudoCheck || message.key.fromMe);
       if (!admin) {
         try { admin = !!(await isAdmin(sock, chatId, senderId)).isSenderAdmin; } catch {}
