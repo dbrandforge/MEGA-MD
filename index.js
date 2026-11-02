@@ -18,7 +18,7 @@ import pino from 'pino';
 import config from './config.js';
 import store from './lib/lightweight_store.js';
 import SaveCreds from './lib/session.js';
-import { restoreSessionFromMongo, backupSessionToMongo, isMongoBackupEnabled, clearMongoSessionBackup } from './lib/sessionBackup.js';
+import { restoreSessionFromMongo, backupSessionToMongo, isMongoBackupEnabled, clearMongoSessionBackup, claimSessionBackupLeadership } from './lib/sessionBackup.js';
 import { server, PORT } from './lib/server.js';
 import { printLog } from './lib/print.js';
 import { writeErrorLog } from './lib/logger.js';
@@ -788,6 +788,16 @@ async function main() {
     await compileAll();
     await commandHandler.loadCommands();
     printLog('info', 'Starting MEGA MD BOT...');
+    // Establish a single writer before touching or restoring any auth state.
+    // Newer Render processes supersede older ones through a MongoDB lease.
+    if (isMongoBackupEnabled()) {
+        const leadershipAcquired = await claimSessionBackupLeadership();
+        if (!leadershipAcquired) {
+            printLog('error', 'Session-backup leadership unavailable; refusing to connect with potentially stale credentials.');
+            process.exit(1);
+            return;
+        }
+    }
     // One-shot escape hatch: set FORCE_RELINK=true in the environment to
     // wipe the local session AND the MongoDB backup before pairing, so a
     // deliberate fresh relink isn't immediately undone by restoring the
@@ -801,7 +811,12 @@ async function main() {
         }
         catch (_e) { /* ignore */ }
         if (isMongoBackupEnabled()) {
-            await clearMongoSessionBackup();
+            const cleared = await clearMongoSessionBackup();
+            if (!cleared) {
+                printLog('error', 'Fresh relink aborted because the MongoDB session backup could not be cleared safely.');
+                process.exit(1);
+                return;
+            }
         }
     }
     await initializeSession();
