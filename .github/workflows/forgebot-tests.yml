@@ -36,6 +36,11 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Verify Baileys v7 runtime exports
+        run: >-
+          node --input-type=module -e "import makeWASocket, { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers, jidDecode, jidNormalizedUser, makeCacheableSignalKeyStore, delay } from '@whiskeysockets/baileys';
+          if (typeof makeWASocket !== 'function' || typeof useMultiFileAuthState !== 'function' || !DisconnectReason || typeof fetchLatestBaileysVersion !== 'function' || !Browsers || typeof jidDecode !== 'function' || typeof jidNormalizedUser !== 'function' || typeof makeCacheableSignalKeyStore !== 'function' || typeof delay !== 'function') process.exit(1);
+          console.log('Baileys v7 runtime imports verified');"
       - name: Run Forge Bot unit tests
         run: npm run test:unit
       - name: Run message-routing integration tests
