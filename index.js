@@ -619,6 +619,10 @@ async function startQasimDev() {
                 }
             }
             if (connection === "open") {
+                if (activeSocket !== QasimDev) {
+                    printLog('warning', 'Ignoring open event from a non-active WhatsApp socket.');
+                    return;
+                }
                 printLog('success', 'Bot connected successfully!');
                 currentSocket = QasimDev;
                 authBlocked = false;
