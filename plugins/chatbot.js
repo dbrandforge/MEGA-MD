@@ -6,6 +6,7 @@ import { classifyIntent } from '../data/chatbotResponseLibrary.js';
 import { pickPersonalityReply } from '../data/forgeBotPersonalityBank.js';
 import { getUserGender } from './gender.js';
 import { printLog } from '../lib/print.js';
+import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -175,9 +176,32 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         if (isGroup && !isMention && !isReply) return;
         if (!cleanForHistory) return;
 
+        const identity = resolveIdentity(senderId);
+        const identityReply = getIdentityReply(cleanForHistory);
+        const identityGreeting = getIdentityGreeting(cleanForHistory, identity);
+
         await showTyping(sock, chatId);
 
-        // Local deterministic bank selection; live replies never call an external model.
+        // Identity-specific replies take priority over the general personality bank.
+        // Creator/VIP recognition never grants permissions; authorization remains in the command handler.
+        const previousBotReply = [...history].reverse().find(item => item.name === 'Forge Bot')?.text || '';
+        let registeredGender = null;
+        try { registeredGender = await getUserGender(senderId); } catch {}
+        let response = identityReply || identityGreeting;
+        if (!response) {
+            response = pickPersonalityReply(cleanForHistory, {
+                chatId,
+                previousReply: previousBotReply,
+                gender: registeredGender,
+                history
+            });
+            // Keep recognition warm but occasional during ordinary conversation.
+            if (identity && Math.random() < (identity.role === 'creator' ? 0.22 : 0.14)) {
+                response = getIdentityAcknowledgement(identity) + response;
+            }
+        }
+        console.info(`[Chatbot] Personality-bank reply (intent: ${classifyIntent(cleanForHistory)}, identity: ${identity?.role || 'standard'}, gender: ${registeredGender || 'unregistered'}).`);
+
         const previousBotReply = [...history].reverse().find(item => item.name === 'Forge Bot')?.text || '';
         let registeredGender = null;
         try { registeredGender = await getUserGender(senderId); } catch {}
