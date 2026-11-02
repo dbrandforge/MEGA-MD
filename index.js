@@ -490,6 +490,19 @@ async function startQasimDev() {
                 }
             }
         });
+        // Track WhatsApp server/delivery acknowledgements for messages sent by the bot.
+        QasimDev.ev.on('messages.update', (updates = []) => {
+            for (const item of updates) {
+                if (!item?.key?.fromMe) continue;
+                const status = item?.update?.status;
+                if (status !== undefined) {
+                    printLog('info', `[Outbound ACK] status=${status} id=${String(item.key.id || 'unknown').slice(0, 12)}`);
+                }
+                if (item?.update?.messageStubType !== undefined) {
+                    printLog('warning', `[Outbound ACK] stubType=${item.update.messageStubType} id=${String(item.key.id || 'unknown').slice(0, 12)}`);
+                }
+            }
+        });
         QasimDev.ev.on('messages.upsert', async (chatUpdate) => {
             // Log the raw event before filtering so delivery and sync events can
             // be distinguished when diagnosing an unresponsive WhatsApp session.
