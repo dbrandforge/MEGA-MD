@@ -116,7 +116,6 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
     const isGroup = chatId.endsWith('@g.us');
     if (!data.chatbot) data.chatbot = {};
     if (!data.chatbotDM) data.chatbotDM = {};
-    const settingKey = isGroup ? chatId : senderId;
     if (isGroup) {
         const TARGET = '120363405434471171@g.us';
         if (chatId === TARGET && data.chatbot[chatId] === undefined) {
@@ -124,7 +123,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             await saveUserGroupData(data);
         }
         if (data.chatbot[chatId] !== true) return;
-    } else if (data.chatbotDM[settingKey] !== true) {
+    } else if (data.chatbotDMEnabled !== true) {
         return;
     }
 
@@ -247,13 +246,15 @@ export default {
 
         if (scope === 'dm') {
             if (action === 'on' || action === 'off') {
-                data.chatbotDM[senderId] = action === 'on';
+                // This is a global inbound-DM switch, controlled by the bot owner.
+                // Do not key it by the owner senderId: incoming messages arrive under each external sender's JID.
+                data.chatbotDMEnabled = action === 'on';
                 await saveUserGroupData(data);
-                return sock.sendMessage(chatId, { text: action === 'on' ? '✅ Personal DM chatbot is ON. Send me a message here to chat.' : '⏸️ Personal DM chatbot is OFF.' }, { quoted: message });
+                return sock.sendMessage(chatId, { text: action === 'on' ? '✅ Incoming DM chatbot is ON. I can now reply to private messages from other users.' : '⏸️ Incoming DM chatbot is OFF.' }, { quoted: message });
             }
             if (action === 'status') {
-                const enabled = data.chatbotDM[senderId] === true;
-                return sock.sendMessage(chatId, { text: `Personal DM chatbot: ${enabled ? '🟢 ON' : '🔴 OFF'}\nUse .chatbot dm on/off.` }, { quoted: message });
+                const enabled = data.chatbotDMEnabled === true;
+                return sock.sendMessage(chatId, { text: `Incoming DM chatbot: ${enabled ? '🟢 ON' : '🔴 OFF'}\nUse .chatbot dm on/off.` }, { quoted: message });
             }
         }
 
