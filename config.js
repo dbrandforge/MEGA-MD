@@ -8,9 +8,12 @@ const config = {
     // Personal identity registry; phone numbers are supplied privately through Render env vars.
     creatorNumber: process.env.CREATOR_NUMBER || process.env.OWNER_NUMBER || '',
     creatorName: process.env.CREATOR_NAME || 'Forge dcreative',
+    creatorAlias: process.env.CREATOR_ALIAS || 'Forge',
     creatorFullName: process.env.CREATOR_FULL_NAME || 'Abraham Oyetunji',
     queenNumber: process.env.QUEEN_NUMBER || '',
     queenTitle: process.env.QUEEN_TITLE || 'The Queen',
+    queenAlias: process.env.QUEEN_ALIAS || 'Empire',
+    queenRealName: process.env.QUEEN_REAL_NAME || 'Tessy',
     author: process.env.AUTHOR || 'Forge',
     packname: process.env.PACKNAME || 'Forge',
     description: process.env.DESCRIPTION || 'Forge WhatsApp Bot',
