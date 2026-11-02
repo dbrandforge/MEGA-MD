@@ -471,7 +471,7 @@ async function startQasimDev() {
                     }
                 }
                 catch (err) {
-                    printLog('error', `Error processing individual messages.upsert item: ${err.stack || err.message}`);
+                    printLog('error', `Error processing individual messages.upsert item: ${err?.message || 'Unknown processing error'}`);
                 }
             }
         });
@@ -765,21 +765,19 @@ folders.forEach(folder => {
 // Error handlers
 process.on('uncaughtException', (err) => {
     printLog('error', `Uncaught Exception: ${err.message}`);
-    console.error(err.stack);
+    // Avoid logging full error objects/stacks: protocol-library errors may contain key material.
     writeErrorLog({
         type: 'uncaughtException',
-        error: err.message,
-        stack: err.stack,
+        error: String(err?.message || 'Unknown uncaught exception').slice(0, 500),
         timestamp: new Date().toISOString()
     });
 });
 process.on('unhandledRejection', (err) => {
     printLog('error', `Unhandled Rejection: ${err.message}`);
-    console.error(err.stack);
+    // Avoid logging full error objects/stacks: protocol-library errors may contain key material.
     writeErrorLog({
         type: 'unhandledRejection',
-        error: err.message,
-        stack: err.stack,
+        error: String(err?.message || err || 'Unknown unhandled rejection').slice(0, 500),
         timestamp: new Date().toISOString()
     });
 });
@@ -798,7 +796,6 @@ server.on('error', (error) => {
         writeErrorLog({
             type: 'serverError',
             error: error.message,
-            stack: error.stack,
             timestamp: new Date().toISOString()
         });
     }
