@@ -118,6 +118,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
     const isGroup = chatId.endsWith('@g.us');
     if (!data.chatbot) data.chatbot = {};
     if (!data.chatbotDM) data.chatbotDM = {};
+    const identity = resolveIdentity(senderId);
     if (isGroup) {
         const TARGET = '120363405434471171@g.us';
         if (chatId === TARGET && data.chatbot[chatId] === undefined) {
@@ -125,7 +126,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             await saveUserGroupData(data);
         }
         if (data.chatbot[chatId] !== true) return;
-    } else if (data.chatbotDMEnabled !== true) {
+    } else if (data.chatbotDMEnabled !== true && !identity) {
         return;
     }
 
@@ -176,7 +177,6 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         if (isGroup && !isMention && !isReply) return;
         if (!cleanForHistory) return;
 
-        const identity = resolveIdentity(senderId);
         const identityReply = getIdentityReply(cleanForHistory);
         const identityGreeting = getIdentityGreeting(cleanForHistory, identity);
 
@@ -201,17 +201,6 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             }
         }
         console.info(`[Chatbot] Personality-bank reply (intent: ${classifyIntent(cleanForHistory)}, identity: ${identity?.role || 'standard'}, gender: ${registeredGender || 'unregistered'}).`);
-
-        const previousBotReply = [...history].reverse().find(item => item.name === 'Forge Bot')?.text || '';
-        let registeredGender = null;
-        try { registeredGender = await getUserGender(senderId); } catch {}
-        const response = pickPersonalityReply(cleanForHistory, {
-            chatId,
-            previousReply: previousBotReply,
-            gender: registeredGender,
-            history
-        });
-        console.info(`[Chatbot] Personality-bank reply (intent: ${classifyIntent(cleanForHistory)}, gender: ${registeredGender || 'unregistered'}).`);
 
         printLog('info', `[Chatbot DM] Attempting reply via destinationType=${chatId.endsWith('@lid') ? 'LID' : 'PN_or_group'}`);
         const sentMessage = await sock.sendMessage(chatId, { text: response }, { quoted: message });
