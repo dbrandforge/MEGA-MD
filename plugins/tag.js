@@ -1,13 +1,18 @@
 import { downloadContentFromMessage } from '@whiskeysockets/baileys';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 async function downloadMediaMessage(message, mediaType) {
     const stream = await downloadContentFromMessage(message, mediaType);
     let buffer = Buffer.from([]);
     for await (const chunk of stream) {
         buffer = Buffer.concat([buffer, chunk]);
     }
-    const filePath = path.join(__dirname, '../temp/', `${Date.now()}.${mediaType}`);
+    const tempDir = path.join(__dirname, '../temp/');
+    fs.mkdirSync(tempDir, { recursive: true });
+    const filePath = path.join(tempDir, `${Date.now()}.${mediaType}`);
     fs.writeFileSync(filePath, buffer);
     return filePath;
 }
