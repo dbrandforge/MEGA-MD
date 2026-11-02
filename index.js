@@ -244,16 +244,42 @@ function startWatchdog() {
         }
     }, WATCHDOG_INTERVAL_MS);
 }
-// Periodically checks the local session and sends only changed files to MongoDB.
-// A full baseline is synced once per process; later snapshots are deltas.
+// Watch Baileys' multi-file auth directory so Signal ratchet/key updates are
+// persisted promptly instead of waiting for a five-minute polling interval.
 let sessionBackupTimer = null;
-const SESSION_BACKUP_INTERVAL_MS = 5 * 60 * 1000;
+let sessionBackupWatcher = null;
+let sessionBackupDebounce = null;
+const SESSION_BACKUP_INTERVAL_MS = 60 * 1000;
+function startSessionBackupWatcher() {
+    if (!isMongoBackupEnabled() || sessionBackupWatcher)
+        return;
+    try {
+        sessionBackupWatcher = fs.watch(ensureSessionDirectory(), (_event, filename) => {
+            if (filename && !String(filename).endsWith('.json'))
+                return;
+            if (sessionBackupDebounce)
+                clearTimeout(sessionBackupDebounce);
+            sessionBackupDebounce = setTimeout(() => {
+                sessionBackupDebounce = null;
+                backupSessionToMongo().catch(() => { });
+            }, 1500);
+        });
+        sessionBackupWatcher.on('error', error => {
+            printLog('warning', `Session auth-state watcher error: ${error.message}`);
+            try { sessionBackupWatcher?.close(); } catch {}
+            sessionBackupWatcher = null;
+        });
+    } catch (error) {
+        printLog('warning', `Could not watch session auth-state directory: ${error.message}`);
+    }
+}
 function startSessionBackupLoop() {
     if (!isMongoBackupEnabled())
         return;
+    startSessionBackupWatcher();
     if (sessionBackupTimer)
         return;
-    backupSessionToMongo().catch(() => { }); // immediate snapshot, don't wait for the first tick
+    backupSessionToMongo().catch(() => { });
     sessionBackupTimer = setInterval(() => {
         backupSessionToMongo().catch(() => { });
     }, SESSION_BACKUP_INTERVAL_MS);
@@ -367,6 +393,7 @@ async function startQasimDev() {
         ensureSessionDirectory();
         await delay(1000);
         const { state, saveCreds } = await useMultiFileAuthState(`./session`);
+        startSessionBackupWatcher();
         const _saveCreds = async () => {
             ensureSessionDirectory();
             await saveCreds();
