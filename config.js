@@ -5,6 +5,12 @@ const config = {
     botName: process.env.BOT_NAME || 'Forge Bot',
     botOwner: process.env.BOT_OWNER || 'Forge',
     ownerNumber: process.env.OWNER_NUMBER || '2348087404020',
+    // Personal identity registry; phone numbers are supplied privately through Render env vars.
+    creatorNumber: process.env.CREATOR_NUMBER || process.env.OWNER_NUMBER || '',
+    creatorName: process.env.CREATOR_NAME || 'Forge dcreative',
+    creatorFullName: process.env.CREATOR_FULL_NAME || 'Abraham Oyetunji',
+    queenNumber: process.env.QUEEN_NUMBER || '',
+    queenTitle: process.env.QUEEN_TITLE || 'The Queen',
     author: process.env.AUTHOR || 'Forge',
     packname: process.env.PACKNAME || 'Forge',
     description: process.env.DESCRIPTION || 'Forge WhatsApp Bot',
