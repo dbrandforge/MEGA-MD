@@ -6,6 +6,7 @@ import { classifyIntent } from '../data/chatbotResponseLibrary.js';
 import { pickPersonalityReply } from '../data/forgeBotPersonalityBank.js';
 import { getUserGender } from './gender.js';
 import { printLog } from '../lib/print.js';
+import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -117,6 +118,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
     const isGroup = chatId.endsWith('@g.us');
     if (!data.chatbot) data.chatbot = {};
     if (!data.chatbotDM) data.chatbotDM = {};
+    const identity = resolveIdentity(senderId);
     if (isGroup) {
         const TARGET = '120363405434471171@g.us';
         if (chatId === TARGET && data.chatbot[chatId] === undefined) {
@@ -124,7 +126,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             await saveUserGroupData(data);
         }
         if (data.chatbot[chatId] !== true) return;
-    } else if (data.chatbotDMEnabled !== true) {
+    } else if (data.chatbotDMEnabled !== true && !identity) {
         return;
     }
 
@@ -175,19 +177,30 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         if (isGroup && !isMention && !isReply) return;
         if (!cleanForHistory) return;
 
+        const identityReply = getIdentityReply(cleanForHistory);
+        const identityGreeting = getIdentityGreeting(cleanForHistory, identity);
+
         await showTyping(sock, chatId);
 
-        // Local deterministic bank selection; live replies never call an external model.
+        // Identity-specific replies take priority over the general personality bank.
+        // Creator/VIP recognition never grants permissions; authorization remains in the command handler.
         const previousBotReply = [...history].reverse().find(item => item.name === 'Forge Bot')?.text || '';
         let registeredGender = null;
         try { registeredGender = await getUserGender(senderId); } catch {}
-        const response = pickPersonalityReply(cleanForHistory, {
-            chatId,
-            previousReply: previousBotReply,
-            gender: registeredGender,
-            history
-        });
-        console.info(`[Chatbot] Personality-bank reply (intent: ${classifyIntent(cleanForHistory)}, gender: ${registeredGender || 'unregistered'}).`);
+        let response = identityReply || identityGreeting;
+        if (!response) {
+            response = pickPersonalityReply(cleanForHistory, {
+                chatId,
+                previousReply: previousBotReply,
+                gender: registeredGender,
+                history
+            });
+            // Keep recognition warm but occasional during ordinary conversation.
+            if (identity && Math.random() < (identity.role === 'creator' ? 0.22 : 0.14)) {
+                response = getIdentityAcknowledgement(identity) + response;
+            }
+        }
+        console.info(`[Chatbot] Personality-bank reply (intent: ${classifyIntent(cleanForHistory)}, identity: ${identity?.role || 'standard'}, gender: ${registeredGender || 'unregistered'}).`);
 
         printLog('info', `[Chatbot DM] Attempting reply via destinationType=${chatId.endsWith('@lid') ? 'LID' : 'PN_or_group'}`);
         const sentMessage = await sock.sendMessage(chatId, { text: response }, { quoted: message });
