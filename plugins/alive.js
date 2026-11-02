@@ -1,5 +1,6 @@
 import store from '../lib/lightweight_store.js';
 import { getUserGender } from './gender.js';
+import { resolveIdentity, getIdentityGreeting } from '../lib/identity.js';
 
 const USED_KEY = 'aliveReplyCycle';
 const REPLIES = [
@@ -104,6 +105,10 @@ function pickNoRepeat(bank, used) {
 
 export async function sendAliveResponse(sock, message, context = {}) {
   const chatId = context.chatId || message.key.remoteJid;
+  const senderId = context.senderId || message.key.participant || message.key.remoteJid;
+  const identity = resolveIdentity(senderId);
+  const identityGreeting = getIdentityGreeting('.alive', identity);
+  if (identityGreeting) return sock.sendMessage(chatId, { text: identityGreeting }, { quoted: message });
   let used = (await store.getSetting(chatId, USED_KEY)) || [];
   if (!Array.isArray(used)) used = [];
   const selected = pickNoRepeat(REPLIES, used);
@@ -119,6 +124,8 @@ function cleanDisplayName(value) {
 export async function sendGenderAwareBotResponse(sock, message, context = {}) {
   const chatId = context.chatId || message.key.remoteJid;
   const senderId = context.senderId || message.key.participant || message.key.remoteJid;
+  const identityGreeting = getIdentityGreeting('bot', resolveIdentity(senderId));
+  if (identityGreeting) return sock.sendMessage(chatId, { text: identityGreeting }, { quoted: message });
   const gender = await getUserGender(senderId).catch(() => null);
   if (gender !== 'guy' && gender !== 'lady') return sendAliveResponse(sock, message, { chatId });
 
