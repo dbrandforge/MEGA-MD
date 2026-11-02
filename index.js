@@ -764,20 +764,20 @@ folders.forEach(folder => {
 });
 // Error handlers
 process.on('uncaughtException', (err) => {
-    printLog('error', `Uncaught Exception: ${err.message}`);
+    printLog('error', `Uncaught Exception (${err?.name || 'Error'}). Details omitted from logs.`);
     // Avoid logging full error objects/stacks: protocol-library errors may contain key material.
     writeErrorLog({
         type: 'uncaughtException',
-        error: String(err?.message || 'Unknown uncaught exception').slice(0, 500),
+        errorType: err?.name || 'Error',
         timestamp: new Date().toISOString()
     });
 });
 process.on('unhandledRejection', (err) => {
-    printLog('error', `Unhandled Rejection: ${err.message}`);
+    printLog('error', `Unhandled Rejection (${err?.name || (typeof err)}). Details omitted from logs.`);
     // Avoid logging full error objects/stacks: protocol-library errors may contain key material.
     writeErrorLog({
         type: 'unhandledRejection',
-        error: String(err?.message || err || 'Unknown unhandled rejection').slice(0, 500),
+        errorType: err?.name || (typeof err),
         timestamp: new Date().toISOString()
     });
 });
