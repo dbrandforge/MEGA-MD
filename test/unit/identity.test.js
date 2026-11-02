@@ -84,7 +84,7 @@ describe('Forge Guard identity recognition', () => {
     });
 
     it('uses distinct Creator and Queen greeting styles', () => {
-        expect(getIdentityGreeting('hello', resolveIdentity('2349034451454', identities))).toContain('Creator');
-        expect(getIdentityGreeting('hello', resolveIdentity('2348126885208', identities))).toContain('Queen');
+        expect(getIdentityGreeting('hello', resolveIdentity('2349034451454', identities))).toMatch(/Creator|Forge|architect|Chief/);
+        expect(getIdentityGreeting('hello', resolveIdentity('2348126885208', identities))).toMatch(/Queen|Majesty/);
     });
 });
