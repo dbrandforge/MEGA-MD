@@ -47,6 +47,24 @@ describe('Forge Guard identity recognition', () => {
         expect(answer).toContain('Abraham Oyetunji');
     });
 
+    it('matches natural-language creator full-name variants', () => {
+        for (const question of [
+            "What is your creators full name",
+            "What's your creator's full name?",
+            "What is your creator's full name?",
+            "Tell me your creator's full name"
+        ]) {
+            expect(getIdentityReply(question, identities)).toContain('Abraham Oyetunji');
+        }
+    });
+
+    it('answers who am I using the recognised sender identity', () => {
+        const creator = resolveIdentity('2349034451454', identities);
+        const queen = resolveIdentity('2348126885208', identities);
+        expect(getIdentityReply('Who am I?', identities, creator)).toContain('Abraham Oyetunji');
+        expect(getIdentityReply('Who am I?', identities, queen)).toContain('The Queen');
+    });
+
     it('answers who the Queen is without disclosing her phone number', () => {
         const answer = getIdentityReply('Who is the Queen?', identities);
         expect(answer).toContain('special to my Creator');
