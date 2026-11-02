@@ -498,9 +498,22 @@ async function startQasimDev() {
                 if (status !== undefined) {
                     printLog('info', `[Outbound ACK] status=${status} id=${String(item.key.id || 'unknown').slice(0, 12)}`);
                 }
-                if (item?.update?.messageStubType !== undefined) {
-                    printLog('warning', `[Outbound ACK] stubType=${item.update.messageStubType} id=${String(item.key.id || 'unknown').slice(0, 12)}`);
+                const stubParameters = Array.isArray(item?.update?.messageStubParameters)
+                    ? item.update.messageStubParameters.map(value => String(value).slice(0, 120)).join('|')
+                    : '';
+                if (item?.update?.messageStubType !== undefined || stubParameters) {
+                    printLog('warning', `[Outbound ACK] stubType=${item.update.messageStubType ?? 'none'} stubParameters=${stubParameters || 'none'} id=${String(item.key.id || 'unknown').slice(0, 12)}`);
                 }
+            }
+        });
+        QasimDev.ev.on('connection.update', (update = {}) => {
+            const restriction = update?.reachoutTimeLock;
+            if (restriction !== undefined) {
+                let summary = 'present';
+                try {
+                    summary = JSON.stringify(restriction).slice(0, 500);
+                } catch {}
+                printLog('warning', `[WhatsApp Restriction] reachoutTimeLock=${summary}`);
             }
         });
         QasimDev.ev.on('messages.upsert', async (chatUpdate) => {
