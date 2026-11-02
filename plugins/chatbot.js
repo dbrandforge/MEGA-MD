@@ -177,7 +177,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         if (isGroup && !isMention && !isReply) return;
         if (!cleanForHistory) return;
 
-        const identityReply = getIdentityReply(cleanForHistory);
+        const identityReply = getIdentityReply(cleanForHistory, undefined, identity);
         const identityGreeting = getIdentityGreeting(cleanForHistory, identity);
 
         await showTyping(sock, chatId);

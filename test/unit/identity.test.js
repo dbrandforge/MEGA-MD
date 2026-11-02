@@ -11,7 +11,10 @@ const identities = {
     creatorName: 'Forge dcreative',
     creatorFullName: 'Abraham Oyetunji',
     queenNumber: '2348126885208',
-    queenTitle: 'The Queen'
+    queenTitle: 'The Queen',
+    queenAlias: 'Empire',
+    queenRealName: 'Tessy',
+    creatorAlias: 'Forge'
 };
 
 describe('Forge Guard identity recognition', () => {
@@ -31,7 +34,9 @@ describe('Forge Guard identity recognition', () => {
     it('recognises The Queen without granting an owner role', () => {
         expect(resolveIdentity('2348126885208@s.whatsapp.net', identities)).toMatchObject({
             role: 'queen',
-            name: 'The Queen'
+            name: 'Empire',
+            alias: 'Empire',
+            fullName: 'Tessy'
         });
         expect(resolveIdentity('2348126885208@s.whatsapp.net', identities)?.role).not.toBe('creator');
     });
@@ -47,14 +52,39 @@ describe('Forge Guard identity recognition', () => {
         expect(answer).toContain('Abraham Oyetunji');
     });
 
+    it('matches natural-language creator full-name variants', () => {
+        for (const question of [
+            "What is your creators full name",
+            "What's your creator's full name?",
+            "What is your creator's full name?",
+            "Tell me your creator's full name"
+        ]) {
+            expect(getIdentityReply(question, identities)).toContain('Abraham Oyetunji');
+        }
+    });
+
+    it('answers who am I using the recognised sender identity', () => {
+        const creator = resolveIdentity('2349034451454', identities);
+        const queen = resolveIdentity('2348126885208', identities);
+        expect(getIdentityReply('Who am I?', identities, creator)).toContain('Forge');
+        expect(getIdentityReply('Who am I?', identities, creator)).toContain('Abraham Oyetunji');
+        expect(getIdentityReply('Who am I?', identities, queen)).toContain('Empire');
+        expect(getIdentityReply('Who am I?', identities, queen)).toContain('Tessy');
+    });
+
     it('answers who the Queen is without disclosing her phone number', () => {
         const answer = getIdentityReply('Who is the Queen?', identities);
         expect(answer).toContain('special to my Creator');
         expect(answer).not.toContain(identities.queenNumber);
     });
 
+    it('recognises Empire and answers her real-name question', () => {
+        expect(getIdentityReply('Who is Empire?', identities)).toContain('Tessy');
+        expect(getIdentityReply("What is the Queen's real name?", identities)).toContain('Tessy');
+    });
+
     it('uses distinct Creator and Queen greeting styles', () => {
-        expect(getIdentityGreeting('hello', resolveIdentity('2349034451454', identities))).toContain('Creator');
-        expect(getIdentityGreeting('hello', resolveIdentity('2348126885208', identities))).toContain('Queen');
+        expect(getIdentityGreeting('hello', resolveIdentity('2349034451454', identities))).toMatch(/Creator|Forge|architect|Chief/);
+        expect(getIdentityGreeting('hello', resolveIdentity('2348126885208', identities))).toMatch(/Queen|Majesty/);
     });
 });
