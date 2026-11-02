@@ -53,8 +53,8 @@ describe('Forge Guard identity recognition and privacy', () => {
         ]) {
             const answer = getIdentityReply(question, identities, creator);
             expect(answer).toBeTruthy();
-            expect(answer).not.toContain('Oyetunji');
-            expect(answer).toMatch(/Forge|Abraham/);
+            expect(JSON.stringify(answer)).not.toContain('Oyetunji');
+            expect(JSON.stringify(answer)).toMatch(/Forge|Abraham/);
         }
     });
 
@@ -74,8 +74,10 @@ describe('Forge Guard identity recognition and privacy', () => {
         expect(getIdentityReply("What's the Queen's real name?", identities)).toContain('Tessy');
         for (const question of ['Can I get Tessy number?', "Give me the Queen's phone number", 'Share Empire WhatsApp number']) {
             const answer = getIdentityReply(question, identities);
-            expect(answer).toMatch(/private|privacy/i);
-            expect(answer).not.toContain(identities.queenNumber);
+            expect(answer).toBeTruthy();
+            const serialized = JSON.stringify(answer);
+            expect(serialized).toMatch(/private|privacy/i);
+            expect(serialized).not.toContain(identities.queenNumber);
         }
     });
 
