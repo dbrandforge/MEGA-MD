@@ -47,7 +47,7 @@
   "dependencies": {
     "@distube/ytdl-core": "^4.16.12",
     "@hapi/boom": "^10.0.1",
-    "@whiskeysockets/baileys": "^6.7.24",
+    "@whiskeysockets/baileys": "7.0.0-rc14",
     "acrcloud": "^1.4.0",
     "api-qasim": "^3.2.10",
     "awesome-phonenumber": "^5.9.0",
@@ -91,7 +91,7 @@
     "yargs-parser": "^21.1.1"
   },
   "allowScripts": {
-    "@whiskeysockets/baileys@6.7.24": true,
+    "@whiskeysockets/baileys@7.0.0-rc14": true,
     "better-sqlite3@12.6.2": true,
     "protobufjs@7.6.6": true,
     "sharp@0.35.5": true
