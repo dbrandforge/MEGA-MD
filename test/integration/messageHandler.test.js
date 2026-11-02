@@ -69,6 +69,27 @@ describe('handleMessages', () => {
         );
     });
 
+    it('keeps the original LID as the DM reply destination while resolving PN identity', async () => {
+        const { handleChatbotResponse } = await import('../../plugins/chatbot.js');
+        const msg = createMockMessage({
+            text: 'Hello Forge Bot',
+            isGroup: false,
+            chatId: '4845360701466@lid'
+        });
+        msg.key.remoteJidAlt = '2349034451454@s.whatsapp.net';
+
+        await handleMessages(sock, { messages: [msg], type: 'notify' });
+
+        expect(handleChatbotResponse).toHaveBeenCalledWith(
+            sock,
+            '4845360701466@lid',
+            msg,
+            'hello forge bot',
+            '2349034451454@s.whatsapp.net'
+        );
+        expect(msg.key.remoteJid).toBe('4845360701466@lid');
+    });
+
     it('calls storeMessage for every valid message', async () => {
         const { storeMessage } = await import('../../plugins/antidelete.js');
         const msg = createMockMessage({ text: 'hello' });
