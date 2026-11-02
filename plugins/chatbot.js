@@ -5,6 +5,7 @@ import store from '../lib/lightweight_store.js';
 import { classifyIntent } from '../data/chatbotResponseLibrary.js';
 import { pickPersonalityReply } from '../data/forgeBotPersonalityBank.js';
 import { getUserGender } from './gender.js';
+import { printLog } from '../lib/print.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -188,14 +189,16 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         });
         console.info(`[Chatbot] Personality-bank reply (intent: ${classifyIntent(cleanForHistory)}, gender: ${registeredGender || 'unregistered'}).`);
 
-        await sock.sendMessage(chatId, { text: response }, { quoted: message });
+        printLog('info', `[Chatbot DM] Attempting reply via destinationType=${chatId.endsWith('@lid') ? 'LID' : 'PN_or_group'}`);
+        const sentMessage = await sock.sendMessage(chatId, { text: response }, { quoted: message });
+        printLog('info', `[Chatbot DM] sendMessage resolved id=${sentMessage?.key?.id || 'missing'} destinationType=${sentMessage?.key?.remoteJid?.endsWith('@lid') ? 'LID' : 'other'}`);
 
         history.push({ name: 'Forge Bot', text: response.slice(0, 500), at: Date.now() });
         if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
         await saveChatHistory(chatId, history);
 
     } catch (e) {
-        console.error('Chatbot error:', e.message);
+        printLog('error', `[Chatbot DM] Reply failed: ${String(e?.message || e).slice(0, 400)}`);
     }
 }
 
