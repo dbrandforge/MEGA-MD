@@ -453,7 +453,7 @@ async function startQasimDev() {
                         printLog('info', `Message processed: jid=${mek.key.remoteJid || 'unknown'} id=${mek.key.id || 'unknown'}`);
                     }
                     catch (err) {
-                        printLog('error', `Error in handleMessages (jid=${mek.key.remoteJid || 'unknown'}): ${err.stack || err.message}`);
+                        printLog('error', `Error in handleMessages (jid=${mek.key.remoteJid || 'unknown'}): ${String(err?.message || 'Unknown message handler error').slice(0, 300)}`);
                         if (mek.key.remoteJid) {
                             await QasimDev.sendMessage(mek.key.remoteJid, {
                                 text: '❌ An error occurred while processing your message.',
