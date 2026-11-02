@@ -34,7 +34,9 @@ describe('Forge Guard identity recognition', () => {
     it('recognises The Queen without granting an owner role', () => {
         expect(resolveIdentity('2348126885208@s.whatsapp.net', identities)).toMatchObject({
             role: 'queen',
-            name: 'The Queen'
+            name: 'Empire',
+            alias: 'Empire',
+            fullName: 'Tessy'
         });
         expect(resolveIdentity('2348126885208@s.whatsapp.net', identities)?.role).not.toBe('creator');
     });
@@ -76,7 +78,12 @@ describe('Forge Guard identity recognition', () => {
         expect(answer).not.toContain(identities.queenNumber);
     });
 
-    it('recognises Empire and answers her real-name question', () => {\n        expect(getIdentityReply('Who is Empire?', identities)).toContain('Tessy');\n        expect(getIdentityReply("What is the Queen's real name?", identities)).toContain('Tessy');\n    });\n\n    it('uses distinct Creator and Queen greeting styles', () => {
+    it('recognises Empire and answers her real-name question', () => {
+        expect(getIdentityReply('Who is Empire?', identities)).toContain('Tessy');
+        expect(getIdentityReply("What is the Queen's real name?", identities)).toContain('Tessy');
+    });
+
+    it('uses distinct Creator and Queen greeting styles', () => {
         expect(getIdentityGreeting('hello', resolveIdentity('2349034451454', identities))).toContain('Creator');
         expect(getIdentityGreeting('hello', resolveIdentity('2348126885208', identities))).toContain('Queen');
     });
