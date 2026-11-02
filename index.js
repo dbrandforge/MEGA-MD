@@ -127,7 +127,17 @@ process.on('SIGINT', () => {
 // one per event.
 let isConnecting = false;
 let reconnectTimer = null;
+let activeSocket = null;
+let authBlocked = false;
 async function safeStartQasimDev() {
+    if (authBlocked) {
+        printLog('warning', 'WhatsApp authentication is blocked pending controlled relink; automatic reconnect paused.');
+        return;
+    }
+    if (activeSocket) {
+        printLog('warning', 'A WhatsApp socket already exists; refusing to create a second socket.');
+        return;
+    }
     if (isConnecting) {
         printLog('warning', 'startQasimDev() already in progress - skipping duplicate call.');
         return;
@@ -140,7 +150,11 @@ async function safeStartQasimDev() {
         isConnecting = false;
     }
 }
-function scheduleReconnect(delayMs, { wipeSession = false, reason = '' } = {}) {
+function scheduleReconnect(delayMs, { reason = '' } = {}) {
+    if (authBlocked) {
+        printLog('warning', `Reconnect suppressed while WhatsApp authentication is blocked${reason ? ` (${reason})` : ''}.`);
+        return;
+    }
     if (reconnectTimer) {
         printLog('warning', `Reconnect already scheduled - ignoring duplicate request (${reason}).`);
         return;
@@ -148,12 +162,6 @@ function scheduleReconnect(delayMs, { wipeSession = false, reason = '' } = {}) {
     printLog('connection', `Reconnecting in ${Math.round(delayMs / 1000)} seconds...${reason ? ` (${reason})` : ''}`);
     reconnectTimer = setTimeout(async () => {
         reconnectTimer = null;
-        if (wipeSession) {
-            try {
-                rmSync('./session', { recursive: true, force: true });
-            }
-            catch (_e) { /* ignore */ }
-        }
         await safeStartQasimDev();
     }, delayMs);
 }
@@ -195,7 +203,8 @@ function startWatchdog() {
             catch (_e) {
                 // .end() itself failed (socket already half-dead) - the close
                 // handler won't fire in this case, so schedule directly.
-                scheduleReconnect(5000, { wipeSession: false, reason: 'watchdog forced reconnect' });
+                if (activeSocket === dead) activeSocket = null;
+                scheduleReconnect(5000, { reason: 'watchdog forced reconnect' });
             }
         }
     }, WATCHDOG_INTERVAL_MS);
@@ -355,6 +364,7 @@ async function startQasimDev() {
             connectTimeoutMs: 60000,
             keepAliveIntervalMs: 10000,
         });
+        activeSocket = QasimDev;
         QasimDev.store = store;
         const originalSendPresenceUpdate = QasimDev.sendPresenceUpdate;
         const originalReadMessages = QasimDev.readMessages;
@@ -553,7 +563,7 @@ async function startQasimDev() {
                 }
                 catch (error) {
                     if (attempt < 3) {
-                        scheduleReconnect(3000, { wipeSession: true, reason: 'pairing code request failed' });
+                        scheduleReconnect(3000, { reason: 'pairing code request failed' });
                     }
                     else {
                         printLog('error', 'All 3 pairing attempts failed. Please restart manually.');
@@ -590,6 +600,7 @@ async function startQasimDev() {
             if (connection === "open") {
                 printLog('success', 'Bot connected successfully!');
                 currentSocket = QasimDev;
+                authBlocked = false;
                 startWatchdog();
                 startSessionBackupLoop();
                 // Start background schedulers on every successful WhatsApp connection.
@@ -643,17 +654,28 @@ async function startQasimDev() {
                 console.log();
             }
             if (connection === 'close') {
+                // Ignore late close events from sockets that have already been superseded.
+                if (activeSocket !== QasimDev) {
+                    printLog('warning', 'Ignoring close event from a non-active WhatsApp socket.');
+                    return;
+                }
+                activeSocket = null;
                 if (currentSocket === QasimDev)
                     currentSocket = null;
                 const statusCode = lastDisconnect?.error?.output?.statusCode;
-                const shouldReconnect = statusCode !== DisconnectReason.loggedOut && statusCode !== 401;
                 if (statusCode === DisconnectReason.loggedOut || statusCode === 401) {
-                    scheduleReconnect(3000, { wipeSession: true, reason: `logged out (status ${statusCode})` });
+                    // A 401 is an authentication rejection, not permission to erase
+                    // local credentials. Preserve the full auth state for diagnosis
+                    // and require an intentional, operator-controlled relink.
+                    authBlocked = true;
+                    if (reconnectTimer) {
+                        clearTimeout(reconnectTimer);
+                        reconnectTimer = null;
+                    }
+                    printLog('error', `WhatsApp authentication rejected (status ${statusCode}). Session files preserved; automatic reconnect paused pending controlled relink.`);
                     return;
                 }
-                if (shouldReconnect) {
-                    scheduleReconnect(5000, { wipeSession: false, reason: `connection closed (status ${statusCode})` });
-                }
+                scheduleReconnect(5000, { reason: `connection closed (status ${statusCode ?? 'unknown'})` });
             }
         });
         QasimDev.ev.on('call', async (calls) => {
@@ -671,6 +693,10 @@ async function startQasimDev() {
         return QasimDev;
     }
     catch (error) {
+        if (activeSocket) {
+            try { activeSocket.end(new Error('socket setup failed')); } catch {}
+            activeSocket = null;
+        }
         printLog('error', `Error in startQasimDev: ${error.message}`);
         if (rl && !rlClosed) {
             rl.close();
