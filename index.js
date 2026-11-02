@@ -26,6 +26,27 @@ import { handleMessages, handleGroupParticipantUpdate, handleStatus, handleCall 
 import commandHandler from './lib/commandHandler.js';
 import { startSchedulerEngine, trackGroup } from './plugins/schedule.js';
 import { FEATURE_GROUPS } from './lib/featureGroups.js';
+
+// libsignal may emit low-level Signal-session diagnostics directly through
+// console methods. Those diagnostics can serialize internal session objects.
+// Keep a narrow filter for known protocol diagnostics; normal application
+// logging remains unchanged.
+const originalConsoleMethods = {
+    log: console.log.bind(console),
+    warn: console.warn.bind(console),
+    error: console.error.bind(console),
+};
+const sensitiveSignalDiagnostic = /(?:Session error:|Bad MAC|Failed to decrypt message with any known session|Decrypted message with closed session|Removing old closed session:)/i;
+for (const method of Object.keys(originalConsoleMethods)) {
+    console[method] = (...args) => {
+        const message = args.find(value => typeof value === 'string') || '';
+        if (sensitiveSignalDiagnostic.test(message)) {
+            originalConsoleMethods[method]('[Signal] Sensitive session diagnostic suppressed.');
+            return;
+        }
+        originalConsoleMethods[method](...args);
+    };
+}
 store.readFromFile();
 setInterval(() => store.writeToFile(), config.storeWriteInterval || 10000);
 setInterval(() => {
