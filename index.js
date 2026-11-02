@@ -387,12 +387,64 @@ async function initializeSession() {
 server.listen(PORT, () => {
     printLog('success', `Server listening on port ${PORT}`);
 });
+// Observe trusted-contact token availability without ever logging token bytes or recipient JIDs.
+function instrumentTcTokenKeyStore(keys, creds) {
+    const originalGet = keys.get.bind(keys);
+    const originalSet = keys.set.bind(keys);
+    const ownJids = new Set([creds?.me?.id, creds?.me?.lid].filter(Boolean));
+
+    keys.get = async (type, ids) => {
+        const result = await originalGet(type, ids);
+        if (type === 'tctoken' && Array.isArray(ids)) {
+            const summary = ids.map(jid => {
+                const entry = result?.[jid];
+                if (jid === '__index') {
+                    let count = 'unknown';
+                    try {
+                        const parsed = JSON.parse(Buffer.from(entry?.token || []).toString());
+                        if (Array.isArray(parsed)) count = parsed.length;
+                    } catch {}
+                    return `index:entries=${count}`;
+                }
+                const kind = jid.endsWith('@lid') ? 'LID' : jid.endsWith('@s.whatsapp.net') ? 'PN' : 'other';
+                const owner = ownJids.has(jid) ? 'self' : 'peer';
+                const token = entry?.token;
+                return `${owner}:${kind}:${token?.length ? 'present' : 'missing'}:${entry?.timestamp ? 'timestamped' : 'untimestamped'}`;
+            });
+            printLog('info', `[TC Token Diagnostics] read ${summary.join(',')}`);
+        }
+        return result;
+    };
+
+    keys.set = async data => {
+        const entries = data?.tctoken;
+        if (entries && typeof entries === 'object') {
+            const summary = Object.entries(entries).map(([jid, entry]) => {
+                if (jid === '__index') return 'index:update';
+                const kind = jid.endsWith('@lid') ? 'LID' : jid.endsWith('@s.whatsapp.net') ? 'PN' : 'other';
+                const owner = ownJids.has(jid) ? 'self' : 'peer';
+                const token = entry?.token;
+                const state = entry === null ? 'cleared' : token?.length ? 'present' : 'empty';
+                return `${owner}:${kind}:${state}:${entry?.timestamp ? 'timestamped' : 'untimestamped'}`;
+            });
+            printLog('info', `[TC Token Diagnostics] write ${summary.join(',')}`);
+        }
+        return originalSet(data);
+    };
+
+    return keys;
+}
+
 async function startQasimDev() {
     try {
         const { version } = await fetchLatestBaileysVersion();
         ensureSessionDirectory();
         await delay(1000);
         const { state, saveCreds } = await useMultiFileAuthState(`./session`);
+        const authKeyStore = instrumentTcTokenKeyStore(
+            makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" })),
+            state.creds
+        );
         startSessionBackupWatcher();
         const _saveCreds = async () => {
             ensureSessionDirectory();
@@ -411,7 +463,7 @@ async function startQasimDev() {
             browser: Browsers.macOS('Chrome'),
             auth: {
                 creds: state.creds,
-                keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" })),
+                keys: authKeyStore,
             },
             markOnlineOnConnect: !isGhostActive,
             generateHighQualityLinkPreview: true,
@@ -693,6 +745,19 @@ async function startQasimDev() {
                 printLog('success', 'Bot connected successfully!');
                 currentSocket = QasimDev;
                 authBlocked = false;
+                // Query WhatsApp's own reach-out restriction state; a 463 NACK alone
+                // is ambiguous between missing peer tctoken and an account-level lock.
+                if (typeof QasimDev.fetchAccountReachoutTimelock === 'function') {
+                    try {
+                        const restriction = await QasimDev.fetchAccountReachoutTimelock();
+                        const ends = restriction?.timeEnforcementEnds instanceof Date
+                            ? restriction.timeEnforcementEnds.toISOString()
+                            : 'none';
+                        printLog('info', `[WhatsApp Restriction Check] active=${restriction?.isActive === true} type=${restriction?.enforcementType || 'unknown'} ends=${ends}`);
+                    } catch (error) {
+                        printLog('warning', `[WhatsApp Restriction Check] query failed: ${String(error?.message || error).slice(0, 180)}`);
+                    }
+                }
                 startWatchdog();
                 startSessionBackupLoop();
                 // Start background schedulers on every successful WhatsApp connection.
