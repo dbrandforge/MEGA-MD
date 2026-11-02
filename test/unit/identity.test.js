@@ -11,7 +11,10 @@ const identities = {
     creatorName: 'Forge dcreative',
     creatorFullName: 'Abraham Oyetunji',
     queenNumber: '2348126885208',
-    queenTitle: 'The Queen'
+    queenTitle: 'The Queen',
+    queenAlias: 'Empire',
+    queenRealName: 'Tessy',
+    creatorAlias: 'Forge'
 };
 
 describe('Forge Guard identity recognition', () => {
@@ -61,8 +64,10 @@ describe('Forge Guard identity recognition', () => {
     it('answers who am I using the recognised sender identity', () => {
         const creator = resolveIdentity('2349034451454', identities);
         const queen = resolveIdentity('2348126885208', identities);
+        expect(getIdentityReply('Who am I?', identities, creator)).toContain('Forge');
         expect(getIdentityReply('Who am I?', identities, creator)).toContain('Abraham Oyetunji');
-        expect(getIdentityReply('Who am I?', identities, queen)).toContain('The Queen');
+        expect(getIdentityReply('Who am I?', identities, queen)).toContain('Empire');
+        expect(getIdentityReply('Who am I?', identities, queen)).toContain('Tessy');
     });
 
     it('answers who the Queen is without disclosing her phone number', () => {
@@ -71,7 +76,7 @@ describe('Forge Guard identity recognition', () => {
         expect(answer).not.toContain(identities.queenNumber);
     });
 
-    it('uses distinct Creator and Queen greeting styles', () => {
+    it('recognises Empire and answers her real-name question', () => {\n        expect(getIdentityReply('Who is Empire?', identities)).toContain('Tessy');\n        expect(getIdentityReply("What is the Queen's real name?", identities)).toContain('Tessy');\n    });\n\n    it('uses distinct Creator and Queen greeting styles', () => {
         expect(getIdentityGreeting('hello', resolveIdentity('2349034451454', identities))).toContain('Creator');
         expect(getIdentityGreeting('hello', resolveIdentity('2348126885208', identities))).toContain('Queen');
     });
