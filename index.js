@@ -28,20 +28,34 @@ import { startSchedulerEngine, trackGroup } from './plugins/schedule.js';
 import { FEATURE_GROUPS } from './lib/featureGroups.js';
 
 // libsignal may emit low-level Signal-session diagnostics directly through
-// console methods. Those diagnostics can serialize internal session objects.
-// Keep a narrow filter for known protocol diagnostics; normal application
-// logging remains unchanged.
+// console methods. Never print serialized session objects or key material.
+// Preserve only a low-cardinality error category so production failures remain
+// diagnosable without exposing JIDs, session identifiers, or cryptographic data.
 const originalConsoleMethods = {
     log: console.log.bind(console),
     warn: console.warn.bind(console),
     error: console.error.bind(console),
 };
-const sensitiveSignalDiagnostic = /(?:Session error:|Bad MAC|Failed to decrypt message with any known session|Decrypted message with closed session|Removing old closed session:)/i;
+const signalDiagnosticPatterns = [
+    [/Failed to decrypt message with any known session/i, 'decrypt_failed'],
+    [/Bad MAC/i, 'bad_mac'],
+    [/Decrypted message with closed session/i, 'closed_session'],
+    [/Removing old closed session:/i, 'closed_session_removed'],
+    [/Session error:/i, 'session_error'],
+];
+const lastSignalDiagnosticAt = new Map();
 for (const method of Object.keys(originalConsoleMethods)) {
     console[method] = (...args) => {
         const message = args.find(value => typeof value === 'string') || '';
-        if (sensitiveSignalDiagnostic.test(message)) {
-            originalConsoleMethods[method]('[Signal] Sensitive session diagnostic suppressed.');
+        const match = signalDiagnosticPatterns.find(([pattern]) => pattern.test(message));
+        if (match) {
+            const category = match[1];
+            const now = Date.now();
+            const previous = lastSignalDiagnosticAt.get(category) || 0;
+            if (now - previous >= 10000) {
+                lastSignalDiagnosticAt.set(category, now);
+                originalConsoleMethods[method]('[Signal] diagnostic category=' + category + ' (repeated events are rate-limited)');
+            }
             return;
         }
         originalConsoleMethods[method](...args);
