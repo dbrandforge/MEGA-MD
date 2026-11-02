@@ -453,7 +453,7 @@ async function startQasimDev() {
                         printLog('info', `Message processed: jid=${mek.key.remoteJid || 'unknown'} id=${mek.key.id || 'unknown'}`);
                     }
                     catch (err) {
-                        printLog('error', `Error in handleMessages (jid=${mek.key.remoteJid || 'unknown'}): ${err.stack || err.message}`);
+                        printLog('error', `Error in handleMessages (jid=${mek.key.remoteJid || 'unknown'}): ${String(err?.message || 'Unknown message handler error').slice(0, 300)}`);
                         if (mek.key.remoteJid) {
                             await QasimDev.sendMessage(mek.key.remoteJid, {
                                 text: '❌ An error occurred while processing your message.',
@@ -471,7 +471,7 @@ async function startQasimDev() {
                     }
                 }
                 catch (err) {
-                    printLog('error', `Error processing individual messages.upsert item: ${err.stack || err.message}`);
+                    printLog('error', `Error processing individual messages.upsert item: ${err?.message || 'Unknown processing error'}`);
                 }
             }
         });
@@ -764,22 +764,20 @@ folders.forEach(folder => {
 });
 // Error handlers
 process.on('uncaughtException', (err) => {
-    printLog('error', `Uncaught Exception: ${err.message}`);
-    console.error(err.stack);
+    printLog('error', `Uncaught Exception (${err?.name || 'Error'}). Details omitted from logs.`);
+    // Avoid logging full error objects/stacks: protocol-library errors may contain key material.
     writeErrorLog({
         type: 'uncaughtException',
-        error: err.message,
-        stack: err.stack,
+        errorType: err?.name || 'Error',
         timestamp: new Date().toISOString()
     });
 });
 process.on('unhandledRejection', (err) => {
-    printLog('error', `Unhandled Rejection: ${err.message}`);
-    console.error(err.stack);
+    printLog('error', `Unhandled Rejection (${err?.name || (typeof err)}). Details omitted from logs.`);
+    // Avoid logging full error objects/stacks: protocol-library errors may contain key material.
     writeErrorLog({
         type: 'unhandledRejection',
-        error: err.message,
-        stack: err.stack,
+        errorType: err?.name || (typeof err),
         timestamp: new Date().toISOString()
     });
 });
@@ -798,7 +796,6 @@ server.on('error', (error) => {
         writeErrorLog({
             type: 'serverError',
             error: error.message,
-            stack: error.stack,
             timestamp: new Date().toISOString()
         });
     }
