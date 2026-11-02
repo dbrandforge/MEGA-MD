@@ -11,12 +11,12 @@ export default {
             const vcard = `
 BEGIN:VCARD
 VERSION:3.0
-FN:${config.botOwner}
-TEL;waid=${config.ownerNumber}:${config.ownerNumber}
+FN:${config.creatorName || config.botOwner}
+TEL;waid=${config.creatorNumber || config.ownerNumber}:${config.creatorNumber || config.ownerNumber}
 END:VCARD
       `.trim();
             await sock.sendMessage(chatId, {
-                contacts: { displayName: config.botOwner, contacts: [{ vcard }] },
+                contacts: { displayName: config.creatorName || config.botOwner, contacts: [{ vcard }] },
             }, { quoted: message });
         }
         catch (error) {
