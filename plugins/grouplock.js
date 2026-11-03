@@ -213,13 +213,16 @@ async function sendDailyActivityOnce(sock, chatId, day) {
 // by the scheduled/safety-net paths.
 export async function setManualGroupUnlockOverride(chatId) {
     const day = getCurrentDay();
-    await store.saveSetting(chatId, MANUAL_OVERRIDE_KEY, { day, action: 'unlock' });
-    await store.saveSetting(chatId, LOCK_STATE_KEY, { locked: false, at: Date.now() });
-    await store.saveSetting(chatId, LAST_ACTION_KEY, {
-        action: 'unlock',
-        time: getCurrentTimeString(),
-        day
-    });
+    const writes = await Promise.all([
+        store.saveSettingVerified(chatId, MANUAL_OVERRIDE_KEY, { day, action: 'unlock' }),
+        store.saveSettingVerified(chatId, LOCK_STATE_KEY, { locked: false, at: Date.now() }),
+        store.saveSettingVerified(chatId, LAST_ACTION_KEY, {
+            action: 'unlock',
+            time: getCurrentTimeString(),
+            day
+        })
+    ]);
+    if (writes.some(saved => !saved)) throw new Error('Manual group unlock state could not be persisted.');
     return true;
 }
 
