@@ -64,12 +64,16 @@ describe('Forge Guard identity recognition and privacy', () => {
     it('recognises the Creator partner and Empire/Tessy aliases', () => {
         for (const question of [
             "Who is your creator's woman?",
+            "Who is your Creator's lady?",
+            "Who is your Creator's babe?",
             'Who is Empire?',
             'Who is Tessy?',
             'Who is the Queen?'
         ]) {
-            expect(getIdentityReply(question, identities)).toContain('Tessy');
-            expect(getIdentityReply(question, identities)).toContain('Empire');
+            const answer = getIdentityReply(question, identities);
+            expect(answer).toContain('Tessy');
+            expect(answer).toContain('Empire');
+            expect(answer).not.toMatch(/VIP treatment|someone very special/i);
         }
     });
 
@@ -101,10 +105,16 @@ describe('Forge Guard identity recognition and privacy', () => {
         expect(getIdentityReply('Who am I?', identities, creator)).not.toContain('Oyetunji');
         expect(getIdentityReply('Who am I?', identities, queen)).toContain('Empire');
         expect(getIdentityReply('Who am I?', identities, queen)).toContain('Tessy');
+        expect(getIdentityReply('Bot who am I?', identities, queen)).toContain("my Creator's lady");
+        expect(getIdentityReply('Bot who is Empire?', identities, queen)).toContain("my Creator's lady");
+        expect(getIdentityReply('Who am I?', identities, queen)).not.toMatch(/VIP treatment|premium treatment/i);
     });
 
     it('uses distinct Creator and Queen greeting styles', () => {
         expect(getIdentityGreeting('hello', resolveIdentity('2349034451454', identities))).toMatch(/Creator|Forge|architect|Chief/);
         expect(getIdentityGreeting('hello', resolveIdentity('2348126885208', identities))).toMatch(/Queen|Majesty/);
+        const creator = resolveIdentity('2349034451454', identities);
+        expect(getIdentityGreeting('Forge', creator)).toMatch(/Creator|Forge|architect|Chief/);
+        expect(getIdentityGreeting('Bot who am I?', resolveIdentity('2348126885208', identities))).toBeNull();
     });
 });
