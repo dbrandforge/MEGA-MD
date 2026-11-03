@@ -2,11 +2,12 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     saveSetting: vi.fn(async () => {}),
+    saveSettingVerified: vi.fn(async () => true),
     setManualUnlock: vi.fn(async () => true)
 }));
 
 vi.mock('../../lib/lightweight_store.js', () => ({
-    default: { saveSetting: mocks.saveSetting }
+    default: { saveSetting: mocks.saveSetting, saveSettingVerified: mocks.saveSettingVerified }
 }));
 vi.mock('../../lib/featureGroups.js', () => ({
     isFeatureGroup: vi.fn(() => true)
