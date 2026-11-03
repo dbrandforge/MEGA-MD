@@ -5,10 +5,22 @@ import conversational from './chatDual_conversational_data.js';
 import gist from './chatDual_gist_data.js';
 import financialNeed from './chatDual_money_data.js';
 import relationshipExtra from './chatDual_rel_life_data.js';
-import v0 from './expand_vol_0.js';
-import v1 from './expand_vol_1.js';
-import v2 from './expand_vol_2.js';
-import v3 from './expand_vol_3.js';
+import e00 from './ev_0_0.js';
+import e01 from './ev_0_1.js';
+import e02 from './ev_0_2.js';
+import e03 from './ev_0_3.js';
+import e10 from './ev_1_0.js';
+import e11 from './ev_1_1.js';
+import e12 from './ev_1_2.js';
+import e13 from './ev_1_3.js';
+import e20 from './ev_2_0.js';
+import e21 from './ev_2_1.js';
+import e22 from './ev_2_2.js';
+import e23 from './ev_2_3.js';
+import e30 from './ev_3_0.js';
+import e31 from './ev_3_1.js';
+import e32 from './ev_3_2.js';
+import e33 from './ev_3_3.js';
 
 function mergeExpand(...objs) {
   const out = {};
@@ -21,7 +33,7 @@ function mergeExpand(...objs) {
 }
 
 export const dualReasonedCore = core;
-export const dualReasonedExpand = mergeExpand(v0, v1, v2, v3);
+export const dualReasonedExpand = mergeExpand(e00, e01, e02, e03, e10, e11, e12, e13, e20, e21, e22, e23, e30, e31, e32, e33);
 export const dualYoruba = yoruba;
 export const dualConversational = conversational;
 export const dualGist = gist;
