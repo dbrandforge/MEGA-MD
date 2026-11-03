@@ -21,6 +21,42 @@ const readerTouchCache = new Map();
 
 function shuffle(items) { return [...items].sort(() => Math.random() - 0.5); }
 function mention(jid) { return '@' + String(jid || '').split('@')[0]; }
+function stripDevice(jid) { return String(jid || '').replace(/:\\d+(?=@)/, ''); }
+
+async function normalizeHotSeatJid(sock, jid) {
+    let normalized = stripDevice(jid);
+    if (!normalized) return '';
+    if (!normalized.includes('@')) normalized = `${normalized}@s.whatsapp.net`;
+    if (normalized.endsWith('@lid')) {
+        try {
+            const mappedPN = await sock?.signalRepository?.lidMapping?.getPNForLID?.(jid);
+            if (typeof mappedPN === 'string' && mappedPN.endsWith('@s.whatsapp.net')) {
+                return stripDevice(mappedPN);
+            }
+        } catch (error) {
+            console.warn('[HOTSEAT] Could not resolve participant LID:', error.message);
+        }
+    }
+    return normalized;
+}
+
+async function resolveSessionPlayerKey(sock, session, userId) {
+    const canonicalId = await normalizeHotSeatJid(sock, userId);
+    for (const playerId of session?.players || []) {
+        if (playerId === userId) return playerId;
+        if (await normalizeHotSeatJid(sock, playerId) === canonicalId) return playerId;
+    }
+    return userId;
+}
+
+export async function resolveHotSeatPlayerKey(sock, session, userId) {
+    return resolveSessionPlayerKey(sock, session, userId);
+}
+
+async function getNormalizedMentions(sock, message) {
+    const mentions = getMentions(message);
+    return Promise.all(mentions.map(jid => normalizeHotSeatJid(sock, jid)));
+}
 async function getSession(chatId) { return (await store.getSetting(chatId, HOTSEAT_KEY)) || null; }
 async function saveSession(chatId, session) { await store.saveSetting(chatId, HOTSEAT_KEY, session); }
 async function clearSession(chatId) { await store.saveSetting(chatId, HOTSEAT_KEY, null); }
@@ -58,7 +94,7 @@ async function sendPlayerQuestion(sock, chatId, player) {
     if (!state || state.status !== 'active' || state.waiting) return;
 
     let gender = null;
-    try { gender = await getUserGender(player); } catch {}
+    try { gender = await getUserGender(await normalizeHotSeatJid(sock, player)); } catch {}
     // If no gender set, prompt once and skip question until they register
     if (!gender) {
         await sock.sendMessage(chatId, {
@@ -122,9 +158,10 @@ export async function resumeHotSeatPlayer(sock, chatId, player) {
     if (!isFeatureGroup(chatId) || !player) return false;
     const session = await getSession(chatId);
     if (!session || session.status !== 'active') return false;
-    const state = session.playerStates?.[player];
+    const playerKey = await resolveSessionPlayerKey(sock, session, player);
+    const state = session.playerStates?.[playerKey];
     if (!state || state.status !== 'active' || state.waiting) return false;
-    await sendPlayerQuestion(sock, chatId, player);
+    await sendPlayerQuestion(sock, chatId, playerKey);
     return true;
 }
 
@@ -132,7 +169,8 @@ export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
     if (!isFeatureGroup(chatId) || message?.key?.fromMe) return false;
     const session = await getSession(chatId);
     if (!session || session.status !== 'active') return false;
-    const state = session.playerStates?.[senderId];
+    const playerKey = await resolveSessionPlayerKey(sock, session, senderId);
+    const state = session.playerStates?.[playerKey];
     if (!state || state.status !== 'active' || !state.waiting) return false;
     if (!message?.message || message.message.protocolMessage) return false;
 
@@ -165,11 +203,11 @@ export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
     setTimeout(async () => {
         const latest = await getSession(chatId);
         if (!latest || latest.status !== 'active') return;
-        const st = latest.playerStates?.[senderId];
+        const st = latest.playerStates?.[playerKey];
         if (!st || st.status !== 'active') return;
         if (st.lastAnsweredAt !== answeredAt) return;
         if (st.waiting) return;
-        await sendPlayerQuestion(sock, chatId, senderId);
+        await sendPlayerQuestion(sock, chatId, playerKey);
     }, NEXT_QUESTION_MS);
     return true;
 }
@@ -200,8 +238,16 @@ async function beginGame(sock, chatId, session) {
 async function eligibleMembers(sock, chatId) {
     try {
         const meta = await sock.groupMetadata(chatId);
-        const admins = new Set((meta.participants || []).filter(p => p.admin).map(p => p.id));
-        return (meta.participants || []).map(p => p.id).filter(id => !admins.has(id) && !id.includes('status'));
+        const members = [];
+        for (const participant of meta.participants || []) {
+            if (participant.admin) continue;
+            const candidate = participant.phoneNumber || participant.id || participant.lid;
+            const normalized = await normalizeHotSeatJid(sock, candidate);
+            if (normalized && !normalized.includes('status') && !members.includes(normalized)) {
+                members.push(normalized);
+            }
+        }
+        return members;
     } catch { return []; }
 }
 
@@ -264,7 +310,7 @@ export default {
                 await beginGame(sock, chatId, session);
                 return reply('The adjustment window has closed. Hot Seat is starting.');
             }
-            const tagged = getMentions(message);
+            const tagged = await getNormalizedMentions(sock, message);
             if (!tagged.length) return reply('Tag 1 to 4 people in the same message: *.hotseat add @user1 @user2 @user3 @user4*');
             if (tagged.length > MAX_PLAYERS || !unique(tagged)) return reply(`Tag no more than ${MAX_PLAYERS} different people per command.`);
             const members = await eligibleMembers(sock, chatId);
@@ -304,7 +350,7 @@ export default {
                 await beginGame(sock, chatId, session);
                 return reply('The adjustment window has closed. Hot Seat is starting.');
             }
-            const order = getMentions(message);
+            const order = await getNormalizedMentions(sock, message);
             if (order.length !== session.players.length || !unique(order) || !session.players.every(id => order.includes(id))) {
                 return reply(`Tag every selected participant exactly once, in their intended order. Current list:\n${formatPlayers(session.players)}`);
             }
