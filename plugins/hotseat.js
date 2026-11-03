@@ -88,6 +88,11 @@ async function muteUser(sock, chatId, userId) {
 async function sendPlayerQuestion(sock, chatId, player) {
     const session = await getSession(chatId);
     if (!session || session.status !== 'active') return;
+    const access = await isGameAllowed(chatId, 'hotseat');
+    if (!access.ok) {
+        await sock.sendMessage(chatId, { text: access.msg });
+        return;
+    }
     if (Date.now() - session.startedAt >= SESSION_MS) {
         await clearSession(chatId);
         await sock.sendMessage(chatId, { text: '🛑 *Hot Seat ended* — 2-hour limit reached.', mentions: session.players });
@@ -168,6 +173,20 @@ export async function resumeHotSeatPlayer(sock, chatId, player) {
     return true;
 }
 
+export async function resumeHotSeatSession(sock, chatId) {
+    if (!isFeatureGroup(chatId)) return 0;
+    const session = await getSession(chatId);
+    if (!session || session.status !== 'active') return 0;
+    let resumed = 0;
+    for (const player of session.players || []) {
+        const state = session.playerStates?.[player];
+        if (!state || state.status !== 'active' || state.waiting) continue;
+        await sendPlayerQuestion(sock, chatId, player);
+        resumed++;
+    }
+    return resumed;
+}
+
 export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
     if (!isFeatureGroup(chatId) || message?.key?.fromMe) return false;
     const session = await getSession(chatId);
@@ -191,6 +210,12 @@ export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
         || {};
     const repliedToCurrentQuestion = !!(ctx.stanzaId && state.questionMessageId && ctx.stanzaId === state.questionMessageId);
     if (!taggedBot && !repliedToCurrentQuestion) return false;
+
+    const access = await isGameAllowed(chatId, 'hotseat');
+    if (!access.ok) {
+        await sock.sendMessage(chatId, { text: access.msg }, { quoted: message });
+        return true;
+    }
 
     state.waiting = false;
     state.lastAnsweredAt = Date.now();
@@ -299,6 +324,11 @@ export default {
         }
         const sub = (args[0] || '').toLowerCase();
         let session = await getSession(chatId);
+        if (sub === 'resume') {
+            if (!session || session.status !== 'active') return reply('No active Hot Seat session to resume.');
+            const resumed = await resumeHotSeatSession(sock, chatId);
+            return reply(resumed ? `▶️ Resumed ${resumed} Hot Seat player(s).` : 'No paused Hot Seat players are waiting to resume.');
+        }
         if (sub === 'end' || context.command === 'endhotseat') {
             await clearSession(chatId);
             return reply('🛑 Hot Seat ended by admin.');
