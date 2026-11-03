@@ -3,13 +3,14 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 const mocks = vi.hoisted(() => ({
     getSetting: vi.fn(async () => ({ enabled: false })),
     saveSetting: vi.fn(async () => {}),
+    saveSettingVerified: vi.fn(async () => true),
     isGameAllowed: vi.fn(async () => ({ ok: false, msg: 'Anonymous Night runs on Saturday or with a bypass.' })),
     isFeatureGroup: vi.fn(() => true),
     isAdmin: vi.fn(async () => ({ isSenderAdmin: false }))
 }));
 
 vi.mock('../../lib/lightweight_store.js', () => ({
-    default: { getSetting: mocks.getSetting, saveSetting: mocks.saveSetting }
+    default: { getSetting: mocks.getSetting, saveSetting: mocks.saveSetting, saveSettingVerified: mocks.saveSettingVerified }
 }));
 vi.mock('../../plugins/daylock.js', () => ({
     isGameAllowed: mocks.isGameAllowed
@@ -69,7 +70,7 @@ describe('Anonymous Night day-lock enforcement', () => {
 
         await anonymous.handler(sock, message, ['on'], context);
 
-        expect(mocks.saveSetting).not.toHaveBeenCalled();
+        expect(mocks.saveSettingVerified).not.toHaveBeenCalled();
         expect(sock.sendMessage).toHaveBeenCalledWith(
             GROUP,
             expect.objectContaining({ text: expect.stringContaining('Saturday or with a bypass') }),
@@ -83,7 +84,7 @@ describe('Anonymous Night day-lock enforcement', () => {
 
         await anonymous.handler(sock, message, ['off'], context);
 
-        expect(mocks.saveSetting).toHaveBeenCalledWith(GROUP, 'anonymousState', { enabled: false });
+        expect(mocks.saveSettingVerified).toHaveBeenCalledWith(GROUP, 'anonymousState', { enabled: false });
     });
 
     it('opens Anonymous Night when the scheduled day or a valid bypass allows it', async () => {
@@ -93,6 +94,6 @@ describe('Anonymous Night day-lock enforcement', () => {
 
         await anonymous.handler(sock, message, ['on'], context);
 
-        expect(mocks.saveSetting).toHaveBeenCalledWith(GROUP, 'anonymousState', { enabled: true });
+        expect(mocks.saveSettingVerified).toHaveBeenCalledWith(GROUP, 'anonymousState', { enabled: true });
     });
 });
