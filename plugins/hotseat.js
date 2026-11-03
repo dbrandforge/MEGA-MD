@@ -21,7 +21,7 @@ const readerTouchCache = new Map();
 
 function shuffle(items) { return [...items].sort(() => Math.random() - 0.5); }
 function mention(jid) { return '@' + String(jid || '').split('@')[0]; }
-function stripDevice(jid) { return String(jid || '').replace(/:\\d+(?=@)/, ''); }
+function stripDevice(jid) { return String(jid || '').replace(/:\d+(?=@)/, ''); }
 
 async function normalizeHotSeatJid(sock, jid) {
     let normalized = stripDevice(jid);
