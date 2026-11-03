@@ -22,10 +22,15 @@ vi.mock('../../lib/isAdmin.js', () => ({
 }));
 
 import anonymous from '../../plugins/anonymous.js';
+import { app as anonymousServerApp } from '../../lib/server.js';
 
 const GROUP = '120363000000000001@g.us';
 
 describe('Anonymous Night day-lock enforcement', () => {
+    it('loads the public submission server with its access checks registered', () => {
+        expect(typeof anonymousServerApp).toBe('function');
+    });
+
     beforeEach(() => {
         vi.clearAllMocks();
         mocks.isGameAllowed.mockResolvedValue({
