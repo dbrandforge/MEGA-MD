@@ -27,7 +27,8 @@ async function getMutes(chatId) {
 }
 
 async function saveMutes(chatId, data) {
-    await store.saveSetting(chatId, MUTE_KEY, data);
+    const saved = await store.saveSettingVerified(chatId, MUTE_KEY, data);
+    if (!saved) throw new Error('Soft-mute state could not be persisted.');
 }
 
 export async function normalizeSoftMuteUserId(sock, userId) {
