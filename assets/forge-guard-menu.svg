@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350">
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#08090B"/><stop offset=".55" stop-color="#111316"/><stop offset="1" stop-color="#050607"/></linearGradient>
+ <linearGradient id="orange" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFB04A"/><stop offset=".48" stop-color="#F36B21"/><stop offset="1" stop-color="#A93412"/></linearGradient>
+ <radialGradient id="glow"><stop stop-color="#F36B21" stop-opacity=".3"/><stop offset="1" stop-color="#F36B21" stop-opacity="0"/></radialGradient>
+ <pattern id="grid" width="44" height="44" patternUnits="userSpaceOnUse"><path d="M44 0H0V44" fill="none" stroke="#FFFFFF" stroke-opacity=".035" stroke-width="1"/></pattern>
+ <filter id="blur"><feGaussianBlur stdDeviation="48"/></filter>
+</defs>
+<rect width="1080" height="1350" fill="url(#bg)"/><rect width="1080" height="1350" fill="url(#grid)"/>
+<circle cx="770" cy="490" r="350" fill="url(#glow)" filter="url(#blur)"/>
+<path d="M0 1040L1080 760V1350H0Z" fill="#0B0D10" opacity=".9"/>
+<path d="M80 110H1000" stroke="#F36B21" stroke-width="3"/>
+<text x="82" y="88" fill="#F36B21" font-family="Arial,sans-serif" font-size="23" letter-spacing="7" font-weight="700">THE GUARDIAN SYSTEM</text>
+<!-- abstract panther mask / shield -->
+<path d="M540 205L790 292L766 535Q741 714 540 828Q339 714 314 535L290 292Z" fill="#111418" stroke="url(#orange)" stroke-width="8"/>
+<path d="M540 246L737 315L716 523Q695 662 540 759Q385 662 364 523L343 315Z" fill="none" stroke="#FFFFFF" stroke-opacity=".12" stroke-width="2"/>
+<path d="M375 370L453 324L518 377L540 442L562 377L627 324L705 370L672 489L604 525L540 496L476 525L408 489Z" fill="#070809" stroke="#2A2D31" stroke-width="3"/>
+<!-- eyes -->
+<path d="M386 426Q447 373 506 426Q450 474 386 426Z" fill="#F36B21"/>
+<path d="M694 426Q633 373 574 426Q630 474 694 426Z" fill="#F36B21"/>
+<path d="M445 409Q453 426 445 443" stroke="#090A0B" stroke-width="12" stroke-linecap="round"/>
+<path d="M635 409Q627 426 635 443" stroke="#090A0B" stroke-width="12" stroke-linecap="round"/>
+<path d="M506 522L540 552L574 522L560 588L540 608L520 588Z" fill="#F36B21"/>
+<path d="M540 610L494 666L540 695L586 666Z" fill="#1A1D21" stroke="#F36B21" stroke-width="3"/>
+<text x="540" y="915" fill="#F5F2EC" font-family="Arial,sans-serif" font-size="80" font-weight="800" letter-spacing="5" text-anchor="middle">FORGE GUARD</text>
+<text x="540" y="970" fill="#F36B21" font-family="Arial,sans-serif" font-size="24" font-weight="700" letter-spacing="9" text-anchor="middle">COMMAND INDEX</text>
+<path d="M280 1024H800" stroke="#3B3D40" stroke-width="2"/>
+<text x="540" y="1090" fill="#E5E2DC" font-family="Arial,sans-serif" font-size="26" letter-spacing="3" text-anchor="middle">INTELLIGENT • ALERT • RELIABLE</text>
+<text x="540" y="1172" fill="#8B8E92" font-family="Arial,sans-serif" font-size="20" letter-spacing="5" text-anchor="middle">BUILT TO WATCH. BUILT TO RESPOND.</text>
+<text x="82" y="1280" fill="#666A70" font-family="Arial,sans-serif" font-size="16" letter-spacing="4">FG / 06.1</text>
+<text x="998" y="1280" fill="#F36B21" font-family="Arial,sans-serif" font-size="16" letter-spacing="4" text-anchor="end">THE BRANDFORGE</text>
+</svg>
