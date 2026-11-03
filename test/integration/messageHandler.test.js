@@ -132,6 +132,8 @@ describe('handleMessages', () => {
         expect(handleSoftMuteMessage).toHaveBeenCalled();
         expect(store.incrementWeeklyMessageCount).not.toHaveBeenCalled();
         expect(store.incrementMessageCount).not.toHaveBeenCalled();
+        const { storeMessage } = await import('../../plugins/antidelete.js');
+        expect(storeMessage).not.toHaveBeenCalled();
         const { trackHotSeatReader } = await import('../../plugins/hotseat.js');
         expect(trackHotSeatReader).not.toHaveBeenCalled();
         expect(sock.sendMessage).not.toHaveBeenCalled();
