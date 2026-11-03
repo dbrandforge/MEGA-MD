@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getLagosDay, getManualLockableGames } from '../../plugins/daylock.js';
-import { WORDS, QUESTIONS_PER_ROUND } from '../../plugins/hangman.js';
+import { WORDS, QUESTIONS_PER_ROUND, canEndHangman } from '../../plugins/hangman.js';
 import { FALLBACK } from '../../data/wyrPairs.js';
 import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
 import { getLagosWeekKey } from '../../plugins/rank.js';
@@ -42,6 +42,13 @@ describe('game quality foundations', () => {
     expect(Object.keys(getManualLockableGames()).sort()).toEqual([
       'anonymous', 'basket', 'hangman', 'hotseat', 'tictactoe', 'tod', 'trivia', 'wcw', 'wyr'
     ]);
+  });
+
+  it('allows Hangman participants to end only after attempting a guess; admins can force-end', () => {
+    const game = { attemptedBy: { '2348000000000@s.whatsapp.net': 1 } };
+    expect(canEndHangman(game, '2348000000000@s.whatsapp.net')).toBe(true);
+    expect(canEndHangman(game, '2348111111111@s.whatsapp.net')).toBe(false);
+    expect(canEndHangman(game, '2348111111111@s.whatsapp.net', true)).toBe(true);
   });
 
   it('provides progressive extra hints for long words', () => {
