@@ -32,7 +32,7 @@ async function loadSchedules() {
 
 async function saveSchedules(data) {
     if (HAS_DB) {
-        await store.saveSetting('global', 'schedules', data);
+        if (!await store.saveSettingVerified('global', 'schedules', data)) throw new Error('Scheduled-message queue could not be persisted.');
     } else {
         fs.writeFileSync(configPath, JSON.stringify(data, null, 2));
     }
