@@ -45,6 +45,9 @@ describe('Forge Guard identity recognition and privacy', () => {
         const creator = resolveIdentity('2349034451454', identities);
         for (const question of [
             'Who am I?',
+            'What is my name?',
+            "What's my name?",
+            'Tell me my name',
             "What's my full name?",
             'What is your creator full name?',
             "What's your creator's full name?",
@@ -78,6 +81,16 @@ describe('Forge Guard identity recognition and privacy', () => {
             const serialized = JSON.stringify(answer);
             expect(serialized).toMatch(/private|privacy/i);
             expect(serialized).not.toContain(identities.queenNumber);
+        }
+    });
+
+    it('answers personal-name questions for the recognised Creator without exposing the surname', () => {
+        const creator = resolveIdentity('2349034451454', identities);
+        for (const question of ['What is my name?', "What's my name?", 'Tell me my name']) {
+            const answer = getIdentityReply(question, identities, creator);
+            expect(answer).toContain('Forge');
+            expect(answer).toContain('Abraham');
+            expect(answer).not.toContain('Oyetunji');
         }
     });
 
