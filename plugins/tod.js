@@ -11,7 +11,7 @@ async function getSessions(chatId) {
     return (await store.getSetting(chatId, SESSIONS_KEY)) || {};
 }
 async function saveSessions(chatId, sessions) {
-    await store.saveSetting(chatId, SESSIONS_KEY, sessions);
+    if (!await store.saveSettingVerified(chatId, SESSIONS_KEY, sessions)) throw new Error('Truth or Dare session state could not be persisted.');
 }
 function mention(jid) {
     return `@${(jid || '').split('@')[0]}`;
