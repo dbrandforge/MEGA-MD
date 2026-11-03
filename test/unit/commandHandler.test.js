@@ -97,6 +97,7 @@ describe('CommandHandler', () => {
         handler.registerCommand({ command: 'staleprobe', aliases: [], category: 'temporary', async handler() {} });
         const count = await handler.reloadCommands();
         expect(count).toBe(handler.commands.size);
+        expect(count).toBeGreaterThan(200);
         expect(handler.commands.has('staleprobe')).toBe(false);
     });
 
