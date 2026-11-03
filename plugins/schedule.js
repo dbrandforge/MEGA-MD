@@ -97,7 +97,8 @@ export async function trackGroup(chatId) {
         const saved = await store.getSetting('global', TRACKED_GROUPS_KEY);
         const groups = new Set(Array.isArray(saved) ? saved : []);
         groups.add(chatId);
-        await store.saveSetting('global', TRACKED_GROUPS_KEY, [...groups]);
+        const persisted = await store.saveSettingVerified('global', TRACKED_GROUPS_KEY, [...groups]);
+        if (!persisted) throw new Error('Tracked group list verification failed.');
         return true;
     } catch (error) {
         console.error('[SCHEDULE] Could not persist tracked group:', error.message);
@@ -116,7 +117,11 @@ async function checkTimedGroupMute(sock, chatId) {
         : null;
 
     // Clear first to prevent repeated unlock attempts/messages on every tick.
-    await store.saveSetting(chatId, TIMED_GROUP_MUTE_KEY, { until: null, clearedAt: Date.now() });
+    const cleared = { until: null, clearedAt: Date.now() };
+    if (!await store.saveSettingVerified(chatId, TIMED_GROUP_MUTE_KEY, cleared)) {
+        console.error(`[SCHEDULE] Could not persist timed group mute expiry for ${chatId}`);
+        return;
+    }
     if (scheduledLockState?.locked) {
         console.log(`[SCHEDULE] Timed group mute expired; preserving active feature-group lock for ${chatId}`);
         return;
@@ -126,7 +131,7 @@ async function checkTimedGroupMute(sock, chatId) {
         await sock.sendMessage(chatId, { text: '🔊 *Timed group mute expired.* Members can send messages again.' });
     } catch (error) {
         // Restore the due record so the next scheduler tick can retry.
-        await store.saveSetting(chatId, TIMED_GROUP_MUTE_KEY, mute);
+        await store.saveSettingVerified(chatId, TIMED_GROUP_MUTE_KEY, mute);
         console.error(`[SCHEDULE] Timed group unlock failed for ${chatId}:`, error.message);
     }
 }
