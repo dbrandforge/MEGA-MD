@@ -31,7 +31,7 @@ describe('Forge Guard menu branding', () => {
         expect(settings).toContain('FORGE GUARD SETTINGS');
     });
 
-    it('renders a 200+ owner command inventory and a substantial public menu as text', async () => {
+    it('renders Forge Guard artwork separately from the complete dynamic public and owner menus', async () => {
         const loadedCount = await commandHandler.reloadCommands();
         expect(loadedCount).toBeGreaterThan(200);
 
@@ -47,6 +47,8 @@ describe('Forge Guard menu branding', () => {
         await menuPlugin.handler(sock, publicMessage, [], {
             chatId, senderId: '2348000000000@s.whatsapp.net', channelInfo: {}
         });
+        expect(sent[0]?.content?.image).toBeInstanceOf(Buffer);
+        expect(sent[0]?.content?.caption).toContain('FORGE GUARD');
         const publicText = sent.at(-1)?.content?.text || '';
         const publicCount = Number(publicText.match(/Commands:\* (\d+)/)?.[1] || 0);
         expect(publicCount).toBeGreaterThan(100);
@@ -55,9 +57,11 @@ describe('Forge Guard menu branding', () => {
         await menuPlugin.handler(sock, ownerMessage, ['owner'], {
             chatId, senderId: '2348000000000@s.whatsapp.net', channelInfo: {}
         });
+        expect(sent.at(-2)?.content?.image).toBeInstanceOf(Buffer);
+        expect(sent.at(-2)?.content?.caption).toContain('OWNER COMMAND INDEX');
         const ownerText = sent.at(-1)?.content?.text || '';
         const ownerCount = Number(ownerText.match(/Commands:\* (\d+)/)?.[1] || 0);
         expect(ownerCount).toBeGreaterThan(200);
-        expect(sent.every(item => !item.content.image)).toBe(true);
+        expect(sent.filter(item => item.content.image)).toHaveLength(2);
     });
 });

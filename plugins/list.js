@@ -1,4 +1,6 @@
 import config from '../config.js';
+import { readFileSync } from 'node:fs';
+import sharp from 'sharp';
 import commandHandler from '../lib/commandHandler.js';
 import { isOwnerOnly } from '../lib/isOwner.js';
 
@@ -47,6 +49,16 @@ function getVisibleCategories(ownerView) {
         categories.set(category, commands.sort((a, b) => a.localeCompare(b)));
     }
     return [...categories.entries()].sort(([a], [b]) => a.localeCompare(b));
+}
+
+let menuArtworkPromise;
+async function getMenuArtwork() {
+    if (!menuArtworkPromise) {
+        menuArtworkPromise = sharp(readFileSync(new URL('../assets/forge-guard-menu.svg', import.meta.url)))
+            .webp({ quality: 88 })
+            .toBuffer();
+    }
+    return menuArtworkPromise;
 }
 
 function buildMenu(ownerView) {
@@ -119,7 +131,17 @@ export default {
         }
 
         const menuText = buildMenu(ownerView);
-        // Text-only until Forge Guard's own approved artwork replaces the legacy thumbnail.
+        // Artwork is a separate header message so the complete dynamic command list is never truncated by WhatsApp caption limits.
+        try {
+            const artwork = await getMenuArtwork();
+            await sock.sendMessage(chatId, {
+                image: artwork,
+                caption: ownerView ? '🛡️ *FORGE GUARD • OWNER COMMAND INDEX*' : '🛡️ *FORGE GUARD • COMMAND INDEX*',
+                ...channelInfo
+            }, { quoted: message });
+        } catch (artError) {
+            console.warn('[Menu] Forge Guard artwork unavailable; sending text menu:', artError.message);
+        }
         return sock.sendMessage(chatId, { text: menuText, ...channelInfo }, { quoted: message });
     }
 };
