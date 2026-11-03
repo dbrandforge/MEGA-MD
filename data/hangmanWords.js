@@ -7,7 +7,7 @@ export const WORDS = (() => {
   const out = [];
   const seen = new Set();
   for (const row of [...SEEDS_A, ...SEEDS_B, ...SEEDS_C, ...SEEDS_D]) {
-    const [word, category, hint, synonymHint, e1, e2] = row;
+    const [word, category, hint, synonymHint, e1, e2, soundAlikeHint] = row;
     // Hangman needs single tokens — strip spaces and non-letters
     const key = String(word || '').toLowerCase().replace(/[^a-z]/g, '');
     if (!key || key.length < 3 || seen.has(key)) continue;
@@ -17,6 +17,7 @@ export const WORDS = (() => {
       category,
       hint,
       synonymHint,
+      soundAlikeHint,
       extraHints: [e1, e2]
     });
   }
