@@ -41,7 +41,7 @@ export default {
     session.status = 'ended';
     session.endedAt = Date.now();
     session.endedBy = senderId;
-    await store.saveSetting(chatId, SESSIONS_KEY, sessions);
+    if (!await store.saveSettingVerified(chatId, SESSIONS_KEY, sessions)) throw new Error('Truth or Dare session state could not be persisted.');
     return sock.sendMessage(chatId, { text: '🛑 Your Truth or Dare session has ended.', mentions: session.players || [], ...channelInfo }, { quoted: message });
   }
 };
