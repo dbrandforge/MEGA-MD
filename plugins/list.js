@@ -1,7 +1,5 @@
 import config from '../config.js';
 import commandHandler from '../lib/commandHandler.js';
-import path from 'path';
-import fs from 'fs';
 import { isOwnerOnly } from '../lib/isOwner.js';
 
 const PUBLIC_CATEGORIES = new Set([
@@ -81,7 +79,6 @@ export default {
     async handler(sock, message, args, context) {
         const { chatId, channelInfo, senderId } = context;
         const prefix = config.prefixes?.[0] || '.';
-        const imagePath = path.join(process.cwd(), 'assets/thumb.png');
         const ownerView = String(args?.[0] || '').toLowerCase() === 'owner';
 
         if (ownerView && !message.key.fromMe && !isOwnerOnly(senderId)) {
@@ -118,20 +115,11 @@ export default {
                 `┃ 🔖 *Aliases:* ${plugin.aliases?.length ? plugin.aliases.map(a => prefix + a).join(', ') : 'None'}`,
                 '╰━━━━━━━━━━━━━━⬣'
             ].join('\n');
-            if (fs.existsSync(imagePath)) {
-                return sock.sendMessage(chatId, {
-                    image: { url: imagePath }, caption: detail, ...channelInfo
-                }, { quoted: message });
-            }
             return sock.sendMessage(chatId, { text: detail, ...channelInfo }, { quoted: message });
         }
 
         const menuText = buildMenu(ownerView);
-        if (fs.existsSync(imagePath)) {
-            return sock.sendMessage(chatId, {
-                image: { url: imagePath }, caption: menuText, ...channelInfo
-            }, { quoted: message });
-        }
+        // Text-only until Forge Guard's own approved artwork replaces the legacy thumbnail.
         return sock.sendMessage(chatId, { text: menuText, ...channelInfo }, { quoted: message });
     }
 };
