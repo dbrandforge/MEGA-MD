@@ -70,11 +70,6 @@ export async function handleWyrContinuity(sock, chatId, message, senderId) {
   const session = sessions[senderId];
   if (!session) return false;
 
-  const access = await isGameAllowed(chatId, 'wyr');
-  if (!access.ok) {
-    await sock.sendMessage(chatId, { text: access.msg }, { quoted: message });
-    return true;
-  }
   if (session.expiresAt && session.expiresAt < Date.now()) {
     delete sessions[senderId];
     await saveSessions(chatId, sessions);
@@ -87,6 +82,14 @@ export async function handleWyrContinuity(sock, chatId, message, senderId) {
   const replied = !!(ctx.stanzaId && session.questionMessageId && ctx.stanzaId === session.questionMessageId);
   const tagged = botMentioned(sock, message);
   if (!replied && !tagged) return false;
+
+  // Only intercept a message that actually addresses the active WYR prompt.
+  // A manual lock must not swallow the player's unrelated group messages.
+  const access = await isGameAllowed(chatId, 'wyr');
+  if (!access.ok) {
+    await sock.sendMessage(chatId, { text: access.msg }, { quoted: message });
+    return true;
+  }
 
   const body = message.message?.conversation
     || message.message?.extendedTextMessage?.text
