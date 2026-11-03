@@ -46,7 +46,7 @@ async function getStickerCommands() {
 }
 async function saveStickerCommands(data) {
     if (HAS_DB) {
-        await store.saveSetting('global', 'stickerCommands', data);
+        if (!await store.saveSettingVerified('global', 'stickerCommands', data)) throw new Error('Sticker command could not be persisted.');
     }
     else {
         const dir = path.dirname(STICKER_FILE);
