@@ -25,7 +25,7 @@ export default {
         session.endedAt = Date.now();
         session.endedBy = senderId;
       }
-      await store.saveSetting(chatId, SESSIONS_KEY, sessions);
+      if (!await store.saveSettingVerified(chatId, SESSIONS_KEY, sessions)) throw new Error('Truth or Dare session state could not be persisted.');
       return sock.sendMessage(chatId, {
         text: `🛑 Admin ended ${active.length} active Truth or Dare session(s).`,
         mentions: active.flatMap(session => session.players || []),
