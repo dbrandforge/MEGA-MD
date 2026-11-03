@@ -79,8 +79,7 @@ function buildMenu(ownerView) {
         lines.push('┃');
     }
     lines.push('╰━━━━━━━━━━━━━━━━━━━━⬣');
-    return lines.join('
-');
+    return lines.join('\n');
 }
 
 export default {
@@ -127,8 +126,7 @@ export default {
                 `┃ 🏷️ *Category:* ${plugin.category || 'misc'}`,
                 `┃ 🔖 *Aliases:* ${plugin.aliases?.length ? plugin.aliases.map(a => prefix + a).join(', ') : 'None'}`,
                 '╰━━━━━━━━━━━━━━⬣'
-            ].join('
-');
+            ].join('\n');
             return sock.sendMessage(chatId, { text: detail, ...channelInfo }, { quoted: message });
         }
 
