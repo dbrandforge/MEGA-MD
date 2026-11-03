@@ -6,12 +6,14 @@ const mocks = vi.hoisted(() => ({
         action: 'delete',
         words: ['secret phrase']
     })),
-    saveSetting: vi.fn(async () => {})
+    saveSetting: vi.fn(async () => {}),
+    isAdmin: vi.fn(async () => ({ isSenderAdmin: false, isBotAdmin: true }))
 }));
 
 vi.mock('../../lib/lightweight_store.js', () => ({
     default: { getSetting: mocks.getSetting, saveSetting: mocks.saveSetting }
 }));
+vi.mock('../../lib/isAdmin.js', () => ({ default: mocks.isAdmin }));
 
 import { handleBadwordDetection } from '../../lib/antibadword.js';
 
@@ -28,6 +30,21 @@ describe('custom antibadword detection', () => {
         });
     });
 
+    it('does not delete messages from a sender recognized as a group admin', async () => {
+        mocks.isAdmin.mockResolvedValueOnce({ isSenderAdmin: true, isBotAdmin: true });
+        const message = {
+            key: { id: 'admin-message', remoteJid: GROUP, participant: SENDER, fromMe: false }
+        };
+        const sock = {
+            user: { id: '1111111111:1@s.whatsapp.net' },
+            sendMessage: vi.fn(async () => ({}))
+        };
+
+        await handleBadwordDetection(sock, GROUP, message, 'this contains a SECRET phrase', SENDER);
+
+        expect(sock.sendMessage).not.toHaveBeenCalled();
+    });
+
     it('uses configured custom phrases from lightweight_store and defaults to delete', async () => {
         const message = {
             key: {
@@ -39,12 +56,6 @@ describe('custom antibadword detection', () => {
         };
         const sock = {
             user: { id: '1111111111:1@s.whatsapp.net' },
-            groupMetadata: vi.fn(async () => ({
-                participants: [
-                    { id: '1111111111@s.whatsapp.net', admin: 'superadmin' },
-                    { id: SENDER, admin: null }
-                ]
-            })),
             sendMessage: vi.fn(async () => ({}))
         };
 
