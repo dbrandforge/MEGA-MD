@@ -45,15 +45,35 @@ export async function normalizeSoftMuteUserId(sock, userId) {
     return key;
 }
 
-export async function isSoftMuted(chatId, userId) {
+export async function isSoftMuted(chatId, userId, sock = null) {
     const mutes = await getMutes(chatId);
     const key = cleanId(userId);
-    const entry = mutes[key] || mutes[userId];
+    let matchedKey = Object.hasOwn(mutes, key) ? key : (Object.hasOwn(mutes, userId) ? userId : null);
+    let entry = matchedKey ? mutes[matchedKey] : null;
+
+    // Older records may contain only a LID, while current Baileys messages
+    // identify that same member by PN. Resolve stored LIDs during lookup so
+    // those pre-alias records remain enforceable after identity-format changes.
+    if (!entry && sock && key.endsWith('@s.whatsapp.net')) {
+        for (const [storedKey, storedEntry] of Object.entries(mutes)) {
+            if (!storedKey.endsWith('@lid')) continue;
+            try {
+                const mappedPN = await sock?.signalRepository?.lidMapping?.getPNForLID?.(storedKey);
+                if (typeof mappedPN === 'string' && cleanId(mappedPN) === key) {
+                    matchedKey = storedKey;
+                    entry = storedEntry;
+                    break;
+                }
+            } catch (error) {
+                console.warn('[SOFTMUTE] Could not resolve stored LID during lookup:', error.message);
+            }
+        }
+    }
+
     if (!entry) return false;
     const until = Number(entry.until);
     if (!Number.isFinite(until) || until <= 0 || Date.now() >= until) {
-        // Remove both PN/LID aliases for this record when it expires.
-        const ids = new Set([key, cleanId(userId), cleanId(entry.original), cleanId(entry.canonical)]);
+        const ids = new Set([key, cleanId(userId), matchedKey, cleanId(entry.original), cleanId(entry.canonical)]);
         for (const [storedKey, storedEntry] of Object.entries(mutes)) {
             if (ids.has(storedKey) || ids.has(cleanId(storedEntry?.original)) || ids.has(cleanId(storedEntry?.canonical))) {
                 delete mutes[storedKey];
@@ -124,7 +144,7 @@ export async function handleSoftMuteMessage(sock, chatId, message, senderId) {
         if (!chatId?.endsWith('@g.us')) return false;
         if (message.key.fromMe) return false;
 
-        const muted = await isSoftMuted(chatId, senderId);
+        const muted = await isSoftMuted(chatId, senderId, sock);
         if (!muted) return false;
 
         // Delete their message
