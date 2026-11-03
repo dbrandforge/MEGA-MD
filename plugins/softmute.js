@@ -7,6 +7,7 @@
  */
 import store from '../lib/lightweight_store.js';
 import config from '../config.js';
+import { trackGroup } from './schedule.js';
 
 const MUTE_KEY = 'softMutes';
 const MUTE_MS = (config.muteDurationHours || 10) * 60 * 60 * 1000;
@@ -32,8 +33,9 @@ export async function isSoftMuted(chatId, userId) {
     const key = cleanId(userId);
     const entry = mutes[key] || mutes[userId];
     if (!entry) return false;
-    if (Date.now() > entry.until) {
-        // expired
+    const until = Number(entry.until);
+    if (!Number.isFinite(until) || until <= 0 || Date.now() >= until) {
+        // Expired or malformed records must never leave a member muted forever.
         delete mutes[key];
         delete mutes[userId];
         await saveMutes(chatId, mutes);
@@ -52,7 +54,24 @@ export async function softMuteUser(sock, chatId, userId, hours = null) {
         original: userId
     };
     await saveMutes(chatId, mutes);
+    // The scheduler must know every group that contains an individual mute.
+    await trackGroup(chatId);
     return duration;
+}
+
+export async function cleanExpiredSoftMutes(chatId, now = Date.now()) {
+    if (!chatId?.endsWith('@g.us')) return 0;
+    const mutes = await getMutes(chatId);
+    let removed = 0;
+    for (const [key, entry] of Object.entries(mutes)) {
+        const until = Number(entry?.until);
+        if (!Number.isFinite(until) || until <= 0 || now >= until) {
+            delete mutes[key];
+            removed++;
+        }
+    }
+    if (removed) await saveMutes(chatId, mutes);
+    return removed;
 }
 
 export async function softUnmuteUser(chatId, userId) {
