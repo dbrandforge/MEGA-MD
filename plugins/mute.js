@@ -67,6 +67,5 @@ export default {
                 ...channelInfo
             }, { quoted: message });
         }
-        }
     }
 };
