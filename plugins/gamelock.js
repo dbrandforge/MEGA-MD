@@ -1,4 +1,5 @@
 import { getManualLockableGames, getManualGameLocks, setManualGameLock } from './daylock.js';
+import { resumeHotSeatSession } from './hotseat.js';
 
 export default {
   command: 'gamelock',
@@ -43,6 +44,15 @@ export default {
         ...channelInfo
       }, { quoted: message });
     }
+    if (!locked && game === 'hotseat') {
+      try {
+        const resumed = await resumeHotSeatSession(sock, chatId);
+        if (resumed) console.log(`[GAMELOCK] Resumed ${resumed} paused Hot Seat player(s) in ${chatId}`);
+      } catch (error) {
+        console.error('[GAMELOCK] Could not resume Hot Seat after unlock:', error.message);
+      }
+    }
+
     return sock.sendMessage(chatId, {
       text: locked
         ? `🔒 *${games[game]} locked.* Members cannot start or continue it until an admin unlocks it.`
