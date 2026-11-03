@@ -36,7 +36,7 @@ export default {
       }
     }
 
-    await store.saveSetting(chatId, HOTSEAT_KEY, null);
+    if (!await store.saveSettingVerified(chatId, HOTSEAT_KEY, null)) throw new Error('Hot Seat session state could not be cleared.');
     return sock.sendMessage(chatId, {
       text: admin ? '🛑 *Hot Seat ended by an admin.*' : `🛑 *Hot Seat ended by ${mention(senderId)} after completing a question.*`,
       mentions: session.players || [],
