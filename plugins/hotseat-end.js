@@ -1,6 +1,7 @@
 import store from '../lib/lightweight_store.js';
 import isAdmin from '../lib/isAdmin.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
+import { resolveHotSeatPlayerKey } from './hotseat.js';
 
 const HOTSEAT_KEY = 'hotseatSession';
 
@@ -25,8 +26,9 @@ export default {
     if (!admin) { try { admin = !!(await isAdmin(sock, chatId, senderId)).isSenderAdmin; } catch {} }
 
     if (!admin) {
-      const state = session.playerStates?.[senderId];
-      if (!session.players?.includes(senderId) || session.status !== 'active' || !state || state.status !== 'active') {
+      const playerKey = await resolveHotSeatPlayerKey(sock, session, senderId);
+      const state = session.playerStates?.[playerKey];
+      if (!session.players?.includes(playerKey) || session.status !== 'active' || !state || state.status !== 'active') {
         return sock.sendMessage(chatId, { text: 'Only a current Hot Seat player or an admin can end this session.', ...channelInfo }, { quoted: message });
       }
       if (!(state.questionsAnswered > 0) || state.waiting) {
