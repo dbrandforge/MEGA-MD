@@ -138,11 +138,14 @@ export default {
       return sock.sendMessage(chatId, { text: 'Would You Rather is available in the designated game groups.', ...channelInfo }, { quoted: message });
     }
 
-    const access = await isGameAllowed(chatId, 'wyr');
-    if (!access.ok) return sock.sendMessage(chatId, { text: access.msg, ...channelInfo }, { quoted: message });
-
     const sessions = await getSessions(chatId);
     const action = (args[0] || '').toLowerCase();
+    const access = await isGameAllowed(chatId, 'wyr');
+    // A lock prevents new/continued play, not a player's own end action or
+    // an admin's ability to clear sessions.
+    if (!access.ok && !['status', 'stop', 'end'].includes(action)) {
+      return sock.sendMessage(chatId, { text: access.msg, ...channelInfo }, { quoted: message });
+    }
 
     if (action === 'status') {
       const session = sessions[senderId];
