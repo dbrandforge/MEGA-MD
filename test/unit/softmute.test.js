@@ -55,6 +55,17 @@ describe('soft mute expiry and scheduler registration', () => {
         expect(await store.getSetting(GROUP, 'softMutes')).toEqual({});
     });
 
+    it('normalizes device-qualified PN JIDs without losing the JID domain', async () => {
+        const deviceJid = '2348000000000:12@s.whatsapp.net';
+        const plainJid = '2348000000000@s.whatsapp.net';
+
+        await softMuteUser({}, GROUP, deviceJid, 10);
+
+        expect(await isSoftMuted(GROUP, plainJid)).toBe(true);
+        await softUnmuteUser(GROUP, plainJid);
+        expect(await store.getSetting(GROUP, 'softMutes')).toEqual({});
+    });
+
     it('matches LID mentions to PN-resolved messages and removes both aliases on unmute', async () => {
         const lid = '123456789@lid';
         const pn = '2348000000000@s.whatsapp.net';
