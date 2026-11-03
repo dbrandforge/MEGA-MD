@@ -3,6 +3,11 @@ import commandHandler from '../../lib/commandHandler.js';
 import menuPlugin from '../../plugins/list.js';
 import { readFileSync } from 'node:fs';
 
+vi.mock('fs', async (importOriginal) => {
+    const actual = await importOriginal();
+    return { ...actual, watch: vi.fn() };
+});
+
 const source = (relativePath) => readFileSync(new URL(relativePath, import.meta.url), 'utf8');
 
 describe('Forge Guard menu branding', () => {
