@@ -102,6 +102,24 @@ describe('soft mute expiry and scheduler registration', () => {
         expect(await store.getSetting(GROUP, 'softMutes')).toEqual({});
     });
 
+    it('matches legacy LID-only mute records to PN senders after identity mapping', async () => {
+        const lid = '123456789@lid';
+        const pn = '2348000000000@s.whatsapp.net';
+        await store.saveSetting(GROUP, 'softMutes', {
+            [lid]: { until: Date.now() + 60_000, original: lid, canonical: lid }
+        });
+        const sock = {
+            signalRepository: {
+                lidMapping: { getPNForLID: vi.fn(async () => pn) }
+            },
+            sendMessage: vi.fn(async () => ({}))
+        };
+        const message = { key: { id: 'legacy-muted', remoteJid: GROUP, participant: pn, fromMe: false } };
+
+        await expect(handleSoftMuteMessage(sock, GROUP, message, pn)).resolves.toBe(true);
+        expect(sock.sendMessage).toHaveBeenCalledWith(GROUP, { delete: message.key });
+    });
+
     it('registers a group with the scheduler whenever a member is soft-muted', async () => {
         await softMuteUser({}, GROUP, '2348000000000@s.whatsapp.net', 10);
 
