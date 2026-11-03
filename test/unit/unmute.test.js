@@ -37,7 +37,7 @@ describe('.unmute group inverse behaviour', () => {
         });
 
         expect(sock.groupSettingUpdate).toHaveBeenCalledWith(GROUP, 'not_announcement');
-        expect(store.saveSetting).toHaveBeenCalledWith(
+        expect(store.saveSettingVerified).toHaveBeenCalledWith(
             GROUP,
             'timedGroupMute',
             expect.objectContaining({ until: null })
