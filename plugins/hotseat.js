@@ -58,13 +58,16 @@ async function getNormalizedMentions(sock, message) {
     return Promise.all(mentions.map(jid => normalizeHotSeatJid(sock, jid)));
 }
 async function getSession(chatId) { return (await store.getSetting(chatId, HOTSEAT_KEY)) || null; }
-async function saveSession(chatId, session) { await store.saveSetting(chatId, HOTSEAT_KEY, session); }
-async function clearSession(chatId) { await store.saveSetting(chatId, HOTSEAT_KEY, null); }
+async function saveGameState(chatId, key, value) {
+    if (!await store.saveSettingVerified(chatId, key, value)) throw new Error(`Hot Seat state (${key}) could not be persisted.`);
+}
+async function saveSession(chatId, session) { await saveGameState(chatId, HOTSEAT_KEY, session); }
+async function clearSession(chatId) { await saveGameState(chatId, HOTSEAT_KEY, null); }
 async function getReaders(chatId) {
     const data = (await store.getSetting(chatId, READERS_KEY)) || {};
     const cutoff = Date.now() - READER_WINDOW_MS;
     const clean = Object.fromEntries(Object.entries(data).filter(([, ts]) => Number(ts) >= cutoff));
-    if (Object.keys(clean).length !== Object.keys(data).length) await store.saveSetting(chatId, READERS_KEY, clean);
+    if (Object.keys(clean).length !== Object.keys(data).length) await saveGameState(chatId, READERS_KEY, clean);
     return clean;
 }
 function getMentions(message) {
@@ -267,7 +270,7 @@ export async function trackHotSeatReader(chatId, userId) {
     try {
         const readers = await getReaders(chatId);
         readers[userId] = now;
-        await store.saveSetting(chatId, READERS_KEY, readers);
+        await saveGameState(chatId, READERS_KEY, readers);
         return true;
     } catch {
         readerTouchCache.delete(cacheKey);
