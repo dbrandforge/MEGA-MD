@@ -22,13 +22,30 @@ vi.mock('../../lib/isAdmin.js', () => ({
 }));
 
 import anonymous from '../../plugins/anonymous.js';
-import { app as anonymousServerApp } from '../../lib/server.js';
+import { app as anonymousServerApp, getAnonymousAccess } from '../../lib/server.js';
 
 const GROUP = '120363000000000001@g.us';
 
 describe('Anonymous Night day-lock enforcement', () => {
     it('loads the public submission server with its access checks registered', () => {
         expect(typeof anonymousServerApp).toBe('function');
+    });
+
+    it('rejects server submissions when the stored flag is on but the day-lock is closed', async () => {
+        mocks.getSetting.mockResolvedValueOnce({ enabled: true });
+        mocks.isGameAllowed.mockResolvedValueOnce({ ok: false, msg: 'Scheduled window closed.' });
+
+        await expect(getAnonymousAccess(GROUP)).resolves.toEqual({
+            ok: false,
+            message: 'Scheduled window closed.'
+        });
+    });
+
+    it('allows server submissions only when both the stored flag and game access are enabled', async () => {
+        mocks.getSetting.mockResolvedValueOnce({ enabled: true });
+        mocks.isGameAllowed.mockResolvedValueOnce({ ok: true });
+
+        await expect(getAnonymousAccess(GROUP)).resolves.toEqual({ ok: true });
     });
 
     beforeEach(() => {
