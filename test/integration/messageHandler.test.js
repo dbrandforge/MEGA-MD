@@ -21,6 +21,9 @@ vi.mock('../../plugins/hotseat.js', () => ({
     handleHotSeatAnswer: vi.fn(async () => false),
     trackHotSeatReader: vi.fn(async () => false)
 }));
+vi.mock('../../plugins/alive.js', () => ({
+    sendGenderAwareBotResponse: vi.fn(async () => {})
+}));
 vi.mock('../../plugins/schedule.js', () => ({ startSchedulerEngine: vi.fn(() => {}) }));
 vi.mock('../../lib/isBanned.js', () => ({ isBanned: vi.fn(async () => false) }));
 vi.mock('../../lib/index.js', () => ({ isSudo: vi.fn(async () => false) }));
@@ -117,6 +120,16 @@ describe('handleMessages', () => {
             msg.key.remoteJid,
             msg.key.participant
         );
+    });
+
+    it('prioritizes an active Hot Seat answer over the generic bot keyword trigger', async () => {
+        const { handleHotSeatAnswer } = await import('../../plugins/hotseat.js');
+        const { sendGenderAwareBotResponse } = await import('../../plugins/alive.js');
+        vi.mocked(handleHotSeatAnswer).mockResolvedValueOnce(true);
+        const msg = createMockMessage({ text: 'bot', isGroup: true });
+        await handleMessages(sock, { messages: [msg], type: 'notify' });
+        expect(handleHotSeatAnswer).toHaveBeenCalled();
+        expect(sendGenderAwareBotResponse).not.toHaveBeenCalled();
     });
 
     it('stops processing a soft-muted group member before message counters and command triggers', async () => {
