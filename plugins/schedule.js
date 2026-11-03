@@ -108,8 +108,19 @@ export async function trackGroup(chatId) {
 async function checkTimedGroupMute(sock, chatId) {
     const mute = await store.getSetting(chatId, TIMED_GROUP_MUTE_KEY);
     if (!mute?.until || Date.now() < mute.until) return;
+    // A manual/scheduled feature-group lock takes precedence over a timed
+    // group mute. Expiry must not accidentally reopen a group still locked
+    // by the daily lifecycle schedule.
+    const scheduledLockState = FEATURE_GROUPS.includes(chatId)
+        ? await store.getSetting(chatId, 'groupLockState')
+        : null;
+
     // Clear first to prevent repeated unlock attempts/messages on every tick.
     await store.saveSetting(chatId, TIMED_GROUP_MUTE_KEY, { until: null, clearedAt: Date.now() });
+    if (scheduledLockState?.locked) {
+        console.log(`[SCHEDULE] Timed group mute expired; preserving active feature-group lock for ${chatId}`);
+        return;
+    }
     try {
         await sock.groupSettingUpdate(chatId, 'not_announcement');
         await sock.sendMessage(chatId, { text: '🔊 *Timed group mute expired.* Members can send messages again.' });
