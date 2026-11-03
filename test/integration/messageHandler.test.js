@@ -16,6 +16,7 @@ vi.mock('../../plugins/chatbot.js', () => ({ handleChatbotResponse: vi.fn(async 
 vi.mock('../../plugins/tictactoe.js', () => ({ handleTicTacToeMove: vi.fn(async () => {}), default: { command: 'tictactoe', handler: vi.fn(), aliases: ['ttt'], category: 'games', description: 'test' } }));
 vi.mock('../../plugins/autoreply.js', () => ({ handleAutoReply: vi.fn(async () => false) }));
 vi.mock('../../plugins/antispam.js', () => ({ handleAntiSpam: vi.fn(async () => false), invalidateGroupCache: vi.fn(() => {}) }));
+vi.mock('../../plugins/softmute.js', () => ({ handleSoftMuteMessage: vi.fn(async () => false) }));
 vi.mock('../../plugins/schedule.js', () => ({ startSchedulerEngine: vi.fn(() => {}) }));
 vi.mock('../../lib/isBanned.js', () => ({ isBanned: vi.fn(async () => false) }));
 vi.mock('../../lib/index.js', () => ({ isSudo: vi.fn(async () => false) }));
@@ -102,6 +103,22 @@ describe('handleMessages', () => {
         const msg = createMockMessage({ text: 'hello' });
         await handleMessages(sock, { messages: [msg], type: 'notify' });
         expect(handleAutoread).toHaveBeenCalled();
+    });
+
+    it('stops processing a soft-muted group member before message counters and command triggers', async () => {
+        const store = (await import('../../lib/lightweight_store.js')).default;
+        const { handleSoftMuteMessage } = await import('../../plugins/softmute.js');
+        vi.mocked(handleSoftMuteMessage).mockResolvedValueOnce(true);
+        const msg = createMockMessage({
+            text: '.ping',
+            isGroup: true,
+            senderId: '923001111111@s.whatsapp.net'
+        });
+        await handleMessages(sock, { messages: [msg], type: 'notify' });
+        expect(handleSoftMuteMessage).toHaveBeenCalled();
+        expect(store.incrementWeeklyMessageCount).not.toHaveBeenCalled();
+        expect(store.incrementMessageCount).not.toHaveBeenCalled();
+        expect(sock.sendMessage).not.toHaveBeenCalled();
     });
 
     it('sends error response when command handler throws', async () => {
