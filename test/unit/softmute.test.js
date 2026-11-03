@@ -7,6 +7,10 @@ const mockStore = vi.hoisted(() => {
         getSetting: vi.fn(async (chatId, key) => values.get(`${chatId}:${key}`) ?? null),
         saveSetting: vi.fn(async (chatId, key, value) => {
             values.set(`${chatId}:${key}`, value);
+        }),
+        saveSettingVerified: vi.fn(async (chatId, key, value) => {
+            values.set(`${chatId}:${key}`, value);
+            return true;
         })
     };
 });
