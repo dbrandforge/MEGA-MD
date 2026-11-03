@@ -85,6 +85,40 @@ async function muteUser(sock, chatId, userId) {
         return true;
     } catch { return false; }
 }
+async function scheduleHotSeatTimeout(sock, chatId, player, questionId) {
+    const latest = await getSession(chatId);
+    const state = latest?.playerStates?.[player];
+    if (!latest || latest.status !== 'active' || !state || !state.waiting || state.questionId !== questionId) return false;
+    const timeoutToken = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    state.timeoutToken = timeoutToken;
+    await saveSession(chatId, latest);
+    setTimeout(async () => {
+        const current = await getSession(chatId);
+        if (!current || current.status !== 'active') return;
+        const currentState = current.playerStates?.[player];
+        if (!currentState || currentState.status !== 'active' || !currentState.waiting) return;
+        if (currentState.questionId !== questionId || currentState.timeoutToken !== timeoutToken) return;
+        const access = await isGameAllowed(chatId, 'hotseat');
+        // A manual/day lock pauses the response clock; unlock schedules a fresh window.
+        if (!access.ok) return;
+        currentState.status = 'out';
+        currentState.waiting = false;
+        currentState.timeoutToken = null;
+        await saveSession(chatId, current);
+        await muteUser(sock, chatId, player);
+        await sock.sendMessage(chatId, {
+            text: `⏰ ${mention(player)} did not answer in 5 minutes → 10-hour mute. Out of Hot Seat.`,
+            mentions: [player]
+        });
+        const remaining = current.players.filter(id => current.playerStates?.[id]?.status === 'active');
+        if (!remaining.length) {
+            await clearSession(chatId);
+            await sock.sendMessage(chatId, { text: '🛑 *Hot Seat ended* — no active players left.' });
+        }
+    }, ANSWER_TIMEOUT_MS);
+    return true;
+}
+
 async function sendPlayerQuestion(sock, chatId, player) {
     const session = await getSession(chatId);
     if (!session || session.status !== 'active') return;
@@ -139,26 +173,7 @@ async function sendPlayerQuestion(sock, chatId, player) {
     state.questionMessageId = sentQuestion?.key?.id || null;
     await saveSession(chatId, session);
 
-    setTimeout(async () => {
-        const latest = await getSession(chatId);
-        if (!latest || latest.status !== 'active') return;
-        const st = latest.playerStates?.[player];
-        if (!st || st.status !== 'active' || !st.waiting) return;
-        if (st.questionId !== questionId) return;
-        st.status = 'out';
-        st.waiting = false;
-        await saveSession(chatId, latest);
-        await muteUser(sock, chatId, player);
-        await sock.sendMessage(chatId, {
-            text: `⏰ ${mention(player)} did not answer in 5 minutes → 10-hour mute. Out of Hot Seat.`,
-            mentions: [player]
-        });
-        const remaining = latest.players.filter(id => latest.playerStates?.[id]?.status === 'active');
-        if (!remaining.length) {
-            await clearSession(chatId);
-            await sock.sendMessage(chatId, { text: '🛑 *Hot Seat ended* — no active players left.' });
-        }
-    }, ANSWER_TIMEOUT_MS);
+    await scheduleHotSeatTimeout(sock, chatId, player, questionId);
     return true;
 }
 
@@ -186,7 +201,11 @@ export async function resumeHotSeatSession(sock, chatId) {
     let resumed = 0;
     for (const player of session.players || []) {
         const state = session.playerStates?.[player];
-        if (!state || state.status !== 'active' || state.waiting) continue;
+        if (!state || state.status !== 'active') continue;
+        if (state.waiting && state.questionId) {
+            if (await scheduleHotSeatTimeout(sock, chatId, player, state.questionId)) resumed++;
+            continue;
+        }
         if (await sendPlayerQuestion(sock, chatId, player)) resumed++;
     }
     return resumed;
@@ -223,6 +242,7 @@ export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
     }
 
     state.waiting = false;
+    state.timeoutToken = null;
     state.lastAnsweredAt = Date.now();
     state.questionsAnswered = (state.questionsAnswered || 0) + 1;
     await saveSession(chatId, session);
