@@ -35,9 +35,13 @@ export async function isSoftMuted(chatId, userId) {
     if (!entry) return false;
     const until = Number(entry.until);
     if (!Number.isFinite(until) || until <= 0 || Date.now() >= until) {
-        // Expired or malformed records must never leave a member muted forever.
-        delete mutes[key];
-        delete mutes[userId];
+        // Remove both PN/LID aliases for this record when it expires.
+        const ids = new Set([key, cleanId(userId), cleanId(entry.original), cleanId(entry.canonical)]);
+        for (const [storedKey, storedEntry] of Object.entries(mutes)) {
+            if (ids.has(storedKey) || ids.has(cleanId(storedEntry?.original)) || ids.has(cleanId(storedEntry?.canonical))) {
+                delete mutes[storedKey];
+            }
+        }
         await saveMutes(chatId, mutes);
         return false;
     }
@@ -48,11 +52,27 @@ export async function softMuteUser(sock, chatId, userId, hours = null) {
     const duration = hours ? hours * 60 * 60 * 1000 : MUTE_MS;
     const mutes = await getMutes(chatId);
     const key = cleanId(userId);
-    mutes[key] = {
+    let canonicalKey = key;
+    if (key.endsWith('@lid')) {
+        try {
+            const mappedPN = await sock?.signalRepository?.lidMapping?.getPNForLID?.(userId);
+            if (typeof mappedPN === 'string' && mappedPN.endsWith('@s.whatsapp.net')) {
+                canonicalKey = cleanId(mappedPN);
+            }
+        } catch (error) {
+            console.warn('[SOFTMUTE] Could not resolve mentioned LID to PN:', error.message);
+        }
+    }
+    const entry = {
         until: Date.now() + duration,
         mutedAt: Date.now(),
-        original: userId
+        original: userId,
+        canonical: canonicalKey
     };
+    mutes[key] = entry;
+    // Store a canonical PN alias as well so incoming PN-resolved messages
+    // still match a target that was mentioned using a Baileys LID.
+    if (canonicalKey !== key) mutes[canonicalKey] = entry;
     await saveMutes(chatId, mutes);
     // The scheduler must know every group that contains an individual mute.
     await trackGroup(chatId);
@@ -63,13 +83,15 @@ export async function cleanExpiredSoftMutes(chatId, now = Date.now()) {
     if (!chatId?.endsWith('@g.us')) return 0;
     const mutes = await getMutes(chatId);
     let removed = 0;
+    const removedIds = new Set();
     for (const [key, entry] of Object.entries(mutes)) {
         const until = Number(entry?.until);
         if (!Number.isFinite(until) || until <= 0 || now >= until) {
+            removedIds.add(cleanId(entry?.canonical || entry?.original || key));
             delete mutes[key];
-            removed++;
         }
     }
+    removed = removedIds.size;
     if (removed) await saveMutes(chatId, mutes);
     return removed;
 }
@@ -77,8 +99,13 @@ export async function cleanExpiredSoftMutes(chatId, now = Date.now()) {
 export async function softUnmuteUser(chatId, userId) {
     const mutes = await getMutes(chatId);
     const key = cleanId(userId);
-    delete mutes[key];
-    delete mutes[userId];
+    for (const [storedKey, entry] of Object.entries(mutes)) {
+        const originalKey = cleanId(entry?.original);
+        const canonicalKey = cleanId(entry?.canonical);
+        if (storedKey === key || storedKey === userId || originalKey === key || canonicalKey === key) {
+            delete mutes[storedKey];
+        }
+    }
     await saveMutes(chatId, mutes);
 }
 
