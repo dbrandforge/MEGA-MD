@@ -95,8 +95,7 @@ export default {
             await saveState(chatId, state);
             const link = getAnonymousLink(chatId);
             return sock.sendMessage(chatId, {
-                text: `🟢 *Anonymous Night is OPEN*\n\nSubmit here:\n${link}\n\nClose: *.anonymous off*` +
-                    (!allowed.ok ? `\n\n_(Opened by admin off scheduled day)_` : ''),
+                text: `🟢 *Anonymous Night is OPEN*\n\nSubmit here:\n${link}\n\nClose: *.anonymous off*` ,
                 ...channelInfo
             }, { quoted: message });
         }
