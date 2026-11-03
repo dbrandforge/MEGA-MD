@@ -30,8 +30,12 @@ async function getWarnings() {
 }
 
 async function saveWarnings(warnings) {
-    if (HAS_DB) await store.saveSetting('global', 'warnings', warnings);
-    else fs.writeFileSync(warningsPath, JSON.stringify(warnings, null, 2));
+    if (HAS_DB) {
+        const saved = await store.saveSettingVerified('global', 'warnings', warnings);
+        if (!saved) throw new Error('Warning records could not be persisted.');
+    } else {
+        fs.writeFileSync(warningsPath, JSON.stringify(warnings, null, 2));
+    }
 }
 
 export default {
