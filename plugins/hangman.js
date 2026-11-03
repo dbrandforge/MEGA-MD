@@ -18,18 +18,22 @@ const normalize = value => String(value || '').toLowerCase().replace(/[^a-z]/g, 
 const maskWord = (word, guessed) => [...word].map(char => guessed.includes(char) ? char : '_');
 const pick = values => values[Math.floor(Math.random() * values.length)];
 const getRecords = async chatId => (await store.getSetting(chatId, RECORD_KEY)) || {};
-const saveRecords = (chatId, records) => store.saveSetting(chatId, RECORD_KEY, records);
+const saveRecords = async (chatId, records) => {
+  if (!await store.saveSettingVerified(chatId, RECORD_KEY, records)) throw new Error('Hangman records could not be persisted.');
+};
 
 async function readGame(chatId) {
   const game = await store.getSetting(chatId, STATE_KEY);
   if (!game || game.status !== 'active') return null;
   if (game.expiresAt && game.expiresAt <= Date.now()) {
-    await store.saveSetting(chatId, STATE_KEY, {...game, status:'ended', endedAt:Date.now(), reason:'expired'});
+    if (!await store.saveSettingVerified(chatId, STATE_KEY, {...game, status:'ended', endedAt:Date.now(), reason:'expired'})) throw new Error('Expired Hangman state could not be persisted.');
     return null;
   }
   return game;
 }
-const writeGame = (chatId, game) => store.saveSetting(chatId, STATE_KEY, game);
+const writeGame = async (chatId, game) => {
+  if (!await store.saveSettingVerified(chatId, STATE_KEY, game)) throw new Error('Hangman game state could not be persisted.');
+};
 
 async function selectRoundWords(chatId) {
   let used = (await store.getSetting(chatId, USED_KEY)) || [];
@@ -47,7 +51,7 @@ async function selectRoundWords(chatId) {
     available = available.filter(entry => entry.word !== item.word);
     used.push(item.word);
   }
-  await store.saveSetting(chatId, USED_KEY, used);
+  if (!await store.saveSettingVerified(chatId, USED_KEY, used)) throw new Error('Hangman used-word history could not be persisted.');
   return selected;
 }
 
