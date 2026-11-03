@@ -20,7 +20,7 @@ async function getState(chatId) {
     return (await store.getSetting(chatId, ANON_KEY)) || { enabled: false };
 }
 async function saveState(chatId, state) {
-    await store.saveSetting(chatId, ANON_KEY, state);
+    return store.saveSettingVerified(chatId, ANON_KEY, state);
 }
 
 function getPublicBaseUrl() {
@@ -92,7 +92,9 @@ export default {
         if (action === 'on') {
             const state = await getState(chatId);
             state.enabled = true;
-            await saveState(chatId, state);
+            if (!await saveState(chatId, state)) {
+                return sock.sendMessage(chatId, { text: '❌ Could not save Anonymous Night status. It was not opened.', ...channelInfo }, { quoted: message });
+            }
             const link = getAnonymousLink(chatId);
             return sock.sendMessage(chatId, {
                 text: `🟢 *Anonymous Night is OPEN*\n\nSubmit here:\n${link}\n\nClose: *.anonymous off*` ,
@@ -103,7 +105,9 @@ export default {
         if (action === 'off') {
             const state = await getState(chatId);
             state.enabled = false;
-            await saveState(chatId, state);
+            if (!await saveState(chatId, state)) {
+                return sock.sendMessage(chatId, { text: '❌ Could not save Anonymous Night status. It may still be open; please try again.', ...channelInfo }, { quoted: message });
+            }
             return sock.sendMessage(chatId, {
                 text: '🔴 *Anonymous Night is CLOSED.*',
                 ...channelInfo
