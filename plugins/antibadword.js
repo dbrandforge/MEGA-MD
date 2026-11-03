@@ -4,7 +4,8 @@ async function getAntibadwordSettings(chatId) {
     return settings || { enabled: false, words: [] };
 }
 async function saveAntibadwordSettings(chatId, settings) {
-    await store.saveSetting(chatId, 'antibadword', settings);
+    const saved = await store.saveSettingVerified(chatId, 'antibadword', settings);
+    if (!saved) throw new Error('Antibadword settings could not be persisted.');
 }
 async function handleAntiBadwordCommand(sock, chatId, message, match) {
     const args = match.trim().toLowerCase().split(/\s+/);

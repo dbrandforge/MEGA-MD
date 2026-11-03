@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { createMockSock, createMockMessage } from '../mocks/baileys.js';
 
 vi.mock('../../lib/print.js', () => ({ printMessage: vi.fn(async () => {}), printLog: vi.fn(() => {}) }));
-vi.mock('../../lib/lightweight_store.js', () => ({ default: { getSetting: vi.fn(async () => null), saveSetting: vi.fn(async () => {}), getBotMode: vi.fn(async () => 'public'), incrementMessageCount: vi.fn(async () => {}), incrementWeeklyMessageCount: vi.fn(async () => {}), messages: {} } }));
+vi.mock('../../lib/lightweight_store.js', () => ({ default: { getSetting: vi.fn(async () => null), saveSetting: vi.fn(async () => {}), saveSettingVerified: vi.fn(async () => true), getBotMode: vi.fn(async () => 'public'), incrementMessageCount: vi.fn(async () => {}), incrementWeeklyMessageCount: vi.fn(async () => {}), messages: {} } }));
 vi.mock('../../lib/logger.js', () => ({ writeErrorLog: vi.fn(() => {}) }));
 vi.mock('../../lib/reactions.js', () => ({ addCommandReaction: vi.fn(async () => {}) }));
 vi.mock('../../plugins/autoread.js', () => ({ handleAutoread: vi.fn(async () => {}) }));
@@ -16,6 +16,14 @@ vi.mock('../../plugins/chatbot.js', () => ({ handleChatbotResponse: vi.fn(async 
 vi.mock('../../plugins/tictactoe.js', () => ({ handleTicTacToeMove: vi.fn(async () => {}), default: { command: 'tictactoe', handler: vi.fn(), aliases: ['ttt'], category: 'games', description: 'test' } }));
 vi.mock('../../plugins/autoreply.js', () => ({ handleAutoReply: vi.fn(async () => false) }));
 vi.mock('../../plugins/antispam.js', () => ({ handleAntiSpam: vi.fn(async () => false), invalidateGroupCache: vi.fn(() => {}) }));
+vi.mock('../../plugins/softmute.js', () => ({ handleSoftMuteMessage: vi.fn(async () => false) }));
+vi.mock('../../plugins/hotseat.js', () => ({
+    handleHotSeatAnswer: vi.fn(async () => false),
+    trackHotSeatReader: vi.fn(async () => false)
+}));
+vi.mock('../../plugins/alive.js', () => ({
+    sendGenderAwareBotResponse: vi.fn(async () => {})
+}));
 vi.mock('../../plugins/schedule.js', () => ({ startSchedulerEngine: vi.fn(() => {}) }));
 vi.mock('../../lib/isBanned.js', () => ({ isBanned: vi.fn(async () => false) }));
 vi.mock('../../lib/index.js', () => ({ isSudo: vi.fn(async () => false) }));
@@ -104,6 +112,46 @@ describe('handleMessages', () => {
         expect(handleAutoread).toHaveBeenCalled();
     });
 
+    it('tracks recent activity from group members for Hot Seat selection', async () => {
+        const { trackHotSeatReader } = await import('../../plugins/hotseat.js');
+        const msg = createMockMessage({ text: 'hello', isGroup: true });
+        await handleMessages(sock, { messages: [msg], type: 'notify' });
+        expect(trackHotSeatReader).toHaveBeenCalledWith(
+            msg.key.remoteJid,
+            msg.key.participant
+        );
+    });
+
+    it('prioritizes an active Hot Seat answer over the generic bot keyword trigger', async () => {
+        const { handleHotSeatAnswer } = await import('../../plugins/hotseat.js');
+        const { sendGenderAwareBotResponse } = await import('../../plugins/alive.js');
+        vi.mocked(handleHotSeatAnswer).mockResolvedValueOnce(true);
+        const msg = createMockMessage({ text: 'bot', isGroup: true });
+        await handleMessages(sock, { messages: [msg], type: 'notify' });
+        expect(handleHotSeatAnswer).toHaveBeenCalled();
+        expect(sendGenderAwareBotResponse).not.toHaveBeenCalled();
+    });
+
+    it('stops processing a soft-muted group member before message counters and command triggers', async () => {
+        const store = (await import('../../lib/lightweight_store.js')).default;
+        const { handleSoftMuteMessage } = await import('../../plugins/softmute.js');
+        vi.mocked(handleSoftMuteMessage).mockResolvedValueOnce(true);
+        const msg = createMockMessage({
+            text: '.ping',
+            isGroup: true,
+            senderId: '923001111111@s.whatsapp.net'
+        });
+        await handleMessages(sock, { messages: [msg], type: 'notify' });
+        expect(handleSoftMuteMessage).toHaveBeenCalled();
+        expect(store.incrementWeeklyMessageCount).not.toHaveBeenCalled();
+        expect(store.incrementMessageCount).not.toHaveBeenCalled();
+        const { storeMessage } = await import('../../plugins/antidelete.js');
+        expect(storeMessage).not.toHaveBeenCalled();
+        const { trackHotSeatReader } = await import('../../plugins/hotseat.js');
+        expect(trackHotSeatReader).not.toHaveBeenCalled();
+        expect(sock.sendMessage).not.toHaveBeenCalled();
+    });
+
     it('sends error response when command handler throws', async () => {
         const commandHandler = await import('../../lib/commandHandler.js');
         commandHandler.default.registerCommand({
@@ -142,6 +190,38 @@ describe('handleMessages', () => {
         await handleMessages(sock, { messages: [msg], type: 'notify' });
         expect(handler).not.toHaveBeenCalled();
         expect(sock._lastMessage()?.content?.text).toContain('restricted to the bot owner');
+    });
+
+    it('blocks adminOnly commands in private chats for ordinary users', async () => {
+        const commandHandler = (await import('../../lib/commandHandler.js')).default;
+        const handler = vi.fn(async () => {});
+        commandHandler.registerCommand({
+            command: 'admindmprobe', aliases: [], category: 'admin',
+            adminOnly: true, handler
+        });
+        const msg = createMockMessage({
+            text: '.admindmprobe', isGroup: false,
+            senderId: '923009999999@s.whatsapp.net'
+        });
+        await handleMessages(sock, { messages: [msg], type: 'notify' });
+        expect(handler).not.toHaveBeenCalled();
+        expect(sock._lastMessage()?.content?.text).toContain('requires an authorized group admin');
+    });
+
+    it('allows the configured owner to use adminOnly commands in private chats', async () => {
+        const commandHandler = (await import('../../lib/commandHandler.js')).default;
+        const handler = vi.fn(async () => {});
+        commandHandler.registerCommand({
+            command: 'admindmownerprobe', aliases: [], category: 'admin',
+            adminOnly: true, handler
+        });
+        const msg = createMockMessage({
+            text: '.admindmownerprobe', isGroup: false,
+            chatId: '923001234567@s.whatsapp.net',
+            senderId: '923001234567@s.whatsapp.net'
+        });
+        await handleMessages(sock, { messages: [msg], type: 'notify' });
+        expect(handler).toHaveBeenCalledTimes(1);
     });
 
     it('blocks non-owner users from ownerOnly commands', async () => {

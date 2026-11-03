@@ -20,7 +20,7 @@ export default {
 
     if (admin) {
       const count = Object.keys(sessions).length;
-      await store.saveSetting(chatId, KEY, {});
+      if (!await store.saveSettingVerified(chatId, KEY, {})) throw new Error('Basket session state could not be persisted.');
       return sock.sendMessage(chatId, { text: `🛑 Admin ended ${count} active Devil’s Basket run(s).`, ...channelInfo }, { quoted: message });
     }
 
@@ -30,7 +30,7 @@ export default {
       return sock.sendMessage(chatId, { text: 'Attempt at least one Basket dare before ending your run.', ...channelInfo }, { quoted: message });
     }
     delete sessions[senderId];
-    await store.saveSetting(chatId, KEY, sessions);
+    if (!await store.saveSettingVerified(chatId, KEY, sessions)) throw new Error('Basket session state could not be persisted.');
     return sock.sendMessage(chatId, { text: '🛑 Your Devil’s Basket run has ended.', ...channelInfo }, { quoted: message });
   }
 };

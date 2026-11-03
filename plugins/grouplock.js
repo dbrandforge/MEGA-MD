@@ -40,6 +40,10 @@ const GOODNIGHT_INDEX_KEY = 'groupLockGoodnightIndex';
 const GOODMORNING_INDEX_KEY = 'groupLockGoodmorningIndex';
 const DAY_UNLOCK_GREETING_KEY = 'groupDayUnlockGreeting';
 
+async function saveGroupSetting(chatId, key, value) {
+    if (!await store.saveSettingVerified(chatId, key, value)) throw new Error(`Group lifecycle state (${key}) could not be persisted.`);
+}
+
 function getLagosCalendarParts(date = new Date()) {
     const parts = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Africa/Lagos',
@@ -86,7 +90,7 @@ async function sendDayUnlockGreetingOnce(sock, chatId) {
     if (!greeting) return false;
 
     await sock.sendMessage(chatId, { text: greeting });
-    await store.saveSetting(chatId, DAY_UNLOCK_GREETING_KEY, dateKey);
+    await saveGroupSetting(chatId, DAY_UNLOCK_GREETING_KEY, dateKey);
     console.log(`[GroupLock] Occasion greeting sent to ${chatId} for ${dateKey}`);
     return true;
 }
@@ -133,11 +137,11 @@ async function lockGroup(sock, chatId) {
             await sock.sendMessage(chatId, {
                 text: `🔒 *Group locked for the night.*\n\n${selected.text}`
             });
-            await store.saveSetting(chatId, GOODNIGHT_INDEX_KEY, selected.index);
-            await store.saveSetting(chatId, GOODNIGHT_SENT_KEY, { date: dateKey, sentAt: Date.now() });
+            await saveGroupSetting(chatId, GOODNIGHT_INDEX_KEY, selected.index);
+            await saveGroupSetting(chatId, GOODNIGHT_SENT_KEY, { date: dateKey, sentAt: Date.now() });
         }
-        await store.saveSetting(chatId, LOCK_STATE_KEY, { locked: true, at: Date.now() });
-        await store.saveSetting(chatId, LAST_ACTION_KEY, { action: 'lock', time: getCurrentTimeString(), day: getCurrentDay() });
+        await saveGroupSetting(chatId, LOCK_STATE_KEY, { locked: true, at: Date.now() });
+        await saveGroupSetting(chatId, LAST_ACTION_KEY, { action: 'lock', time: getCurrentTimeString(), day: getCurrentDay() });
         console.log(`[GroupLock] Locked ${chatId}`);
         return true;
     } catch (e) {
@@ -188,8 +192,8 @@ async function sendDailyActivityOnce(sock, chatId, day) {
         text: `🔓 *Group unlocked.*\n\n${greeting ? `${greeting}\n\n` : ''}${activityText}`
     });
     if (selectedGreeting) {
-        await store.saveSetting(chatId, GOODMORNING_INDEX_KEY, selectedGreeting.index);
-        await store.saveSetting(chatId, GOODMORNING_SENT_KEY, { date: dateKey, sentAt: Date.now() });
+        await saveGroupSetting(chatId, GOODMORNING_INDEX_KEY, selectedGreeting.index);
+        await saveGroupSetting(chatId, GOODMORNING_SENT_KEY, { date: dateKey, sentAt: Date.now() });
     }
 
     try {
@@ -203,7 +207,7 @@ async function sendDailyActivityOnce(sock, chatId, day) {
         console.log('Could not pin message:', pinErr.message);
     }
 
-    await store.saveSetting(chatId, ACTIVITY_SENT_KEY, { date: dateKey, day, sentAt: Date.now() });
+    await saveGroupSetting(chatId, ACTIVITY_SENT_KEY, { date: dateKey, day, sentAt: Date.now() });
     console.log(`[GroupLock] Daily activity sent for ${chatId} - ${day}`);
     return true;
 }
@@ -211,6 +215,21 @@ async function sendDailyActivityOnce(sock, chatId, day) {
 // Full unlock: flips the WhatsApp setting, sends/pins the activity (if not
 // already sent today), and records state. Used by the manual command and
 // by the scheduled/safety-net paths.
+export async function setManualGroupUnlockOverride(chatId) {
+    const day = getCurrentDay();
+    const writes = await Promise.all([
+        store.saveSettingVerified(chatId, MANUAL_OVERRIDE_KEY, { day, action: 'unlock' }),
+        store.saveSettingVerified(chatId, LOCK_STATE_KEY, { locked: false, at: Date.now() }),
+        store.saveSettingVerified(chatId, LAST_ACTION_KEY, {
+            action: 'unlock',
+            time: getCurrentTimeString(),
+            day
+        })
+    ]);
+    if (writes.some(saved => !saved)) throw new Error('Manual group unlock state could not be persisted.');
+    return true;
+}
+
 async function unlockGroup(sock, chatId, { manual = false } = {}) {
     try {
         await unlockGroupSetting(sock, chatId);
@@ -218,14 +237,14 @@ async function unlockGroup(sock, chatId, { manual = false } = {}) {
         const day = getCurrentDay();
         await sendDailyActivityOnce(sock, chatId, day);
 
-        await store.saveSetting(chatId, LOCK_STATE_KEY, { locked: false, at: Date.now() });
-        await store.saveSetting(chatId, LAST_ACTION_KEY, { action: 'unlock', time: getCurrentTimeString(), day });
+        await saveGroupSetting(chatId, LOCK_STATE_KEY, { locked: false, at: Date.now() });
+        await saveGroupSetting(chatId, LAST_ACTION_KEY, { action: 'unlock', time: getCurrentTimeString(), day });
 
         if (manual) {
             // Remember that an admin deliberately unlocked today, so the
             // auto-retry lock logic below doesn't immediately fight them
             // by re-locking the group for the rest of today's window.
-            await store.saveSetting(chatId, MANUAL_OVERRIDE_KEY, { day, action: 'unlock' });
+            await saveGroupSetting(chatId, MANUAL_OVERRIDE_KEY, { day, action: 'unlock' });
         }
 
         console.log(`[GroupLock] Unlocked ${chatId} - ${day}`);
@@ -279,7 +298,7 @@ export async function checkGroupLockSchedule(sock, chatId) {
             // unless an admin deliberately re-locked it after this time.
             if (state.locked && manualOverride.day !== day) {
                 await unlockGroupSetting(sock, chatId);
-                await store.saveSetting(chatId, LOCK_STATE_KEY, { locked: false, at: Date.now() });
+                await saveGroupSetting(chatId, LOCK_STATE_KEY, { locked: false, at: Date.now() });
             }
         }
 
@@ -340,7 +359,7 @@ export default {
             const day = getCurrentDay();
             // A deliberate manual lock clears today's "admin unlocked" flag
             // so the group can be auto-managed normally again afterward.
-            await store.saveSetting(chatId, MANUAL_OVERRIDE_KEY, { day, action: 'lock' });
+            await saveGroupSetting(chatId, MANUAL_OVERRIDE_KEY, { day, action: 'lock' });
             await lockGroup(sock, chatId);
             return;
         }

@@ -3,11 +3,11 @@ import isOwnerOrSudo from '../lib/isOwner.js';
 import isAdmin from '../lib/isAdmin.js';
 async function setAntilink(chatId, type, action) {
     try {
-        await store.saveSetting(chatId, 'antilink', {
+        if (!await store.saveSettingVerified(chatId, 'antilink', {
             enabled: true,
             action,
             type
-        });
+        })) return false;
         return true;
     }
     catch (error) {
@@ -27,12 +27,11 @@ async function getAntilink(chatId, _type) {
 }
 async function removeAntilink(chatId, _type) {
     try {
-        await store.saveSetting(chatId, 'antilink', {
+        return await store.saveSettingVerified(chatId, 'antilink', {
             enabled: false,
             action: null,
             type: null
         });
-        return true;
     }
     catch (error) {
         console.error('Error removing antilink:', error);
@@ -171,12 +170,15 @@ export default {
                     text: result ? '✅ *Antilink enabled successfully!*\n\nDefault action: Delete messages\n\n*Exempt:* Admins, Owner, Sudo users' : '❌ *Failed to enable antilink*'
                 }, { quoted: message });
                 break;
-            case 'off':
-                await removeAntilink(chatId, 'on');
+            case 'off': {
+                const offResult = await removeAntilink(chatId, 'on');
                 await sock.sendMessage(chatId, {
-                    text: '❌ *Antilink disabled*\n\nUsers can now send links freely.'
+                    text: offResult
+                        ? '❌ *Antilink disabled*\n\nUsers can now send links freely.'
+                        : '⚠️ *Could not disable antilink.* The setting was not saved; please try again.'
                 }, { quoted: message });
                 break;
+            }
             case 'set':
                 if (args.length < 2) {
                     await sock.sendMessage(chatId, {

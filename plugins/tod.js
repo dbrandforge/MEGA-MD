@@ -11,7 +11,7 @@ async function getSessions(chatId) {
     return (await store.getSetting(chatId, SESSIONS_KEY)) || {};
 }
 async function saveSessions(chatId, sessions) {
-    await store.saveSetting(chatId, SESSIONS_KEY, sessions);
+    if (!await store.saveSettingVerified(chatId, SESSIONS_KEY, sessions)) throw new Error('Truth or Dare session state could not be persisted.');
 }
 function mention(jid) {
     return `@${(jid || '').split('@')[0]}`;
@@ -137,6 +137,16 @@ export async function completeTodTurn(sock, chatId, senderId, options = {}) {
         s.players?.includes(senderId) && s.status === 'active' && s.waitingFor === senderId
     );
     if (!session) return false;
+
+    // A manual/day lock blocks further rounds, but a participant who has
+    // completed a prompt may still use `.done end` to close their session.
+    if (!options.endAfter) {
+        const access = await isGameAllowed(chatId, 'tod');
+        if (!access.ok) {
+            await sock.sendMessage(chatId, { text: access.msg }, options.message ? { quoted: options.message } : undefined);
+            return true;
+        }
+    }
 
     session.questionsCompleted = session.questionsCompleted || {};
     session.questionsCompleted[senderId] = (session.questionsCompleted[senderId] || 0) + 1;

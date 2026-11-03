@@ -1,7 +1,5 @@
 import config from '../config.js';
 import CommandHandler from '../lib/commandHandler.js';
-import fs from 'fs';
-import path from 'path';
 const menuEmojis = ['✨', '🌟', '⭐', '💫', '🎯', '🎨', '🎪', '🎭'];
 const activeEmojis = ['✅', '🟢', '💚', '✔️', '☑️'];
 const disabledEmojis = ['❌', '🔴', '⛔', '🚫', '❎'];
@@ -56,8 +54,6 @@ export default {
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
         try {
-            const imagePath = path.join(process.cwd(), 'assets/thumb.png');
-            const thumbnail = fs.existsSync(imagePath) ? fs.readFileSync(imagePath) : null;
             const categories = Array.from(CommandHandler.categories.keys());
             const stats = CommandHandler.getDiagnostics();
             const menuEmoji = getRandomEmoji(menuEmojis);
@@ -65,10 +61,10 @@ export default {
             const disabledEmoji = getRandomEmoji(disabledEmojis);
             const fastEmoji = getRandomEmoji(fastEmojis);
             const slowEmoji = getRandomEmoji(slowEmojis);
-            let menuText = `${menuEmoji} *${config.botName || 'MEGA-MD'}* ${menuEmoji}\n\n`;
+            let menuText = `${menuEmoji} *${config.botName || 'Forge Guard'}* ${menuEmoji}\n\n`;
             menuText += `┏━━━━━━━━━━━━━━━━┓\n`;
             menuText += `┃ 📱 *Bot:* ${config.botName || 'MEGA-MD'}\n`;
-            menuText += `┃ 🔖 *Version:* ${config.version || '6.0.0'}\n`;
+            menuText += `┃ 🔖 *Version:* ${config.version || '6.1.0'}\n`;
             menuText += `┃ 👤 *Owner:* ${config.botOwner || 'Unknown'}\n`;
             menuText += `┃ ⏰ *Time:* ${formatTime()}\n`;
             menuText += `┃ ℹ️ *Prefix:* ${config.prefixes ? config.prefixes.join(', ') : '.'}\n`;
@@ -113,19 +109,8 @@ export default {
             menuText += `├─ ${fastEmoji} Fast Response\n`;
             menuText += `├─ ${slowEmoji} Slow Response\n`;
             menuText += `⁠└────────────────`;
-            const contextInfo = {
-                forwardingScore: 1,
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                    newsletterJid: '120363319098372999@newsletter',
-                    newsletterName: 'GlobalTechInc',
-                    serverMessageId: -1
-                }
-            };
-            const messageOptions = thumbnail
-                ? { image: thumbnail, caption: menuText, contextInfo }
-                : { text: menuText, contextInfo };
-            await sock.sendMessage(chatId, messageOptions, { quoted: message });
+            // No legacy thumbnail or former-owner newsletter attribution.
+            await sock.sendMessage(chatId, { text: menuText }, { quoted: message });
         }
         catch (error) {
             console.error('Menu Error:', error);

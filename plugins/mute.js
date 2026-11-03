@@ -36,30 +36,32 @@ export default {
         if (args[0] && (!Number.isInteger(durationInMinutes) || durationInMinutes <= 0 || durationInMinutes > 10080)) {
             return sock.sendMessage(chatId, { text: 'Use `.mute` to lock the group, `.mute 30` to lock it for 30 minutes, or `.mute @user` to mute one member.', ...channelInfo }, { quoted: message });
         }
-        try {
-            await sock.groupSettingUpdate(chatId, 'announcement');
-            trackGroup(chatId);
-            if (durationInMinutes !== undefined) {
-                await store.saveSetting(chatId, 'timedGroupMute', {
-                    until: Date.now() + durationInMinutes * 60 * 1000,
-                    startedAt: Date.now()
-                });
-                await sock.sendMessage(chatId, {
-                    text: `The group has been muted for ${durationInMinutes} minutes.`,
-                    ...channelInfo
-                }, { quoted: message });
+        const previousMuteState = await store.getSetting(chatId, 'timedGroupMute');
+        const nextMuteState = durationInMinutes !== undefined
+            ? { until: Date.now() + durationInMinutes * 60 * 1000, startedAt: Date.now() }
+            : { until: null, clearedAt: Date.now() };
 
+        try {
+            // Persist expiry before applying the WhatsApp lock so a database
+            // failure cannot leave a timed mute without an unlock record.
+            if (!await store.saveSettingVerified(chatId, 'timedGroupMute', nextMuteState)) {
+                throw new Error('Group-mute state could not be persisted.');
             }
-            else {
-                await store.saveSetting(chatId, 'timedGroupMute', { until: null, clearedAt: Date.now() });
-                await sock.sendMessage(chatId, {
-                    text: 'The group has been muted.',
-                    ...channelInfo
-                }, { quoted: message });
+            try {
+                await sock.groupSettingUpdate(chatId, 'announcement');
+            } catch (updateError) {
+                await store.saveSettingVerified(chatId, 'timedGroupMute', previousMuteState || { until: null, clearedAt: Date.now() });
+                throw updateError;
             }
-        }
-        catch (error) {
-            console.error('Error muting/unmuting the group:', error);
+            await trackGroup(chatId);
+            await sock.sendMessage(chatId, {
+                text: durationInMinutes !== undefined
+                    ? `The group has been muted for ${durationInMinutes} minutes.`
+                    : 'The group has been muted.',
+                ...channelInfo
+            }, { quoted: message });
+        } catch (error) {
+            console.error('Error muting the group:', error);
             await sock.sendMessage(chatId, {
                 text: 'An error occurred while muting/unmuting the group. Please try again.',
                 ...channelInfo

@@ -32,7 +32,7 @@ async function loadSchedules() {
 
 async function saveSchedules(data) {
     if (HAS_DB) {
-        await store.saveSetting('global', 'schedules', data);
+        if (!await store.saveSettingVerified('global', 'schedules', data)) throw new Error('Scheduled-message queue could not be persisted.');
     } else {
         fs.writeFileSync(configPath, JSON.stringify(data, null, 2));
     }
@@ -90,27 +90,48 @@ const TRACKED_GROUPS_KEY = 'forgeGuardTrackedGroups';
 
 const TIMED_GROUP_MUTE_KEY = 'timedGroupMute';
 
-export function trackGroup(chatId) {
-    if (!chatId?.endsWith('@g.us')) return;
+export async function trackGroup(chatId) {
+    if (!chatId?.endsWith('@g.us')) return false;
     _trackedGroups.add(chatId);
-    store.getSetting('global', TRACKED_GROUPS_KEY).then(saved => {
+    try {
+        const saved = await store.getSetting('global', TRACKED_GROUPS_KEY);
         const groups = new Set(Array.isArray(saved) ? saved : []);
         groups.add(chatId);
-        return store.saveSetting('global', TRACKED_GROUPS_KEY, [...groups]);
-    }).catch(error => console.error('[SCHEDULE] Could not persist tracked group:', error.message));
+        const persisted = await store.saveSettingVerified('global', TRACKED_GROUPS_KEY, [...groups]);
+        if (!persisted) throw new Error('Tracked group list verification failed.');
+        return true;
+    } catch (error) {
+        console.error('[SCHEDULE] Could not persist tracked group:', error.message);
+        return false;
+    }
 }
 
 async function checkTimedGroupMute(sock, chatId) {
     const mute = await store.getSetting(chatId, TIMED_GROUP_MUTE_KEY);
     if (!mute?.until || Date.now() < mute.until) return;
+    // A manual/scheduled feature-group lock takes precedence over a timed
+    // group mute. Expiry must not accidentally reopen a group still locked
+    // by the daily lifecycle schedule.
+    const scheduledLockState = FEATURE_GROUPS.includes(chatId)
+        ? await store.getSetting(chatId, 'groupLockState')
+        : null;
+
     // Clear first to prevent repeated unlock attempts/messages on every tick.
-    await store.saveSetting(chatId, TIMED_GROUP_MUTE_KEY, { until: null, clearedAt: Date.now() });
+    const cleared = { until: null, clearedAt: Date.now() };
+    if (!await store.saveSettingVerified(chatId, TIMED_GROUP_MUTE_KEY, cleared)) {
+        console.error(`[SCHEDULE] Could not persist timed group mute expiry for ${chatId}`);
+        return;
+    }
+    if (scheduledLockState?.locked) {
+        console.log(`[SCHEDULE] Timed group mute expired; preserving active feature-group lock for ${chatId}`);
+        return;
+    }
     try {
         await sock.groupSettingUpdate(chatId, 'not_announcement');
         await sock.sendMessage(chatId, { text: '🔊 *Timed group mute expired.* Members can send messages again.' });
     } catch (error) {
         // Restore the due record so the next scheduler tick can retry.
-        await store.saveSetting(chatId, TIMED_GROUP_MUTE_KEY, mute);
+        await store.saveSettingVerified(chatId, TIMED_GROUP_MUTE_KEY, mute);
         console.error(`[SCHEDULE] Timed group unlock failed for ${chatId}:`, error.message);
     }
 }
@@ -165,6 +186,14 @@ export function startSchedulerEngine(sock) {
                 } catch (e) {
                     console.error(`[SCHEDULE] Timed group mute check failed for ${chatId}: ${e.stack || e.message}`);
                 }
+                try {
+                    const { cleanExpiredSoftMutes } = await import('./softmute.js');
+                    const removed = await cleanExpiredSoftMutes(chatId);
+                    if (removed) console.log(`[SCHEDULE] Cleaned ${removed} expired soft mute(s) in ${chatId}`);
+                } catch (e) {
+                    console.error(`[SCHEDULE] Soft-mute cleanup failed for ${chatId}: ${e.stack || e.message}`);
+                }
+
                 try {
                     const { checkGroupLockSchedule } = await import('./grouplock.js');
                     await checkGroupLockSchedule(activeSocket, chatId);

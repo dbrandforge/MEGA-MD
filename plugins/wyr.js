@@ -16,7 +16,7 @@ async function getSessions(chatId) {
   return (await store.getSetting(chatId, KEY)) || {};
 }
 async function saveSessions(chatId, sessions) {
-  await store.saveSetting(chatId, KEY, sessions);
+  if (!await store.saveSettingVerified(chatId, KEY, sessions)) throw new Error('WYR session state could not be persisted.');
 }
 
 function botMentioned(sock, message) {
@@ -41,7 +41,7 @@ async function chooseFreshOptions(chatId) {
   }
   const options = choose(available);
   used.push(questionKey(options));
-  await store.saveSetting(chatId, USED_KEY, used);
+  if (!await store.saveSettingVerified(chatId, USED_KEY, used)) throw new Error('WYR used-question history could not be persisted.');
   return options;
 }
 
@@ -70,11 +70,6 @@ export async function handleWyrContinuity(sock, chatId, message, senderId) {
   const session = sessions[senderId];
   if (!session) return false;
 
-  const access = await isGameAllowed(chatId, 'wyr');
-  if (!access.ok) {
-    await sock.sendMessage(chatId, { text: access.msg }, { quoted: message });
-    return true;
-  }
   if (session.expiresAt && session.expiresAt < Date.now()) {
     delete sessions[senderId];
     await saveSessions(chatId, sessions);
@@ -87,6 +82,14 @@ export async function handleWyrContinuity(sock, chatId, message, senderId) {
   const replied = !!(ctx.stanzaId && session.questionMessageId && ctx.stanzaId === session.questionMessageId);
   const tagged = botMentioned(sock, message);
   if (!replied && !tagged) return false;
+
+  // Only intercept a message that actually addresses the active WYR prompt.
+  // A manual lock must not swallow the player's unrelated group messages.
+  const access = await isGameAllowed(chatId, 'wyr');
+  if (!access.ok) {
+    await sock.sendMessage(chatId, { text: access.msg }, { quoted: message });
+    return true;
+  }
 
   const body = message.message?.conversation
     || message.message?.extendedTextMessage?.text
@@ -138,11 +141,14 @@ export default {
       return sock.sendMessage(chatId, { text: 'Would You Rather is available in the designated game groups.', ...channelInfo }, { quoted: message });
     }
 
-    const access = await isGameAllowed(chatId, 'wyr');
-    if (!access.ok) return sock.sendMessage(chatId, { text: access.msg, ...channelInfo }, { quoted: message });
-
     const sessions = await getSessions(chatId);
     const action = (args[0] || '').toLowerCase();
+    const access = await isGameAllowed(chatId, 'wyr');
+    // A lock prevents new/continued play, not a player's own end action or
+    // an admin's ability to clear sessions.
+    if (!access.ok && !['status', 'stop', 'end'].includes(action)) {
+      return sock.sendMessage(chatId, { text: access.msg, ...channelInfo }, { quoted: message });
+    }
 
     if (action === 'status') {
       const session = sessions[senderId];

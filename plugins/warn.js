@@ -3,7 +3,7 @@ import path from 'path';
 import store from '../lib/lightweight_store.js';
 import config from '../config.js';
 import isAdmin from '../lib/isAdmin.js';
-import { softMuteUser } from './softmute.js';
+import { softMuteUser, normalizeSoftMuteUserId } from './softmute.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -30,8 +30,12 @@ async function getWarnings() {
 }
 
 async function saveWarnings(warnings) {
-    if (HAS_DB) await store.saveSetting('global', 'warnings', warnings);
-    else fs.writeFileSync(warningsPath, JSON.stringify(warnings, null, 2));
+    if (HAS_DB) {
+        const saved = await store.saveSettingVerified('global', 'warnings', warnings);
+        if (!saved) throw new Error('Warning records could not be persisted.');
+    } else {
+        fs.writeFileSync(warningsPath, JSON.stringify(warnings, null, 2));
+    }
 }
 
 export default {
@@ -63,6 +67,9 @@ export default {
                     ...channelInfo
                 }, { quoted: message });
             }
+
+            // Keep warning counts stable when Baileys alternates between PN and LID mentions.
+            userToWarn = await normalizeSoftMuteUserId(sock, userToWarn);
 
             const rawCommandText = message.message?.conversation
                 || message.message?.extendedTextMessage?.text

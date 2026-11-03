@@ -18,18 +18,22 @@ const normalize = value => String(value || '').toLowerCase().replace(/[^a-z]/g, 
 const maskWord = (word, guessed) => [...word].map(char => guessed.includes(char) ? char : '_');
 const pick = values => values[Math.floor(Math.random() * values.length)];
 const getRecords = async chatId => (await store.getSetting(chatId, RECORD_KEY)) || {};
-const saveRecords = (chatId, records) => store.saveSetting(chatId, RECORD_KEY, records);
+const saveRecords = async (chatId, records) => {
+  if (!await store.saveSettingVerified(chatId, RECORD_KEY, records)) throw new Error('Hangman records could not be persisted.');
+};
 
 async function readGame(chatId) {
   const game = await store.getSetting(chatId, STATE_KEY);
   if (!game || game.status !== 'active') return null;
   if (game.expiresAt && game.expiresAt <= Date.now()) {
-    await store.saveSetting(chatId, STATE_KEY, {...game, status:'ended', endedAt:Date.now(), reason:'expired'});
+    if (!await store.saveSettingVerified(chatId, STATE_KEY, {...game, status:'ended', endedAt:Date.now(), reason:'expired'})) throw new Error('Expired Hangman state could not be persisted.');
     return null;
   }
   return game;
 }
-const writeGame = (chatId, game) => store.saveSetting(chatId, STATE_KEY, game);
+const writeGame = async (chatId, game) => {
+  if (!await store.saveSettingVerified(chatId, STATE_KEY, game)) throw new Error('Hangman game state could not be persisted.');
+};
 
 async function selectRoundWords(chatId) {
   let used = (await store.getSetting(chatId, USED_KEY)) || [];
@@ -47,7 +51,7 @@ async function selectRoundWords(chatId) {
     available = available.filter(entry => entry.word !== item.word);
     used.push(item.word);
   }
-  await store.saveSetting(chatId, USED_KEY, used);
+  if (!await store.saveSettingVerified(chatId, USED_KEY, used)) throw new Error('Hangman used-word history could not be persisted.');
   return selected;
 }
 
@@ -151,6 +155,10 @@ async function advanceOrEnd(sock, chatId, game, message, channelInfo, solvedBy) 
   }, { quoted: message });
 }
 
+export function canEndHangman(game, senderId, isAdmin = false) {
+  return Boolean(isAdmin || (senderId && Number(game?.attemptedBy?.[senderId]) > 0));
+}
+
 export async function handleHangmanGuess(sock, chatId, message, senderId, guessRaw, channelInfo = {}) {
   if (!chatId?.endsWith('@g.us') || message?.key?.fromMe) return false;
   if (!isFeatureGroup(chatId)) return false;
@@ -172,6 +180,7 @@ export async function handleHangmanGuess(sock, chatId, message, senderId, guessR
       await sock.sendMessage(chatId, { text: `Already tried *${guess.toUpperCase()}*.`, ...channelInfo }, { quoted: message });
       return true;
     }
+    game.attemptedBy[senderId] = (game.attemptedBy[senderId] || 0) + 1;
     if (game.word.includes(guess)) {
       game.guessed.push(guess);
       await writeGame(chatId, game);
@@ -203,6 +212,7 @@ export async function handleHangmanGuess(sock, chatId, message, senderId, guessR
     await sock.sendMessage(chatId, { text: 'That whole-word guess was already tried.', ...channelInfo }, { quoted: message });
     return true;
   }
+  game.attemptedBy[senderId] = (game.attemptedBy[senderId] || 0) + 1;
   game.wordGuesses.push(guess);
   if (guess === game.word) {
     game.guessed = [...new Set(game.word)];
@@ -238,9 +248,13 @@ export default {
     if (!isFeatureGroup(chatId)) {
       return sock.sendMessage(chatId, { text: 'Hangman is available in the designated game groups.', ...channelInfo }, { quoted: message });
     }
-    const access = await isGameAllowed(chatId, 'hangman');
-    if (!access.ok) return sock.sendMessage(chatId, { text: access.msg, ...channelInfo }, { quoted: message });
     const action = (args[0] || '').toLowerCase();
+    const access = await isGameAllowed(chatId, 'hangman');
+    // Admins and participating players must still be able to inspect/end a
+    // round after an admin locks the game or its scheduled day has passed.
+    if (!access.ok && !['stop', 'end', 'score', 'scores', 'record', 'status'].includes(action)) {
+      return sock.sendMessage(chatId, { text: access.msg, ...channelInfo }, { quoted: message });
+    }
     const current = await readGame(chatId);
     if (action === 'score' || action === 'scores' || action === 'record') {
       const records = await getRecords(chatId);
@@ -265,7 +279,12 @@ export default {
       if (!current) return sock.sendMessage(chatId, { text: 'There is no active Hangman round to stop.', ...channelInfo }, { quoted: message });
       let admin = !!(context.isSenderAdmin || context.senderIsOwnerOrSudo || context.isOwnerOrSudoCheck || message.key.fromMe);
       if (!admin) { try { admin = !!(await isAdmin(sock, chatId, senderId)).isSenderAdmin; } catch {} }
-      if (!admin) return sock.sendMessage(chatId, { text: 'Only an admin can stop an active Hangman round.', ...channelInfo }, { quoted: message });
+      if (!canEndHangman(current, senderId, admin)) {
+        return sock.sendMessage(chatId, {
+          text: 'You must attempt at least one Hangman guess before ending the round. Admins can end it at any time.',
+          ...channelInfo
+        }, { quoted: message });
+      }
       current.status = 'ended'; current.endedAt = Date.now(); current.reason = 'admin-stopped';
       await writeGame(chatId, current);
       return sock.sendMessage(chatId, { text: `🛑 Hangman stopped. The word was *${current.word}*.`, ...channelInfo }, { quoted: message });

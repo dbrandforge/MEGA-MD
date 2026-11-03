@@ -16,17 +16,58 @@ const MUTE_MS = Number(config.hotseatMuteHours || config.muteDurationHours || 10
 const NEXT_QUESTION_MS = Number(config.hotseatNextQuestionSeconds || 60) * 1000;
 const MIN_PLAYERS = 2;
 const MAX_PLAYERS = 4;
+const READER_TOUCH_INTERVAL_MS = 60 * 1000;
+const readerTouchCache = new Map();
 
 function shuffle(items) { return [...items].sort(() => Math.random() - 0.5); }
 function mention(jid) { return '@' + String(jid || '').split('@')[0]; }
+function stripDevice(jid) { return String(jid || '').replace(/:\d+(?=@)/, ''); }
+
+async function normalizeHotSeatJid(sock, jid) {
+    let normalized = stripDevice(jid);
+    if (!normalized) return '';
+    if (!normalized.includes('@')) normalized = `${normalized}@s.whatsapp.net`;
+    if (normalized.endsWith('@lid')) {
+        try {
+            const mappedPN = await sock?.signalRepository?.lidMapping?.getPNForLID?.(jid);
+            if (typeof mappedPN === 'string' && mappedPN.endsWith('@s.whatsapp.net')) {
+                return stripDevice(mappedPN);
+            }
+        } catch (error) {
+            console.warn('[HOTSEAT] Could not resolve participant LID:', error.message);
+        }
+    }
+    return normalized;
+}
+
+async function resolveSessionPlayerKey(sock, session, userId) {
+    const canonicalId = await normalizeHotSeatJid(sock, userId);
+    for (const playerId of session?.players || []) {
+        if (playerId === userId) return playerId;
+        if (await normalizeHotSeatJid(sock, playerId) === canonicalId) return playerId;
+    }
+    return userId;
+}
+
+export async function resolveHotSeatPlayerKey(sock, session, userId) {
+    return resolveSessionPlayerKey(sock, session, userId);
+}
+
+async function getNormalizedMentions(sock, message) {
+    const mentions = getMentions(message);
+    return Promise.all(mentions.map(jid => normalizeHotSeatJid(sock, jid)));
+}
 async function getSession(chatId) { return (await store.getSetting(chatId, HOTSEAT_KEY)) || null; }
-async function saveSession(chatId, session) { await store.saveSetting(chatId, HOTSEAT_KEY, session); }
-async function clearSession(chatId) { await store.saveSetting(chatId, HOTSEAT_KEY, null); }
+async function saveGameState(chatId, key, value) {
+    if (!await store.saveSettingVerified(chatId, key, value)) throw new Error(`Hot Seat state (${key}) could not be persisted.`);
+}
+async function saveSession(chatId, session) { await saveGameState(chatId, HOTSEAT_KEY, session); }
+async function clearSession(chatId) { await saveGameState(chatId, HOTSEAT_KEY, null); }
 async function getReaders(chatId) {
     const data = (await store.getSetting(chatId, READERS_KEY)) || {};
     const cutoff = Date.now() - READER_WINDOW_MS;
     const clean = Object.fromEntries(Object.entries(data).filter(([, ts]) => Number(ts) >= cutoff));
-    if (Object.keys(clean).length !== Object.keys(data).length) await store.saveSetting(chatId, READERS_KEY, clean);
+    if (Object.keys(clean).length !== Object.keys(data).length) await saveGameState(chatId, READERS_KEY, clean);
     return clean;
 }
 function getMentions(message) {
@@ -44,9 +85,48 @@ async function muteUser(sock, chatId, userId) {
         return true;
     } catch { return false; }
 }
+async function scheduleHotSeatTimeout(sock, chatId, player, questionId) {
+    const latest = await getSession(chatId);
+    const state = latest?.playerStates?.[player];
+    if (!latest || latest.status !== 'active' || !state || !state.waiting || state.questionId !== questionId) return false;
+    const timeoutToken = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    state.timeoutToken = timeoutToken;
+    await saveSession(chatId, latest);
+    setTimeout(async () => {
+        const current = await getSession(chatId);
+        if (!current || current.status !== 'active') return;
+        const currentState = current.playerStates?.[player];
+        if (!currentState || currentState.status !== 'active' || !currentState.waiting) return;
+        if (currentState.questionId !== questionId || currentState.timeoutToken !== timeoutToken) return;
+        const access = await isGameAllowed(chatId, 'hotseat');
+        // A manual/day lock pauses the response clock; unlock schedules a fresh window.
+        if (!access.ok) return;
+        currentState.status = 'out';
+        currentState.waiting = false;
+        currentState.timeoutToken = null;
+        await saveSession(chatId, current);
+        await muteUser(sock, chatId, player);
+        await sock.sendMessage(chatId, {
+            text: `⏰ ${mention(player)} did not answer in 5 minutes → 10-hour mute. Out of Hot Seat.`,
+            mentions: [player]
+        });
+        const remaining = current.players.filter(id => current.playerStates?.[id]?.status === 'active');
+        if (!remaining.length) {
+            await clearSession(chatId);
+            await sock.sendMessage(chatId, { text: '🛑 *Hot Seat ended* — no active players left.' });
+        }
+    }, ANSWER_TIMEOUT_MS);
+    return true;
+}
+
 async function sendPlayerQuestion(sock, chatId, player) {
     const session = await getSession(chatId);
     if (!session || session.status !== 'active') return;
+    const access = await isGameAllowed(chatId, 'hotseat');
+    if (!access.ok) {
+        await sock.sendMessage(chatId, { text: access.msg });
+        return;
+    }
     if (Date.now() - session.startedAt >= SESSION_MS) {
         await clearSession(chatId);
         await sock.sendMessage(chatId, { text: '🛑 *Hot Seat ended* — 2-hour limit reached.', mentions: session.players });
@@ -56,7 +136,7 @@ async function sendPlayerQuestion(sock, chatId, player) {
     if (!state || state.status !== 'active' || state.waiting) return;
 
     let gender = null;
-    try { gender = await getUserGender(player); } catch {}
+    try { gender = await getUserGender(await normalizeHotSeatJid(sock, player)); } catch {}
     // If no gender set, prompt once and skip question until they register
     if (!gender) {
         await sock.sendMessage(chatId, {
@@ -93,26 +173,8 @@ async function sendPlayerQuestion(sock, chatId, player) {
     state.questionMessageId = sentQuestion?.key?.id || null;
     await saveSession(chatId, session);
 
-    setTimeout(async () => {
-        const latest = await getSession(chatId);
-        if (!latest || latest.status !== 'active') return;
-        const st = latest.playerStates?.[player];
-        if (!st || st.status !== 'active' || !st.waiting) return;
-        if (st.questionId !== questionId) return;
-        st.status = 'out';
-        st.waiting = false;
-        await saveSession(chatId, latest);
-        await muteUser(sock, chatId, player);
-        await sock.sendMessage(chatId, {
-            text: `⏰ ${mention(player)} did not answer in 5 minutes → 10-hour mute. Out of Hot Seat.`,
-            mentions: [player]
-        });
-        const remaining = latest.players.filter(id => latest.playerStates?.[id]?.status === 'active');
-        if (!remaining.length) {
-            await clearSession(chatId);
-            await sock.sendMessage(chatId, { text: '🛑 *Hot Seat ended* — no active players left.' });
-        }
-    }, ANSWER_TIMEOUT_MS);
+    await scheduleHotSeatTimeout(sock, chatId, player, questionId);
+    return true;
 }
 
 
@@ -120,17 +182,41 @@ export async function resumeHotSeatPlayer(sock, chatId, player) {
     if (!isFeatureGroup(chatId) || !player) return false;
     const session = await getSession(chatId);
     if (!session || session.status !== 'active') return false;
-    const state = session.playerStates?.[player];
+    const playerKey = await resolveSessionPlayerKey(sock, session, player);
+    const state = session.playerStates?.[playerKey];
     if (!state || state.status !== 'active' || state.waiting) return false;
-    await sendPlayerQuestion(sock, chatId, player);
+    await sendPlayerQuestion(sock, chatId, playerKey);
     return true;
+}
+
+export async function resumeHotSeatSession(sock, chatId) {
+    if (!isFeatureGroup(chatId)) return 0;
+    const session = await getSession(chatId);
+    if (!session || session.status !== 'active') return 0;
+    const access = await isGameAllowed(chatId, 'hotseat');
+    if (!access.ok) {
+        await sock.sendMessage(chatId, { text: access.msg });
+        return 0;
+    }
+    let resumed = 0;
+    for (const player of session.players || []) {
+        const state = session.playerStates?.[player];
+        if (!state || state.status !== 'active') continue;
+        if (state.waiting && state.questionId) {
+            if (await scheduleHotSeatTimeout(sock, chatId, player, state.questionId)) resumed++;
+            continue;
+        }
+        if (await sendPlayerQuestion(sock, chatId, player)) resumed++;
+    }
+    return resumed;
 }
 
 export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
     if (!isFeatureGroup(chatId) || message?.key?.fromMe) return false;
     const session = await getSession(chatId);
     if (!session || session.status !== 'active') return false;
-    const state = session.playerStates?.[senderId];
+    const playerKey = await resolveSessionPlayerKey(sock, session, senderId);
+    const state = session.playerStates?.[playerKey];
     if (!state || state.status !== 'active' || !state.waiting) return false;
     if (!message?.message || message.message.protocolMessage) return false;
 
@@ -149,7 +235,14 @@ export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
     const repliedToCurrentQuestion = !!(ctx.stanzaId && state.questionMessageId && ctx.stanzaId === state.questionMessageId);
     if (!taggedBot && !repliedToCurrentQuestion) return false;
 
+    const access = await isGameAllowed(chatId, 'hotseat');
+    if (!access.ok) {
+        await sock.sendMessage(chatId, { text: access.msg }, { quoted: message });
+        return true;
+    }
+
     state.waiting = false;
+    state.timeoutToken = null;
     state.lastAnsweredAt = Date.now();
     state.questionsAnswered = (state.questionsAnswered || 0) + 1;
     await saveSession(chatId, session);
@@ -163,11 +256,11 @@ export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
     setTimeout(async () => {
         const latest = await getSession(chatId);
         if (!latest || latest.status !== 'active') return;
-        const st = latest.playerStates?.[senderId];
+        const st = latest.playerStates?.[playerKey];
         if (!st || st.status !== 'active') return;
         if (st.lastAnsweredAt !== answeredAt) return;
         if (st.waiting) return;
-        await sendPlayerQuestion(sock, chatId, senderId);
+        await sendPlayerQuestion(sock, chatId, playerKey);
     }, NEXT_QUESTION_MS);
     return true;
 }
@@ -198,8 +291,16 @@ async function beginGame(sock, chatId, session) {
 async function eligibleMembers(sock, chatId) {
     try {
         const meta = await sock.groupMetadata(chatId);
-        const admins = new Set((meta.participants || []).filter(p => p.admin).map(p => p.id));
-        return (meta.participants || []).map(p => p.id).filter(id => !admins.has(id) && !id.includes('status'));
+        const members = [];
+        for (const participant of meta.participants || []) {
+            if (participant.admin) continue;
+            const candidate = participant.phoneNumber || participant.id || participant.lid;
+            const normalized = await normalizeHotSeatJid(sock, candidate);
+            if (normalized && !normalized.includes('status') && !members.includes(normalized)) {
+                members.push(normalized);
+            }
+        }
+        return members;
     } catch { return []; }
 }
 
@@ -211,12 +312,20 @@ async function sendList(sock, chatId, session) {
     });
 }
 export async function trackHotSeatReader(chatId, userId) {
-    if (!isFeatureGroup(chatId) || !userId) return;
+    if (!isFeatureGroup(chatId) || !userId) return false;
+    const cacheKey = `${chatId}:${userId}`;
+    const now = Date.now();
+    if (now - (readerTouchCache.get(cacheKey) || 0) < READER_TOUCH_INTERVAL_MS) return false;
+    readerTouchCache.set(cacheKey, now);
     try {
         const readers = await getReaders(chatId);
-        readers[userId] = Date.now();
-        await store.saveSetting(chatId, READERS_KEY, readers);
-    } catch {}
+        readers[userId] = now;
+        await saveGameState(chatId, READERS_KEY, readers);
+        return true;
+    } catch {
+        readerTouchCache.delete(cacheKey);
+        return false;
+    }
 }
 
 export default {
@@ -240,6 +349,11 @@ export default {
         }
         const sub = (args[0] || '').toLowerCase();
         let session = await getSession(chatId);
+        if (sub === 'resume') {
+            if (!session || session.status !== 'active') return reply('No active Hot Seat session to resume.');
+            const resumed = await resumeHotSeatSession(sock, chatId);
+            return reply(resumed ? `▶️ Resumed ${resumed} Hot Seat player(s).` : 'No paused Hot Seat players are waiting to resume.');
+        }
         if (sub === 'end' || context.command === 'endhotseat') {
             await clearSession(chatId);
             return reply('🛑 Hot Seat ended by admin.');
@@ -254,13 +368,13 @@ export default {
                 await beginGame(sock, chatId, session);
                 return reply('The adjustment window has closed. Hot Seat is starting.');
             }
-            const tagged = getMentions(message);
+            const tagged = await getNormalizedMentions(sock, message);
             if (!tagged.length) return reply('Tag 1 to 4 people in the same message: *.hotseat add @user1 @user2 @user3 @user4*');
             if (tagged.length > MAX_PLAYERS || !unique(tagged)) return reply(`Tag no more than ${MAX_PLAYERS} different people per command.`);
             const members = await eligibleMembers(sock, chatId);
             const invalid = tagged.filter(id => !members.includes(id));
             if (invalid.length) return reply('Every participant must be a non-admin member of this group. Check the tagged accounts and try again.');
-            const basePlayers = session.manualSelection ? session.players : [];
+            const basePlayers = session.manualSelection ? await Promise.all(session.players.map(id => normalizeHotSeatJid(sock, id))) : [];
             const additions = tagged.filter(id => !basePlayers.includes(id));
             if (!session.manualSelection && additions.length < MIN_PLAYERS) return reply(`Choose at least ${MIN_PLAYERS} people when setting the manual Hot Seat list.`);
             if (basePlayers.length + additions.length > MAX_PLAYERS) return reply(`Hot Seat supports a maximum of ${MAX_PLAYERS} participants. Current list:\n${formatPlayers(basePlayers)}`);
@@ -276,9 +390,10 @@ export default {
                 await beginGame(sock, chatId, session);
                 return reply('The adjustment window has closed. Hot Seat is starting.');
             }
-            const tagged = getMentions(message);
+            const tagged = await getNormalizedMentions(sock, message);
             if (tagged.length !== 2) return reply('To replace one participant, tag both the current participant and replacement: *.hotseat change @current @replacement*');
             const [current, replacement] = tagged;
+            session.players = await Promise.all(session.players.map(id => normalizeHotSeatJid(sock, id)));
             const index = session.players.indexOf(current);
             if (index === -1) return reply('The first tagged person is not in the current Hot Seat selection. Check *.hotseat list*.');
             if (session.players.includes(replacement)) return reply('The replacement is already on the Hot Seat list.');
@@ -294,8 +409,9 @@ export default {
                 await beginGame(sock, chatId, session);
                 return reply('The adjustment window has closed. Hot Seat is starting.');
             }
-            const order = getMentions(message);
-            if (order.length !== session.players.length || !unique(order) || !session.players.every(id => order.includes(id))) {
+            const order = await getNormalizedMentions(sock, message);
+            const currentPlayers = await Promise.all(session.players.map(id => normalizeHotSeatJid(sock, id)));
+            if (order.length !== currentPlayers.length || !unique(order) || !currentPlayers.every(id => order.includes(id))) {
                 return reply(`Tag every selected participant exactly once, in their intended order. Current list:\n${formatPlayers(session.players)}`);
             }
             session.players = order;

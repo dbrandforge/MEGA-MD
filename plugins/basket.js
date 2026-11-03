@@ -19,7 +19,7 @@ async function getUsed(chatId) {
     return { guys: saved.guys || [], ladies: saved.ladies || [] };
 }
 async function saveUsed(chatId, used) {
-    await store.saveSetting(chatId, USED_KEY, used);
+    if (!await store.saveSettingVerified(chatId, USED_KEY, used)) throw new Error('Basket history could not be persisted.');
 }
 function poolFor(gender) {
     const source = gender === 'lady' ? ladiesBasket : guysBasket;
@@ -69,7 +69,7 @@ export async function handleBasketContinuity(sock, chatId, message, senderId) {
         .filter(item => !used[key].includes(item.number));
     if (!available.length) {
         delete sessions[senderId];
-        await store.saveSetting(chatId, SESSION_KEY, sessions);
+        if (!await store.saveSettingVerified(chatId, SESSION_KEY, sessions)) throw new Error('Basket session state could not be persisted.');
         await sock.sendMessage(chatId, {
             text: `All ${gender} Basket dares have been used. Ask an admin to run *.basket reset*.`
         }, { quoted: message });
@@ -85,7 +85,7 @@ export async function handleBasketContinuity(sock, chatId, message, senderId) {
         mentions: [senderId]
     }, { quoted: message });
     sessions[senderId] = { questionMessageId: sent?.key?.id || null, updatedAt: Date.now(), attempts: session.attempts || 0, lastAttemptAt: session.lastAttemptAt || Date.now() };
-    await store.saveSetting(chatId, SESSION_KEY, sessions);
+    if (!await store.saveSettingVerified(chatId, SESSION_KEY, sessions)) throw new Error('Basket session state could not be persisted.');
     return true;
 }
 
@@ -154,7 +154,7 @@ export default {
             }, { quoted: message });
             const sessions = (await store.getSetting(chatId, SESSION_KEY)) || {};
             sessions[senderId] = { questionMessageId: sent?.key?.id || null, updatedAt: Date.now(), attempts: (sessions[senderId]?.attempts || 0), lastAttemptAt: sessions[senderId]?.lastAttemptAt || null };
-            await store.saveSetting(chatId, SESSION_KEY, sessions);
+            if (!await store.saveSettingVerified(chatId, SESSION_KEY, sessions)) throw new Error('Basket session state could not be persisted.');
             return;
         } catch (error) {
             console.error("Devil's Basket error:", error);

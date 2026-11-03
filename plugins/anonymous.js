@@ -20,7 +20,7 @@ async function getState(chatId) {
     return (await store.getSetting(chatId, ANON_KEY)) || { enabled: false };
 }
 async function saveState(chatId, state) {
-    await store.saveSetting(chatId, ANON_KEY, state);
+    return store.saveSettingVerified(chatId, ANON_KEY, state);
 }
 
 function getPublicBaseUrl() {
@@ -59,12 +59,23 @@ export default {
 
         const allowed = await isGameAllowed(chatId, 'anonymous');
 
+        if (action === 'on' && !allowed.ok) {
+            return sock.sendMessage(chatId, {
+                text: allowed.msg || 'Anonymous Night is day-locked. Ask an admin to set a temporary bypass first.',
+                ...channelInfo
+            }, { quoted: message });
+        }
+
         if (!action || action === 'status' || action === 'link') {
             const state = await getState(chatId);
             const link = getAnonymousLink(chatId);
+            const effectivelyOpen = state.enabled && allowed.ok;
+            const scheduleNote = state.enabled && !allowed.ok
+                ? `\n\nStored as enabled, but submissions are blocked: ${allowed.msg || 'scheduled window closed'}`
+                : '';
             return sock.sendMessage(chatId, {
-                text: `🕵️ *Anonymous Night*\n\nStatus: ${state.enabled ? '🟢 OPEN' : '🔴 CLOSED'}\n\n` +
-                    (state.enabled
+                text: `🕵️ *Anonymous Night*\n\nStatus: ${effectivelyOpen ? '🟢 OPEN' : '🔴 CLOSED'}${scheduleNote}\n\n` +
+                    (effectivelyOpen
                         ? `Submit anonymously:\n${link}\n\nPosted here without your name.`
                         : `Admin: *.anonymous on* (Saturday or with bypass).`),
                 ...channelInfo
@@ -81,11 +92,12 @@ export default {
         if (action === 'on') {
             const state = await getState(chatId);
             state.enabled = true;
-            await saveState(chatId, state);
+            if (!await saveState(chatId, state)) {
+                return sock.sendMessage(chatId, { text: '❌ Could not save Anonymous Night status. It was not opened.', ...channelInfo }, { quoted: message });
+            }
             const link = getAnonymousLink(chatId);
             return sock.sendMessage(chatId, {
-                text: `🟢 *Anonymous Night is OPEN*\n\nSubmit here:\n${link}\n\nClose: *.anonymous off*` +
-                    (!allowed.ok ? `\n\n_(Opened by admin off scheduled day)_` : ''),
+                text: `🟢 *Anonymous Night is OPEN*\n\nSubmit here:\n${link}\n\nClose: *.anonymous off*` ,
                 ...channelInfo
             }, { quoted: message });
         }
@@ -93,7 +105,9 @@ export default {
         if (action === 'off') {
             const state = await getState(chatId);
             state.enabled = false;
-            await saveState(chatId, state);
+            if (!await saveState(chatId, state)) {
+                return sock.sendMessage(chatId, { text: '❌ Could not save Anonymous Night status. It may still be open; please try again.', ...channelInfo }, { quoted: message });
+            }
             return sock.sendMessage(chatId, {
                 text: '🔴 *Anonymous Night is CLOSED.*',
                 ...channelInfo

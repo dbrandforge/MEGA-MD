@@ -20,7 +20,7 @@ async function getBannedUsers() {
 }
 async function saveBannedUsers(bannedUsers) {
     if (HAS_DB) {
-        await store.saveSetting('global', 'banned', bannedUsers);
+        if (!await store.saveSettingVerified('global', 'banned', bannedUsers)) throw new Error('Ban list could not be persisted.');
     }
     else {
         if (!fs.existsSync('./data')) {

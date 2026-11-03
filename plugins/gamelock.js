@@ -1,4 +1,5 @@
 import { getManualLockableGames, getManualGameLocks, setManualGameLock } from './daylock.js';
+import { resumeHotSeatSession } from './hotseat.js';
 
 export default {
   command: 'gamelock',
@@ -19,7 +20,7 @@ export default {
         `${locks[key]?.locked ? '🔒 LOCKED' : '🟢 OPEN'} — ${name} (\`.gamelock ${key} ${locks[key]?.locked ? 'off' : 'on'}\`)`
       );
       return sock.sendMessage(chatId, {
-        text: `🎮 *MANUAL GAME ACCESS*\n\n${lines.join('\n')}\n\nScheduled games keep their existing day restrictions. These controls apply only to games that are otherwise open every day.`,
+        text: `🎮 *MANUAL GAME ACCESS*\n\n${lines.join('\n')}\n\nScheduled games keep their existing day restrictions. When a day-locked game is unlocked here, its normal scheduled day restriction still applies.`,
         ...channelInfo
       }, { quoted: message });
     }
@@ -34,7 +35,24 @@ export default {
     }
 
     const locked = state === 'on' || state === 'lock';
-    await setManualGameLock(chatId, game, locked);
+    try {
+      await setManualGameLock(chatId, game, locked);
+    } catch (error) {
+      console.error('[GAMELOCK] Could not persist manual game lock:', error.message);
+      return sock.sendMessage(chatId, {
+        text: '❌ The game-lock change could not be saved. No success was reported; please try again.',
+        ...channelInfo
+      }, { quoted: message });
+    }
+    if (!locked && game === 'hotseat') {
+      try {
+        const resumed = await resumeHotSeatSession(sock, chatId);
+        if (resumed) console.log(`[GAMELOCK] Resumed ${resumed} paused Hot Seat player(s) in ${chatId}`);
+      } catch (error) {
+        console.error('[GAMELOCK] Could not resume Hot Seat after unlock:', error.message);
+      }
+    }
+
     return sock.sendMessage(chatId, {
       text: locked
         ? `🔒 *${games[game]} locked.* Members cannot start or continue it until an admin unlocks it.`

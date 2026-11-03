@@ -1,5 +1,7 @@
 import { softUnmuteUser } from './softmute.js';
 import store from '../lib/lightweight_store.js';
+import { isFeatureGroup } from '../lib/featureGroups.js';
+import { setManualGroupUnlockOverride } from './grouplock.js';
 
 function mention(jid) {
     return `@${(jid || '').split('@')[0]}`;
@@ -24,10 +26,25 @@ export default {
         }
 
         if (!user) {
-            return sock.sendMessage(chatId, {
-                text: 'Tag or reply to the user to unmute.\nExample: *.unmute @user*',
-                ...channelInfo
-            }, { quoted: message });
+            try {
+                await sock.groupSettingUpdate(chatId, 'not_announcement');
+                if (!await store.saveSettingVerified(chatId, 'timedGroupMute', { until: null, clearedAt: Date.now() })) {
+                    throw new Error('Timed group mute state could not be cleared.');
+                }
+                // Prevent the feature-group night scheduler from immediately reversing
+                // a deliberate admin unlock performed with the inverse of .mute.
+                if (isFeatureGroup(chatId)) await setManualGroupUnlockOverride(chatId);
+                return sock.sendMessage(chatId, {
+                    text: '🔊 The group has been unlocked. Members can send messages again.',
+                    ...channelInfo
+                }, { quoted: message });
+            } catch (error) {
+                console.error('[UNMUTE] Could not unlock group:', error.message);
+                return sock.sendMessage(chatId, {
+                    text: '❌ Could not unlock the group. Check the bot admin permissions and try again.',
+                    ...channelInfo
+                }, { quoted: message });
+            }
         }
 
         await softUnmuteUser(chatId, user);
