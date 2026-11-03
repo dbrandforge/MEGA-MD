@@ -159,6 +159,7 @@ async function sendPlayerQuestion(sock, chatId, player) {
             await sock.sendMessage(chatId, { text: '🛑 *Hot Seat ended* — no active players left.' });
         }
     }, ANSWER_TIMEOUT_MS);
+    return true;
 }
 
 
@@ -177,12 +178,16 @@ export async function resumeHotSeatSession(sock, chatId) {
     if (!isFeatureGroup(chatId)) return 0;
     const session = await getSession(chatId);
     if (!session || session.status !== 'active') return 0;
+    const access = await isGameAllowed(chatId, 'hotseat');
+    if (!access.ok) {
+        await sock.sendMessage(chatId, { text: access.msg });
+        return 0;
+    }
     let resumed = 0;
     for (const player of session.players || []) {
         const state = session.playerStates?.[player];
         if (!state || state.status !== 'active' || state.waiting) continue;
-        await sendPlayerQuestion(sock, chatId, player);
-        resumed++;
+        if (await sendPlayerQuestion(sock, chatId, player)) resumed++;
     }
     return resumed;
 }
