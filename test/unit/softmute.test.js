@@ -18,7 +18,8 @@ import store from '../../lib/lightweight_store.js';
 import {
     cleanExpiredSoftMutes,
     isSoftMuted,
-    softMuteUser
+    softMuteUser,
+    softUnmuteUser
 } from '../../plugins/softmute.js';
 
 const GROUP = '120363000000000001@g.us';
@@ -51,6 +52,27 @@ describe('soft mute expiry and scheduler registration', () => {
         });
 
         await expect(isSoftMuted(GROUP, '2348000000000@s.whatsapp.net')).resolves.toBe(false);
+        expect(await store.getSetting(GROUP, 'softMutes')).toEqual({});
+    });
+
+    it('matches LID mentions to PN-resolved messages and removes both aliases on unmute', async () => {
+        const lid = '123456789@lid';
+        const pn = '2348000000000@s.whatsapp.net';
+        const sock = {
+            signalRepository: {
+                lidMapping: {
+                    getPNForLID: vi.fn(async () => pn)
+                }
+            }
+        };
+
+        await softMuteUser(sock, GROUP, lid, 10);
+        expect(await isSoftMuted(GROUP, pn)).toBe(true);
+        const saved = await store.getSetting(GROUP, 'softMutes');
+        expect(saved[lid]).toBeTruthy();
+        expect(saved[pn]).toBeTruthy();
+
+        await softUnmuteUser(GROUP, lid);
         expect(await store.getSetting(GROUP, 'softMutes')).toEqual({});
     });
 
