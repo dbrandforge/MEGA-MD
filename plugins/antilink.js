@@ -27,12 +27,11 @@ async function getAntilink(chatId, _type) {
 }
 async function removeAntilink(chatId, _type) {
     try {
-        await store.saveSetting(chatId, 'antilink', {
+        return await store.saveSettingVerified(chatId, 'antilink', {
             enabled: false,
             action: null,
             type: null
         });
-        return true;
     }
     catch (error) {
         console.error('Error removing antilink:', error);
