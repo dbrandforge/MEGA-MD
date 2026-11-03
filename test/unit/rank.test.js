@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-const getAllMessageCounts = vi.fn();
-const getUserGender = vi.fn(async () => 'guy');
+const { getAllMessageCounts, getUserGender } = vi.hoisted(() => ({
+    getAllMessageCounts: vi.fn(),
+    getUserGender: vi.fn(async () => 'guy')
+}));
 
 vi.mock('../../lib/lightweight_store.js', () => ({
     default: { getAllMessageCounts: (...args) => getAllMessageCounts(...args) }
