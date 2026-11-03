@@ -16,6 +16,8 @@ const MUTE_MS = Number(config.hotseatMuteHours || config.muteDurationHours || 10
 const NEXT_QUESTION_MS = Number(config.hotseatNextQuestionSeconds || 60) * 1000;
 const MIN_PLAYERS = 2;
 const MAX_PLAYERS = 4;
+const READER_TOUCH_INTERVAL_MS = 60 * 1000;
+const readerTouchCache = new Map();
 
 function shuffle(items) { return [...items].sort(() => Math.random() - 0.5); }
 function mention(jid) { return '@' + String(jid || '').split('@')[0]; }
@@ -211,12 +213,20 @@ async function sendList(sock, chatId, session) {
     });
 }
 export async function trackHotSeatReader(chatId, userId) {
-    if (!isFeatureGroup(chatId) || !userId) return;
+    if (!isFeatureGroup(chatId) || !userId) return false;
+    const cacheKey = `${chatId}:${userId}`;
+    const now = Date.now();
+    if (now - (readerTouchCache.get(cacheKey) || 0) < READER_TOUCH_INTERVAL_MS) return false;
+    readerTouchCache.set(cacheKey, now);
     try {
         const readers = await getReaders(chatId);
-        readers[userId] = Date.now();
+        readers[userId] = now;
         await store.saveSetting(chatId, READERS_KEY, readers);
-    } catch {}
+        return true;
+    } catch {
+        readerTouchCache.delete(cacheKey);
+        return false;
+    }
 }
 
 export default {
