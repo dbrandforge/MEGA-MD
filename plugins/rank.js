@@ -74,3 +74,14 @@ export default {
         }
     }
 };
+
+/** Retained for weekly activity housekeeping; .rank itself is all-time. */
+export function getLagosWeekKey(date = new Date()) {
+    const local = new Date(date.getTime() + 60 * 60 * 1000);
+    const day = local.getUTCDay() || 7;
+    local.setUTCDate(local.getUTCDate() + 4 - day);
+    const year = local.getUTCFullYear();
+    const yearStart = new Date(Date.UTC(year, 0, 1));
+    const week = Math.ceil((((local - yearStart) / 86400000) + 1) / 7);
+    return `${year}-W${String(week).padStart(2, '0')}`;
+}
