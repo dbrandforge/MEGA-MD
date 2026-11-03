@@ -63,6 +63,33 @@ describe('CommandHandler', () => {
         expect(handler.getCommand('.primarycmd', ['.'])?.command).toBe('primarycmd');
     });
 
+    it('prevents a prefixless alias from shadowing a real command name', () => {
+        const prefixless = {
+            command: 'prefixprobe', aliases: ['realprobe'], isPrefixless: true,
+            category: 'general', async handler() {}
+        };
+        handler.registerCommand(prefixless);
+        handler.registerPrefixlessCommand(handler.commands.get('prefixprobe'));
+        handler.registerCommand({
+            command: 'realprobe', aliases: [], category: 'general', async handler() {}
+        });
+        expect(handler.prefixlessCommands.has('realprobe')).toBe(false);
+        expect(handler.getCommand('realprobe', ['.'])).toBeNull();
+        expect(handler.getCommand('.realprobe', ['.'])?.command).toBe('realprobe');
+    });
+
+    it('does not add a prefixless alias when its command name was registered first', () => {
+        handler.registerCommand({
+            command: 'realfirstprobe', aliases: [], category: 'general', async handler() {}
+        });
+        handler.registerCommand({
+            command: 'prefixsecondprobe', aliases: ['realfirstprobe'], isPrefixless: true,
+            category: 'general', async handler() {}
+        });
+        handler.registerPrefixlessCommand(handler.commands.get('prefixsecondprobe'));
+        expect(handler.prefixlessCommands.has('realfirstprobe')).toBe(false);
+    });
+
     it('unregisterCommand removes command, aliases, category and stats', () => {
         handler.registerCommand({
             command: 'removeprobe', aliases: ['rp'], category: 'temporary',
