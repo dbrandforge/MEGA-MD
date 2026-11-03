@@ -70,6 +70,7 @@ function renderBoard(game, intro = '') {
     '',
     `💡 *Hint:* ${game.hint}`,
   ];
+  if (game.soundAlikeHint) lines.push(`🔤 *Sounds like:* ${game.soundAlikeHint}`);
   if (revealed >= 1 && game.synonymHint) lines.push(`💡 *Synonym hint:* ${game.synonymHint}`);
   if (game.extraHints?.length) {
     for (let i = 0; i < Math.min(revealed, game.extraHints.length); i++) {
@@ -139,6 +140,7 @@ async function advanceOrEnd(sock, chatId, game, message, channelInfo, solvedBy) 
   game.category = next.category;
   game.hint = next.hint;
   game.synonymHint = next.synonymHint;
+  game.soundAlikeHint = next.soundAlikeHint;
   game.extraHints = next.extraHints || [];
   game.hintsRevealed = 0;
   game.guessed = [];
@@ -302,7 +304,7 @@ export default {
     const first = roundWords[0];
     const game = {
       status: 'active', roundWords, questionNumber: 1, word: first.word, category: first.category,
-      hint: first.hint, synonymHint: first.synonymHint, extraHints: first.extraHints || [],
+      hint: first.hint, synonymHint: first.synonymHint, soundAlikeHint: first.soundAlikeHint, extraHints: first.extraHints || [],
       hintsRevealed: 0, difficulty: 'mature', guessed: [], wrong: [], wrongWordGuesses: 0,
       wordGuesses: [], scores: {}, attemptedBy: {}, startedAt: Date.now(), lastMoveAt: Date.now(),
       expiresAt: Date.now() + 30 * 60 * 1000
