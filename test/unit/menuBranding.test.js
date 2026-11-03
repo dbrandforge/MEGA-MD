@@ -43,7 +43,7 @@ describe('Forge Guard menu branding', () => {
             chatId, senderId: '2348000000000@s.whatsapp.net', channelInfo: {}
         });
         const publicText = sent.at(-1)?.content?.text || '';
-        const publicCount = Number(publicText.match(/Commands:\* (\\d+)/)?.[1] || 0);
+        const publicCount = Number(publicText.match(/Commands:\* (\d+)/)?.[1] || 0);
         expect(publicCount).toBeGreaterThan(100);
 
         const ownerMessage = { key: { remoteJid: chatId, fromMe: true } };
@@ -51,7 +51,7 @@ describe('Forge Guard menu branding', () => {
             chatId, senderId: '2348000000000@s.whatsapp.net', channelInfo: {}
         });
         const ownerText = sent.at(-1)?.content?.text || '';
-        const ownerCount = Number(ownerText.match(/Commands:\* (\\d+)/)?.[1] || 0);
+        const ownerCount = Number(ownerText.match(/Commands:\* (\d+)/)?.[1] || 0);
         expect(ownerCount).toBeGreaterThan(200);
         expect(sent.every(item => !item.content.image)).toBe(true);
     });
