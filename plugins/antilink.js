@@ -171,12 +171,15 @@ export default {
                     text: result ? '✅ *Antilink enabled successfully!*\n\nDefault action: Delete messages\n\n*Exempt:* Admins, Owner, Sudo users' : '❌ *Failed to enable antilink*'
                 }, { quoted: message });
                 break;
-            case 'off':
-                await removeAntilink(chatId, 'on');
+            case 'off': {
+                const offResult = await removeAntilink(chatId, 'on');
                 await sock.sendMessage(chatId, {
-                    text: '❌ *Antilink disabled*\n\nUsers can now send links freely.'
+                    text: offResult
+                        ? '❌ *Antilink disabled*\n\nUsers can now send links freely.'
+                        : '⚠️ *Could not disable antilink.* The setting was not saved; please try again.'
                 }, { quoted: message });
                 break;
+            }
             case 'set':
                 if (args.length < 2) {
                     await sock.sendMessage(chatId, {
