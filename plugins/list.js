@@ -51,7 +51,17 @@ function getVisibleCategories(ownerView) {
     return [...categories.entries()].sort(([a], [b]) => a.localeCompare(b));
 }
 
-let menuArtworkPromise;\nasync function getMenuArtwork() {\n    if (!menuArtworkPromise) {\n        menuArtworkPromise = sharp(readFileSync(new URL('../assets/forge-guard-menu.svg', import.meta.url)))\n            .webp({ quality: 88 })\n            .toBuffer();\n    }\n    return menuArtworkPromise;\n}\n\nfunction buildMenu(ownerView) {
+let menuArtworkPromise;
+async function getMenuArtwork() {
+    if (!menuArtworkPromise) {
+        menuArtworkPromise = sharp(readFileSync(new URL('../assets/forge-guard-menu.svg', import.meta.url)))
+            .webp({ quality: 88 })
+            .toBuffer();
+    }
+    return menuArtworkPromise;
+}
+
+function buildMenu(ownerView) {
     const prefix = config.prefixes?.[0] || '.';
     const categories = getVisibleCategories(ownerView);
     const lines = [
@@ -69,7 +79,8 @@ let menuArtworkPromise;\nasync function getMenuArtwork() {\n    if (!menuArtwork
         lines.push('┃');
     }
     lines.push('╰━━━━━━━━━━━━━━━━━━━━⬣');
-    return lines.join('\n');
+    return lines.join('
+');
 }
 
 export default {
@@ -116,10 +127,23 @@ export default {
                 `┃ 🏷️ *Category:* ${plugin.category || 'misc'}`,
                 `┃ 🔖 *Aliases:* ${plugin.aliases?.length ? plugin.aliases.map(a => prefix + a).join(', ') : 'None'}`,
                 '╰━━━━━━━━━━━━━━⬣'
-            ].join('\n');
+            ].join('
+');
             return sock.sendMessage(chatId, { text: detail, ...channelInfo }, { quoted: message });
         }
 
-        const menuText = buildMenu(ownerView);\n        // Artwork is a separate header message so the complete dynamic command list is never truncated by WhatsApp caption limits.\n        try {\n            const artwork = await getMenuArtwork();\n            await sock.sendMessage(chatId, {\n                image: artwork,\n                caption: ownerView ? '🛡️ *FORGE GUARD • OWNER COMMAND INDEX*' : '🛡️ *FORGE GUARD • COMMAND INDEX*',\n                ...channelInfo\n            }, { quoted: message });\n        } catch (artError) {\n            console.warn('[Menu] Forge Guard artwork unavailable; sending text menu:', artError.message);\n        }\n        return sock.sendMessage(chatId, { text: menuText, ...channelInfo }, { quoted: message });
+        const menuText = buildMenu(ownerView);
+        // Artwork is a separate header message so the complete dynamic command list is never truncated by WhatsApp caption limits.
+        try {
+            const artwork = await getMenuArtwork();
+            await sock.sendMessage(chatId, {
+                image: artwork,
+                caption: ownerView ? '🛡️ *FORGE GUARD • OWNER COMMAND INDEX*' : '🛡️ *FORGE GUARD • COMMAND INDEX*',
+                ...channelInfo
+            }, { quoted: message });
+        } catch (artError) {
+            console.warn('[Menu] Forge Guard artwork unavailable; sending text menu:', artError.message);
+        }
+        return sock.sendMessage(chatId, { text: menuText, ...channelInfo }, { quoted: message });
     }
 };
