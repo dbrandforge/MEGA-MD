@@ -316,7 +316,7 @@ export default {
             const members = await eligibleMembers(sock, chatId);
             const invalid = tagged.filter(id => !members.includes(id));
             if (invalid.length) return reply('Every participant must be a non-admin member of this group. Check the tagged accounts and try again.');
-            const basePlayers = session.manualSelection ? session.players : [];
+            const basePlayers = session.manualSelection ? await Promise.all(session.players.map(id => normalizeHotSeatJid(sock, id))) : [];
             const additions = tagged.filter(id => !basePlayers.includes(id));
             if (!session.manualSelection && additions.length < MIN_PLAYERS) return reply(`Choose at least ${MIN_PLAYERS} people when setting the manual Hot Seat list.`);
             if (basePlayers.length + additions.length > MAX_PLAYERS) return reply(`Hot Seat supports a maximum of ${MAX_PLAYERS} participants. Current list:\n${formatPlayers(basePlayers)}`);
@@ -332,9 +332,10 @@ export default {
                 await beginGame(sock, chatId, session);
                 return reply('The adjustment window has closed. Hot Seat is starting.');
             }
-            const tagged = getMentions(message);
+            const tagged = await getNormalizedMentions(sock, message);
             if (tagged.length !== 2) return reply('To replace one participant, tag both the current participant and replacement: *.hotseat change @current @replacement*');
             const [current, replacement] = tagged;
+            session.players = await Promise.all(session.players.map(id => normalizeHotSeatJid(sock, id)));
             const index = session.players.indexOf(current);
             if (index === -1) return reply('The first tagged person is not in the current Hot Seat selection. Check *.hotseat list*.');
             if (session.players.includes(replacement)) return reply('The replacement is already on the Hot Seat list.');
@@ -351,7 +352,8 @@ export default {
                 return reply('The adjustment window has closed. Hot Seat is starting.');
             }
             const order = await getNormalizedMentions(sock, message);
-            if (order.length !== session.players.length || !unique(order) || !session.players.every(id => order.includes(id))) {
+            const currentPlayers = await Promise.all(session.players.map(id => normalizeHotSeatJid(sock, id)));
+            if (order.length !== currentPlayers.length || !unique(order) || !currentPlayers.every(id => order.includes(id))) {
                 return reply(`Tag every selected participant exactly once, in their intended order. Current list:\n${formatPlayers(session.players)}`);
             }
             session.players = order;
