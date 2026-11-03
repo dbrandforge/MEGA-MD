@@ -69,9 +69,13 @@ export default {
         if (!action || action === 'status' || action === 'link') {
             const state = await getState(chatId);
             const link = getAnonymousLink(chatId);
+            const effectivelyOpen = state.enabled && allowed.ok;
+            const scheduleNote = state.enabled && !allowed.ok
+                ? `\n\nStored as enabled, but submissions are blocked: ${allowed.msg || 'scheduled window closed'}`
+                : '';
             return sock.sendMessage(chatId, {
-                text: `🕵️ *Anonymous Night*\n\nStatus: ${state.enabled ? '🟢 OPEN' : '🔴 CLOSED'}\n\n` +
-                    (state.enabled
+                text: `🕵️ *Anonymous Night*\n\nStatus: ${effectivelyOpen ? '🟢 OPEN' : '🔴 CLOSED'}${scheduleNote}\n\n` +
+                    (effectivelyOpen
                         ? `Submit anonymously:\n${link}\n\nPosted here without your name.`
                         : `Admin: *.anonymous on* (Saturday or with bypass).`),
                 ...channelInfo
