@@ -214,6 +214,12 @@ async function sendDailyActivityOnce(sock, chatId, day) {
 export async function setManualGroupUnlockOverride(chatId) {
     const day = getCurrentDay();
     await store.saveSetting(chatId, MANUAL_OVERRIDE_KEY, { day, action: 'unlock' });
+    await store.saveSetting(chatId, LOCK_STATE_KEY, { locked: false, at: Date.now() });
+    await store.saveSetting(chatId, LAST_ACTION_KEY, {
+        action: 'unlock',
+        time: getCurrentTimeString(),
+        day
+    });
     return true;
 }
 
