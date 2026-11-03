@@ -30,7 +30,7 @@ async function getSessions(chatId) {
 }
 
 async function saveSessions(chatId, sessions) {
-    await store.saveSetting(chatId, SESSIONS_KEY, sessions);
+    if (!await store.saveSettingVerified(chatId, SESSIONS_KEY, sessions)) throw new Error('Truth or Dare session state could not be persisted.');
 }
 
 // Called by plugins/truth.js and plugins/dare.js right after they send the
