@@ -38,12 +38,15 @@ export default {
         }
         try {
             await sock.groupSettingUpdate(chatId, 'announcement');
-            trackGroup(chatId);
+            await trackGroup(chatId);
             if (durationInMinutes !== undefined) {
-                await store.saveSetting(chatId, 'timedGroupMute', {
+                const timedMute = {
                     until: Date.now() + durationInMinutes * 60 * 1000,
                     startedAt: Date.now()
-                });
+                };
+                if (!await store.saveSettingVerified(chatId, 'timedGroupMute', timedMute)) {
+                    throw new Error('Timed group mute could not be persisted.');
+                }
                 await sock.sendMessage(chatId, {
                     text: `The group has been muted for ${durationInMinutes} minutes.`,
                     ...channelInfo
@@ -51,7 +54,9 @@ export default {
 
             }
             else {
-                await store.saveSetting(chatId, 'timedGroupMute', { until: null, clearedAt: Date.now() });
+                if (!await store.saveSettingVerified(chatId, 'timedGroupMute', { until: null, clearedAt: Date.now() })) {
+                    throw new Error('Permanent group-mute state could not be persisted.');
+                }
                 await sock.sendMessage(chatId, {
                     text: 'The group has been muted.',
                     ...channelInfo
