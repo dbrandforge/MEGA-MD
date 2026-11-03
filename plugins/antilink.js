@@ -3,11 +3,11 @@ import isOwnerOrSudo from '../lib/isOwner.js';
 import isAdmin from '../lib/isAdmin.js';
 async function setAntilink(chatId, type, action) {
     try {
-        await store.saveSetting(chatId, 'antilink', {
+        if (!await store.saveSettingVerified(chatId, 'antilink', {
             enabled: true,
             action,
             type
-        });
+        })) return false;
         return true;
     }
     catch (error) {
