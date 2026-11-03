@@ -211,6 +211,12 @@ async function sendDailyActivityOnce(sock, chatId, day) {
 // Full unlock: flips the WhatsApp setting, sends/pins the activity (if not
 // already sent today), and records state. Used by the manual command and
 // by the scheduled/safety-net paths.
+export async function setManualGroupUnlockOverride(chatId) {
+    const day = getCurrentDay();
+    await store.saveSetting(chatId, MANUAL_OVERRIDE_KEY, { day, action: 'unlock' });
+    return true;
+}
+
 async function unlockGroup(sock, chatId, { manual = false } = {}) {
     try {
         await unlockGroupSetting(sock, chatId);
