@@ -1,2 +1,729 @@
 /** Expand vol 0 part 3 - CONTENT ONLY. Isolated. */
-export default {"relationship":[{"a":"Love is care plus consistency.","b":"Convenience is not love."},{"a":"Attention is not intention.","b":"One is cheap."},{"a":"Unpaid internship relationship.","b":"Review the contract."},{"a":"Situationship is not a personality.","b":"Define or exit."},{"a":"Butterflies nice. Stability nicer.","b":"You can want both."},{"a":"Begging for basic respect weekly.","b":"The subscription is the problem."},{"a":"Jealousy without agreement is noise.","b":"Talk terms."},{"a":"Chemistry without consistency is entertainment.","b":"Not a plan."},{"a":"Only one initiating is a booking system.","b":"Stop booking."},{"a":"Consistency is the real love language.","b":"Decoration alone fails."},{"a":"You cannot heal the committed wound.","b":"Decide how long you stay."},{"a":"Breadcrumbing sells hope cheap.","b":"Do not pay with peace."},{"a":"Night-only texts mean mood not priority.","b":"Watch daytime."},{"a":"Auditioning for closed role hurts.","b":"Know the terms."},{"a":"Love bombing is sales.","b":"Sustainable pace is interest."},{"a":"Ghosting is decision without courage.","b":"Treat as data."},{"a":"Basic respect is floor not ceiling.","b":"Range is revealed."},{"a":"Shrinking to fit is a costume.","b":"Peace needs self."},{"a":"Apology without change is product.","b":"Three same = pattern."},{"a":"Partner whose flaws do not require self-abandonment.","b":"That is the filter."},{"a":"Real talk: Love is care plus consistency.","b":"Convenience is not love."},{"a":"Listen. Love is care plus consistency.","b":"Convenience is not love."},{"a":"Straight: Love is care plus consistency.","b":"Convenience is not love."},{"a":"No decoy: Love is care plus consistency.","b":"Convenience is not love."},{"a":"See ehn. Love is care plus consistency.","b":"Convenience is not love."},{"a":"Okay — Love is care plus consistency.","b":"Convenience is not love."},{"a":"Abeg. Love is care plus consistency.","b":"Convenience is not love."},{"a":"Love is care plus consistency.","b":"Convenience is not love. Simple."},{"a":"Love is care plus consistency.","b":"Convenience is not love. Next."},{"a":"Love is care plus consistency.","b":"Convenience is not love. Your move."},{"a":"Love is care plus consistency.","b":"Convenience is not love. That is it."},{"a":"Love is care plus consistency.","b":"Convenience is not love. Talk."},{"a":"Real talk: Attention is not intention.","b":"One is cheap."},{"a":"Listen. Attention is not intention.","b":"One is cheap."},{"a":"Straight: Attention is not intention.","b":"One is cheap."},{"a":"No decoy: Attention is not intention.","b":"One is cheap."},{"a":"See ehn. Attention is not intention.","b":"One is cheap."},{"a":"Okay — Attention is not intention.","b":"One is cheap."},{"a":"Abeg. Attention is not intention.","b":"One is cheap."},{"a":"Attention is not intention.","b":"One is cheap. Simple."},{"a":"Attention is not intention.","b":"One is cheap. Next."},{"a":"Attention is not intention.","b":"One is cheap. Your move."},{"a":"Attention is not intention.","b":"One is cheap. That is it."},{"a":"Attention is not intention.","b":"One is cheap. Talk."},{"a":"Real talk: Unpaid internship relationship.","b":"Review the contract."},{"a":"Listen. Unpaid internship relationship.","b":"Review the contract."},{"a":"Straight: Unpaid internship relationship.","b":"Review the contract."},{"a":"No decoy: Unpaid internship relationship.","b":"Review the contract."},{"a":"See ehn. Unpaid internship relationship.","b":"Review the contract."},{"a":"Okay — Unpaid internship relationship.","b":"Review the contract."},{"a":"Abeg. Unpaid internship relationship.","b":"Review the contract."},{"a":"Unpaid internship relationship.","b":"Review the contract. Simple."},{"a":"Unpaid internship relationship.","b":"Review the contract. Next."},{"a":"Unpaid internship relationship.","b":"Review the contract. Your move."},{"a":"Unpaid internship relationship.","b":"Review the contract. That is it."},{"a":"Unpaid internship relationship.","b":"Review the contract. Talk."},{"a":"Real talk: Situationship is not a personality.","b":"Define or exit."},{"a":"Listen. Situationship is not a personality.","b":"Define or exit."},{"a":"Straight: Situationship is not a personality.","b":"Define or exit."},{"a":"No decoy: Situationship is not a personality.","b":"Define or exit."},{"a":"See ehn. Situationship is not a personality.","b":"Define or exit."},{"a":"Okay — Situationship is not a personality.","b":"Define or exit."},{"a":"Abeg. Situationship is not a personality.","b":"Define or exit."},{"a":"Situationship is not a personality.","b":"Define or exit. Simple."},{"a":"Situationship is not a personality.","b":"Define or exit. Next."},{"a":"Situationship is not a personality.","b":"Define or exit. Your move."},{"a":"Situationship is not a personality.","b":"Define or exit. That is it."},{"a":"Situationship is not a personality.","b":"Define or exit. Talk."},{"a":"Real talk: Butterflies nice. Stability nicer.","b":"You can want both."},{"a":"Listen. Butterflies nice. Stability nicer.","b":"You can want both."},{"a":"Straight: Butterflies nice. Stability nicer.","b":"You can want both."},{"a":"No decoy: Butterflies nice. Stability nicer.","b":"You can want both."},{"a":"See ehn. Butterflies nice. Stability nicer.","b":"You can want both."},{"a":"Okay — Butterflies nice. Stability nicer.","b":"You can want both."},{"a":"Abeg. Butterflies nice. Stability nicer.","b":"You can want both."},{"a":"Butterflies nice. Stability nicer.","b":"You can want both. Simple."},{"a":"Butterflies nice. Stability nicer.","b":"You can want both. Next."},{"a":"Butterflies nice. Stability nicer.","b":"You can want both. Your move."},{"a":"Butterflies nice. Stability nicer.","b":"You can want both. That is it."},{"a":"Butterflies nice. Stability nicer.","b":"You can want both. Talk."},{"a":"Real talk: Begging for basic respect weekly.","b":"The subscription is the problem."},{"a":"Listen. Begging for basic respect weekly.","b":"The subscription is the problem."},{"a":"Straight: Begging for basic respect weekly.","b":"The subscription is the problem."},{"a":"No decoy: Begging for basic respect weekly.","b":"The subscription is the problem."},{"a":"See ehn. Begging for basic respect weekly.","b":"The subscription is the problem."},{"a":"Okay — Begging for basic respect weekly.","b":"The subscription is the problem."},{"a":"Abeg. Begging for basic respect weekly.","b":"The subscription is the problem."},{"a":"Begging for basic respect weekly.","b":"The subscription is the problem. Simple."},{"a":"Begging for basic respect weekly.","b":"The subscription is the problem. Next."},{"a":"Begging for basic respect weekly.","b":"The subscription is the problem. Your move."},{"a":"Begging for basic respect weekly.","b":"The subscription is the problem. That is it."},{"a":"Begging for basic respect weekly.","b":"The subscription is the problem. Talk."},{"a":"Real talk: Jealousy without agreement is noise.","b":"Talk terms."},{"a":"Listen. Jealousy without agreement is noise.","b":"Talk terms."},{"a":"Straight: Jealousy without agreement is noise.","b":"Talk terms."},{"a":"No decoy: Jealousy without agreement is noise.","b":"Talk terms."},{"a":"See ehn. Jealousy without agreement is noise.","b":"Talk terms."},{"a":"Okay — Jealousy without agreement is noise.","b":"Talk terms."},{"a":"Abeg. Jealousy without agreement is noise.","b":"Talk terms."},{"a":"Jealousy without agreement is noise.","b":"Talk terms. Simple."},{"a":"Jealousy without agreement is noise.","b":"Talk terms. Next."},{"a":"Jealousy without agreement is noise.","b":"Talk terms. Your move."},{"a":"Jealousy without agreement is noise.","b":"Talk terms. That is it."},{"a":"Jealousy without agreement is noise.","b":"Talk terms. Talk."},{"a":"Real talk: Chemistry without consistency is entertainment.","b":"Not a plan."},{"a":"Listen. Chemistry without consistency is entertainment.","b":"Not a plan."},{"a":"Straight: Chemistry without consistency is entertainment.","b":"Not a plan."},{"a":"No decoy: Chemistry without consistency is entertainment.","b":"Not a plan."},{"a":"See ehn. Chemistry without consistency is entertainment.","b":"Not a plan."},{"a":"Okay — Chemistry without consistency is entertainment.","b":"Not a plan."},{"a":"Abeg. Chemistry without consistency is entertainment.","b":"Not a plan."},{"a":"Chemistry without consistency is entertainment.","b":"Not a plan. Simple."},{"a":"Chemistry without consistency is entertainment.","b":"Not a plan. Next."},{"a":"Chemistry without consistency is entertainment.","b":"Not a plan. Your move."},{"a":"Chemistry without consistency is entertainment.","b":"Not a plan. That is it."},{"a":"Chemistry without consistency is entertainment.","b":"Not a plan. Talk."},{"a":"Real talk: Only one initiating is a booking system.","b":"Stop booking."},{"a":"Listen. Only one initiating is a booking system.","b":"Stop booking."},{"a":"Straight: Only one initiating is a booking system.","b":"Stop booking."},{"a":"No decoy: Only one initiating is a booking system.","b":"Stop booking."},{"a":"See ehn. Only one initiating is a booking system.","b":"Stop booking."},{"a":"Okay — Only one initiating is a booking system.","b":"Stop booking."},{"a":"Abeg. Only one initiating is a booking system.","b":"Stop booking."},{"a":"Only one initiating is a booking system.","b":"Stop booking. Simple."},{"a":"Only one initiating is a booking system.","b":"Stop booking. Next."},{"a":"Only one initiating is a booking system.","b":"Stop booking. Your move."},{"a":"Only one initiating is a booking system.","b":"Stop booking. That is it."},{"a":"Only one initiating is a booking system.","b":"Stop booking. Talk."},{"a":"Real talk: Consistency is the real love language.","b":"Decoration alone fails."},{"a":"Listen. Consistency is the real love language.","b":"Decoration alone fails."},{"a":"Straight: Consistency is the real love language.","b":"Decoration alone fails."},{"a":"No decoy: Consistency is the real love language.","b":"Decoration alone fails."},{"a":"See ehn. Consistency is the real love language.","b":"Decoration alone fails."},{"a":"Okay — Consistency is the real love language.","b":"Decoration alone fails."},{"a":"Abeg. Consistency is the real love language.","b":"Decoration alone fails."},{"a":"Consistency is the real love language.","b":"Decoration alone fails. Simple."},{"a":"Consistency is the real love language.","b":"Decoration alone fails. Next."},{"a":"Consistency is the real love language.","b":"Decoration alone fails. Your move."},{"a":"Consistency is the real love language.","b":"Decoration alone fails. That is it."},{"a":"Consistency is the real love language.","b":"Decoration alone fails. Talk."},{"a":"Real talk: You cannot heal the committed wound.","b":"Decide how long you stay."},{"a":"Listen. You cannot heal the committed wound.","b":"Decide how long you stay."},{"a":"Straight: You cannot heal the committed wound.","b":"Decide how long you stay."},{"a":"No decoy: You cannot heal the committed wound.","b":"Decide how long you stay."},{"a":"See ehn. You cannot heal the committed wound.","b":"Decide how long you stay."},{"a":"Okay — You cannot heal the committed wound.","b":"Decide how long you stay."},{"a":"Abeg. You cannot heal the committed wound.","b":"Decide how long you stay."},{"a":"You cannot heal the committed wound.","b":"Decide how long you stay. Simple."},{"a":"You cannot heal the committed wound.","b":"Decide how long you stay. Next."},{"a":"You cannot heal the committed wound.","b":"Decide how long you stay. Your move."},{"a":"You cannot heal the committed wound.","b":"Decide how long you stay. That is it."},{"a":"You cannot heal the committed wound.","b":"Decide how long you stay. Talk."},{"a":"Real talk: Breadcrumbing sells hope cheap.","b":"Do not pay with peace."},{"a":"Listen. Breadcrumbing sells hope cheap.","b":"Do not pay with peace."},{"a":"Straight: Breadcrumbing sells hope cheap.","b":"Do not pay with peace."},{"a":"No decoy: Breadcrumbing sells hope cheap.","b":"Do not pay with peace."},{"a":"See ehn. Breadcrumbing sells hope cheap.","b":"Do not pay with peace."},{"a":"Okay — Breadcrumbing sells hope cheap.","b":"Do not pay with peace."},{"a":"Abeg. Breadcrumbing sells hope cheap.","b":"Do not pay with peace."},{"a":"Breadcrumbing sells hope cheap.","b":"Do not pay with peace. Simple."},{"a":"Breadcrumbing sells hope cheap.","b":"Do not pay with peace. Next."},{"a":"Breadcrumbing sells hope cheap.","b":"Do not pay with peace. Your move."},{"a":"Breadcrumbing sells hope cheap.","b":"Do not pay with peace. That is it."},{"a":"Breadcrumbing sells hope cheap.","b":"Do not pay with peace. Talk."},{"a":"Real talk: Night-only texts mean mood not priority.","b":"Watch daytime."},{"a":"Listen. Night-only texts mean mood not priority.","b":"Watch daytime."},{"a":"Straight: Night-only texts mean mood not priority.","b":"Watch daytime."},{"a":"No decoy: Night-only texts mean mood not priority.","b":"Watch daytime."},{"a":"See ehn. Night-only texts mean mood not priority.","b":"Watch daytime."},{"a":"Okay — Night-only texts mean mood not priority.","b":"Watch daytime."},{"a":"Abeg. Night-only texts mean mood not priority.","b":"Watch daytime."},{"a":"Night-only texts mean mood not priority.","b":"Watch daytime. Simple."},{"a":"Night-only texts mean mood not priority.","b":"Watch daytime. Next."},{"a":"Night-only texts mean mood not priority.","b":"Watch daytime. Your move."},{"a":"Night-only texts mean mood not priority.","b":"Watch daytime. That is it."},{"a":"Night-only texts mean mood not priority.","b":"Watch daytime. Talk."}]};
+export default {
+  "sexAdvice": [
+    {
+      "a": "Straight: Fantasy and reality share a border.",
+      "b": "Cross with a plan."
+    },
+    {
+      "a": "Straight: Fantasy and reality share a border.",
+      "b": "Cross with a plan. Simple."
+    },
+    {
+      "a": "Straight: Fantasy and reality share a border.",
+      "b": "Cross with a plan. Next."
+    },
+    {
+      "a": "Straight: Fantasy and reality share a border.",
+      "b": "Cross with a plan. Your move."
+    },
+    {
+      "a": "Straight: Fantasy and reality share a border.",
+      "b": "Cross with a plan. That is it."
+    },
+    {
+      "a": "Straight: Fantasy and reality share a border.",
+      "b": "Cross with a plan. Talk."
+    },
+    {
+      "a": "No decoy: Fantasy and reality share a border.",
+      "b": "Cross with a plan."
+    },
+    {
+      "a": "No decoy: Fantasy and reality share a border.",
+      "b": "Cross with a plan. Simple."
+    },
+    {
+      "a": "No decoy: Fantasy and reality share a border.",
+      "b": "Cross with a plan. Next."
+    },
+    {
+      "a": "No decoy: Fantasy and reality share a border.",
+      "b": "Cross with a plan. Your move."
+    },
+    {
+      "a": "No decoy: Fantasy and reality share a border.",
+      "b": "Cross with a plan. That is it."
+    },
+    {
+      "a": "No decoy: Fantasy and reality share a border.",
+      "b": "Cross with a plan. Talk."
+    },
+    {
+      "a": "See ehn. Fantasy and reality share a border.",
+      "b": "Cross with a plan."
+    },
+    {
+      "a": "See ehn. Fantasy and reality share a border.",
+      "b": "Cross with a plan. Simple."
+    },
+    {
+      "a": "See ehn. Fantasy and reality share a border.",
+      "b": "Cross with a plan. Next."
+    },
+    {
+      "a": "See ehn. Fantasy and reality share a border.",
+      "b": "Cross with a plan. Your move."
+    },
+    {
+      "a": "See ehn. Fantasy and reality share a border.",
+      "b": "Cross with a plan. That is it."
+    },
+    {
+      "a": "See ehn. Fantasy and reality share a border.",
+      "b": "Cross with a plan. Talk."
+    },
+    {
+      "a": "Okay — Fantasy and reality share a border.",
+      "b": "Cross with a plan."
+    },
+    {
+      "a": "Okay — Fantasy and reality share a border.",
+      "b": "Cross with a plan. Simple."
+    },
+    {
+      "a": "Okay — Fantasy and reality share a border.",
+      "b": "Cross with a plan. Next."
+    },
+    {
+      "a": "Okay — Fantasy and reality share a border.",
+      "b": "Cross with a plan. Your move."
+    },
+    {
+      "a": "Okay — Fantasy and reality share a border.",
+      "b": "Cross with a plan. That is it."
+    },
+    {
+      "a": "Okay — Fantasy and reality share a border.",
+      "b": "Cross with a plan. Talk."
+    },
+    {
+      "a": "Abeg. Fantasy and reality share a border.",
+      "b": "Cross with a plan."
+    },
+    {
+      "a": "Abeg. Fantasy and reality share a border.",
+      "b": "Cross with a plan. Simple."
+    },
+    {
+      "a": "Abeg. Fantasy and reality share a border.",
+      "b": "Cross with a plan. Next."
+    },
+    {
+      "a": "Abeg. Fantasy and reality share a border.",
+      "b": "Cross with a plan. Your move."
+    },
+    {
+      "a": "Abeg. Fantasy and reality share a border.",
+      "b": "Cross with a plan. That is it."
+    },
+    {
+      "a": "Abeg. Fantasy and reality share a border.",
+      "b": "Cross with a plan. Talk."
+    },
+    {
+      "a": "Body count is optional data.",
+      "b": "Ask only if it changes treatment."
+    },
+    {
+      "a": "Body count is optional data.",
+      "b": "Ask only if it changes treatment. Simple."
+    },
+    {
+      "a": "Body count is optional data.",
+      "b": "Ask only if it changes treatment. Next."
+    },
+    {
+      "a": "Body count is optional data.",
+      "b": "Ask only if it changes treatment. Your move."
+    },
+    {
+      "a": "Body count is optional data.",
+      "b": "Ask only if it changes treatment. That is it."
+    },
+    {
+      "a": "Body count is optional data.",
+      "b": "Ask only if it changes treatment. Talk."
+    },
+    {
+      "a": "Real talk: Body count is optional data.",
+      "b": "Ask only if it changes treatment."
+    },
+    {
+      "a": "Real talk: Body count is optional data.",
+      "b": "Ask only if it changes treatment. Simple."
+    },
+    {
+      "a": "Real talk: Body count is optional data.",
+      "b": "Ask only if it changes treatment. Next."
+    },
+    {
+      "a": "Real talk: Body count is optional data.",
+      "b": "Ask only if it changes treatment. Your move."
+    },
+    {
+      "a": "Real talk: Body count is optional data.",
+      "b": "Ask only if it changes treatment. That is it."
+    },
+    {
+      "a": "Real talk: Body count is optional data.",
+      "b": "Ask only if it changes treatment. Talk."
+    },
+    {
+      "a": "Listen. Body count is optional data.",
+      "b": "Ask only if it changes treatment."
+    },
+    {
+      "a": "Listen. Body count is optional data.",
+      "b": "Ask only if it changes treatment. Simple."
+    },
+    {
+      "a": "Listen. Body count is optional data.",
+      "b": "Ask only if it changes treatment. Next."
+    },
+    {
+      "a": "Listen. Body count is optional data.",
+      "b": "Ask only if it changes treatment. Your move."
+    },
+    {
+      "a": "Listen. Body count is optional data.",
+      "b": "Ask only if it changes treatment. That is it."
+    },
+    {
+      "a": "Listen. Body count is optional data.",
+      "b": "Ask only if it changes treatment. Talk."
+    },
+    {
+      "a": "Straight: Body count is optional data.",
+      "b": "Ask only if it changes treatment."
+    },
+    {
+      "a": "Straight: Body count is optional data.",
+      "b": "Ask only if it changes treatment. Simple."
+    },
+    {
+      "a": "Straight: Body count is optional data.",
+      "b": "Ask only if it changes treatment. Next."
+    },
+    {
+      "a": "Straight: Body count is optional data.",
+      "b": "Ask only if it changes treatment. Your move."
+    },
+    {
+      "a": "Straight: Body count is optional data.",
+      "b": "Ask only if it changes treatment. That is it."
+    },
+    {
+      "a": "Straight: Body count is optional data.",
+      "b": "Ask only if it changes treatment. Talk."
+    },
+    {
+      "a": "No decoy: Body count is optional data.",
+      "b": "Ask only if it changes treatment."
+    },
+    {
+      "a": "No decoy: Body count is optional data.",
+      "b": "Ask only if it changes treatment. Simple."
+    },
+    {
+      "a": "No decoy: Body count is optional data.",
+      "b": "Ask only if it changes treatment. Next."
+    },
+    {
+      "a": "No decoy: Body count is optional data.",
+      "b": "Ask only if it changes treatment. Your move."
+    },
+    {
+      "a": "No decoy: Body count is optional data.",
+      "b": "Ask only if it changes treatment. That is it."
+    },
+    {
+      "a": "No decoy: Body count is optional data.",
+      "b": "Ask only if it changes treatment. Talk."
+    },
+    {
+      "a": "See ehn. Body count is optional data.",
+      "b": "Ask only if it changes treatment."
+    },
+    {
+      "a": "See ehn. Body count is optional data.",
+      "b": "Ask only if it changes treatment. Simple."
+    },
+    {
+      "a": "See ehn. Body count is optional data.",
+      "b": "Ask only if it changes treatment. Next."
+    },
+    {
+      "a": "See ehn. Body count is optional data.",
+      "b": "Ask only if it changes treatment. Your move."
+    },
+    {
+      "a": "See ehn. Body count is optional data.",
+      "b": "Ask only if it changes treatment. That is it."
+    },
+    {
+      "a": "See ehn. Body count is optional data.",
+      "b": "Ask only if it changes treatment. Talk."
+    },
+    {
+      "a": "Okay — Body count is optional data.",
+      "b": "Ask only if it changes treatment."
+    },
+    {
+      "a": "Okay — Body count is optional data.",
+      "b": "Ask only if it changes treatment. Simple."
+    },
+    {
+      "a": "Okay — Body count is optional data.",
+      "b": "Ask only if it changes treatment. Next."
+    },
+    {
+      "a": "Okay — Body count is optional data.",
+      "b": "Ask only if it changes treatment. Your move."
+    },
+    {
+      "a": "Okay — Body count is optional data.",
+      "b": "Ask only if it changes treatment. That is it."
+    },
+    {
+      "a": "Okay — Body count is optional data.",
+      "b": "Ask only if it changes treatment. Talk."
+    },
+    {
+      "a": "Abeg. Body count is optional data.",
+      "b": "Ask only if it changes treatment."
+    },
+    {
+      "a": "Abeg. Body count is optional data.",
+      "b": "Ask only if it changes treatment. Simple."
+    },
+    {
+      "a": "Abeg. Body count is optional data.",
+      "b": "Ask only if it changes treatment. Next."
+    },
+    {
+      "a": "Abeg. Body count is optional data.",
+      "b": "Ask only if it changes treatment. Your move."
+    },
+    {
+      "a": "Abeg. Body count is optional data.",
+      "b": "Ask only if it changes treatment. That is it."
+    },
+    {
+      "a": "Abeg. Body count is optional data.",
+      "b": "Ask only if it changes treatment. Talk."
+    },
+    {
+      "a": "Kink without aftercare is incomplete.",
+      "b": "Comedown is care."
+    },
+    {
+      "a": "Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Simple."
+    },
+    {
+      "a": "Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Next."
+    },
+    {
+      "a": "Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Your move."
+    },
+    {
+      "a": "Kink without aftercare is incomplete.",
+      "b": "Comedown is care. That is it."
+    },
+    {
+      "a": "Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Talk."
+    },
+    {
+      "a": "Real talk: Kink without aftercare is incomplete.",
+      "b": "Comedown is care."
+    },
+    {
+      "a": "Real talk: Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Simple."
+    },
+    {
+      "a": "Real talk: Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Next."
+    },
+    {
+      "a": "Real talk: Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Your move."
+    },
+    {
+      "a": "Real talk: Kink without aftercare is incomplete.",
+      "b": "Comedown is care. That is it."
+    },
+    {
+      "a": "Real talk: Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Talk."
+    },
+    {
+      "a": "Listen. Kink without aftercare is incomplete.",
+      "b": "Comedown is care."
+    },
+    {
+      "a": "Listen. Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Simple."
+    },
+    {
+      "a": "Listen. Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Next."
+    },
+    {
+      "a": "Listen. Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Your move."
+    },
+    {
+      "a": "Listen. Kink without aftercare is incomplete.",
+      "b": "Comedown is care. That is it."
+    },
+    {
+      "a": "Listen. Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Talk."
+    },
+    {
+      "a": "Straight: Kink without aftercare is incomplete.",
+      "b": "Comedown is care."
+    },
+    {
+      "a": "Straight: Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Simple."
+    },
+    {
+      "a": "Straight: Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Next."
+    },
+    {
+      "a": "Straight: Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Your move."
+    },
+    {
+      "a": "Straight: Kink without aftercare is incomplete.",
+      "b": "Comedown is care. That is it."
+    },
+    {
+      "a": "Straight: Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Talk."
+    },
+    {
+      "a": "No decoy: Kink without aftercare is incomplete.",
+      "b": "Comedown is care."
+    },
+    {
+      "a": "No decoy: Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Simple."
+    },
+    {
+      "a": "No decoy: Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Next."
+    },
+    {
+      "a": "No decoy: Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Your move."
+    },
+    {
+      "a": "No decoy: Kink without aftercare is incomplete.",
+      "b": "Comedown is care. That is it."
+    },
+    {
+      "a": "No decoy: Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Talk."
+    },
+    {
+      "a": "See ehn. Kink without aftercare is incomplete.",
+      "b": "Comedown is care."
+    },
+    {
+      "a": "See ehn. Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Simple."
+    },
+    {
+      "a": "See ehn. Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Next."
+    },
+    {
+      "a": "See ehn. Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Your move."
+    },
+    {
+      "a": "See ehn. Kink without aftercare is incomplete.",
+      "b": "Comedown is care. That is it."
+    },
+    {
+      "a": "See ehn. Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Talk."
+    },
+    {
+      "a": "Okay — Kink without aftercare is incomplete.",
+      "b": "Comedown is care."
+    },
+    {
+      "a": "Okay — Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Simple."
+    },
+    {
+      "a": "Okay — Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Next."
+    },
+    {
+      "a": "Okay — Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Your move."
+    },
+    {
+      "a": "Okay — Kink without aftercare is incomplete.",
+      "b": "Comedown is care. That is it."
+    },
+    {
+      "a": "Okay — Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Talk."
+    },
+    {
+      "a": "Abeg. Kink without aftercare is incomplete.",
+      "b": "Comedown is care."
+    },
+    {
+      "a": "Abeg. Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Simple."
+    },
+    {
+      "a": "Abeg. Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Next."
+    },
+    {
+      "a": "Abeg. Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Your move."
+    },
+    {
+      "a": "Abeg. Kink without aftercare is incomplete.",
+      "b": "Comedown is care. That is it."
+    },
+    {
+      "a": "Abeg. Kink without aftercare is incomplete.",
+      "b": "Comedown is care. Talk."
+    },
+    {
+      "a": "Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts."
+    },
+    {
+      "a": "Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Simple."
+    },
+    {
+      "a": "Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Next."
+    },
+    {
+      "a": "Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Your move."
+    },
+    {
+      "a": "Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. That is it."
+    },
+    {
+      "a": "Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Talk."
+    },
+    {
+      "a": "Real talk: Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts."
+    },
+    {
+      "a": "Real talk: Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Simple."
+    },
+    {
+      "a": "Real talk: Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Next."
+    },
+    {
+      "a": "Real talk: Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Your move."
+    },
+    {
+      "a": "Real talk: Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. That is it."
+    },
+    {
+      "a": "Real talk: Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Talk."
+    },
+    {
+      "a": "Listen. Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts."
+    },
+    {
+      "a": "Listen. Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Simple."
+    },
+    {
+      "a": "Listen. Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Next."
+    },
+    {
+      "a": "Listen. Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Your move."
+    },
+    {
+      "a": "Listen. Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. That is it."
+    },
+    {
+      "a": "Listen. Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Talk."
+    },
+    {
+      "a": "Straight: Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts."
+    },
+    {
+      "a": "Straight: Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Simple."
+    },
+    {
+      "a": "Straight: Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Next."
+    },
+    {
+      "a": "Straight: Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Your move."
+    },
+    {
+      "a": "Straight: Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. That is it."
+    },
+    {
+      "a": "Straight: Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Talk."
+    },
+    {
+      "a": "No decoy: Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts."
+    },
+    {
+      "a": "No decoy: Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Simple."
+    },
+    {
+      "a": "No decoy: Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Next."
+    },
+    {
+      "a": "No decoy: Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Your move."
+    },
+    {
+      "a": "No decoy: Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. That is it."
+    },
+    {
+      "a": "No decoy: Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Talk."
+    },
+    {
+      "a": "See ehn. Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts."
+    },
+    {
+      "a": "See ehn. Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Simple."
+    },
+    {
+      "a": "See ehn. Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Next."
+    },
+    {
+      "a": "See ehn. Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Your move."
+    },
+    {
+      "a": "See ehn. Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. That is it."
+    },
+    {
+      "a": "See ehn. Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Talk."
+    },
+    {
+      "a": "Okay — Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts."
+    },
+    {
+      "a": "Okay — Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Simple."
+    },
+    {
+      "a": "Okay — Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Next."
+    },
+    {
+      "a": "Okay — Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Your move."
+    },
+    {
+      "a": "Okay — Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. That is it."
+    },
+    {
+      "a": "Okay — Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Talk."
+    },
+    {
+      "a": "Abeg. Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts."
+    },
+    {
+      "a": "Abeg. Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Simple."
+    },
+    {
+      "a": "Abeg. Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Next."
+    },
+    {
+      "a": "Abeg. Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Your move."
+    },
+    {
+      "a": "Abeg. Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. That is it."
+    },
+    {
+      "a": "Abeg. Silence mid-scene can mean freeze.",
+      "b": "Confirm when energy shifts. Talk."
+    },
+    {
+      "a": "Pace is a choice.",
+      "b": "Slow or wreck — own it."
+    },
+    {
+      "a": "Pace is a choice.",
+      "b": "Slow or wreck — own it. Simple."
+    },
+    {
+      "a": "Pace is a choice.",
+      "b": "Slow or wreck — own it. Next."
+    },
+    {
+      "a": "Pace is a choice.",
+      "b": "Slow or wreck — own it. Your move."
+    },
+    {
+      "a": "Pace is a choice.",
+      "b": "Slow or wreck — own it. That is it."
+    },
+    {
+      "a": "Pace is a choice.",
+      "b": "Slow or wreck — own it. Talk."
+    },
+    {
+      "a": "Real talk: Pace is a choice.",
+      "b": "Slow or wreck — own it."
+    }
+  ]
+};
