@@ -138,6 +138,16 @@ export async function completeTodTurn(sock, chatId, senderId, options = {}) {
     );
     if (!session) return false;
 
+    // A manual/day lock blocks further rounds, but a participant who has
+    // completed a prompt may still use `.done end` to close their session.
+    if (!options.endAfter) {
+        const access = await isGameAllowed(chatId, 'tod');
+        if (!access.ok) {
+            await sock.sendMessage(chatId, { text: access.msg }, options.message ? { quoted: options.message } : undefined);
+            return true;
+        }
+    }
+
     session.questionsCompleted = session.questionsCompleted || {};
     session.questionsCompleted[senderId] = (session.questionsCompleted[senderId] || 0) + 1;
     session.lastCompletedBy = senderId;
