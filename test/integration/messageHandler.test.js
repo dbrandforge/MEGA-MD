@@ -192,6 +192,38 @@ describe('handleMessages', () => {
         expect(sock._lastMessage()?.content?.text).toContain('restricted to the bot owner');
     });
 
+    it('blocks adminOnly commands in private chats for ordinary users', async () => {
+        const commandHandler = (await import('../../lib/commandHandler.js')).default;
+        const handler = vi.fn(async () => {});
+        commandHandler.registerCommand({
+            command: 'admindmprobe', aliases: [], category: 'admin',
+            adminOnly: true, handler
+        });
+        const msg = createMockMessage({
+            text: '.admindmprobe', isGroup: false,
+            senderId: '923009999999@s.whatsapp.net'
+        });
+        await handleMessages(sock, { messages: [msg], type: 'notify' });
+        expect(handler).not.toHaveBeenCalled();
+        expect(sock._lastMessage()?.content?.text).toContain('requires an authorized group admin');
+    });
+
+    it('allows the configured owner to use adminOnly commands in private chats', async () => {
+        const commandHandler = (await import('../../lib/commandHandler.js')).default;
+        const handler = vi.fn(async () => {});
+        commandHandler.registerCommand({
+            command: 'admindmownerprobe', aliases: [], category: 'admin',
+            adminOnly: true, handler
+        });
+        const msg = createMockMessage({
+            text: '.admindmownerprobe', isGroup: false,
+            chatId: '923001234567@s.whatsapp.net',
+            senderId: '923001234567@s.whatsapp.net'
+        });
+        await handleMessages(sock, { messages: [msg], type: 'notify' });
+        expect(handler).toHaveBeenCalledTimes(1);
+    });
+
     it('blocks non-owner users from ownerOnly commands', async () => {
         const commandHandler = (await import('../../lib/commandHandler.js')).default;
         const handler = vi.fn(async () => {});
