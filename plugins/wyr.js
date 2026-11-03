@@ -16,7 +16,7 @@ async function getSessions(chatId) {
   return (await store.getSetting(chatId, KEY)) || {};
 }
 async function saveSessions(chatId, sessions) {
-  await store.saveSetting(chatId, KEY, sessions);
+  if (!await store.saveSettingVerified(chatId, KEY, sessions)) throw new Error('WYR session state could not be persisted.');
 }
 
 function botMentioned(sock, message) {
@@ -41,7 +41,7 @@ async function chooseFreshOptions(chatId) {
   }
   const options = choose(available);
   used.push(questionKey(options));
-  await store.saveSetting(chatId, USED_KEY, used);
+  if (!await store.saveSettingVerified(chatId, USED_KEY, used)) throw new Error('WYR used-question history could not be persisted.');
   return options;
 }
 
