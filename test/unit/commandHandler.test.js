@@ -110,7 +110,7 @@ describe('CommandHandler', () => {
     });
 
     it('getCommand finds by alias', () => {
-        handler.registerCommand({ command: 'sticker', aliases: ['s', 'stk'], category: 'media', description: 'test', async handler() {} });
+        handler.registerCommand({ command: 'stickerprobe', aliases: ['s', 'stk'], category: 'media', description: 'test', async handler() {} });
         const result = handler.getCommand('.s', ['.']);
         expect(result).toBeTruthy();
     });
@@ -129,11 +129,11 @@ describe('CommandHandler', () => {
     });
 
     it('toggleCommand disables and re-enables', () => {
-        handler.registerCommand({ command: 'mute', aliases: [], category: 'admin', description: 'test', async handler() {} });
-        handler.toggleCommand('mute');
-        expect(handler.disabledCommands.has('mute')).toBe(true);
-        handler.toggleCommand('mute');
-        expect(handler.disabledCommands.has('mute')).toBe(false);
+        handler.registerCommand({ command: 'toggleprobe', aliases: [], category: 'admin', description: 'test', async handler() {} });
+        handler.toggleCommand('toggleprobe');
+        expect(handler.disabledCommands.has('toggleprobe')).toBe(true);
+        handler.toggleCommand('toggleprobe');
+        expect(handler.disabledCommands.has('toggleprobe')).toBe(false);
     });
 
     it('getCommandsByCategory returns correct commands', () => {
@@ -144,8 +144,8 @@ describe('CommandHandler', () => {
     });
 
     it('findSuggestion returns close match', () => {
-        handler.registerCommand({ command: 'sticker', aliases: [], category: 'media', description: 'test', async handler() {} });
-        const suggestion = handler.findSuggestion('sticke');
-        expect(suggestion).toBe('sticker');
+        handler.registerCommand({ command: 'stickerprobe', aliases: [], category: 'media', description: 'test', async handler() {} });
+        const suggestion = handler.findSuggestion('stickerproe');
+        expect(suggestion).toBe('stickerprobe');
     });
 });
