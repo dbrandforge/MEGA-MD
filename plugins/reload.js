@@ -10,10 +10,10 @@ export default {
         const commandHandler = (await import('../lib/commandHandler.js')).default;
         try {
             const start = Date.now();
-            commandHandler.reloadCommands();
+            const count = await commandHandler.reloadCommands();
             const end = Date.now();
             await sock.sendMessage(chatId, {
-                text: `✅ Reloaded ${commandHandler.commands.size} commands in ${end - start}ms`
+                text: `✅ Reloaded ${count} commands in ${end - start}ms`
             });
         }
         catch (error) {
