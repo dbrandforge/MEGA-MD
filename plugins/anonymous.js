@@ -59,6 +59,13 @@ export default {
 
         const allowed = await isGameAllowed(chatId, 'anonymous');
 
+        if (action === 'on' && !allowed.ok) {
+            return sock.sendMessage(chatId, {
+                text: allowed.msg || 'Anonymous Night is day-locked. Ask an admin to set a temporary bypass first.',
+                ...channelInfo
+            }, { quoted: message });
+        }
+
         if (!action || action === 'status' || action === 'link') {
             const state = await getState(chatId);
             const link = getAnonymousLink(chatId);
