@@ -1,7 +1,7 @@
 import axios from 'axios';
 export default {
     command: 'stickers',
-    aliases: ['stickersearch', 'ssticker', 'sticker'],
+    aliases: ['stickersearch', 'ssticker'],
     category: 'stickers',
     description: 'Search stickers (admin only)',
     usage: '.stickers <term>',
