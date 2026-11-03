@@ -17,6 +17,25 @@ describe('antilink persistence feedback', () => {
         vi.clearAllMocks();
     });
 
+    it('does not accept an antilink enable when persistence verification fails', async () => {
+        mocks.saveSettingVerified.mockResolvedValueOnce(false);
+        await expect(antilink.setAntilink(GROUP, 'on', 'delete')).resolves.toBe(false);
+        expect(mocks.saveSettingVerified).toHaveBeenCalledWith(
+            GROUP,
+            'antilink',
+            { enabled: true, action: 'delete', type: 'on' }
+        );
+    });
+
+    it('accepts an antilink configuration only after persistence verification succeeds', async () => {
+        await expect(antilink.setAntilink(GROUP, 'on', 'warn')).resolves.toBe(true);
+        expect(mocks.saveSettingVerified).toHaveBeenCalledWith(
+            GROUP,
+            'antilink',
+            { enabled: true, action: 'warn', type: 'on' }
+        );
+    });
+
     it('does not claim antilink was disabled when persistence verification fails', async () => {
         mocks.saveSettingVerified.mockResolvedValueOnce(false);
         const sent = [];
