@@ -17,6 +17,10 @@ vi.mock('../../plugins/tictactoe.js', () => ({ handleTicTacToeMove: vi.fn(async 
 vi.mock('../../plugins/autoreply.js', () => ({ handleAutoReply: vi.fn(async () => false) }));
 vi.mock('../../plugins/antispam.js', () => ({ handleAntiSpam: vi.fn(async () => false), invalidateGroupCache: vi.fn(() => {}) }));
 vi.mock('../../plugins/softmute.js', () => ({ handleSoftMuteMessage: vi.fn(async () => false) }));
+vi.mock('../../plugins/hotseat.js', () => ({
+    handleHotSeatAnswer: vi.fn(async () => false),
+    trackHotSeatReader: vi.fn(async () => false)
+}));
 vi.mock('../../plugins/schedule.js', () => ({ startSchedulerEngine: vi.fn(() => {}) }));
 vi.mock('../../lib/isBanned.js', () => ({ isBanned: vi.fn(async () => false) }));
 vi.mock('../../lib/index.js', () => ({ isSudo: vi.fn(async () => false) }));
@@ -105,6 +109,16 @@ describe('handleMessages', () => {
         expect(handleAutoread).toHaveBeenCalled();
     });
 
+    it('tracks recent activity from group members for Hot Seat selection', async () => {
+        const { trackHotSeatReader } = await import('../../plugins/hotseat.js');
+        const msg = createMockMessage({ text: 'hello', isGroup: true });
+        await handleMessages(sock, { messages: [msg], type: 'notify' });
+        expect(trackHotSeatReader).toHaveBeenCalledWith(
+            msg.key.remoteJid,
+            msg.key.participant
+        );
+    });
+
     it('stops processing a soft-muted group member before message counters and command triggers', async () => {
         const store = (await import('../../lib/lightweight_store.js')).default;
         const { handleSoftMuteMessage } = await import('../../plugins/softmute.js');
@@ -118,6 +132,8 @@ describe('handleMessages', () => {
         expect(handleSoftMuteMessage).toHaveBeenCalled();
         expect(store.incrementWeeklyMessageCount).not.toHaveBeenCalled();
         expect(store.incrementMessageCount).not.toHaveBeenCalled();
+        const { trackHotSeatReader } = await import('../../plugins/hotseat.js');
+        expect(trackHotSeatReader).not.toHaveBeenCalled();
         expect(sock.sendMessage).not.toHaveBeenCalled();
     });
 
