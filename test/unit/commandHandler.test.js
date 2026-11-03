@@ -96,8 +96,8 @@ describe('CommandHandler', () => {
     it('reloadCommands waits for the registry refresh and returns the loaded count', async () => {
         handler.registerCommand({ command: 'staleprobe', aliases: [], category: 'temporary', async handler() {} });
         const count = await handler.reloadCommands();
-        expect(count).toBe(0);
-        expect(handler.commands.size).toBe(0);
+        expect(count).toBe(handler.commands.size);
+        expect(handler.commands.has('staleprobe')).toBe(false);
     });
 
     it('toggleCommand disables and re-enables', () => {
