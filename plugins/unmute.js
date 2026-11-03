@@ -28,7 +28,9 @@ export default {
         if (!user) {
             try {
                 await sock.groupSettingUpdate(chatId, 'not_announcement');
-                await store.saveSetting(chatId, 'timedGroupMute', { until: null, clearedAt: Date.now() });
+                if (!await store.saveSettingVerified(chatId, 'timedGroupMute', { until: null, clearedAt: Date.now() })) {
+                    throw new Error('Timed group mute state could not be cleared.');
+                }
                 // Prevent the feature-group night scheduler from immediately reversing
                 // a deliberate admin unlock performed with the inverse of .mute.
                 if (isFeatureGroup(chatId)) await setManualGroupUnlockOverride(chatId);
