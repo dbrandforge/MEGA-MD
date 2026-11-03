@@ -17,7 +17,9 @@ function mention(jid) {
 }
 
 function cleanId(jid) {
-    return (jid || '').split(':')[0];
+    // Strip only the device suffix, preserving the JID domain so
+    // device-qualified and plain PN/LID addresses share the same key.
+    return String(jid || '').replace(/:\\d+(?=@)/, '');
 }
 
 async function getMutes(chatId) {
