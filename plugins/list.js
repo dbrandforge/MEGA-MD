@@ -1,4 +1,6 @@
 import config from '../config.js';
+import { readFileSync } from 'node:fs';
+import sharp from 'sharp';
 import commandHandler from '../lib/commandHandler.js';
 import { isOwnerOnly } from '../lib/isOwner.js';
 
@@ -49,7 +51,7 @@ function getVisibleCategories(ownerView) {
     return [...categories.entries()].sort(([a], [b]) => a.localeCompare(b));
 }
 
-function buildMenu(ownerView) {
+let menuArtworkPromise;\nasync function getMenuArtwork() {\n    if (!menuArtworkPromise) {\n        menuArtworkPromise = sharp(readFileSync(new URL('../assets/forge-guard-menu.svg', import.meta.url)))\n            .webp({ quality: 88 })\n            .toBuffer();\n    }\n    return menuArtworkPromise;\n}\n\nfunction buildMenu(ownerView) {
     const prefix = config.prefixes?.[0] || '.';
     const categories = getVisibleCategories(ownerView);
     const lines = [
@@ -118,8 +120,6 @@ export default {
             return sock.sendMessage(chatId, { text: detail, ...channelInfo }, { quoted: message });
         }
 
-        const menuText = buildMenu(ownerView);
-        // Text-only until Forge Guard's own approved artwork replaces the legacy thumbnail.
-        return sock.sendMessage(chatId, { text: menuText, ...channelInfo }, { quoted: message });
+        const menuText = buildMenu(ownerView);\n        // Artwork is a separate header message so the complete dynamic command list is never truncated by WhatsApp caption limits.\n        try {\n            const artwork = await getMenuArtwork();\n            await sock.sendMessage(chatId, {\n                image: artwork,\n                caption: ownerView ? '🛡️ *FORGE GUARD • OWNER COMMAND INDEX*' : '🛡️ *FORGE GUARD • COMMAND INDEX*',\n                ...channelInfo\n            }, { quoted: message });\n        } catch (artError) {\n            console.warn('[Menu] Forge Guard artwork unavailable; sending text menu:', artError.message);\n        }\n        return sock.sendMessage(chatId, { text: menuText, ...channelInfo }, { quoted: message });
     }
 };
