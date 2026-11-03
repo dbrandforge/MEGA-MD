@@ -24,7 +24,8 @@ async function getBypasses(chatId) {
   return (await store.getSetting(chatId, BYPASS_KEY)) || {};
 }
 async function saveBypasses(chatId, data) {
-  await store.saveSetting(chatId, BYPASS_KEY, data);
+  const saved = await store.saveSettingVerified(chatId, BYPASS_KEY, data);
+  if (!saved) throw new Error('Game bypass state could not be persisted.');
 }
 const MANUAL_LOCK_KEY = 'manualGameLocks';
 const MANUAL_GAMES = {
@@ -50,7 +51,8 @@ export async function setManualGameLock(chatId, gameKey, locked) {
   const locks = await getManualGameLocks(chatId);
   if (locked) locks[gameKey] = { locked: true, updatedAt: Date.now() };
   else delete locks[gameKey];
-  await store.saveSetting(chatId, MANUAL_LOCK_KEY, locks);
+  const saved = await store.saveSettingVerified(chatId, MANUAL_LOCK_KEY, locks);
+  if (!saved) throw new Error('Manual game-lock state could not be persisted.');
   return locks;
 }
 
