@@ -1,12 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-    saveSetting: vi.fn(async () => {}),
-    getSetting: vi.fn(async () => null)
+    saveSettingVerified: vi.fn(async () => true)
 }));
 
 vi.mock('../../lib/lightweight_store.js', () => ({
-    default: { saveSetting: mocks.saveSetting, getSetting: mocks.getSetting }
+    default: { saveSettingVerified: mocks.saveSettingVerified }
 }));
 
 import antilink from '../../plugins/antilink.js';
@@ -18,8 +17,8 @@ describe('antilink persistence feedback', () => {
         vi.clearAllMocks();
     });
 
-    it('does not claim antilink was disabled when saving the setting fails', async () => {
-        mocks.saveSetting.mockRejectedValueOnce(new Error('database unavailable'));
+    it('does not claim antilink was disabled when persistence verification fails', async () => {
+        mocks.saveSettingVerified.mockResolvedValueOnce(false);
         const sent = [];
         const sock = {
             sendMessage: vi.fn(async (jid, content) => {
@@ -34,10 +33,15 @@ describe('antilink persistence feedback', () => {
             channelInfo: {}
         });
 
+        expect(mocks.saveSettingVerified).toHaveBeenCalledWith(
+            GROUP,
+            'antilink',
+            { enabled: false, action: null, type: null }
+        );
         expect(sent.at(-1).content.text).toContain('Could not disable antilink');
     });
 
-    it('confirms antilink is disabled only after the setting is saved', async () => {
+    it('confirms antilink is disabled only after persistence verification succeeds', async () => {
         const sent = [];
         const sock = {
             sendMessage: vi.fn(async (jid, content) => {
@@ -52,11 +56,11 @@ describe('antilink persistence feedback', () => {
             channelInfo: {}
         });
 
-        expect(mocks.saveSetting).toHaveBeenCalledWith(GROUP, 'antilink', {
-            enabled: false,
-            action: null,
-            type: null
-        });
+        expect(mocks.saveSettingVerified).toHaveBeenCalledWith(
+            GROUP,
+            'antilink',
+            { enabled: false, action: null, type: null }
+        );
         expect(sent.at(-1).content.text).toContain('Antilink disabled');
     });
 });
