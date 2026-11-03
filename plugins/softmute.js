@@ -30,6 +30,20 @@ async function saveMutes(chatId, data) {
     await store.saveSetting(chatId, MUTE_KEY, data);
 }
 
+export async function normalizeSoftMuteUserId(sock, userId) {
+    const key = cleanId(userId);
+    if (!key.endsWith('@lid')) return key;
+    try {
+        const mappedPN = await sock?.signalRepository?.lidMapping?.getPNForLID?.(userId);
+        if (typeof mappedPN === 'string' && mappedPN.endsWith('@s.whatsapp.net')) {
+            return cleanId(mappedPN);
+        }
+    } catch (error) {
+        console.warn('[SOFTMUTE] Could not resolve user LID to PN:', error.message);
+    }
+    return key;
+}
+
 export async function isSoftMuted(chatId, userId) {
     const mutes = await getMutes(chatId);
     const key = cleanId(userId);
@@ -54,17 +68,7 @@ export async function softMuteUser(sock, chatId, userId, hours = null) {
     const duration = hours ? hours * 60 * 60 * 1000 : MUTE_MS;
     const mutes = await getMutes(chatId);
     const key = cleanId(userId);
-    let canonicalKey = key;
-    if (key.endsWith('@lid')) {
-        try {
-            const mappedPN = await sock?.signalRepository?.lidMapping?.getPNForLID?.(userId);
-            if (typeof mappedPN === 'string' && mappedPN.endsWith('@s.whatsapp.net')) {
-                canonicalKey = cleanId(mappedPN);
-            }
-        } catch (error) {
-            console.warn('[SOFTMUTE] Could not resolve mentioned LID to PN:', error.message);
-        }
-    }
+    const canonicalKey = await normalizeSoftMuteUserId(sock, userId);
     const entry = {
         until: Date.now() + duration,
         mutedAt: Date.now(),
