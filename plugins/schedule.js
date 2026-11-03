@@ -90,14 +90,19 @@ const TRACKED_GROUPS_KEY = 'forgeGuardTrackedGroups';
 
 const TIMED_GROUP_MUTE_KEY = 'timedGroupMute';
 
-export function trackGroup(chatId) {
-    if (!chatId?.endsWith('@g.us')) return;
+export async function trackGroup(chatId) {
+    if (!chatId?.endsWith('@g.us')) return false;
     _trackedGroups.add(chatId);
-    store.getSetting('global', TRACKED_GROUPS_KEY).then(saved => {
+    try {
+        const saved = await store.getSetting('global', TRACKED_GROUPS_KEY);
         const groups = new Set(Array.isArray(saved) ? saved : []);
         groups.add(chatId);
-        return store.saveSetting('global', TRACKED_GROUPS_KEY, [...groups]);
-    }).catch(error => console.error('[SCHEDULE] Could not persist tracked group:', error.message));
+        await store.saveSetting('global', TRACKED_GROUPS_KEY, [...groups]);
+        return true;
+    } catch (error) {
+        console.error('[SCHEDULE] Could not persist tracked group:', error.message);
+        return false;
+    }
 }
 
 async function checkTimedGroupMute(sock, chatId) {
@@ -165,6 +170,14 @@ export function startSchedulerEngine(sock) {
                 } catch (e) {
                     console.error(`[SCHEDULE] Timed group mute check failed for ${chatId}: ${e.stack || e.message}`);
                 }
+                try {
+                    const { cleanExpiredSoftMutes } = await import('./softmute.js');
+                    const removed = await cleanExpiredSoftMutes(chatId);
+                    if (removed) console.log(`[SCHEDULE] Cleaned ${removed} expired soft mute(s) in ${chatId}`);
+                } catch (e) {
+                    console.error(`[SCHEDULE] Soft-mute cleanup failed for ${chatId}: ${e.stack || e.message}`);
+                }
+
                 try {
                     const { checkGroupLockSchedule } = await import('./grouplock.js');
                     await checkGroupLockSchedule(activeSocket, chatId);
