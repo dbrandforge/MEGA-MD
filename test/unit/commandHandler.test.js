@@ -55,6 +55,14 @@ describe('CommandHandler', () => {
         expect(handler.categories.get('newcategory')).toContain('replaceprobe');
     });
 
+    it('rejects aliases that collide with an existing command or alias', () => {
+        handler.registerCommand({ command: 'primarycmd', aliases: ['sharedalias'], category: 'general', async handler() {} });
+        handler.registerCommand({ command: 'secondarycmd', aliases: ['sharedalias', 'primarycmd'], category: 'general', async handler() {} });
+        expect(handler.aliases.get('sharedalias')).toBe('primarycmd');
+        expect(handler.aliases.has('primarycmd')).toBe(false);
+        expect(handler.getCommand('.primarycmd', ['.'])?.command).toBe('primarycmd');
+    });
+
     it('unregisterCommand removes command, aliases, category and stats', () => {
         handler.registerCommand({
             command: 'removeprobe', aliases: ['rp'], category: 'temporary',
