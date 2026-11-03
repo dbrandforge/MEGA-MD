@@ -34,7 +34,15 @@ export default {
     }
 
     const locked = state === 'on' || state === 'lock';
-    await setManualGameLock(chatId, game, locked);
+    try {
+      await setManualGameLock(chatId, game, locked);
+    } catch (error) {
+      console.error('[GAMELOCK] Could not persist manual game lock:', error.message);
+      return sock.sendMessage(chatId, {
+        text: '❌ The game-lock change could not be saved. No success was reported; please try again.',
+        ...channelInfo
+      }, { quoted: message });
+    }
     return sock.sendMessage(chatId, {
       text: locked
         ? `🔒 *${games[game]} locked.* Members cannot start or continue it until an admin unlocks it.`
