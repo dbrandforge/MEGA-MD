@@ -19,7 +19,8 @@ import {
     cleanExpiredSoftMutes,
     isSoftMuted,
     softMuteUser,
-    softUnmuteUser
+    softUnmuteUser,
+    handleSoftMuteMessage
 } from '../../plugins/softmute.js';
 
 const GROUP = '120363000000000001@g.us';
@@ -53,6 +54,16 @@ describe('soft mute expiry and scheduler registration', () => {
 
         await expect(isSoftMuted(GROUP, '2348000000000@s.whatsapp.net')).resolves.toBe(false);
         expect(await store.getSetting(GROUP, 'softMutes')).toEqual({});
+    });
+
+    it('deletes messages from an actively muted member', async () => {
+        const user = '2348000000000@s.whatsapp.net';
+        await softMuteUser({}, GROUP, user, 10);
+        const message = { key: { id: 'muted-message', remoteJid: GROUP, participant: user, fromMe: false } };
+        const sock = { sendMessage: vi.fn(async () => ({})) };
+
+        await expect(handleSoftMuteMessage(sock, GROUP, message, user)).resolves.toBe(true);
+        expect(sock.sendMessage).toHaveBeenCalledWith(GROUP, { delete: message.key });
     });
 
     it('normalizes device-qualified PN JIDs without losing the JID domain', async () => {
