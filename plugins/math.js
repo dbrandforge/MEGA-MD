@@ -63,7 +63,9 @@ function clearTimer(chatId) {
 
 async function saveMatchRecords(chatId, game) {
   const records = (await store.getSetting(chatId, RECORD_KEY)) || {};
-  for (const [jid, score] of Object.entries(game.scores || {})) {
+  const playerIds = new Set([...Object.keys(game.participants || {}), ...Object.keys(game.scores || {})]);
+  for (const jid of playerIds) {
+    const score = game.scores?.[jid] || 0;
     const previous = records[jid] || { points: 0, matches: 0, wins: 0 };
     records[jid] = {
       ...previous,
