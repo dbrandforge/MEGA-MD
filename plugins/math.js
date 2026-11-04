@@ -8,6 +8,20 @@ const RECORD_KEY = 'mathRecords';
 const QUESTIONS_PER_MATCH = 10;
 const MATCH_EXPIRY_MS = 30 * 60 * 1000;
 const timers = new Map();
+const chatLocks = new Map();
+async function withChatLock(chatId, task) {
+  const previous = chatLocks.get(chatId) || Promise.resolve();
+  let release;
+  const current = new Promise(resolve => { release = resolve; });
+  const queued = previous.then(() => current);
+  chatLocks.set(chatId, queued);
+  await previous;
+  try { return await task(); }
+  finally {
+    release();
+    if (chatLocks.get(chatId) === queued) chatLocks.delete(chatId);
+  }
+}
 
 export const MATH_MODES = {
   noob: { min: -9, max: 9, operators: ['+', '-'], time: 20000 },
@@ -102,26 +116,28 @@ async function endMatch(sock, chatId, game, reason = 'completed', quoted) {
 }
 
 async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
-  const game = await readGame(chatId);
-  if (!game || game.roundToken !== roundToken || game.questionClosed) return false;
-  clearTimer(chatId);
-  game.questionClosed = true;
-  await saveGame(chatId, game);
-  const winnerText = game.roundWinner ? `⚡ ${mention(game.roundWinner)} got it first!` : 'No correct answer this round.';
-  await sock.sendMessage(chatId, {
-    text: `⏱️ *Round ${game.round}/${game.totalRounds} closed.*\n${winnerText}\nCorrect answer: *${game.answer}*`,
-    mentions: game.roundWinner ? [game.roundWinner] : []
-  });
-  if (game.round >= game.totalRounds) {
-    await endMatch(sock, chatId, game, 'completed');
+  return withChatLock(chatId, async () => {
+    const game = await readGame(chatId);
+    if (!game || game.roundToken !== roundToken || game.questionClosed) return false;
+    clearTimer(chatId);
+    game.questionClosed = true;
+    await saveGame(chatId, game);
+    const winnerText = game.roundWinner ? `⚡ ${mention(game.roundWinner)} got it first!` : 'No correct answer this round.';
+    await sock.sendMessage(chatId, {
+      text: `⏱️ *Round ${game.round}/${game.totalRounds} closed.*\n${winnerText}\nCorrect answer: *${game.answer}*`,
+      mentions: game.roundWinner ? [game.roundWinner] : []
+    });
+    if (game.round >= game.totalRounds) {
+      await endMatch(sock, chatId, game, 'completed');
+      return true;
+    }
+    setTimeout(async () => {
+      const latest = await readGame(chatId);
+      if (!latest || latest.roundToken !== roundToken || !latest.questionClosed) return;
+      await postNextQuestion(sock, chatId, latest);
+    }, 1800);
     return true;
-  }
-  setTimeout(async () => {
-    const latest = await readGame(chatId);
-    if (!latest || latest.roundToken !== roundToken || !latest.questionClosed) return;
-    await postNextQuestion(sock, chatId, latest);
-  }, 1800);
-  return true;
+  });
 }
 
 function armTimer(sock, chatId, game) {
@@ -161,45 +177,50 @@ async function playerCanEnd(sock, chatId, senderId, context, message, game) {
 
 export async function handleMathContinuity(sock, chatId, message, senderId) {
   if (!chatId?.endsWith('@g.us') || message?.key?.fromMe || !isFeatureGroup(chatId)) return false;
-  const game = await readGame(chatId);
-  if (!game) return false;
-  armTimer(sock, chatId, game);
   const contextInfo = message.message?.extendedTextMessage?.contextInfo || message.message?.imageMessage?.contextInfo || {};
-  if (!contextInfo.stanzaId || contextInfo.stanzaId !== game.questionMessageId) return false;
-  const access = await isGameAllowed(chatId, 'math');
-  if (!access.ok) {
-    await sock.sendMessage(chatId, { text: access.msg }, { quoted: message });
-    return true;
-  }
-  if (game.questionClosed || game.roundWinner) return true;
-  const body = String(message.message?.conversation || message.message?.extendedTextMessage?.text || '').trim().replace(/,/g, '');
-  if (!/^-?\d+$/.test(body)) return false;
-  if (game.attemptedBy?.[senderId]) {
-    await sock.sendMessage(chatId, { text: 'You have already submitted an answer for this question.' }, { quoted: message });
-    return true;
-  }
-  game.attemptedBy = game.attemptedBy || {};
-  game.attemptedBy[senderId] = 1;
-  game.participants = game.participants || {};
-  game.participants[senderId] = true;
-  if (body === game.answer) {
-    game.roundWinner = senderId;
-    const remaining = Math.max(0, game.expiresAt - Date.now());
-    const bonus = Math.floor((remaining / game.questionTime) * 5);
-    const points = 10 + bonus;
-    game.scores = game.scores || {};
-    game.scores[senderId] = (game.scores[senderId] || 0) + points;
-    await saveGame(chatId, game);
-    await sock.sendMessage(chatId, {
-      text: `✅ *Correct, ${mention(senderId)}!*\n+*${points} points* (including speed bonus).\n\nThe round is now closed.`,
-      mentions: [senderId]
-    }, { quoted: message });
-    await closeQuestion(sock, chatId, game.roundToken, 'correct');
-  } else {
+  if (!contextInfo.stanzaId) return false;
+  const result = await withChatLock(chatId, async () => {
+    const game = await readGame(chatId);
+    if (!game) return false;
+    armTimer(sock, chatId, game);
+    if (contextInfo.stanzaId !== game.questionMessageId) return false;
+    const access = await isGameAllowed(chatId, 'math');
+    if (!access.ok) {
+      await sock.sendMessage(chatId, { text: access.msg }, { quoted: message });
+      return true;
+    }
+    if (game.questionClosed || game.roundWinner) return true;
+    if (Date.now() >= game.expiresAt) return { handled: true, closeToken: game.roundToken };
+    const body = String(message.message?.conversation || message.message?.extendedTextMessage?.text || '').trim().replace(/,/g, '');
+    if (!/^-?\d+$/.test(body)) return false;
+    if (game.attemptedBy?.[senderId]) {
+      await sock.sendMessage(chatId, { text: 'You have already submitted an answer for this question.' }, { quoted: message });
+      return true;
+    }
+    game.attemptedBy = game.attemptedBy || {};
+    game.attemptedBy[senderId] = 1;
+    game.participants = game.participants || {};
+    game.participants[senderId] = true;
+    if (body === game.answer) {
+      game.roundWinner = senderId;
+      const remaining = Math.max(0, game.expiresAt - Date.now());
+      const bonus = Math.floor((remaining / game.questionTime) * 5);
+      const points = 10 + bonus;
+      game.scores = game.scores || {};
+      game.scores[senderId] = (game.scores[senderId] || 0) + points;
+      await saveGame(chatId, game);
+      await sock.sendMessage(chatId, {
+        text: `✅ *Correct, ${mention(senderId)}!*\n+*${points} points* (including speed bonus).\n\nThe round is now closed.`,
+        mentions: [senderId]
+      }, { quoted: message });
+      return { handled: true, closeToken: game.roundToken };
+    }
     await saveGame(chatId, game);
     await sock.sendMessage(chatId, { text: '❌ Not quite. Your answer is recorded; other players can still compete.' }, { quoted: message });
-  }
-  return true;
+    return true;
+  });
+  if (result?.closeToken) await closeQuestion(sock, chatId, result.closeToken, 'correct');
+  return result === true || !!result?.handled;
 }
 
 export default {
