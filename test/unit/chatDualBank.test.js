@@ -1,5 +1,4 @@
-import { describe, it } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it, expect } from 'vitest';
 import {
   dualExpansionStats,
   dualBankExpansionComplete,
@@ -7,39 +6,41 @@ import {
 import { pickDualReply, getDualBankStats } from '../../data/chatDual/dualBankSelector.js';
 
 describe('ChatDual expansion bank', () => {
-  it('reports complete and exact 5183 pairs', () => {
-    assert.equal(dualBankExpansionComplete, true);
-    const s = dualExpansionStats();
-    assert.equal(s.total, 5183);
-    assert.equal(s.core, 175);
-    assert.equal(s.expand, 2908);
-    assert.equal(s.yoruba, 400);
-    assert.equal(s.conversational, 500);
-    assert.equal(s.gist, 375);
-    assert.equal(s.financialNeed, 375);
-    assert.equal(s.relationshipExtra, 450);
+  it('reports complete and exact 5,183-pair expansion', () => {
+    expect(dualBankExpansionComplete).toBe(true);
+    expect(dualExpansionStats()).toEqual({
+      core: 175,
+      expand: 2908,
+      yoruba: 400,
+      conversational: 500,
+      gist: 375,
+      financialNeed: 375,
+      relationshipExtra: 450,
+      total: 5183,
+    });
   });
 
-  it('routes sexual-health advice to dual, not null', () => {
-    const r = pickDualReply('Is continuous consent required during a scene?', { chatId: 't1' });
-    assert.ok(typeof r === 'string' && r.length > 5);
+  it('routes sexual-health and consent advice to ChatDual', () => {
+    const reply = pickDualReply('Is continuous consent required during a scene?', { chatId: 'test-sex-advice' });
+    expect(typeof reply).toBe('string');
+    expect(reply.length).toBeGreaterThan(5);
   });
 
-  it('leaves pure dirty talk to personality bank (null dual)', () => {
-    const r = pickDualReply('talk dirty to me', { chatId: 't2' });
-    assert.equal(r, null);
+  it('leaves pure dirty talk to the existing personality bank', () => {
+    expect(pickDualReply('talk dirty to me', { chatId: 'test-dirty-talk' })).toBeNull();
   });
 
-  it('routes relationship / money / wellbeing / yoruba', () => {
-    assert.ok(pickDualReply('My situationship only texts at night', { chatId: 't3' }));
-    assert.ok(pickDualReply('I need money urgently', { chatId: 't4', intent: 'financialNeed' }));
-    assert.ok(pickDualReply('I feel burnt out and anxious', { chatId: 't5', intent: 'empathy' }));
-    assert.ok(pickDualReply('Bawo ni?', { chatId: 't6' }));
+  it('routes relationship, financial, wellbeing and Yoruba prompts', () => {
+    expect(pickDualReply('My situationship only texts at night', { chatId: 'test-relationship' })).toBeTruthy();
+    expect(pickDualReply('I need money urgently', { chatId: 'test-money', intent: 'financialNeed' })).toBeTruthy();
+    expect(pickDualReply('I feel burnt out and anxious', { chatId: 'test-wellbeing', intent: 'empathy' })).toBeTruthy();
+    expect(pickDualReply('Bawo ni?', { chatId: 'test-yoruba' })).toBeTruthy();
   });
 
-  it('exposes category pools', () => {
+  it('exposes populated category pools', () => {
     const stats = getDualBankStats();
-    assert.ok(stats.categories.sexAdvice > 0);
-    assert.ok(stats.categories.relationship > 0);
+    expect(stats.complete).toBe(true);
+    expect(stats.categories.sexAdvice).toBeGreaterThan(0);
+    expect(stats.categories.relationship).toBeGreaterThan(0);
   });
 });
