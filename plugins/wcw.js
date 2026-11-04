@@ -65,7 +65,7 @@ export default {
     aliases: ['womencrush', 'crushwednesday'],
     category: 'games',
     description: 'Women Crush Wednesday',
-    usage: '.wcw | .wcw shot @lady | .wcw accept/reject/switch',
+    usage: '.wcw | .wcw shot @lady | .wcw accept/switch | .wcw reject @member',
     groupOnly: true,
     async handler(sock, message, args, context) {
         const { chatId, senderId, channelInfo } = context;
@@ -131,7 +131,42 @@ export default {
             if (!pendingShots.length) {
                 return sock.sendMessage(chatId, { text: `No pending shots.`, ...channelInfo }, { quoted: message });
             }
-            const [shotId, shot] = pendingShots[0];
+
+            // Optional targeted response: .wcw reject @member
+            // Match against the shooter's saved PN/LID aliases, while keeping
+            // legacy pending records (which may only contain "guy") usable.
+            let selectedShots = pendingShots;
+            if (action === 'reject') {
+                const mentionedShooters = message.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+                if (mentionedShooters.length) {
+                    const targetAliases = new Set();
+                    for (const mentionedJid of mentionedShooters) {
+                        for (const alias of await getJidAliases(sock, mentionedJid)) targetAliases.add(alias);
+                    }
+
+                    selectedShots = pendingShots.filter(([_, pendingShot]) => {
+                        const shooterAliases = new Set([
+                            ...(Array.isArray(pendingShot.guyIds) ? pendingShot.guyIds : []),
+                            pendingShot.guy
+                        ].filter(Boolean));
+                        return Array.from(targetAliases).some(id => shooterAliases.has(id));
+                    });
+
+                    if (!selectedShots.length) {
+                        return sock.sendMessage(chatId, {
+                            text: `No pending shot from the tagged member. Their shot was not changed.`,
+                            ...channelInfo
+                        }, { quoted: message });
+                    }
+                } else if (pendingShots.length > 1) {
+                    return sock.sendMessage(chatId, {
+                        text: `You have multiple pending shots. Tag the person you want to reject: *.wcw reject @member*`,
+                        ...channelInfo
+                    }, { quoted: message });
+                }
+            }
+
+            const [shotId, shot] = selectedShots[0];
             const guyId = shot.guy;
 
             if (action === 'accept') {
