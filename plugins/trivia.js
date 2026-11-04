@@ -64,7 +64,9 @@ function questionMatchesDifficulty(question, difficulty = null) {
   return !difficulty || normalizeDifficulty(question.difficulty) === normalizeDifficulty(difficulty);
 }
 export function secondsForQuestion(question, selectedDifficulty) {
-  return DIFFICULTY_SECONDS[normalizeDifficulty(selectedDifficulty || question.difficulty)] || 30;
+  const selected = normalizeDifficulty(selectedDifficulty);
+  const grade = DIFFICULTY_SECONDS[selected] ? selected : normalizeDifficulty(question.difficulty);
+  return DIFFICULTY_SECONDS[grade] || 30;
 }
 export function getAvailableTriviaQuestions(category = 'mixed', difficulty = null, usedIds = []) {
   const used = new Set(usedIds);
