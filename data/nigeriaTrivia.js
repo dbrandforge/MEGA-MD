@@ -76,10 +76,10 @@ export const NIGERIA_TRIVIA = [
   { id:'gl007', category:'music', difficulty:'normal', question:'Which South Korean group released the song “Dynamite” in 2020?', options:['BTS','BLACKPINK','EXO','Stray Kids'], answer:0 },
   { id:'gl008', category:'music', difficulty:'hard', question:'Which Nigerian artist released the album “African Giant”?', options:['Burna Boy','Wizkid','Davido','Olamide'], answer:0 },
   { id:'gl009', category:'music', difficulty:'expert', question:'Which Jamaican musician is widely credited with helping bring reggae to a global audience through albums such as “Exodus”?', options:['Bob Marley','Jimmy Cliff','Peter Tosh','Burning Spear'], answer:0 },
-  { id:'gl010', category:'nollywood', difficulty:'easy', question:'Which film franchise features the fictional school Hogwarts?', options:['Harry Potter','The Hunger Games','The Lord of the Rings','Twilight'], answer:0 },
-  { id:'gl011', category:'nollywood', difficulty:'normal', question:'Which South Korean film became the first non-English-language film to win the Academy Award for Best Picture?', options:['Parasite','Train to Busan','Oldboy','Minari'], answer:0 },
-  { id:'gl012', category:'nollywood', difficulty:'hard', question:'Who directed the 1994 film “Pulp Fiction”?', options:['Quentin Tarantino','Martin Scorsese','Christopher Nolan','David Fincher'], answer:0 },
-  { id:'gl013', category:'nollywood', difficulty:'expert', question:'Which Japanese animation studio produced “Spirited Away”?', options:['Studio Ghibli','Toei Animation','Madhouse','Sunrise'], answer:0 },
+  { id:'gl010', category:'hollywood', difficulty:'easy', question:'Which film franchise features the fictional school Hogwarts?', options:['Harry Potter','The Hunger Games','The Lord of the Rings','Twilight'], answer:0 },
+  { id:'gl011', category:'movies', difficulty:'normal', question:'Which South Korean film became the first non-English-language film to win the Academy Award for Best Picture?', options:['Parasite','Train to Busan','Oldboy','Minari'], answer:0 },
+  { id:'gl012', category:'hollywood', difficulty:'hard', question:'Who directed the 1994 film “Pulp Fiction”?', options:['Quentin Tarantino','Martin Scorsese','Christopher Nolan','David Fincher'], answer:0 },
+  { id:'gl013', category:'animation', difficulty:'expert', question:'Which Japanese animation studio produced “Spirited Away”?', options:['Studio Ghibli','Toei Animation','Madhouse','Sunrise'], answer:0 },
   { id:'gl014', category:'science', difficulty:'easy', question:'Which planet is known as the Red Planet?', options:['Mars','Venus','Jupiter','Mercury'], answer:0 },
   { id:'gl015', category:'science', difficulty:'normal', question:'What is the chemical symbol for gold?', options:['Au','Ag','Gd','Go'], answer:0 },
   { id:'gl016', category:'science', difficulty:'hard', question:'What is the SI unit of electrical resistance?', options:['Ohm','Volt','Ampere','Watt'], answer:0 },
@@ -98,10 +98,12 @@ export const NIGERIA_TRIVIA = [
   { id:'gl029', category:'gaming', difficulty:'hard', question:'What is the name of the fictional continent where most of “The Witcher 3” takes place?', options:['The Continent','Tamriel','Thedas','Azeroth'], answer:0 },
   { id:'gl030', category:'literature', difficulty:'normal', question:'Who wrote the novel “Things Fall Apart”?', options:['Chinua Achebe','Wole Soyinka','Chimamanda Ngozi Adichie','Ben Okri'], answer:0 },
   { id:'gl031', category:'literature', difficulty:'hard', question:'Who wrote “One Hundred Years of Solitude”?', options:['Gabriel García Márquez','Jorge Luis Borges','Pablo Neruda','Mario Vargas Llosa'], answer:0 },
-  { id:'gl032', category:'food', difficulty:'normal', question:'Which country is the origin of the dish paella?', options:['Spain','Italy','Portugal','France'], answer:0 }
+  { id:'gl032', category:'food', difficulty:'normal', question:'Which country is the origin of the dish paella?', options:['Spain','Italy','Portugal','France'], answer:0 },
+  { id:'gl033', category:'bollywood', difficulty:'easy', question:'Which Indian actor starred as Rancho in the film “3 Idiots”?', options:['Aamir Khan','Shah Rukh Khan','Salman Khan','Ranbir Kapoor'], answer:0 },
+  { id:'gl034', category:'series', difficulty:'normal', question:'In the television series “Breaking Bad”, what subject does Walter White teach before entering the drug trade?', options:['Chemistry','Physics','Biology','Mathematics'], answer:0 }
 ]; 
 
 export const TRIVIA_CATEGORIES = [
   'mixed','music','football','movies','lifestyle','geography','history','culture','food',
-  'technology','business','science','gaming','literature','nigeria'
+  'technology','business','science','gaming','literature','nigeria','nollywood','hollywood','bollywood','animation','series'
 ];
