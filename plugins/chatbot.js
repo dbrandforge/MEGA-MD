@@ -4,6 +4,7 @@ import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
 import { classifyIntent } from '../data/chatbotResponseLibrary.js';
 import { pickPersonalityReply } from '../data/forgeBotPersonalityBank.js';
+import { pickDualReply } from '../data/chatDual/dualBankSelector.js';
 import { getUserGender } from './gender.js';
 import { printLog } from '../lib/print.js';
 import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
@@ -112,7 +113,7 @@ async function showTyping(sock, chatId) {
     } catch {}
 }
 
-// Live replies are selected locally from the curated personality bank.
+// Live replies: dual bank for advice-shaped intents; personality bank otherwise (incl. dirty talk).
 export async function handleChatbotResponse(sock, chatId, message, userMessage, senderId) {
     const data = await loadUserGroupData();
     const isGroup = chatId.endsWith('@g.us');
@@ -152,7 +153,6 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             b.replace(/[:@].*$/, '') === quoted.replace(/[:@].*$/, '')
         );
 
-        // Record normal messages as well, so a later mention can refer to the group discussion.
         const originalText = message.message?.conversation
             || message.message?.extendedTextMessage?.text
             || message.message?.imageMessage?.caption
@@ -173,7 +173,6 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             await saveChatHistory(chatId, history);
         }
 
-        // In personal DMs, an enabled session responds naturally without requiring a mention or quoted reply.
         if (isGroup && !isMention && !isReply) return;
         if (!cleanForHistory) return;
 
@@ -182,25 +181,32 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
 
         await showTyping(sock, chatId);
 
-        // Identity-specific replies take priority over the general personality bank.
-        // Creator/VIP recognition never grants permissions; authorization remains in the command handler.
         const previousBotReply = [...history].reverse().find(item => item.name === 'Forge Bot')?.text || '';
         let registeredGender = null;
         try { registeredGender = await getUserGender(senderId); } catch {}
         let response = identityReply || identityGreeting;
         if (!response) {
-            response = pickPersonalityReply(cleanForHistory, {
+            // Dual bank: advice/relationship/wellbeing/money/yoruba. Pure dirty → null → personality dirty.
+            const dual = pickDualReply(cleanForHistory, {
                 chatId,
                 previousReply: previousBotReply,
-                gender: registeredGender,
-                history
+                intent: null,
             });
-            // Keep recognition warm but occasional during ordinary conversation.
+            if (dual) {
+                response = dual;
+            } else {
+                response = pickPersonalityReply(cleanForHistory, {
+                    chatId,
+                    previousReply: previousBotReply,
+                    gender: registeredGender,
+                    history
+                });
+            }
             if (identity && Math.random() < (identity.role === 'creator' ? 0.22 : 0.14)) {
                 response = getIdentityAcknowledgement(identity) + response;
             }
         }
-        console.info(`[Chatbot] Personality-bank reply (intent: ${classifyIntent(cleanForHistory)}, identity: ${identity?.role || 'standard'}, gender: ${registeredGender || 'unregistered'}).`);
+        console.info(`[Chatbot] Reply (intent: ${classifyIntent(cleanForHistory)}, identity: ${identity?.role || 'standard'}, gender: ${registeredGender || 'unregistered'}).`);
 
         printLog('info', `[Chatbot DM] Attempting reply via destinationType=${chatId.endsWith('@lid') ? 'LID' : 'PN_or_group'}`);
         const sentMessage = await sock.sendMessage(chatId, { text: response }, { quoted: message });
@@ -230,7 +236,6 @@ export default {
         if (!data.chatbot) data.chatbot = {};
         if (!data.chatbotDM) data.chatbotDM = {};
 
-        // DM controls are deliberately restricted to the bot owner/sudo account.
         if (!isGroup && !context.isOwnerOrSudoCheck) {
             return sock.sendMessage(chatId, { text: '🔒 Only the bot owner can change personal DM chatbot settings.' }, { quoted: message });
         }
@@ -262,8 +267,6 @@ export default {
 
         if (scope === 'dm') {
             if (action === 'on' || action === 'off') {
-                // This is a global inbound-DM switch, controlled by the bot owner.
-                // Do not key it by the owner senderId: incoming messages arrive under each external sender's JID.
                 data.chatbotDMEnabled = action === 'on';
                 await saveUserGroupData(data);
                 return sock.sendMessage(chatId, { text: action === 'on' ? '✅ Incoming DM chatbot is ON. I can now reply to private messages from other users.' : '⏸️ Incoming DM chatbot is OFF.' }, { quoted: message });
