@@ -15,7 +15,7 @@ const CATEGORY_ALIASES = {
   football: ['sports', 'football'], movies: ['nollywood', 'movies', 'film', 'hollywood', 'bollywood', 'animation', 'series'],
   nollywood: ['nollywood'], hollywood: ['hollywood'], bollywood: ['bollywood'], animation: ['animation'], series: ['series'],
   lifestyle: ['everyday', 'lifestyle'], technology: ['tech', 'technology'],
-  nigeria: ['current-affairs', 'nigeria'], music: ['music'], geography: ['geography'],
+  nigeria: ['nigeria'], music: ['music'], geography: ['geography'],
   history: ['history'], culture: ['culture'], food: ['food'], business: ['business'],
   science: ['science'], gaming: ['gaming'], literature: ['literature'], general: ['general']
 };
@@ -53,7 +53,11 @@ export { NIGERIA_TRIVIA, TRIVIA_CATEGORIES };
 
 function questionMatchesCategory(question, category = 'mixed') {
   if (!category || category === 'all' || category === 'mixed') return true;
+  if (category === 'nigeria') return String(question.id || '').startsWith('ng') || question.region === 'nigeria';
   return (CATEGORY_ALIASES[category] || [category]).includes(question.category);
+}
+export function shouldEndTriviaForNoParticipation(answers = {}) {
+  return Object.keys(answers || {}).length === 0;
 }
 function normalizeDifficulty(value) { return value === 'medium' ? 'normal' : value || null; }
 function questionMatchesDifficulty(question, difficulty = null) {
@@ -241,7 +245,7 @@ async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
       text: `⏱️ *QUESTION ${game.round} CLOSED*\n\nCorrect answer: *${game.answer}*\n\n${result}\n\n${answerRows.length} player(s) submitted.`,
       mentions: winners
     });
-    if (answerRows.length === 0) {
+    if (shouldEndTriviaForNoParticipation(game.answers)) {
       await endMatch(sock, chatId, game, 'no-participation');
       return true;
     }
