@@ -29,9 +29,9 @@ jobs:
           test -f chatDual_22_content_modules_SHA256.txt
           mkdir -p "$RUNNER_TEMP/chatdual-import"
           unzip -q chatDual_22_content_modules_5183.zip -d "$RUNNER_TEMP/chatdual-import"
-          python3 - <<'PY'
-          import hashlib, json, pathlib, re, sys
-          root = pathlib.Path("$RUNNER_TEMP/chatdual-import")
+          CHATDUAL_IMPORT_DIR="$RUNNER_TEMP/chatdual-import" python3 - <<'PY'
+          import hashlib, json, os, pathlib, re
+          root = pathlib.Path(os.environ["CHATDUAL_IMPORT_DIR"])
           manifest = pathlib.Path("chatDual_22_content_modules_SHA256.txt").read_text(encoding="utf-8")
           rows = []
           for line in manifest.splitlines():
@@ -60,14 +60,14 @@ jobs:
               if "export default " not in source:
                   raise SystemExit(f"Missing default export: {relpath}")
               payload = source.split("export default ", 1)[1]
-              payload = re.split(r";\\s*(?:export const|$)", payload, maxsplit=1)[0].strip()
+              payload = re.split(r";\s*(?:export const|$)", payload, maxsplit=1)[0].strip()
               data = json.loads(payload)
               count = sum(len(value) for value in data.values() if isinstance(value, list)) if isinstance(data, dict) else len(data)
               if count != pair_count:
                   raise SystemExit(f"Pair-count mismatch: {relpath}: {count} != {pair_count}")
               total += count
               seen.add(relpath)
-          actual = {p.as_posix().replace(root.as_posix() + "/", "") for p in (root / "data/chatDual").glob("*.js")}
+          actual = {p.relative_to(root).as_posix() for p in (root / "data/chatDual").glob("*.js")}
           if actual != seen:
               raise SystemExit(f"Archive/manifest file set mismatch: archive={len(actual)}, manifest={len(seen)}")
           if total != 5183:
@@ -75,7 +75,7 @@ jobs:
           print(f"Verified {len(rows)} modules and {total} pairs: SHA-256, byte sizes and pair counts all match.")
           PY
           cp "$RUNNER_TEMP"/chatdual-import/data/chatDual/*.js data/chatDual/
-          actual="$(find data/chatDual -maxdepth 1 -type f \\( -name 'chatDual_*_data.js' -o -name 'ev_*.js' \\) | wc -l)"
+          actual="$(find data/chatDual -maxdepth 1 -type f \( -name 'chatDual_*_data.js' -o -name 'ev_*.js' \) | wc -l)"
           test "$actual" -eq 22
 
       - name: Verify exported bank count
