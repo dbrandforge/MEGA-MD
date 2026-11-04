@@ -63,7 +63,7 @@ function normalizeDifficulty(value) { return value === 'medium' ? 'normal' : val
 function questionMatchesDifficulty(question, difficulty = null) {
   return !difficulty || normalizeDifficulty(question.difficulty) === normalizeDifficulty(difficulty);
 }
-function secondsForQuestion(question, selectedDifficulty) {
+export function secondsForQuestion(question, selectedDifficulty) {
   return DIFFICULTY_SECONDS[normalizeDifficulty(selectedDifficulty || question.difficulty)] || 30;
 }
 export function getAvailableTriviaQuestions(category = 'mixed', difficulty = null, usedIds = []) {
