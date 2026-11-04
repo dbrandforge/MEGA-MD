@@ -9,11 +9,13 @@ const SOURCE_LICENSE = 'CC BY-SA 4.0';
 const SOURCE_CATEGORIES = [
   'music', 'movies', 'television', 'geography', 'history', 'literature',
   'sports', 'general', 'hobbies', 'humanities', 'entertainment',
-  'celebrities', 'animals', 'brain-teasers'
+  'celebrities', 'animals', 'brain-teasers', 'science-technology',
+  'video-games', 'world', 'people'
 ];
 const SAFE_PROPOSALS = {
   music: 'music', movies: 'movies', television: 'series',
-  geography: 'geography', history: 'history', literature: 'literature'
+  geography: 'geography', history: 'history', literature: 'literature',
+  hobbies: 'lifestyle', humanities: 'culture', 'video-games': 'gaming'
 };
 const normalize = value => String(value || '').normalize('NFKC')
   .toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
