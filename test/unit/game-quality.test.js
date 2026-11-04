@@ -5,7 +5,7 @@ import { FALLBACK } from '../../data/wyrPairs.js';
 import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
 import { getLagosWeekKey } from '../../plugins/rank.js';
 import { MATH_MODES, generateMathQuestion } from '../../plugins/math.js';
-import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES, getTriviaQuestionCount, getAvailableTriviaQuestions, shouldEndTriviaForNoParticipation } from '../../plugins/trivia.js';
+import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES, getTriviaQuestionCount, getAvailableTriviaQuestions, shouldEndTriviaForNoParticipation, secondsForQuestion } from '../../plugins/trivia.js';
 
 describe('game quality foundations', () => {
   it('uses Lagos local weekday for day-lock calculations', () => {
@@ -100,6 +100,15 @@ describe('game quality foundations', () => {
     expect(next.some(q => used.includes(q.id))).toBe(false);
     expect(next.length).toBe(first.length - used.length);
     expect(getAvailableTriviaQuestions('mixed', 'expert').every(q => ['expert'].includes(q.difficulty))).toBe(true);
+  });
+
+
+  it('preserves the selected question grade timer on every Trivia round', () => {
+    expect(secondsForQuestion({ difficulty: 'easy' })).toBe(20);
+    expect(secondsForQuestion({ difficulty: 'normal' })).toBe(30);
+    expect(secondsForQuestion({ difficulty: 'hard' })).toBe(45);
+    expect(secondsForQuestion({ difficulty: 'expert' })).toBe(60);
+    expect(secondsForQuestion({ difficulty: 'expert' }, 'mixed')).toBe(60);
   });
 
   it('ends an unanswered Trivia match but does not treat submitted wrong answers as inactivity', () => {

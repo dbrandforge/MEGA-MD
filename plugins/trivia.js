@@ -63,8 +63,10 @@ function normalizeDifficulty(value) { return value === 'medium' ? 'normal' : val
 function questionMatchesDifficulty(question, difficulty = null) {
   return !difficulty || normalizeDifficulty(question.difficulty) === normalizeDifficulty(difficulty);
 }
-function secondsForQuestion(question, selectedDifficulty) {
-  return DIFFICULTY_SECONDS[normalizeDifficulty(selectedDifficulty || question.difficulty)] || 30;
+export function secondsForQuestion(question, selectedDifficulty) {
+  const selected = normalizeDifficulty(selectedDifficulty);
+  const grade = DIFFICULTY_SECONDS[selected] ? selected : normalizeDifficulty(question.difficulty);
+  return DIFFICULTY_SECONDS[grade] || 30;
 }
 export function getAvailableTriviaQuestions(category = 'mixed', difficulty = null, usedIds = []) {
   const used = new Set(usedIds);
@@ -273,7 +275,6 @@ async function postNextQuestion(sock, chatId, game) {
   game.round += 1;
   game.questionClosed = false;
   game.roundStartedAt = Date.now();
-  game.answerSeconds = 30;
   game.answers = {};
   Object.assign(game, getQuestion(game));
   game.closesAt = game.roundStartedAt + (game.answerSeconds * 1000);
