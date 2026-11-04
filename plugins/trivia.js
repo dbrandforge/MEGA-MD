@@ -4,7 +4,7 @@ import { isGameAllowed } from './daylock.js';
 import isAdmin from '../lib/isAdmin.js';
 import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES } from '../data/nigeriaTrivia.js';
 
-const STATE_KEY = 'triviaGame';
+const STATE_KEY = 'triviaArenaV2';
 const RECORD_KEY = 'triviaRecords';
 const QUESTIONS_PER_MATCH = 10;
 const ANSWER_WINDOW_MS = 20000;
