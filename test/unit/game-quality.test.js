@@ -54,7 +54,7 @@ describe('game quality foundations', () => {
         const q = generateMathQuestion(mode);
         expect(q.mode).toBe(mode);
         expect(Number.isInteger(Number(q.answer))).toBe(true);
-        const match = q.expression.match(/^(-?\\d+) ([+\\-×÷]) (-?\\d+)$/);
+        const match = q.expression.match(/^(-?\d+) ([+\-×÷]) (-?\d+)$/);
         expect(match).not.toBeNull();
         const a = Number(match[1]), b = Number(match[3]);
         const expected = match[2] === '+' ? a + b
