@@ -6,7 +6,7 @@ import isAdmin from '../lib/isAdmin.js';
 const STATE_KEY = 'mathGame';
 const RECORD_KEY = 'mathRecords';
 const QUESTIONS_PER_MATCH = 10;
-const MATCH_EXPIRY_MS = 30 * 60 * 1000;
+const MATCH_EXPIRY_MS = 45 * 60 * 1000;
 const timers = new Map();
 const chatLocks = new Map();
 async function withChatLock(chatId, task) {
