@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getLagosDay, getManualLockableGames } from '../../plugins/daylock.js';
 import { auditTriviaBank, getTriviaCoverage, TRIVIA_BANK_TARGETS } from '../../lib/triviaBankAudit.js';
+import { auditTriviaCandidates } from '../../lib/triviaCandidateAudit.js';
 import { WORDS, QUESTIONS_PER_ROUND, canEndHangman } from '../../plugins/hangman.js';
 import { FALLBACK } from '../../data/wyrPairs.js';
 import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
@@ -9,6 +10,33 @@ import { MATH_MODES, generateMathQuestion } from '../../plugins/math.js';
 import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES, getTriviaQuestionCount, getAvailableTriviaQuestions, shouldEndTriviaForNoParticipation, secondsForQuestion } from '../../plugins/trivia.js';
 
 describe('game quality foundations', () => {
+
+
+  it('audits review-only Trivia candidates and catches cross-source duplicate wording', () => {
+    const candidates = [
+      {
+        id: 'candidate-1', question: 'Which planet is known as the Red Planet?',
+        options: ['Mars', 'Venus', 'Jupiter', 'Saturn'], answer: 0,
+        sourceCategory: 'science', proposedCategory: 'science', difficulty: null,
+        status: 'needs-editorial-review', source: 'OpenTriviaQA',
+        license: 'CC BY-SA 4.0', attribution: 'OpenTriviaQA contributors'
+      },
+      {
+        id: 'candidate-2', question: 'Which planet is known as the Red Planet?',
+        options: ['Mars', 'Venus', 'Jupiter', 'Saturn'], answer: 0,
+        sourceCategory: 'general', proposedCategory: null, difficulty: null,
+        status: 'needs-editorial-review', source: 'OpenTriviaQA',
+        license: 'CC BY-SA 4.0', attribution: 'OpenTriviaQA contributors'
+      }
+    ];
+    const report = auditTriviaCandidates(candidates);
+    expect(report.totalCandidates).toBe(2);
+    expect(report.uniqueIds).toBe(2);
+    expect(report.uniqueQuestionWordings).toBe(1);
+    expect(report.byProposedCategory.unclassified).toBe(1);
+    expect(report.errors.some(error => error.includes('duplicate question wording'))).toBe(true);
+    expect(report.ready).toBe(false);
+  });
 
   it('enforces 1,000 unique questions per Trivia category with 250 per grade', () => {
     const questions = [];
