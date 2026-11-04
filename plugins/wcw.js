@@ -144,13 +144,18 @@ export default {
                         for (const alias of await getJidAliases(sock, mentionedJid)) targetAliases.add(alias);
                     }
 
-                    selectedShots = pendingShots.filter(([_, pendingShot]) => {
+                    selectedShots = [];
+                    for (const entry of pendingShots) {
+                        const pendingShot = entry[1];
                         const shooterAliases = new Set([
                             ...(Array.isArray(pendingShot.guyIds) ? pendingShot.guyIds : []),
-                            pendingShot.guy
+                            pendingShot.guy,
+                            ...await getJidAliases(sock, pendingShot.guy)
                         ].filter(Boolean));
-                        return Array.from(targetAliases).some(id => shooterAliases.has(id));
-                    });
+                        if (Array.from(targetAliases).some(id => shooterAliases.has(id))) {
+                            selectedShots.push(entry);
+                        }
+                    }
 
                     if (!selectedShots.length) {
                         return sock.sendMessage(chatId, {
