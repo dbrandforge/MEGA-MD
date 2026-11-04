@@ -5,7 +5,7 @@ import { FALLBACK } from '../../data/wyrPairs.js';
 import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
 import { getLagosWeekKey } from '../../plugins/rank.js';
 import { MATH_MODES, generateMathQuestion } from '../../plugins/math.js';
-import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES, getTriviaQuestionCount, getAvailableTriviaQuestions, shouldEndTriviaForNoParticipation } from '../../plugins/trivia.js';
+import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES, getTriviaQuestionCount, getAvailableTriviaQuestions, shouldEndTriviaForNoParticipation, secondsForQuestion } from '../../plugins/trivia.js';
 
 describe('game quality foundations', () => {
   it('uses Lagos local weekday for day-lock calculations', () => {
@@ -104,8 +104,11 @@ describe('game quality foundations', () => {
 
 
   it('preserves the selected question grade timer on every Trivia round', () => {
-    const timerByGrade = { easy: 20, normal: 30, hard: 45, expert: 60 };
-    expect(timerByGrade).toEqual({ easy: 20, normal: 30, hard: 45, expert: 60 });
+    expect(secondsForQuestion({ difficulty: 'easy' })).toBe(20);
+    expect(secondsForQuestion({ difficulty: 'normal' })).toBe(30);
+    expect(secondsForQuestion({ difficulty: 'hard' })).toBe(45);
+    expect(secondsForQuestion({ difficulty: 'expert' })).toBe(60);
+    expect(secondsForQuestion({ difficulty: 'expert' }, 'mixed')).toBe(60);
   });
 
   it('ends an unanswered Trivia match but does not treat submitted wrong answers as inactivity', () => {
