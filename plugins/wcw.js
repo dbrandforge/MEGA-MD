@@ -91,7 +91,9 @@ export default {
                 return sock.sendMessage(chatId, { text: `Tag the lady: *.wcw shot @lady*`, ...channelInfo }, { quoted: message });
             }
             const ladyId = mentioned[0];
-            if ((await getJidAliases(sock, ladyId)).some(id => (await getJidAliases(sock, senderId)).includes(id))) {
+            const ladyAliases = await getJidAliases(sock, ladyId);
+            const senderAliases = new Set(await getJidAliases(sock, senderId));
+            if (ladyAliases.some(id => senderAliases.has(id))) {
                 return sock.sendMessage(chatId, { text: `Cannot shoot at yourself.`, ...channelInfo }, { quoted: message });
             }
 
