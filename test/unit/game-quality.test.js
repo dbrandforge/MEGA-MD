@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getLagosDay, getManualLockableGames } from '../../plugins/daylock.js';
-import { auditTriviaBank, getTriviaCoverage, TRIVIA_BANK_TARGETS } from '../../lib/triviaBankAudit.js';
+import { auditTriviaBank, getTriviaCoverage, TRIVIA_BANK_TARGETS, TRIVIA_CATEGORY_POOLS } from '../../lib/triviaBankAudit.js';
 import { WORDS, QUESTIONS_PER_ROUND, canEndHangman } from '../../plugins/hangman.js';
 import { FALLBACK } from '../../data/wyrPairs.js';
 import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
@@ -13,7 +13,7 @@ describe('game quality foundations', () => {
   it('enforces 1,000 unique questions per Trivia category with 250 per grade', () => {
     const questions = [];
     let id = 0;
-    for (const category of ['music', 'sports', 'nollywood', 'everyday', 'geography', 'history', 'culture', 'food', 'tech', 'business', 'science', 'gaming', 'literature', 'hollywood', 'bollywood', 'animation', 'series', 'current-affairs']) {
+    for (const category of ['music', 'sports', 'nollywood', 'everyday', 'geography', 'history', 'culture', 'food', 'tech', 'business', 'science', 'gaming', 'literature', 'general', 'hollywood', 'bollywood', 'animation', 'series', 'current-affairs']) {
       for (const difficulty of ['easy', 'normal', 'hard', 'expert']) {
         for (let n = 0; n < 250; n++) {
           id += 1;
@@ -42,6 +42,13 @@ describe('game quality foundations', () => {
     expect(report.categories.music.meetsTarget).toBe(true);
     expect(report.categories.football.meetsTarget).toBe(true);
     expect(report.categories.movies.meetsTarget).toBe(true);
+    for (const category of ['nollywood', 'hollywood', 'bollywood', 'animation', 'series']) {
+      expect(report.categories[category].meetsTarget).toBe(true);
+    }
+    expect(report.categories.general.meetsTarget).toBe(true);
+    expect(Object.keys(TRIVIA_CATEGORY_POOLS).sort()).toEqual(
+      TRIVIA_CATEGORIES.filter(category => !['mixed', 'sports', 'everyday', 'tech'].includes(category)).sort()
+    );
     expect(report.categories.lifestyle.meetsTarget).toBe(true);
     expect(report.categories.nigeria.meetsTarget).toBe(true);
     expect(report.ready).toBe(true); // Synthetic fixture covers every selectable category and grade.
