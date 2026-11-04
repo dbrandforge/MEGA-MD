@@ -1,0 +1,29 @@
+# ChatDual 22 content modules — SHA-256 manifest
+# Pair total: 5183
+# Structure in ZIP: data/chatDual/<filename>
+# Format: SHA256  BYTES  PAIRS  PATH
+
+0265912c6d202896a40a8b7c45304bd2e3a49d45ed5171f395dc8aea5abc75f8   15542   175  data/chatDual/chatDual_core_data.js
+18bbf55dff867feee872309c5f5a21b93789c7d6b77088c9ced4398dc43bca98   32239   400  data/chatDual/chatDual_yoruba_data.js
+dcd07a096958e158dbea849ce3999e8a9532f2cb18e7d5cf1ca18dab4b956a93   38885   500  data/chatDual/chatDual_conversational_data.js
+6dcd940b853e4a7ae3777cb62e6ace0c97ebf68e4913d4c1b45d3cd96b5aac7c   36140   375  data/chatDual/chatDual_gist_data.js
+a838b51eeeb262b39a2e936747b8564d35616ba2abdf5161b16dd21b3dcae53e   40267   375  data/chatDual/chatDual_money_data.js
+7e4d310963e6dbd79df0f0a08f00e6bfcafa6b13a3b715fca9bb4e76acbce959   59312   450  data/chatDual/chatDual_rel_life_data.js
+14b1786c863bb2776ac632552bfb06b42ce6d62780f21ded8a1066150ee9683f   15389   182  data/chatDual/ev_0_0.js
+44d865c45b248db8f44370a1bf5bb0852f032f1e10565d5c5ad349c9efa22f4e   16730   182  data/chatDual/ev_0_1.js
+a76bfff0a946b51e05829e8616a079a07f6a053ea2b27da642b5512187fff0ef   16059   182  data/chatDual/ev_0_2.js
+ac8ffbaa1784b8c0e09210d4f45d829ee28a9dc4ccbce4c7426104446969a278   16012   181  data/chatDual/ev_0_3.js
+762638391d85dcd3ef72c5e4deaa8f4755b3bf29b752532b9d190ceb5eac0a76   15186   182  data/chatDual/ev_1_0.js
+5c070d201474c5613c457b0b63be3f9620bab132b703cbe428e77b17033ee983   14887   182  data/chatDual/ev_1_1.js
+131559e48f1eaf2ba72509f146b331f8e181769520f487dbc0b05c5168ff098f   15567   182  data/chatDual/ev_1_2.js
+c55566444c9ff6c0c449bed3d8bbe80c5f29935e4e46dae3070ce03bc3af970d   15883   181  data/chatDual/ev_1_3.js
+9c171d9924a49a0d0883f858672deee744a04dececb19f31cecc0998d6b8531f   15503   182  data/chatDual/ev_2_0.js
+48dcca6d4d7abd1683ee573429b34b73b218f7797ef9c218537e849fdfa2e400   14994   182  data/chatDual/ev_2_1.js
+ec7c0e13c4f704712a25902c7c75f942bed04a77ea0e59f5d9fb90995bcd862d   16480   182  data/chatDual/ev_2_2.js
+1765fc74a1f26d75a718466f9a6bbe4920b9bf27b2c814443fae18c8aaa78c35   15098   181  data/chatDual/ev_2_3.js
+10ea0bc02cb81c1055245de10c1ba3a532575769ef6c95c4293ace2f1505f2d5   14253   182  data/chatDual/ev_3_0.js
+35a94a8db4678cccae896e03ac66b5621884648646b3e55d7301828092d3193f   15122   182  data/chatDual/ev_3_1.js
+b806d34843191d3c4155ef5cf973d2dc00bfc953a559c85b8e9b7b1a708385bc   14869   182  data/chatDual/ev_3_2.js
+c4eb53c845c24884b59e516a39319eeb17b8173baa34008b86638c42aee45ca4   13641   181  data/chatDual/ev_3_3.js
+
+# FILES=22 TOTAL_PAIRS=5183 ZIP=chatDual_22_content_modules_5183.zip
