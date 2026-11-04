@@ -74,10 +74,10 @@ async function importLegacyGame(chatId) {
       answer: legacy.answer,
       questionMessageId: legacy.questionMessageId,
       roundStartedAt: now,
-      closesAt: Math.min(now + ANSWER_WINDOW_MS, legacy.expiresAt || now + ANSWER_WINDOW_MS),
+      closesAt: now + ANSWER_WINDOW_MS,
       roundToken: `legacy-${now}`,
       questionClosed: false,
-      matchExpiresAt: legacy.expiresAt || now + MATCH_EXPIRY_MS,
+      matchExpiresAt: now + MATCH_EXPIRY_MS,
       startedAt: legacy.startedAt || now,
       migratedFromLegacy: true
     };
