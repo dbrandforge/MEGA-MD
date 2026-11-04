@@ -61,7 +61,7 @@ function getQuestion(game) {
       (!game.difficulty || q.difficulty === game.difficulty)
     );
   }
-  if (!pool.length) throw new Error('No questions are available for this category and difficulty.');
+  if (!pool.length) {\n    // A category may not yet have questions at every difficulty. Keep the selected category\n    // and fall back to its full difficulty range rather than failing the match.\n    pool = NIGERIA_TRIVIA.filter(q =>\n      (!game.category || game.category === 'all' || q.category === game.category) &&\n      !used.has(q.id)\n    );\n  }\n  if (!pool.length) throw new Error('No questions are available for this category.');
   const source = pool[Math.floor(Math.random() * pool.length)];
   game.usedQuestions.push(source.id);
   const choices = shuffle(source.options.map((text, index) => ({ text, correct: index === source.answer })));
