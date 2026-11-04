@@ -5,7 +5,7 @@ import { FALLBACK } from '../../data/wyrPairs.js';
 import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
 import { getLagosWeekKey } from '../../plugins/rank.js';
 import { MATH_MODES, generateMathQuestion } from '../../plugins/math.js';
-import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES, getTriviaQuestionCount } from '../../plugins/trivia.js';
+import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES, getTriviaQuestionCount, getAvailableTriviaQuestions, shouldEndTriviaForNoParticipation } from '../../plugins/trivia.js';
 
 describe('game quality foundations', () => {
   it('uses Lagos local weekday for day-lock calculations', () => {
@@ -67,12 +67,19 @@ describe('game quality foundations', () => {
   });
 
   it('provides a substantial, unique Nigeria-focused trivia bank with valid choices', () => {
-    expect(NIGERIA_TRIVIA.length).toBeGreaterThanOrEqual(60);
+    expect(NIGERIA_TRIVIA.length).toBeGreaterThanOrEqual(95);
     expect(new Set(NIGERIA_TRIVIA.map(q => q.id)).size).toBe(NIGERIA_TRIVIA.length);
     expect(TRIVIA_CATEGORIES).toContain('current-affairs');
-    expect(getTriviaQuestionCount('all')).toBe(63);
+    expect(getTriviaQuestionCount('all')).toBe(NIGERIA_TRIVIA.length);
     expect(getTriviaQuestionCount('current-affairs')).toBe(3);
-    expect(getTriviaQuestionCount('current-affairs', 'hard')).toBe(3);
+    expect(getTriviaQuestionCount('nigeria')).toBe(63);
+    expect(getTriviaQuestionCount('current-affairs', 'hard')).toBe(0);
+    expect(getTriviaQuestionCount('football', 'hard')).toBeGreaterThan(0);
+    expect(getTriviaQuestionCount('football', 'expert')).toBeGreaterThan(0);
+    expect(getTriviaQuestionCount('movies', 'expert')).toBeGreaterThan(0);
+    expect(getTriviaQuestionCount('nollywood', 'expert')).toBeGreaterThan(0);
+    expect(getTriviaQuestionCount('lifestyle', 'expert')).toBeGreaterThan(0);
+    expect(getTriviaQuestionCount('music', 'hard')).toBeGreaterThan(0);
     for (const q of NIGERIA_TRIVIA) {
       expect(q.options).toHaveLength(4);
       expect(new Set(q.options.map(option => option.toLowerCase())).size).toBe(4);
@@ -80,6 +87,25 @@ describe('game quality foundations', () => {
       expect(q.answer).toBeLessThan(4);
       expect(TRIVIA_CATEGORIES).toContain(q.category);
     }
+  });
+
+  it('supports worldwide categories, four grades and never returns a used question', () => {
+    expect(['music','football','movies','science','technology','gaming','literature']).toEqual(
+      expect.arrayContaining(TRIVIA_CATEGORIES.filter(value => ['music','football','movies','science','technology','gaming','literature'].includes(value)))
+    );
+    const first = getAvailableTriviaQuestions('mixed', null);
+    expect(first.length).toBe(NIGERIA_TRIVIA.length);
+    const used = first.slice(0, 20).map(q => q.id);
+    const next = getAvailableTriviaQuestions('mixed', null, used);
+    expect(next.some(q => used.includes(q.id))).toBe(false);
+    expect(next.length).toBe(first.length - used.length);
+    expect(getAvailableTriviaQuestions('mixed', 'expert').every(q => ['expert'].includes(q.difficulty))).toBe(true);
+  });
+
+  it('ends an unanswered Trivia match but does not treat submitted wrong answers as inactivity', () => {
+    expect(shouldEndTriviaForNoParticipation({})).toBe(true);
+    expect(shouldEndTriviaForNoParticipation({ '2348000000000@s.whatsapp.net': { correct: false } })).toBe(false);
+    expect(shouldEndTriviaForNoParticipation({ '2348000000000@s.whatsapp.net': { correct: true } })).toBe(false);
   });
 
   it('dates and sources the volatile Nigerian current-affairs trivia entries', () => {
