@@ -113,11 +113,11 @@ export function pickDualReply(text, options = {}) {
     category = 'yoruba';
   } else if (intent === 'financialNeed' || MONEY_RE.test(input)) {
     category = dualPools.financialNeed?.length ? 'financialNeed' : (dualPools.advice?.length ? 'advice' : null);
-  } else if (intent === 'relationships' || intent === 'boundaries' || RELATIONSHIP_RE.test(input)) {
+  } else if (intent === 'relationships' || intent === 'boundaries' || intent === 'friendship' || RELATIONSHIP_RE.test(input)) {
     category = dualPools.relationship?.length ? 'relationship' : null;
   } else if (intent === 'empathy' || WELLBEING_RE.test(input)) {
     category = dualPools.wellbeing?.length ? 'wellbeing' : (dualPools.advice?.length ? 'advice' : null);
-  } else if (intent === 'advice' || ADVICE_RE.test(input)) {
+  } else if (intent === 'advice' || intent === 'workLife' || ADVICE_RE.test(input)) {
     category = dualPools.advice?.length ? 'advice' : (dualPools.relationship?.length ? 'relationship' : null);
   } else if (intent === 'yoruba' && dualPools.yoruba?.length) {
     category = 'yoruba';
