@@ -47,7 +47,7 @@ describe('game quality foundations', () => {
     }
     expect(report.categories.general.meetsTarget).toBe(true);
     expect(Object.keys(TRIVIA_CATEGORY_POOLS).sort()).toEqual(
-      TRIVIA_CATEGORIES.filter(category => !['mixed', 'sports', 'everyday', 'tech'].includes(category)).sort()
+      TRIVIA_CATEGORIES.filter(category => category !== 'mixed').sort()
     );
     expect(report.categories.lifestyle.meetsTarget).toBe(true);
     expect(report.categories.nigeria.meetsTarget).toBe(true);
