@@ -190,7 +190,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             const dual = pickDualReply(cleanForHistory, {
                 chatId,
                 previousReply: previousBotReply,
-                intent: null,
+                intent: classifyIntent(cleanForHistory),
             });
             if (dual) {
                 response = dual;
