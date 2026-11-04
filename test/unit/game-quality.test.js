@@ -44,7 +44,7 @@ describe('game quality foundations', () => {
     expect(report.categories.movies.meetsTarget).toBe(true);
     expect(report.categories.lifestyle.meetsTarget).toBe(true);
     expect(report.categories.nigeria.meetsTarget).toBe(true);
-    expect(report.ready).toBe(false); // Remaining selectable categories are deliberately absent.
+    expect(report.ready).toBe(true); // Synthetic fixture covers every selectable category and grade.
     expect(getTriviaCoverage(questions).music.byDifficulty).toEqual({
       easy: 250, normal: 250, hard: 250, expert: 250
     });
