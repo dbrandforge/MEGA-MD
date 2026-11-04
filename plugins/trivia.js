@@ -41,6 +41,12 @@ const shuffle = values => {
 
 export { NIGERIA_TRIVIA, TRIVIA_CATEGORIES };
 
+export function getTriviaQuestionCount(category = 'all', difficulty = null) {
+  const categoryPool = NIGERIA_TRIVIA.filter(q => !category || category === 'all' || q.category === category);
+  const difficultyPool = difficulty ? categoryPool.filter(q => q.difficulty === difficulty) : categoryPool;
+  return (difficultyPool.length ? difficultyPool : categoryPool).length;
+}
+
 async function importLegacyGame(chatId) {
   const imported = await store.getSetting(chatId, LEGACY_IMPORTED_KEY);
   if (imported) return null;
@@ -375,7 +381,7 @@ export default {
       else if (['easy', 'medium', 'hard'].includes(value)) difficulty = value;
     }
     game = {
-      active: true, category, difficulty, round: 0, totalRounds: QUESTIONS_PER_MATCH,
+      active: true, category, difficulty, round: 0, totalRounds: Math.min(QUESTIONS_PER_MATCH, getTriviaQuestionCount(category, difficulty)),
       scores: {}, answers: {}, participants: {}, usedQuestions: [],
       startedBy: senderId, startedAt: Date.now(), matchExpiresAt: Date.now() + MATCH_EXPIRY_MS
     };
