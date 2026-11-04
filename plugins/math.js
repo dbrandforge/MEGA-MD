@@ -1,106 +1,277 @@
-const mathGames = {};
-const modes = {
-    noob: [-3, 3, -3, 3, '+-', 15000],
-    easy: [-10, 10, -10, 10, '*/+-', 20000],
-    normal: [-40, 40, -20, 20, '*/+-', 40000],
-    hard: [-100, 100, -70, 70, '*/+-', 60000],
-    extreme: [-999999, 999999, -999999, 999999, '*/', 99999],
-    impossible: [-99999999999, 99999999999, -99999999999, 999999999999, '*/', 30000],
-    impossible2: [-999999999999999, 999999999999999, -999, 999, '/', 30000],
+import store from '../lib/lightweight_store.js';
+import { isFeatureGroup } from '../lib/featureGroups.js';
+import { isGameAllowed } from './daylock.js';
+import isAdmin from '../lib/isAdmin.js';
+
+const STATE_KEY = 'mathGame';
+const RECORD_KEY = 'mathRecords';
+const QUESTIONS_PER_MATCH = 10;
+const MATCH_EXPIRY_MS = 45 * 60 * 1000;
+const timers = new Map();
+const chatLocks = new Map();
+async function withChatLock(chatId, task) {
+  const previous = chatLocks.get(chatId) || Promise.resolve();
+  let release;
+  const current = new Promise(resolve => { release = resolve; });
+  const queued = previous.then(() => current);
+  chatLocks.set(chatId, queued);
+  await previous;
+  try { return await task(); }
+  finally {
+    release();
+    if (chatLocks.get(chatId) === queued) chatLocks.delete(chatId);
+  }
+}
+
+export const MATH_MODES = {
+  noob: { min: -9, max: 9, operators: ['+', '-'], time: 20000 },
+  easy: { min: -20, max: 20, operators: ['+', '-', '*'], time: 25000 },
+  normal: { min: -60, max: 60, operators: ['+', '-', '*', '/'], time: 30000 },
+  hard: { min: -150, max: 150, operators: ['+', '-', '*', '/'], time: 35000 },
+  extreme: { min: -500, max: 500, operators: ['+', '-', '*', '/'], time: 40000 },
+  impossible: { min: -2000, max: 2000, operators: ['+', '-', '*', '/'], time: 45000 },
+  impossible2: { min: -10000, max: 10000, operators: ['+', '-', '*', '/'], time: 50000 }
 };
-const operators = {
-    '+': '+',
-    '-': '-',
-    '*': '×',
-    '/': '÷',
-};
-export default {
-    command: 'math',
-    aliases: ['maths', 'ganit'],
-    category: 'games',
-    description: 'Solve math problems',
-    usage: '.math',
-    initialized: false,
-    async handler(sock, message, args, _context) {
-        const { chatId, config } = _context;
-        const prefix = config.prefix;
-        if (mathGames[chatId]) {
-            return sock.sendMessage(chatId, { text: '⚠️ Solve the current problem first!' }, { quoted: mathGames[chatId].msg });
-        }
-        const mode = args[0]?.toLowerCase();
-        if (!mode || !(mode in modes)) {
-            return sock.sendMessage(chatId, {
-                text: `🧮 *Available Difficulties:*\n\n${Object.keys(modes).join(' | ')}\n\n_Example: ${prefix}math normal_`
-            }, { quoted: message });
-        }
-        const math = genMath(mode);
-        const text = `▢ HOW MUCH IS IT *${math.str}*=\n\n_Time:_ ${(math.time / 1000).toFixed(2)} seconds`;
-        const sentMsg = await sock.sendMessage(chatId, { text }, { quoted: message });
-        mathGames[chatId] = {
-            msg: sentMsg,
-            math,
-            attempts: 4,
-            timeout: setTimeout(() => {
-                if (mathGames[chatId]) {
-                    sock.sendMessage(chatId, { text: `⏳ *Time is up!*\nThe answer was: *${math.result}*` }, { quoted: mathGames[chatId].msg });
-                    delete mathGames[chatId];
-                }
-            }, math.time)
-        };
-        if (!this.initialized) {
-            this.initialized = true;
-            sock.ev.on('messages.upsert', async (upsert) => {
-                const m = upsert.messages[0];
-                if (!m.message || m.key.fromMe)
-                    return;
-                const chat = m.key.remoteJid;
-                if (!mathGames[chat])
-                    return;
-                const body = (m.message.conversation || m.message.extendedTextMessage?.text || "").trim();
-                if (!/^-?[0-9]+(\.[0-9]+)?$/.test(body))
-                    return;
-                const quoted = m.message.extendedTextMessage?.contextInfo?.quotedMessage;
-                const quotedText = quoted?.conversation || quoted?.extendedTextMessage?.text || "";
-                if (!/^▢ HOW MUCH IS IT/i.test(quotedText))
-                    return;
-                const game = mathGames[chat];
-                if (body === game.math.result) {
-                    clearTimeout(game.timeout);
-                    delete mathGames[chat];
-                    await sock.sendMessage(chat, { text: `✅ *Correct answer!*\n\nYou won the game.` }, { quoted: m });
-                }
-                else {
-                    game.attempts--;
-                    if (game.attempts <= 0) {
-                        clearTimeout(game.timeout);
-                        delete mathGames[chat];
-                        await sock.sendMessage(chat, { text: `❌ *Game Over!*\n\nThe correct answer was: *${game.math.result}*` }, { quoted: m });
-                    }
-                    else {
-                        await sock.sendMessage(chat, { text: `❎ *Wrong answer!*\n\nYou have ${game.attempts} attempts left.` }, { quoted: m });
-                    }
-                }
-            });
-        }
+
+const pick = values => values[Math.floor(Math.random() * values.length)];
+const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const mention = jid => '@' + String(jid || '').split('@')[0].split(':')[0];
+
+export function generateMathQuestion(mode = 'normal') {
+  const settings = MATH_MODES[mode] || MATH_MODES.normal;
+  let a = randomInt(settings.min, settings.max);
+  let b = randomInt(settings.min, settings.max);
+  const op = pick(settings.operators);
+  let result;
+  if (op === '+') result = a + b;
+  else if (op === '-') result = a - b;
+  else if (op === '*') result = a * b;
+  else {
+    // Generate exact integer division; never expose a rounded or fractional answer.
+    b = randomInt(Math.max(1, Math.abs(settings.min)), Math.max(2, Math.abs(settings.max)));
+    result = randomInt(settings.min, settings.max);
+    a = result * b;
+  }
+  if (Object.is(a, -0)) a = 0;
+  if (Object.is(b, -0)) b = 0;
+  if (Object.is(result, -0)) result = 0;
+  return { expression: `${a} ${op === '*' ? '×' : op === '/' ? '÷' : op} ${b}`, answer: String(result), mode, time: settings.time };
+}
+
+async function readGame(chatId) {
+  const game = await store.getSetting(chatId, STATE_KEY);
+  if (!game?.active) return null;
+  if (game.matchExpiresAt && game.matchExpiresAt <= Date.now()) {
+    await store.saveSettingVerified(chatId, STATE_KEY, { ...game, active: false, endedAt: Date.now(), reason: 'expired' });
+    clearTimer(chatId);
+    return null;
+  }
+  return game;
+}
+async function saveGame(chatId, game) {
+  if (!await store.saveSettingVerified(chatId, STATE_KEY, game)) throw new Error('Math game state could not be persisted.');
+}
+function clearTimer(chatId) {
+  const timer = timers.get(chatId);
+  if (timer) clearTimeout(timer);
+  timers.delete(chatId);
+}
+
+async function saveMatchRecords(chatId, game) {
+  const records = (await store.getSetting(chatId, RECORD_KEY)) || {};
+  const playerIds = new Set([...Object.keys(game.participants || {}), ...Object.keys(game.scores || {})]);
+  for (const jid of playerIds) {
+    const score = game.scores?.[jid] || 0;
+    const previous = records[jid] || { points: 0, matches: 0, wins: 0 };
+    records[jid] = {
+      ...previous,
+      points: (previous.points || 0) + score,
+      matches: (previous.matches || 0) + 1,
+      wins: (previous.wins || 0) + (jid === game.winner ? 1 : 0),
+      lastScore: score,
+      lastPlayedAt: Date.now()
+    };
+  }
+  if (!await store.saveSettingVerified(chatId, RECORD_KEY, records)) throw new Error('Math leaderboard could not be persisted.');
+  return records;
+}
+
+function formatScores(scores, limit = 5) {
+  return Object.entries(scores || {}).sort((a, b) => b[1] - a[1]).slice(0, limit)
+    .map(([jid, score], index) => `${index + 1}. ${mention(jid)} — ${score} pts`);
+}
+
+async function endMatch(sock, chatId, game, reason = 'completed', quoted) {
+  clearTimer(chatId);
+  game.active = false;
+  game.endedAt = Date.now();
+  game.reason = reason;
+  const ranking = Object.entries(game.scores || {}).sort((a, b) => b[1] - a[1]);
+  game.winner = ranking[0]?.[0] || null;
+  await saveGame(chatId, game);
+  await saveMatchRecords(chatId, game);
+  const lines = formatScores(game.scores, 10);
+  await sock.sendMessage(chatId, {
+    text: `🏁 *MATHS ARENA — MATCH ${reason === 'completed' ? 'COMPLETE' : 'ENDED'}*\n\n${lines.join('\n') || 'No points were scored.'}\n\n🏆 Champion: ${game.winner ? mention(game.winner) : 'No winner'}`,
+    mentions: ranking.map(([jid]) => jid)
+  }, quoted ? { quoted } : undefined);
+}
+
+async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
+  return withChatLock(chatId, async () => {
+    const game = await readGame(chatId);
+    if (!game || game.roundToken !== roundToken || game.questionClosed) return false;
+    clearTimer(chatId);
+    game.questionClosed = true;
+    await saveGame(chatId, game);
+    const winnerText = game.roundWinner ? `⚡ ${mention(game.roundWinner)} got it first!` : 'No correct answer this round.';
+    await sock.sendMessage(chatId, {
+      text: `⏱️ *Round ${game.round}/${game.totalRounds} closed.*\n${winnerText}\nCorrect answer: *${game.answer}*`,
+      mentions: game.roundWinner ? [game.roundWinner] : []
+    });
+    if (game.round >= game.totalRounds) {
+      await endMatch(sock, chatId, game, 'completed');
+      return true;
     }
+    setTimeout(async () => {
+      const latest = await readGame(chatId);
+      if (!latest || latest.roundToken !== roundToken || !latest.questionClosed) return;
+      await postNextQuestion(sock, chatId, latest);
+    }, 1800);
+    return true;
+  });
+}
+
+function armTimer(sock, chatId, game) {
+  if (!game?.active || game.questionClosed || !game.expiresAt || timers.has(chatId)) return;
+  const delay = Math.max(0, game.expiresAt - Date.now());
+  const token = game.roundToken;
+  timers.set(chatId, setTimeout(() => closeQuestion(sock, chatId, token).catch(error => console.error('[MATH] Timer error:', error.message)), delay));
+}
+
+async function postNextQuestion(sock, chatId, game) {
+  game.round += 1;
+  game.questionClosed = false;
+  game.roundWinner = null;
+  game.roundStartedAt = Date.now();
+  game.attemptedBy = {};
+  const question = generateMathQuestion(game.mode);
+  game.expression = question.expression;
+  game.answer = question.answer;
+  game.questionTime = question.time;
+  game.expiresAt = Date.now() + question.time;
+  game.roundToken = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  const sent = await sock.sendMessage(chatId, {
+    text: `🧮 *FORGE GUARD — MATHS ARENA*\n\n*Question ${game.round}/${game.totalRounds}* · ${game.mode.toUpperCase()}\n\nHow much is:\n\n*${game.expression} = ?*\n\n⏱️ ${Math.round(question.time / 1000)} seconds\n\nReply directly to this question with your answer. First correct answer earns the round points.\n🏆 ${formatScores(game.scores, 3).join(' | ') || 'No scores yet'}`
+  });
+  game.questionMessageId = sent?.key?.id || null;
+  await saveGame(chatId, game);
+  armTimer(sock, chatId, game);
+}
+
+async function playerCanEnd(sock, chatId, senderId, context, message, game) {
+  let admin = !!(context.isSenderAdmin || context.senderIsOwnerOrSudo || context.isOwnerOrSudoCheck || message.key.fromMe);
+  if (!admin) {
+    try { admin = !!(await isAdmin(sock, chatId, senderId)).isSenderAdmin; } catch {}
+  }
+  return admin || !!game.participants?.[senderId] || (game.attemptedBy?.[senderId] || 0) > 0;
+}
+
+export async function handleMathContinuity(sock, chatId, message, senderId) {
+  if (!chatId?.endsWith('@g.us') || message?.key?.fromMe || !isFeatureGroup(chatId)) return false;
+  const pendingGame = await readGame(chatId);
+  if (!pendingGame) return false;
+  armTimer(sock, chatId, pendingGame);
+  const contextInfo = message.message?.extendedTextMessage?.contextInfo || message.message?.imageMessage?.contextInfo || {};
+  if (!contextInfo.stanzaId) return false;
+  const result = await withChatLock(chatId, async () => {
+    const game = await readGame(chatId);
+    if (!game) return false;
+    armTimer(sock, chatId, game);
+    if (contextInfo.stanzaId !== game.questionMessageId) return false;
+    const access = await isGameAllowed(chatId, 'math');
+    if (!access.ok) {
+      await sock.sendMessage(chatId, { text: access.msg }, { quoted: message });
+      return true;
+    }
+    if (game.questionClosed || game.roundWinner) return true;
+    if (Date.now() >= game.expiresAt) return { handled: true, closeToken: game.roundToken };
+    const body = String(message.message?.conversation || message.message?.extendedTextMessage?.text || '').trim().replace(/,/g, '');
+    if (!/^-?\d+$/.test(body)) return false;
+    if (game.attemptedBy?.[senderId]) {
+      await sock.sendMessage(chatId, { text: 'You have already submitted an answer for this question.' }, { quoted: message });
+      return true;
+    }
+    game.attemptedBy = game.attemptedBy || {};
+    game.attemptedBy[senderId] = 1;
+    game.participants = game.participants || {};
+    game.participants[senderId] = true;
+    if (body === game.answer) {
+      game.roundWinner = senderId;
+      const remaining = Math.max(0, game.expiresAt - Date.now());
+      const bonus = Math.floor((remaining / game.questionTime) * 5);
+      const points = 10 + bonus;
+      game.scores = game.scores || {};
+      game.scores[senderId] = (game.scores[senderId] || 0) + points;
+      await saveGame(chatId, game);
+      await sock.sendMessage(chatId, {
+        text: `✅ *Correct, ${mention(senderId)}!*\n+*${points} points* (including speed bonus).\n\nThe round is now closed.`,
+        mentions: [senderId]
+      }, { quoted: message });
+      return { handled: true, closeToken: game.roundToken };
+    }
+    await saveGame(chatId, game);
+    await sock.sendMessage(chatId, { text: '❌ Not quite. Your answer is recorded; other players can still compete.' }, { quoted: message });
+    return true;
+  });
+  if (result?.closeToken) await closeQuestion(sock, chatId, result.closeToken, 'correct');
+  return result === true || !!result?.handled;
+}
+
+export default {
+  command: 'math',
+  aliases: ['maths', 'ganit'],
+  category: 'games',
+  description: 'Compete in timed multiplayer Maths Arena rounds.',
+  usage: '.math <difficulty> | .math status | .math score | .math stop',
+  groupOnly: true,
+  async handler(sock, message, args, context) {
+    const { chatId, senderId, config, channelInfo } = context;
+    if (!isFeatureGroup(chatId)) return sock.sendMessage(chatId, { text: 'Maths Arena is available in the designated Forge Guard game groups.', ...channelInfo }, { quoted: message });
+    const action = String(args[0] || '').toLowerCase();
+    const access = await isGameAllowed(chatId, 'math');
+    if (!['stop', 'end', 'status', 'score'].includes(action) && !access.ok) {
+      return sock.sendMessage(chatId, { text: access.msg, ...channelInfo }, { quoted: message });
+    }
+    let game = await readGame(chatId);
+    if (['stop', 'end'].includes(action)) {
+      if (!game) return sock.sendMessage(chatId, { text: 'There is no active Maths Arena match.', ...channelInfo }, { quoted: message });
+      if (!await playerCanEnd(sock, chatId, senderId, context, message, game)) {
+        return sock.sendMessage(chatId, { text: 'Only an admin can end the match until you have participated in a question.', ...channelInfo }, { quoted: message });
+      }
+      return endMatch(sock, chatId, game, 'stopped', message);
+    }
+    if (action === 'status') {
+      if (!game) return sock.sendMessage(chatId, { text: 'No active Maths Arena match. Start with *.math normal*.', ...channelInfo }, { quoted: message });
+      return sock.sendMessage(chatId, { text: `🧮 *MATHS ARENA STATUS*\nQuestion ${game.round}/${game.totalRounds} · ${game.mode}\nTime left: ${Math.max(0, Math.ceil((game.expiresAt - Date.now()) / 1000))}s\n\n${formatScores(game.scores, 10).join('\n') || 'No scores yet.'}`, ...channelInfo }, { quoted: message });
+    }
+    if (action === 'score' || action === 'scores' || action === 'leaderboard') {
+      const records = (await store.getSetting(chatId, RECORD_KEY)) || {};
+      const ranking = Object.entries(records).sort((a, b) => (b[1].points || 0) - (a[1].points || 0)).slice(0, 10);
+      return sock.sendMessage(chatId, { text: `🏆 *MATHS ARENA — GROUP LEADERBOARD*\n\n${ranking.map(([jid, r], i) => `${i + 1}. ${mention(jid)} — ${r.points || 0} pts · ${r.wins || 0} wins`).join('\n') || 'No completed matches yet.'}`, mentions: ranking.map(([jid]) => jid), ...channelInfo }, { quoted: message });
+    }
+    if (game) return sock.sendMessage(chatId, { text: 'A Maths Arena match is already active. Use *.math status* or *.math stop*.', ...channelInfo }, { quoted: message });
+    const mode = action === 'start' ? String(args[1] || 'normal').toLowerCase() : action;
+    if (!Object.hasOwn(MATH_MODES, mode)) {
+      return sock.sendMessage(chatId, { text: `🧮 *MATHS ARENA DIFFICULTIES*\n\n${Object.keys(MATH_MODES).join(' · ')}\n\nExample: ${config.prefix}math normal\n10 questions · first correct answer wins each round · speed bonus · group leaderboard.`, ...channelInfo }, { quoted: message });
+    }
+    game = {
+      active: true, mode, round: 0, totalRounds: QUESTIONS_PER_MATCH,
+      scores: {}, attemptedBy: {}, participants: {}, startedBy: senderId,
+      startedAt: Date.now(), matchExpiresAt: Date.now() + MATCH_EXPIRY_MS
+    };
+    await saveGame(chatId, game);
+    await sock.sendMessage(chatId, { text: `🎮 *MATHS ARENA MATCH STARTED*\n\nDifficulty: *${mode.toUpperCase()}*\nQuestions: *${QUESTIONS_PER_MATCH}*\nPlayers: everyone in this group can join.\n\nFirst correct answer wins each round. Reply directly to each question.\n🏆 ${config.prefix}math score · ${config.prefix}math status · ${config.prefix}math stop`, ...channelInfo }, { quoted: message });
+    await postNextQuestion(sock, chatId, game);
+  }
 };
-function genMath(mode) {
-    const [a1, a2, b1, b2, ops, time] = modes[mode];
-    let a = randomInt(a1, a2);
-    const b = randomInt(b1, b2);
-    const op = pickRandom([...ops]);
-    const expr = `${a} ${op.replace('/', '*')} ${b < 0 ? `(${b})` : b}`;
-    // eslint-disable-next-line no-eval
-    let result = eval(expr);
-    if (op === '/')
-        [a, result] = [result, a];
-    return { str: `${a} ${operators[op]} ${b}`, mode, time, result };
-}
-function randomInt(from, to) {
-    if (from > to)
-        [from, to] = [to, from];
-    return Math.floor(Math.random() * (Math.floor(to) - Math.ceil(from) + 1) + Math.ceil(from));
-}
-function pickRandom(list) {
-    return list[Math.floor(Math.random() * list.length)];
-}
