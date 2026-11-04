@@ -154,7 +154,7 @@ async function playerCanEnd(sock, chatId, senderId, context, message, game) {
   if (!admin) {
     try { admin = !!(await isAdmin(sock, chatId, senderId)).isSenderAdmin; } catch {}
   }
-  return admin || (game.attemptedBy?.[senderId] || 0) > 0;
+  return admin || !!game.participants?.[senderId] || (game.attemptedBy?.[senderId] || 0) > 0;
 }
 
 export async function handleMathContinuity(sock, chatId, message, senderId) {
@@ -178,6 +178,8 @@ export async function handleMathContinuity(sock, chatId, message, senderId) {
   }
   game.attemptedBy = game.attemptedBy || {};
   game.attemptedBy[senderId] = 1;
+  game.participants = game.participants || {};
+  game.participants[senderId] = true;
   if (body === game.answer) {
     game.roundWinner = senderId;
     const remaining = Math.max(0, game.expiresAt - Date.now());
@@ -237,7 +239,7 @@ export default {
     }
     game = {
       active: true, mode, round: 0, totalRounds: QUESTIONS_PER_MATCH,
-      scores: {}, attemptedBy: {}, startedBy: senderId,
+      scores: {}, attemptedBy: {}, participants: {}, startedBy: senderId,
       startedAt: Date.now(), matchExpiresAt: Date.now() + MATCH_EXPIRY_MS
     };
     await saveGame(chatId, game);
