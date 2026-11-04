@@ -29,6 +29,7 @@ async function saveBypasses(chatId, data) {
 }
 const MANUAL_LOCK_KEY = 'manualGameLocks';
 const MANUAL_GAMES = {
+  math: 'Maths Arena',
   hangman: 'Hangman',
   wyr: 'Would You Rather',
   trivia: 'Trivia',
