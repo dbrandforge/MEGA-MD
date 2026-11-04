@@ -7,35 +7,37 @@ const rows = [];
 const parseErrors = [];
 
 for (const file of files) {
-  const content = await readFile(\`\${directory}/\${file}\`, 'utf8');
-  for (const [index, line] of content.split(/\r?\n/).entries()) {
+  const content = await readFile(directory + '/' + file, 'utf8');
+  const lines = content.split(/\r?\n/);
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
     if (!line.trim()) continue;
     try {
-      rows.push({ ...JSON.parse(line), file: \`\${file}:line-\${index + 1}\` });
+      rows.push(Object.assign({}, JSON.parse(line), { file: file + ':line-' + (index + 1) }));
     } catch (error) {
-      parseErrors.push(\`\${file}:line-\${index + 1}: \${error.message}\`);
+      parseErrors.push(file + ':line-' + (index + 1) + ': ' + error.message);
     }
   }
 }
 
 const report = auditTriviaCandidates(rows);
-console.log(\`Candidate files: \${files.length}\`);
-console.log(\`Candidate rows: \${report.totalCandidates}\`);
-console.log(\`Unique IDs: \${report.uniqueIds}\`);
-console.log(\`Unique question wording: \${report.uniqueQuestionWordings}\`);
-console.log('\\nBy proposed category:');
+console.log('Candidate files: ' + files.length);
+console.log('Candidate rows: ' + report.totalCandidates);
+console.log('Unique IDs: ' + report.uniqueIds);
+console.log('Unique question wording: ' + report.uniqueQuestionWordings);
+console.log('\nBy proposed category:');
 for (const [category, count] of Object.entries(report.byProposedCategory).sort()) {
-  console.log(\`- \${category}: \${count}\`);
+  console.log('- ' + category + ': ' + count);
 }
-console.log('\\nBy source pool:');
+console.log('\nBy source pool:');
 for (const [category, count] of Object.entries(report.bySource).sort()) {
-  console.log(\`- \${category}: \${count}\`);
+  console.log('- ' + category + ': ' + count);
 }
-const errors = [...parseErrors, ...report.errors];
+const errors = parseErrors.concat(report.errors);
 if (errors.length) {
-  console.error(\`\\nCandidate audit found \${errors.length} issue(s):\`);
-  for (const error of errors) console.error(\`- \${error}\`);
+  console.error('\nCandidate audit found ' + errors.length + ' issue(s):');
+  for (const error of errors) console.error('- ' + error);
   process.exitCode = 1;
 } else {
-  console.log('\\nPASS: all staged candidates have valid choices, answer indices and source metadata.');
+  console.log('\nPASS: all staged candidates have valid choices, answer indices and source metadata.');
 }
