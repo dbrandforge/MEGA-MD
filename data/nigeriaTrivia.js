@@ -62,11 +62,12 @@ export const NIGERIA_TRIVIA = [
   { id:'ng058', category:'geography', difficulty:'medium', question:'What is the capital of Niger State?', options:['Minna','Bida','Suleja','Kontagora'], answer:0 },
   { id:'ng059', category:'history', difficulty:'medium', question:'Who designed the Nigerian national flag?', options:['Michael Taiwo Akinkunmi','Wole Soyinka','Ben Enwonwu','Herbert Macaulay'], answer:0 },
   { id:'ng060', category:'culture', difficulty:'medium', question:'Which three languages are commonly recognised as Nigeria’s major languages alongside English?', options:['Hausa, Yoruba and Igbo','Tiv, Nupe and Edo','Ijaw, Efik and Kanuri','Fulfulde, Gwari and Ibibio'], answer:0 }
-];
-
+  { id:'ng060', category:'culture', difficulty:'medium', question:'Which three languages are commonly recognised as Nigeria’s major languages alongside English?', options:['Hausa, Yoruba and Igbo','Tiv, Nupe and Edo','Ijaw, Efik and Kanuri','Fulfulde, Gwari and Ibibio'], answer:0 },
   { id:'ng061', category:'current-affairs', difficulty:'easy', question:'As of November 2026, who is the President of Nigeria?', options:['Bola Ahmed Tinubu','Goodluck Jonathan','Muhammadu Buhari','Atiku Abubakar'], answer:0, reviewedAt:'2026-11-04', source:'https://statehouse.gov.ng/' },
   { id:'ng062', category:'current-affairs', difficulty:'easy', question:'As of November 2026, who is Nigeria’s Vice President?', options:['Kashim Shettima','Yemi Osinbajo','Namadi Sambo','Peter Obi'], answer:0, reviewedAt:'2026-11-04', source:'https://statehouse.gov.ng/' },
-  { id:'ng063', category:'current-affairs', difficulty:'medium', question:'What is the title of Nigeria’s national anthem reinstated in May 2024?', options:['Nigeria, We Hail Thee','Arise, O Compatriots','One Nation, One People','Stand Up Nigeria'], answer:0, reviewedAt:'2026-11-04', source:'https://foreignaffairs.gov.ng/nigeria/national-symbols/' },
+  { id:'ng063', category:'current-affairs', difficulty:'medium', question:'What is the title of Nigeria’s national anthem reinstated in May 2024?', options:['Nigeria, We Hail Thee','Arise, O Compatriots','One Nation, One People','Stand Up Nigeria'], answer:0, reviewedAt:'2026-11-04', source:'https://foreignaffairs.gov.ng/nigeria/national-symbols/' }
+];
+
 export const TRIVIA_CATEGORIES = [
   'all','geography','history','culture','food','music','nollywood','sports','everyday','tech','business','current-affairs'
 ];
