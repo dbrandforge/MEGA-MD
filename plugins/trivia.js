@@ -5,10 +5,12 @@ import isAdmin from '../lib/isAdmin.js';
 import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES } from '../data/nigeriaTrivia.js';
 
 const STATE_KEY = 'triviaArenaV2';
+const LEGACY_STATE_KEY = 'triviaGame';
+const LEGACY_IMPORTED_KEY = 'triviaLegacyImportedV2';
 const RECORD_KEY = 'triviaRecords';
 const QUESTIONS_PER_MATCH = 10;
 const ANSWER_WINDOW_MS = 20000;
-const MATCH_EXPIRY_MS = 30 * 60 * 1000;
+const MATCH_EXPIRY_MS = 45 * 60 * 1000;
 const timers = new Map();
 const chatLocks = new Map();
 async function withChatLock(chatId, task) {
@@ -39,8 +41,63 @@ const shuffle = values => {
 
 export { NIGERIA_TRIVIA, TRIVIA_CATEGORIES };
 
+async function importLegacyGame(chatId) {
+  const imported = await store.getSetting(chatId, LEGACY_IMPORTED_KEY);
+  if (imported) return null;
+  const legacy = await store.getSetting(chatId, LEGACY_STATE_KEY);
+  const now = Date.now();
+  if (legacy?.active && legacy.questionMessageId && Array.isArray(legacy.options) &&
+      legacy.question && legacy.answer && (!legacy.expiresAt || legacy.expiresAt > now)) {
+    const answerIndex = legacy.options.findIndex(option => normalize(option) === normalize(legacy.answer));
+    const participants = Object.fromEntries(Object.keys(legacy.attempts || {}).map(jid => [jid, true]));
+    const migrated = {
+      active: true,
+      category: 'all',
+      difficulty: ['easy', 'medium', 'hard'].includes(legacy.difficulty) ? legacy.difficulty : null,
+      round: 1,
+      totalRounds: QUESTIONS_PER_MATCH,
+      scores: legacy.scores || {},
+      answers: {},
+      participants,
+      usedQuestions: [],
+      questionId: 'legacy-open-trivia',
+      categoryName: legacy.categoryName || 'General Knowledge',
+      question: legacy.question,
+      options: legacy.options,
+      answerIndex,
+      answer: legacy.answer,
+      questionMessageId: legacy.questionMessageId,
+      roundStartedAt: now,
+      closesAt: Math.min(now + ANSWER_WINDOW_MS, legacy.expiresAt || now + ANSWER_WINDOW_MS),
+      roundToken: `legacy-${now}`,
+      questionClosed: false,
+      matchExpiresAt: legacy.expiresAt || now + MATCH_EXPIRY_MS,
+      startedAt: legacy.startedAt || now,
+      migratedFromLegacy: true
+    };
+    await saveGame(chatId, migrated);
+    await store.saveSettingVerified(chatId, LEGACY_IMPORTED_KEY, { importedAt: now, mode: 'active-session' });
+    return migrated;
+  }
+  if (legacy?.scores && Object.keys(legacy.scores).length) {
+    const records = (await store.getSetting(chatId, RECORD_KEY)) || {};
+    for (const [jid, score] of Object.entries(legacy.scores)) {
+      const previous = records[jid] || { points: 0, matches: 0, wins: 0 };
+      records[jid] = {
+        ...previous,
+        points: (previous.points || 0) + Number(score || 0),
+        legacyPoints: (previous.legacyPoints || 0) + Number(score || 0)
+      };
+    }
+    await store.saveSettingVerified(chatId, RECORD_KEY, records);
+  }
+  await store.saveSettingVerified(chatId, LEGACY_IMPORTED_KEY, { importedAt: now, mode: 'scores-only' });
+  return null;
+}
+
 async function readGame(chatId) {
-  const game = await store.getSetting(chatId, STATE_KEY);
+  let game = await store.getSetting(chatId, STATE_KEY);
+  if (!game?.active) game = await importLegacyGame(chatId);
   if (!game?.active) return null;
   if (game.matchExpiresAt && game.matchExpiresAt <= Date.now()) {
     await store.saveSettingVerified(chatId, STATE_KEY, { ...game, active: false, endedAt: Date.now(), reason: 'expired' });
