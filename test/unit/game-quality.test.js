@@ -4,6 +4,8 @@ import { WORDS, QUESTIONS_PER_ROUND, canEndHangman } from '../../plugins/hangman
 import { FALLBACK } from '../../data/wyrPairs.js';
 import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
 import { getLagosWeekKey } from '../../plugins/rank.js';
+import { MATH_MODES, generateMathQuestion } from '../../plugins/math.js';
+import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES } from '../../plugins/trivia.js';
 
 describe('game quality foundations', () => {
   it('uses Lagos local weekday for day-lock calculations', () => {
@@ -42,6 +44,45 @@ describe('game quality foundations', () => {
     expect(Object.keys(getManualLockableGames()).sort()).toEqual([
       'anonymous', 'basket', 'hangman', 'hotseat', 'math', 'tictactoe', 'tod', 'trivia', 'wcw', 'wyr'
     ]);
+  });
+
+
+  it('provides valid, integer-safe question generation for every Maths Arena difficulty', () => {
+    expect(Object.keys(MATH_MODES)).toEqual(['noob', 'easy', 'normal', 'hard', 'extreme', 'impossible', 'impossible2']);
+    for (const mode of Object.keys(MATH_MODES)) {
+      for (let i = 0; i < 50; i++) {
+        const q = generateMathQuestion(mode);
+        expect(q.mode).toBe(mode);
+        expect(Number.isInteger(Number(q.answer))).toBe(true);
+        const match = q.expression.match(/^(-?\\d+) ([+\\-×÷]) (-?\\d+)$/);
+        expect(match).not.toBeNull();
+        const a = Number(match[1]), b = Number(match[3]);
+        const expected = match[2] === '+' ? a + b
+          : match[2] === '-' ? a - b
+          : match[2] === '×' ? a * b : a / b;
+        expect(expected).toBe(Number(q.answer));
+        expect(Number.isInteger(expected)).toBe(true);
+      }
+    }
+  });
+
+  it('provides a substantial, unique Nigeria-focused trivia bank with valid choices', () => {
+    expect(NIGERIA_TRIVIA.length).toBeGreaterThanOrEqual(60);
+    expect(new Set(NIGERIA_TRIVIA.map(q => q.id)).size).toBe(NIGERIA_TRIVIA.length);
+    expect(TRIVIA_CATEGORIES).toContain('current-affairs');
+    for (const q of NIGERIA_TRIVIA) {
+      expect(q.options).toHaveLength(4);
+      expect(new Set(q.options.map(option => option.toLowerCase())).size).toBe(4);
+      expect(q.answer).toBeGreaterThanOrEqual(0);
+      expect(q.answer).toBeLessThan(4);
+      expect(TRIVIA_CATEGORIES).toContain(q.category);
+    }
+  });
+
+  it('dates and sources the volatile Nigerian current-affairs trivia entries', () => {
+    const current = NIGERIA_TRIVIA.filter(q => q.category === 'current-affairs');
+    expect(current.length).toBeGreaterThanOrEqual(3);
+    expect(current.every(q => q.reviewedAt && q.source)).toBe(true);
   });
 
   it('allows Hangman participants to end only after attempting a guess; admins can force-end', () => {
