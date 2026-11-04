@@ -60,7 +60,7 @@ describe('game quality foundations', () => {
         const expected = match[2] === '+' ? a + b
           : match[2] === '-' ? a - b
           : match[2] === '×' ? a * b : a / b;
-        expect(expected).toBe(Number(q.answer));
+        expect(Object.is(expected, -0) ? 0 : expected).toBe(Number(q.answer));
         expect(Number.isInteger(expected)).toBe(true);
       }
     }
