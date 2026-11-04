@@ -5,7 +5,7 @@ import { FALLBACK } from '../../data/wyrPairs.js';
 import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
 import { getLagosWeekKey } from '../../plugins/rank.js';
 import { MATH_MODES, generateMathQuestion } from '../../plugins/math.js';
-import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES, getTriviaQuestionCount, getAvailableTriviaQuestions } from '../../plugins/trivia.js';
+import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES, getTriviaQuestionCount, getAvailableTriviaQuestions, shouldEndTriviaForNoParticipation } from '../../plugins/trivia.js';
 
 describe('game quality foundations', () => {
   it('uses Lagos local weekday for day-lock calculations', () => {
@@ -72,6 +72,7 @@ describe('game quality foundations', () => {
     expect(TRIVIA_CATEGORIES).toContain('current-affairs');
     expect(getTriviaQuestionCount('all')).toBe(NIGERIA_TRIVIA.length);
     expect(getTriviaQuestionCount('current-affairs')).toBe(3);
+    expect(getTriviaQuestionCount('nigeria')).toBe(63);
     expect(getTriviaQuestionCount('current-affairs', 'hard')).toBe(0);
     expect(getTriviaQuestionCount('football', 'hard')).toBeGreaterThan(0);
     expect(getTriviaQuestionCount('football', 'expert')).toBeGreaterThan(0);
@@ -99,6 +100,12 @@ describe('game quality foundations', () => {
     expect(next.some(q => used.includes(q.id))).toBe(false);
     expect(next.length).toBe(first.length - used.length);
     expect(getAvailableTriviaQuestions('mixed', 'expert').every(q => ['expert'].includes(q.difficulty))).toBe(true);
+  });
+
+  it('ends an unanswered Trivia match but does not treat submitted wrong answers as inactivity', () => {
+    expect(shouldEndTriviaForNoParticipation({})).toBe(true);
+    expect(shouldEndTriviaForNoParticipation({ '2348000000000@s.whatsapp.net': { correct: false } })).toBe(false);
+    expect(shouldEndTriviaForNoParticipation({ '2348000000000@s.whatsapp.net': { correct: true } })).toBe(false);
   });
 
   it('dates and sources the volatile Nigerian current-affairs trivia entries', () => {
