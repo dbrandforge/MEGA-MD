@@ -129,8 +129,10 @@ export const NIGERIA_TRIVIA = [
   { id:'gl060', category:'gaming', difficulty:'expert', question:'Which company originally developed the “Dark Souls” series?', options:['FromSoftware','Capcom','Konami','Bandai Namco'], answer:0 },
   { id:'gl061', category:'literature', difficulty:'easy', question:'Who wrote the “Harry Potter” book series?', options:['J. K. Rowling','Suzanne Collins','J. R. R. Tolkien','Stephenie Meyer'], answer:0 },
   { id:'gl062', category:'literature', difficulty:'expert', question:'Who wrote the epic poem “The Divine Comedy”?', options:['Dante Alighieri','Geoffrey Chaucer','John Milton','Virgil'], answer:0 },
-  { id:'gl063', category:'current-affairs', difficulty:'hard', question:'Which organisation is responsible for coordinating monetary policy in Nigeria?', options:['Central Bank of Nigeria','Federal Inland Revenue Service','Nigerian Communications Commission','National Bureau of Statistics'], answer:0 },
-  { id:'gl064', category:'current-affairs', difficulty:'expert', question:'Which Nigerian institution publishes official national population census results?', options:['National Population Commission','National Bureau of Statistics','INEC','Central Bank of Nigeria'], answer:0 }
+  { id:'gl063', category:'business', difficulty:'hard', question:'Which organisation is responsible for coordinating monetary policy in Nigeria?', options:['Central Bank of Nigeria','Federal Inland Revenue Service','Nigerian Communications Commission','National Bureau of Statistics'], answer:0 },
+  { id:'gl064', category:'history', difficulty:'expert', question:'Which Nigerian institution publishes official national population census results?', options:['National Population Commission','National Bureau of Statistics','INEC','Central Bank of Nigeria'], answer:0 },
+  { id:'gl065', category:'everyday', difficulty:'hard', question:'In personal finance, what is the name for spreading investments across different assets to reduce risk?', options:['Diversification','Leverage','Compounding','Arbitrage'], answer:0 },
+  { id:'gl066', category:'everyday', difficulty:'expert', question:'What is the economic term for the additional satisfaction gained from consuming one more unit of a good?', options:['Marginal utility','Opportunity cost','Fixed cost','Elasticity'], answer:0 }
 ]; 
 
 export const TRIVIA_CATEGORIES = [
