@@ -65,8 +65,43 @@ export const NIGERIA_TRIVIA = [
   { id:'ng061', category:'current-affairs', difficulty:'easy', question:'As of November 2026, who is the President of Nigeria?', options:['Bola Ahmed Tinubu','Goodluck Jonathan','Muhammadu Buhari','Atiku Abubakar'], answer:0, reviewedAt:'2026-11-04', source:'https://statehouse.gov.ng/' },
   { id:'ng062', category:'current-affairs', difficulty:'easy', question:'As of November 2026, who is Nigeria’s Vice President?', options:['Kashim Shettima','Yemi Osinbajo','Namadi Sambo','Peter Obi'], answer:0, reviewedAt:'2026-11-04', source:'https://statehouse.gov.ng/' },
   { id:'ng063', category:'current-affairs', difficulty:'medium', question:'What is the title of Nigeria’s national anthem reinstated in May 2024?', options:['Nigeria, We Hail Thee','Arise, O Compatriots','One Nation, One People','Stand Up Nigeria'], answer:0, reviewedAt:'2026-11-04', source:'https://foreignaffairs.gov.ng/nigeria/national-symbols/' }
-];
+
+  // International expansion — football, music, cinema, science, technology and world knowledge.
+  { id:'gl001', category:'sports', difficulty:'easy', question:'How many players does one football team have on the pitch at the start of a standard match?', options:['11','10','9','12'], answer:0 },
+  { id:'gl002', category:'sports', difficulty:'normal', question:'Which country won the 2022 FIFA Men’s World Cup?', options:['Argentina','France','Croatia','Brazil'], answer:0 },
+  { id:'gl003', category:'sports', difficulty:'hard', question:'Which club won the first edition of the UEFA Champions League under that name in 1992–93?', options:['Marseille','AC Milan','Barcelona','Ajax'], answer:0 },
+  { id:'gl004', category:'sports', difficulty:'expert', question:'Which country hosted the first FIFA World Cup in 1930?', options:['Uruguay','Italy','Brazil','France'], answer:0 },
+  { id:'gl005', category:'sports', difficulty:'normal', question:'Which footballer is famously associated with the “Hand of God” goal at the 1986 World Cup?', options:['Diego Maradona','Pelé','Zinedine Zidane','Ronaldo Nazário'], answer:0 },
+  { id:'gl006', category:'music', difficulty:'easy', question:'Which singer released the global hit album “Thriller”?', options:['Michael Jackson','Prince','Stevie Wonder','Lionel Richie'], answer:0 },
+  { id:'gl007', category:'music', difficulty:'normal', question:'Which South Korean group released the song “Dynamite” in 2020?', options:['BTS','BLACKPINK','EXO','Stray Kids'], answer:0 },
+  { id:'gl008', category:'music', difficulty:'hard', question:'Which Nigerian artist released the album “African Giant”?', options:['Burna Boy','Wizkid','Davido','Olamide'], answer:0 },
+  { id:'gl009', category:'music', difficulty:'expert', question:'Which Jamaican musician is widely credited with helping bring reggae to a global audience through albums such as “Exodus”?', options:['Bob Marley','Jimmy Cliff','Peter Tosh','Burning Spear'], answer:0 },
+  { id:'gl010', category:'nollywood', difficulty:'easy', question:'Which film franchise features the fictional school Hogwarts?', options:['Harry Potter','The Hunger Games','The Lord of the Rings','Twilight'], answer:0 },
+  { id:'gl011', category:'nollywood', difficulty:'normal', question:'Which South Korean film became the first non-English-language film to win the Academy Award for Best Picture?', options:['Parasite','Train to Busan','Oldboy','Minari'], answer:0 },
+  { id:'gl012', category:'nollywood', difficulty:'hard', question:'Who directed the 1994 film “Pulp Fiction”?', options:['Quentin Tarantino','Martin Scorsese','Christopher Nolan','David Fincher'], answer:0 },
+  { id:'gl013', category:'nollywood', difficulty:'expert', question:'Which Japanese animation studio produced “Spirited Away”?', options:['Studio Ghibli','Toei Animation','Madhouse','Sunrise'], answer:0 },
+  { id:'gl014', category:'science', difficulty:'easy', question:'Which planet is known as the Red Planet?', options:['Mars','Venus','Jupiter','Mercury'], answer:0 },
+  { id:'gl015', category:'science', difficulty:'normal', question:'What is the chemical symbol for gold?', options:['Au','Ag','Gd','Go'], answer:0 },
+  { id:'gl016', category:'science', difficulty:'hard', question:'What is the SI unit of electrical resistance?', options:['Ohm','Volt','Ampere','Watt'], answer:0 },
+  { id:'gl017', category:'science', difficulty:'expert', question:'Which particle carries the electromagnetic force in the Standard Model?', options:['Photon','Gluon','W boson','Higgs boson'], answer:0 },
+  { id:'gl018', category:'tech', difficulty:'easy', question:'What does CPU stand for?', options:['Central Processing Unit','Computer Power Utility','Core Program Unit','Central Performance User'], answer:0 },
+  { id:'gl019', category:'tech', difficulty:'normal', question:'Which company develops the Android operating system?', options:['Google','Apple','Microsoft','Samsung alone'], answer:0 },
+  { id:'gl020', category:'tech', difficulty:'hard', question:'What does “HTTP” stand for?', options:['Hypertext Transfer Protocol','High Transfer Text Process','Hyperlink Transmission Program','Host Transfer Terminal Protocol'], answer:0 },
+  { id:'gl021', category:'tech', difficulty:'expert', question:'Which data structure follows the last-in, first-out principle?', options:['Stack','Queue','Heap','Graph'], answer:0 },
+  { id:'gl022', category:'geography', difficulty:'easy', question:'Which is the largest ocean on Earth?', options:['Pacific Ocean','Atlantic Ocean','Indian Ocean','Arctic Ocean'], answer:0 },
+  { id:'gl023', category:'geography', difficulty:'normal', question:'Which country has the city of Istanbul?', options:['Türkiye','Greece','Bulgaria','Romania'], answer:0 },
+  { id:'gl024', category:'history', difficulty:'normal', question:'In which year did the Berlin Wall fall?', options:['1989','1985','1991','1979'], answer:0 },
+  { id:'gl025', category:'history', difficulty:'hard', question:'Which ancient civilisation built Machu Picchu?', options:['Inca','Maya','Aztec','Olmec'], answer:0 },
+  { id:'gl026', category:'business', difficulty:'normal', question:'What does IPO stand for in finance?', options:['Initial Public Offering','International Purchase Order','Investment Price Option','Internal Profit Objective'], answer:0 },
+  { id:'gl027', category:'culture', difficulty:'easy', question:'Sushi is most closely associated with which country?', options:['Japan','Thailand','China','South Korea'], answer:0 },
+  { id:'gl028', category:'gaming', difficulty:'easy', question:'Which company created the Super Mario video-game franchise?', options:['Nintendo','Sega','Sony','Capcom'], answer:0 },
+  { id:'gl029', category:'gaming', difficulty:'hard', question:'What is the name of the fictional continent where most of “The Witcher 3” takes place?', options:['The Continent','Tamriel','Thedas','Azeroth'], answer:0 },
+  { id:'gl030', category:'literature', difficulty:'normal', question:'Who wrote the novel “Things Fall Apart”?', options:['Chinua Achebe','Wole Soyinka','Chimamanda Ngozi Adichie','Ben Okri'], answer:0 },
+  { id:'gl031', category:'literature', difficulty:'hard', question:'Who wrote “One Hundred Years of Solitude”?', options:['Gabriel García Márquez','Jorge Luis Borges','Pablo Neruda','Mario Vargas Llosa'], answer:0 },
+  { id:'gl032', category:'food', difficulty:'normal', question:'Which country is the origin of the dish paella?', options:['Spain','Italy','Portugal','France'], answer:0 }
+]; 
 
 export const TRIVIA_CATEGORIES = [
-  'all','geography','history','culture','food','music','nollywood','sports','everyday','tech','business','current-affairs'
+  'mixed','music','football','movies','lifestyle','geography','history','culture','food',
+  'technology','business','science','gaming','literature','nigeria'
 ];
