@@ -157,7 +157,7 @@ function getQuestion(game) {
   const choices = shuffle(source.options.map((text, index) => ({ text, correct: index === source.answer })));
   return {
     questionId: source.id, categoryName: source.category,
-    difficulty: normalizeDifficulty(source.difficulty), question: source.question,
+    questionDifficulty: normalizeDifficulty(source.difficulty), question: source.question,
     options: choices.map(item => item.text),
     answerIndex: choices.findIndex(item => item.correct),
     answer: choices.find(item => item.correct).text,
@@ -167,7 +167,7 @@ function getQuestion(game) {
 function renderQuestion(game) {
   return [
     '🎮 *FORGE GUARD — TRIVIA ARENA*',
-    `📚 ${game.categoryName.toUpperCase()} · ${game.difficulty.toUpperCase()}`,
+    `📚 ${game.categoryName.toUpperCase()} · ${(game.questionDifficulty || game.difficulty || 'MIXED').toUpperCase()}`,
     `*QUESTION ${game.round}/${game.totalRounds}*`,
     '',
     game.question,
