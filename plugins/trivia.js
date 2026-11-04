@@ -417,7 +417,7 @@ export default {
     if (game) return sock.sendMessage(chatId, { text: 'A Trivia match is already active. Reply to its question, or use *.trivia status*.', ...channelInfo }, { quoted: message });
 
     const startArgs = (rawAction === 'start' ? args.slice(1) : args).map(v => String(v).toLowerCase().trim());
-    const aliases = { all: 'mixed', sports: 'football', nollywood: 'movies', film: 'movies', everyday: 'lifestyle', tech: 'technology' };
+    const aliases = { all: 'mixed', sports: 'football', film: 'movies', everyday: 'lifestyle', tech: 'technology' };
     let category = 'mixed', difficulty = null;
     for (const raw of startArgs) {
       const value = aliases[raw] || raw;
