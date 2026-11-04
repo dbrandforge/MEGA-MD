@@ -52,3 +52,14 @@ A third review-only batch adds **6,493 more records**:
 | Brain teasers | 160 | Unclassified |
 
 The staged inventory now totals **18,672 candidate records** across the three batches. This is a raw review inventory, not the approved bank. Some sources overlap; global duplicate detection and editorial classification are required before promotion. Every record remains ungraded and excluded from live gameplay.
+
+## Additional staged batch
+
+A further **2,000** records have been staged, bringing the combined review-only inventory to **14,179**:
+
+| Additional pool | Staged | Intended use |
+|---|---:|---|
+| Sports | 1,000 | Sports; football-specific records must be separated during review |
+| General knowledge | 1,000 | General |
+
+The new records are in `open-trivia-qa-sports-batch2.jsonl` and `open-trivia-qa-general-batch2.jsonl`. Their IDs are batch-scoped and unique. They remain ungraded and unapproved.
