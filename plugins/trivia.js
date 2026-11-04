@@ -62,8 +62,13 @@ function questionMatchesDifficulty(question, difficulty = null) {
 function secondsForQuestion(question, selectedDifficulty) {
   return DIFFICULTY_SECONDS[normalizeDifficulty(selectedDifficulty || question.difficulty)] || 30;
 }
+export function getAvailableTriviaQuestions(category = 'mixed', difficulty = null, usedIds = []) {
+  const used = new Set(usedIds);
+  return NIGERIA_TRIVIA.filter(q => questionMatchesCategory(q, category) &&
+    questionMatchesDifficulty(q, difficulty) && !used.has(q.id));
+}
 export function getTriviaQuestionCount(category = 'mixed', difficulty = null) {
-  return NIGERIA_TRIVIA.filter(q => questionMatchesCategory(q, category) && questionMatchesDifficulty(q, difficulty)).length;
+  return getAvailableTriviaQuestions(category, difficulty).length;
 }
 
 async function importLegacyGame(chatId) {
@@ -145,8 +150,7 @@ function formatScores(scores, limit = 5) {
 }
 function getQuestion(game) {
   const used = new Set(game.usedQuestions || []);
-  const pool = NIGERIA_TRIVIA.filter(q => questionMatchesCategory(q, game.category) &&
-    questionMatchesDifficulty(q, game.difficulty) && !used.has(q.id));
+  const pool = getAvailableTriviaQuestions(game.category, game.difficulty, [...used]);
   if (!pool.length) throw new Error('No unused questions remain for this category and grade.');
   const source = pool[Math.floor(Math.random() * pool.length)];
   game.usedQuestions = [...used, source.id];
