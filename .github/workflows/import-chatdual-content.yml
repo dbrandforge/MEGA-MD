@@ -1,0 +1,57 @@
+name: Import ChatDual content modules
+
+on:
+  push:
+    branches:
+      - feat/forge-guard-chatdual-integration
+    paths:
+      - chatDual_22_content_modules_5183.zip
+      - chatDual_22_content_modules_SHA256.txt
+
+permissions:
+  contents: write
+
+jobs:
+  import-bank:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/forge-guard-chatdual-integration
+          fetch-depth: 0
+
+      - name: Verify and extract archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f chatDual_22_content_modules_5183.zip
+          test -f chatDual_22_content_modules_SHA256.txt
+          mkdir -p "$RUNNER_TEMP/chatdual-import"
+          unzip -q chatDual_22_content_modules_5183.zip -d "$RUNNER_TEMP/chatdual-import"
+          count="$(find "$RUNNER_TEMP/chatdual-import/data/chatDual" -maxdepth 1 -type f -name '*.js' | wc -l)"
+          test "$count" -eq 22
+          (cd "$RUNNER_TEMP/chatdual-import" && sha256sum -c "$GITHUB_WORKSPACE/chatDual_22_content_modules_SHA256.txt")
+          cp "$RUNNER_TEMP"/chatdual-import/data/chatDual/*.js data/chatDual/
+          actual="$(find data/chatDual -maxdepth 1 -type f \( -name 'chatDual_*_data.js' -o -name 'ev_*.js' \) | wc -l)"
+          test "$actual" -eq 22
+
+      - name: Verify exported bank count
+        run: |
+          node --input-type=module -e "import { dualExpansionStats, dualBankExpansionComplete } from './data/chatDual/chatDual_expansion_index.js'; const s = dualExpansionStats(); console.log(s); if (!dualBankExpansionComplete || s.total !== 5183) process.exit(1);"
+
+      - name: Commit extracted modules to feature branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f chatDual_22_content_modules_5183.zip chatDual_22_content_modules_SHA256.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/chatDual/*.js
+          git add -u chatDual_22_content_modules_5183.zip chatDual_22_content_modules_SHA256.txt
+          if git diff --cached --quiet; then
+            echo "No module changes to commit."
+            exit 0
+          fi
+          git commit -m "Add verified 5,183-pair ChatDual content modules"
+          git push origin HEAD:feat/forge-guard-chatdual-integration
