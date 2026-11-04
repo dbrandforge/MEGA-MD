@@ -82,7 +82,8 @@ function getQuestion(game) {
       (!game.category || game.category === 'all' || q.category === game.category) &&
       !used.has(q.id)
     );
-  }\n  if (!pool.length) throw new Error('No questions are available for this category.');
+  }
+  if (!pool.length) throw new Error('No questions are available for this category.');
   const source = pool[Math.floor(Math.random() * pool.length)];
   game.usedQuestions.push(source.id);
   const choices = shuffle(source.options.map((text, index) => ({ text, correct: index === source.answer })));
