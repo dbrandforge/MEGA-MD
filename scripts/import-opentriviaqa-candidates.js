@@ -10,12 +10,14 @@ const SOURCE_CATEGORIES = [
   'music', 'movies', 'television', 'geography', 'history', 'literature',
   'sports', 'general', 'hobbies', 'humanities', 'entertainment',
   'celebrities', 'animals', 'brain-teasers', 'science-technology',
-  'video-games', 'world', 'people'
+  'video-games', 'world', 'people', 'animals', 'celebrities', 'sports',
+  'newest', 'rated', 'religion-faith', 'entertainment', 'for-kids', 'brain-teasers'
 ];
 const SAFE_PROPOSALS = {
   music: 'music', movies: 'movies', television: 'series',
   geography: 'geography', history: 'history', literature: 'literature',
-  hobbies: 'lifestyle', humanities: 'culture', 'video-games': 'gaming'
+  hobbies: 'lifestyle', humanities: 'culture', 'video-games': 'gaming',
+  animals: 'science', 'religion-faith': 'culture'
 };
 const normalize = value => String(value || '').normalize('NFKC')
   .toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
