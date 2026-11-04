@@ -34,3 +34,21 @@ The first intake batches contain **12,179 review-only candidate records** across
 These figures are **candidate counts, not approved/live bank counts**. Every record currently has `difficulty: null` and `status: needs-editorial-review`. The 250-per-grade target has not been met by these staged records. Reviewers must verify factual accuracy, correct answer, distractors, category fit, regional balance, duplication, currentness and third-party rights before assigning a grade and promoting a question.
 
 The music batch excludes obvious lyric-fragment and multi-line entries. This is not a substitute for individual rights and accuracy review.
+
+## Additional candidate intake batch
+
+A third review-only batch adds **6,493 more records**:
+
+| Candidate pool | Staged | Proposed use |
+|---|---:|---|
+| Animals | 1,000 | Science |
+| Celebrities | 1,000 | Unclassified |
+| Sports | 1,000 | Unclassified; not all are association football |
+| Newest | 1,000 | Unclassified; not automatically current affairs |
+| Rated | 1,000 | Unclassified |
+| Religion & faith | 520 | Culture |
+| Entertainment | 222 | Unclassified |
+| For kids | 591 | Unclassified |
+| Brain teasers | 160 | Unclassified |
+
+The staged inventory now totals **18,672 candidate records** across the three batches. This is a raw review inventory, not the approved bank. Some sources overlap; global duplicate detection and editorial classification are required before promotion. Every record remains ungraded and excluded from live gameplay.
