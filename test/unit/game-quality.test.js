@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getLagosDay, getManualLockableGames } from '../../plugins/daylock.js';
+import { auditTriviaBank, getTriviaCoverage, TRIVIA_BANK_TARGETS } from '../../lib/triviaBankAudit.js';
 import { WORDS, QUESTIONS_PER_ROUND, canEndHangman } from '../../plugins/hangman.js';
 import { FALLBACK } from '../../data/wyrPairs.js';
 import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
@@ -8,6 +9,60 @@ import { MATH_MODES, generateMathQuestion } from '../../plugins/math.js';
 import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES, getTriviaQuestionCount, getAvailableTriviaQuestions, shouldEndTriviaForNoParticipation } from '../../plugins/trivia.js';
 
 describe('game quality foundations', () => {
+
+  it('enforces 1,000 unique questions per Trivia category with 250 per grade', () => {
+    const questions = [];
+    let id = 0;
+    for (const category of ['music', 'sports', 'nollywood', 'everyday', 'geography', 'history', 'culture', 'food', 'tech', 'business', 'science', 'gaming', 'literature', 'hollywood', 'bollywood', 'animation', 'series', 'current-affairs']) {
+      for (const difficulty of ['easy', 'normal', 'hard', 'expert']) {
+        for (let n = 0; n < 250; n++) {
+          id += 1;
+          questions.push({
+            id: `synthetic-${id}`, category, difficulty,
+            question: `Synthetic ${category} question ${id}?`,
+            options: ['A', 'B', 'C', 'D'], answer: 0
+          });
+        }
+      }
+    }
+    for (const difficulty of ['easy', 'normal', 'hard', 'expert']) {
+      for (let n = 0; n < 250; n++) {
+        id += 1;
+        questions.push({
+          id: `synthetic-${id}`, category: 'geography', difficulty,
+          region: 'nigeria', question: `Synthetic Nigeria question ${id}?`,
+          options: ['A', 'B', 'C', 'D'], answer: 0
+        });
+      }
+    }
+    const report = auditTriviaBank(questions);
+    expect(TRIVIA_BANK_TARGETS.perCategory).toBe(1000);
+    expect(TRIVIA_BANK_TARGETS.perDifficulty).toBe(250);
+    expect(report.errors).toHaveLength(0);
+    expect(report.categories.music.meetsTarget).toBe(true);
+    expect(report.categories.football.meetsTarget).toBe(true);
+    expect(report.categories.movies.meetsTarget).toBe(true);
+    expect(report.categories.lifestyle.meetsTarget).toBe(true);
+    expect(report.categories.nigeria.meetsTarget).toBe(true);
+    expect(report.ready).toBe(false); // Remaining selectable categories are deliberately absent.
+    expect(getTriviaCoverage(questions).music.byDifficulty).toEqual({
+      easy: 250, normal: 250, hard: 250, expert: 250
+    });
+  });
+
+  it('flags duplicate IDs, duplicate wording, malformed choices and ungraded questions', () => {
+    const broken = [
+      { id: 'dup', category: 'music', difficulty: 'easy', question: 'Same question?', options: ['A', 'B', 'C', 'D'], answer: 0 },
+      { id: 'dup', category: 'music', difficulty: 'unknown', question: 'Same question?', options: ['A', 'A', '', 'D'], answer: 5 }
+    ];
+    const report = auditTriviaBank(broken);
+    expect(report.errors.some(error => error.includes('duplicate id'))).toBe(true);
+    expect(report.errors.some(error => error.includes('duplicate question wording'))).toBe(true);
+    expect(report.errors.some(error => error.includes('options must be non-empty and unique'))).toBe(true);
+    expect(report.errors.some(error => error.includes('difficulty must be'))).toBe(true);
+    expect(report.errors.some(error => error.includes('answer must be'))).toBe(true);
+  });
+
   it('uses Lagos local weekday for day-lock calculations', () => {
     expect(getLagosDay(new Date('2026-11-01T12:00:00.000Z'))).toBe(0);
     expect(getLagosDay(new Date('2026-11-02T00:30:00.000Z'))).toBe(1);
