@@ -21,7 +21,7 @@ jobs:
           ref: feat/forge-guard-chatdual-integration
           fetch-depth: 0
 
-      - name: Verify and extract archive
+      - name: Verify archive, SHA-256, sizes and pair counts
         shell: bash
         run: |
           set -euo pipefail
@@ -29,11 +29,53 @@ jobs:
           test -f chatDual_22_content_modules_SHA256.txt
           mkdir -p "$RUNNER_TEMP/chatdual-import"
           unzip -q chatDual_22_content_modules_5183.zip -d "$RUNNER_TEMP/chatdual-import"
-          count="$(find "$RUNNER_TEMP/chatdual-import/data/chatDual" -maxdepth 1 -type f -name '*.js' | wc -l)"
-          test "$count" -eq 22
-          (cd "$RUNNER_TEMP/chatdual-import" && sha256sum -c "$GITHUB_WORKSPACE/chatDual_22_content_modules_SHA256.txt")
+          python3 - <<'PY'
+          import hashlib, json, pathlib, re, sys
+          root = pathlib.Path("$RUNNER_TEMP/chatdual-import")
+          manifest = pathlib.Path("chatDual_22_content_modules_SHA256.txt").read_text(encoding="utf-8")
+          rows = []
+          for line in manifest.splitlines():
+              line = line.strip()
+              if not line or line.startswith("#"):
+                  continue
+              parts = line.split(None, 3)
+              if len(parts) != 4:
+                  raise SystemExit(f"Invalid manifest row: {line}")
+              digest, byte_count, pair_count, relpath = parts
+              rows.append((digest, int(byte_count), int(pair_count), relpath))
+          if len(rows) != 22:
+              raise SystemExit(f"Expected 22 manifest rows, got {len(rows)}")
+          total = 0
+          seen = set()
+          for digest, byte_count, pair_count, relpath in rows:
+              if not relpath.startswith("data/chatDual/") or not relpath.endswith(".js"):
+                  raise SystemExit(f"Unexpected module path: {relpath}")
+              path = root / relpath
+              raw = path.read_bytes()
+              if hashlib.sha256(raw).hexdigest() != digest:
+                  raise SystemExit(f"SHA-256 mismatch: {relpath}")
+              if len(raw) != byte_count:
+                  raise SystemExit(f"Byte-size mismatch: {relpath}")
+              source = raw.decode("utf-8")
+              if "export default " not in source:
+                  raise SystemExit(f"Missing default export: {relpath}")
+              payload = source.split("export default ", 1)[1]
+              payload = re.split(r";\\s*(?:export const|$)", payload, maxsplit=1)[0].strip()
+              data = json.loads(payload)
+              count = sum(len(value) for value in data.values() if isinstance(value, list)) if isinstance(data, dict) else len(data)
+              if count != pair_count:
+                  raise SystemExit(f"Pair-count mismatch: {relpath}: {count} != {pair_count}")
+              total += count
+              seen.add(relpath)
+          actual = {p.as_posix().replace(root.as_posix() + "/", "") for p in (root / "data/chatDual").glob("*.js")}
+          if actual != seen:
+              raise SystemExit(f"Archive/manifest file set mismatch: archive={len(actual)}, manifest={len(seen)}")
+          if total != 5183:
+              raise SystemExit(f"Expected 5183 pairs, got {total}")
+          print(f"Verified {len(rows)} modules and {total} pairs: SHA-256, byte sizes and pair counts all match.")
+          PY
           cp "$RUNNER_TEMP"/chatdual-import/data/chatDual/*.js data/chatDual/
-          actual="$(find data/chatDual -maxdepth 1 -type f \( -name 'chatDual_*_data.js' -o -name 'ev_*.js' \) | wc -l)"
+          actual="$(find data/chatDual -maxdepth 1 -type f \\( -name 'chatDual_*_data.js' -o -name 'ev_*.js' \\) | wc -l)"
           test "$actual" -eq 22
 
       - name: Verify exported bank count
