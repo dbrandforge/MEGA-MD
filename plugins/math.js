@@ -53,6 +53,9 @@ export function generateMathQuestion(mode = 'normal') {
     result = randomInt(settings.min, settings.max);
     a = result * b;
   }
+  if (Object.is(a, -0)) a = 0;
+  if (Object.is(b, -0)) b = 0;
+  if (Object.is(result, -0)) result = 0;
   return { expression: `${a} ${op === '*' ? '×' : op === '/' ? '÷' : op} ${b}`, answer: String(result), mode, time: settings.time };
 }
 
