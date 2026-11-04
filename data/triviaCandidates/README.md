@@ -55,11 +55,11 @@ The staged inventory now totals **18,672 candidate records** across the three ba
 
 ## Additional staged batch
 
-A further **2,000** records have been staged, bringing the combined review-only inventory to **14,179**:
+A further **2,000** records have been staged, bringing the combined review-only inventory to **20,672**:
 
 | Additional pool | Staged | Intended use |
 |---|---:|---|
 | Sports | 1,000 | Sports; football-specific records must be separated during review |
 | General knowledge | 1,000 | General |
 
-The new records are in `open-trivia-qa-sports-batch2.jsonl` and `open-trivia-qa-general-batch2.jsonl`. Their IDs are batch-scoped and unique. They remain ungraded and unapproved.
+The new records are in `open-trivia-qa-sports-batch2.jsonl` and `open-trivia-qa-general-batch2.jsonl`. The sports batch was regenerated to avoid duplicating the first sports batch; the general batch is unique against the first general batch. IDs are batch-scoped and unique. Global cross-category duplicate review remains required. They remain ungraded and unapproved.
