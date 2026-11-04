@@ -5,7 +5,7 @@ import { FALLBACK } from '../../data/wyrPairs.js';
 import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
 import { getLagosWeekKey } from '../../plugins/rank.js';
 import { MATH_MODES, generateMathQuestion } from '../../plugins/math.js';
-import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES } from '../../plugins/trivia.js';
+import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES, getTriviaQuestionCount } from '../../plugins/trivia.js';
 
 describe('game quality foundations', () => {
   it('uses Lagos local weekday for day-lock calculations', () => {
@@ -70,6 +70,9 @@ describe('game quality foundations', () => {
     expect(NIGERIA_TRIVIA.length).toBeGreaterThanOrEqual(60);
     expect(new Set(NIGERIA_TRIVIA.map(q => q.id)).size).toBe(NIGERIA_TRIVIA.length);
     expect(TRIVIA_CATEGORIES).toContain('current-affairs');
+    expect(getTriviaQuestionCount('all')).toBe(63);
+    expect(getTriviaQuestionCount('current-affairs')).toBe(3);
+    expect(getTriviaQuestionCount('current-affairs', 'hard')).toBe(3);
     for (const q of NIGERIA_TRIVIA) {
       expect(q.options).toHaveLength(4);
       expect(new Set(q.options.map(option => option.toLowerCase())).size).toBe(4);
