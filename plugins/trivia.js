@@ -12,7 +12,8 @@ const QUESTIONS_PER_MATCH = 10;
 const ANSWER_WINDOW_MS = 20000;
 const DIFFICULTY_SECONDS = { easy: 20, normal: 30, medium: 30, hard: 45, expert: 60 };
 const CATEGORY_ALIASES = {
-  football: ['sports', 'football'], movies: ['nollywood', 'movies', 'film'],
+  football: ['sports', 'football'], movies: ['nollywood', 'movies', 'film', 'hollywood', 'bollywood', 'animation', 'series'],
+  nollywood: ['nollywood'], hollywood: ['hollywood'], bollywood: ['bollywood'], animation: ['animation'], series: ['series'],
   lifestyle: ['everyday', 'lifestyle'], technology: ['tech', 'technology'],
   nigeria: ['current-affairs', 'nigeria'], music: ['music'], geography: ['geography'],
   history: ['history'], culture: ['culture'], food: ['food'], business: ['business'],
@@ -161,7 +162,7 @@ function getQuestion(game) {
 }
 function renderQuestion(game) {
   return [
-    '🇳🇬 *FORGE GUARD — NAIJA TRIVIA ARENA*',
+    '🎮 *FORGE GUARD — TRIVIA ARENA*',
     `📚 ${game.categoryName.toUpperCase()} · ${game.difficulty.toUpperCase()}`,
     `*QUESTION ${game.round}/${game.totalRounds}*`,
     '',
@@ -204,7 +205,7 @@ async function endMatch(sock, chatId, game, reason = 'completed', quoted) {
   await saveGame(chatId, game);
   await saveMatchRecords(chatId, game);
   await sock.sendMessage(chatId, {
-    text: `🏁 *NAIJA TRIVIA — ${reason === 'completed' ? 'MATCH COMPLETE' : 'MATCH ENDED'}*\n\n${formatScores(game.scores, 10).join('\n') || 'No points were scored.'}\n\n🏆 Champion: ${game.winner ? mention(game.winner) : 'No winner'}`,
+    text: `🏁 *TRIVIA ARENA — ${reason === 'completed' ? 'MATCH COMPLETE' : reason === 'no-participation' ? 'MATCH ENDED: NO PARTICIPATION' : 'MATCH ENDED'}*\n\n${reason === 'no-participation' ? 'Nobody submitted an answer before the question timer expired. This match has ended automatically.\n\n' : ''}${formatScores(game.scores, 10).join('\n') || 'No points were scored.'}\n\n🏆 Champion: ${game.winner ? mention(game.winner) : 'No winner'}`,
     mentions: ranking.map(([jid]) => jid)
   }, quoted ? { quoted } : undefined);
 }
@@ -367,8 +368,9 @@ export default {
         '*CATEGORIES*',
         '🎵 Music — Nigerian favourites + international hits',
         '⚽ Football — Nigerian and world football',
-        '🎬 Movies — Nollywood, Hollywood and world cinema',
-        '📺 Lifestyle — everyday life, culture and entertainment',
+        '🎬 MOVIES: .trivia nollywood · .trivia hollywood · .trivia bollywood',
+        '🎞️ Animation: .trivia animation · Series: .trivia series',
+        '📺 Lifestyle — everyday life and popular culture',
         '🌍 Geography · 📜 History · 🔬 Science',
         '💻 Technology · 💼 Business · 🍲 Food',
         '🎮 Gaming · 📚 Literature · 🇳🇬 Nigeria',
@@ -379,6 +381,7 @@ export default {
         '*PLAY COMMANDS*',
         '.trivia music · .trivia music easy',
         '.trivia football hard · .trivia movies expert',
+        '.trivia nollywood normal · .trivia hollywood hard',
         '.trivia mixed · .trivia mixed normal',
         '',
         '*MATCH CONTROLS*',
