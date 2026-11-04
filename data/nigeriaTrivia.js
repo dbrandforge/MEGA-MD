@@ -137,5 +137,6 @@ export const NIGERIA_TRIVIA = [
 
 export const TRIVIA_CATEGORIES = [
   'mixed','music','football','movies','lifestyle','geography','history','culture','food',
-  'technology','business','science','gaming','literature','nigeria','nollywood','hollywood','bollywood','animation','series'
+  'technology','business','science','gaming','literature','nigeria','nollywood','hollywood','bollywood','animation','series',
+  'current-affairs','sports','everyday','tech'
 ];
