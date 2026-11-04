@@ -177,6 +177,9 @@ async function playerCanEnd(sock, chatId, senderId, context, message, game) {
 
 export async function handleMathContinuity(sock, chatId, message, senderId) {
   if (!chatId?.endsWith('@g.us') || message?.key?.fromMe || !isFeatureGroup(chatId)) return false;
+  const pendingGame = await readGame(chatId);
+  if (!pendingGame) return false;
+  armTimer(sock, chatId, pendingGame);
   const contextInfo = message.message?.extendedTextMessage?.contextInfo || message.message?.imageMessage?.contextInfo || {};
   if (!contextInfo.stanzaId) return false;
   const result = await withChatLock(chatId, async () => {
