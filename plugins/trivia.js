@@ -212,6 +212,9 @@ function mentionBot(sock, message) {
 
 export async function handleTriviaContinuity(sock, chatId, message, senderId) {
   if (!chatId?.endsWith('@g.us') || message?.key?.fromMe || !isFeatureGroup(chatId)) return false;
+  const pendingGame = await readGame(chatId);
+  if (!pendingGame) return false;
+  armTimer(sock, chatId, pendingGame);
   const contextInfo = message.message?.extendedTextMessage?.contextInfo || message.message?.imageMessage?.contextInfo || {};
   const replied = !!contextInfo.stanzaId;
   const tagged = mentionBot(sock, message);
