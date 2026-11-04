@@ -49,7 +49,6 @@ export function generateMathQuestion(mode = 'normal') {
   else {
     // Generate exact integer division; never expose a rounded or fractional answer.
     b = randomInt(Math.max(1, Math.abs(settings.min)), Math.max(2, Math.abs(settings.max)));
-    if (Math.random() < 0.5) b *= -1;
     result = randomInt(settings.min, settings.max);
     a = result * b;
   }
@@ -163,7 +162,7 @@ async function postNextQuestion(sock, chatId, game) {
   game.expiresAt = Date.now() + question.time;
   game.roundToken = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
   const sent = await sock.sendMessage(chatId, {
-    text: `🧮 *FORGE GUARD — MATHS ARENA*\n\n*Question ${game.round}/${game.totalRounds}* · ${game.mode.toUpperCase()}\n\nHow much is:\n\n* ${game.expression} = ? *\n\n⏱️ ${Math.round(question.time / 1000)} seconds\n\nReply directly to this question with your answer. First correct answer earns the round points.\n🏆 ${formatScores(game.scores, 3).join(' | ') || 'No scores yet'}`
+    text: `🧮 *FORGE GUARD — MATHS ARENA*\n\n*Question ${game.round}/${game.totalRounds}* · ${game.mode.toUpperCase()}\n\nHow much is:\n\n*${game.expression} = ?*\n\n⏱️ ${Math.round(question.time / 1000)} seconds\n\nReply directly to this question with your answer. First correct answer earns the round points.\n🏆 ${formatScores(game.scores, 3).join(' | ') || 'No scores yet'}`
   });
   game.questionMessageId = sent?.key?.id || null;
   await saveGame(chatId, game);
