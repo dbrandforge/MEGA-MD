@@ -16,7 +16,7 @@ const SAFE_PROPOSALS = {
   geography: 'geography', history: 'history', literature: 'literature'
 };
 const normalize = value => String(value || '').normalize('NFKC')
-  .toLowerCase().replace(/[^\\p{L}\\p{N}]+/gu, ' ').trim();
+  .toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 const stableId = value => 'otqa-' + createHash('sha1').update(value).digest('hex').slice(0, 14);
 
 function parseCategory(raw, sourceCategory) {
@@ -48,7 +48,7 @@ function parseCategory(raw, sourceCategory) {
     activeField = null;
   };
 
-  for (const rawLine of String(raw).replace(/\\r/g, '').split('\\n')) {
+  for (const rawLine of String(raw).replace(/\r/g, '').split('\n')) {
     const line = rawLine.trim();
     if (!line) continue;
     if (line.startsWith('#Q ')) {
@@ -63,7 +63,7 @@ function parseCategory(raw, sourceCategory) {
       activeField = 'correct';
       continue;
     }
-    const option = line.match(/^([A-D])\\s+(.*)$/);
+    const option = line.match(/^([A-D])\s+(.*)$/);
     if (option) {
       current.options[option[1]] = option[2].trim();
       activeField = option[1];
@@ -109,5 +109,5 @@ const output = {
   count: combined.length,
   questions: combined
 };
-await writeFile('data/triviaCandidates/open-trivia-qa.review.json', JSON.stringify(output, null, 2) + '\\n');
-console.log(`\\nStaged ${combined.length} review-only candidates. None were added to the live bank.`);
+await writeFile('data/triviaCandidates/open-trivia-qa.review.json', JSON.stringify(output, null, 2) + '\n');
+console.log(`\nStaged ${combined.length} review-only candidates. None were added to the live bank.`);
