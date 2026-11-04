@@ -75,7 +75,14 @@ function getQuestion(game) {
       (!game.difficulty || q.difficulty === game.difficulty)
     );
   }
-  if (!pool.length) {\n    // A category may not yet have questions at every difficulty. Keep the selected category\n    // and fall back to its full difficulty range rather than failing the match.\n    pool = NIGERIA_TRIVIA.filter(q =>\n      (!game.category || game.category === 'all' || q.category === game.category) &&\n      !used.has(q.id)\n    );\n  }\n  if (!pool.length) throw new Error('No questions are available for this category.');
+  if (!pool.length) {
+    // A category may not yet have questions at every difficulty. Keep the selected category
+    // and fall back to its full difficulty range rather than failing the match.
+    pool = NIGERIA_TRIVIA.filter(q =>
+      (!game.category || game.category === 'all' || q.category === game.category) &&
+      !used.has(q.id)
+    );
+  }\n  if (!pool.length) throw new Error('No questions are available for this category.');
   const source = pool[Math.floor(Math.random() * pool.length)];
   game.usedQuestions.push(source.id);
   const choices = shuffle(source.options.map((text, index) => ({ text, correct: index === source.answer })));
@@ -107,7 +114,9 @@ function renderQuestion(game) {
 
 async function saveMatchRecords(chatId, game) {
   const records = (await store.getSetting(chatId, RECORD_KEY)) || {};
-  for (const [jid, score] of Object.entries(game.scores || {})) {
+  const playerIds = new Set([...Object.keys(game.participants || {}), ...Object.keys(game.scores || {})]);
+  for (const jid of playerIds) {
+    const score = game.scores?.[jid] || 0;
     const old = records[jid] || { points: 0, matches: 0, wins: 0 };
     records[jid] = {
       ...old,
