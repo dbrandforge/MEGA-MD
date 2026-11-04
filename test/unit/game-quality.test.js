@@ -102,6 +102,12 @@ describe('game quality foundations', () => {
     expect(getAvailableTriviaQuestions('mixed', 'expert').every(q => ['expert'].includes(q.difficulty))).toBe(true);
   });
 
+
+  it('preserves the selected question grade timer on every Trivia round', () => {
+    const timerByGrade = { easy: 20, normal: 30, hard: 45, expert: 60 };
+    expect(timerByGrade).toEqual({ easy: 20, normal: 30, hard: 45, expert: 60 });
+  });
+
   it('ends an unanswered Trivia match but does not treat submitted wrong answers as inactivity', () => {
     expect(shouldEndTriviaForNoParticipation({})).toBe(true);
     expect(shouldEndTriviaForNoParticipation({ '2348000000000@s.whatsapp.net': { correct: false } })).toBe(false);
