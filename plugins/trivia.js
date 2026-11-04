@@ -10,6 +10,20 @@ const QUESTIONS_PER_MATCH = 10;
 const ANSWER_WINDOW_MS = 20000;
 const MATCH_EXPIRY_MS = 30 * 60 * 1000;
 const timers = new Map();
+const chatLocks = new Map();
+async function withChatLock(chatId, task) {
+  const previous = chatLocks.get(chatId) || Promise.resolve();
+  let release;
+  const current = new Promise(resolve => { release = resolve; });
+  const queued = previous.then(() => current);
+  chatLocks.set(chatId, queued);
+  await previous;
+  try { return await task(); }
+  finally {
+    release();
+    if (chatLocks.get(chatId) === queued) chatLocks.delete(chatId);
+  }
+}
 
 const normalize = value => String(value ?? '').normalize('NFKC').toLowerCase()
   .replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
@@ -124,40 +138,42 @@ async function endMatch(sock, chatId, game, reason = 'completed', quoted) {
 }
 
 async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
-  const game = await readGame(chatId);
-  if (!game || game.roundToken !== roundToken || game.questionClosed) return false;
-  clearTimer(chatId);
-  game.questionClosed = true;
-  const correctPlayers = [];
-  const answerRows = Object.entries(game.answers || {});
-  for (const [jid, answer] of answerRows) {
-    if (!answer.correct) continue;
-    const elapsed = Math.max(0, answer.answeredAt - game.roundStartedAt);
-    const speedBonus = Math.max(0, Math.floor(5 * (1 - elapsed / ANSWER_WINDOW_MS)));
-    const points = 10 + speedBonus;
-    game.scores[jid] = (game.scores[jid] || 0) + points;
-    correctPlayers.push({ jid, points });
-  }
-  correctPlayers.sort((a, b) => b.points - a.points);
-  await saveGame(chatId, game);
-  const winners = correctPlayers.map(item => item.jid);
-  const result = correctPlayers.length
-    ? correctPlayers.map(item => `✅ ${mention(item.jid)} +${item.points}`).join('\n')
-    : 'No correct answers this round.';
-  await sock.sendMessage(chatId, {
-    text: `⏱️ *QUESTION ${game.round} CLOSED*\n\nCorrect answer: *${game.answer}*\n\n${result}\n\n${answerRows.length} player(s) submitted.`,
-    mentions: winners
-  });
-  if (game.round >= game.totalRounds) {
-    await endMatch(sock, chatId, game, 'completed');
+  return withChatLock(chatId, async () => {
+    const game = await readGame(chatId);
+    if (!game || game.roundToken !== roundToken || game.questionClosed) return false;
+    clearTimer(chatId);
+    game.questionClosed = true;
+    const correctPlayers = [];
+    const answerRows = Object.entries(game.answers || {});
+    for (const [jid, answer] of answerRows) {
+      if (!answer.correct) continue;
+      const elapsed = Math.max(0, answer.answeredAt - game.roundStartedAt);
+      const speedBonus = Math.max(0, Math.floor(5 * (1 - elapsed / ANSWER_WINDOW_MS)));
+      const points = 10 + speedBonus;
+      game.scores[jid] = (game.scores[jid] || 0) + points;
+      correctPlayers.push({ jid, points });
+    }
+    correctPlayers.sort((a, b) => b.points - a.points);
+    await saveGame(chatId, game);
+    const winners = correctPlayers.map(item => item.jid);
+    const result = correctPlayers.length
+      ? correctPlayers.map(item => `✅ ${mention(item.jid)} +${item.points}`).join('\n')
+      : 'No correct answers this round.';
+    await sock.sendMessage(chatId, {
+      text: `⏱️ *QUESTION ${game.round} CLOSED*\n\nCorrect answer: *${game.answer}*\n\n${result}\n\n${answerRows.length} player(s) submitted.`,
+      mentions: winners
+    });
+    if (game.round >= game.totalRounds) {
+      await endMatch(sock, chatId, game, 'completed');
+      return true;
+    }
+    setTimeout(async () => {
+      const latest = await readGame(chatId);
+      if (!latest || latest.roundToken !== roundToken || !latest.questionClosed) return;
+      await postNextQuestion(sock, chatId, latest);
+    }, 1800);
     return true;
-  }
-  setTimeout(async () => {
-    const latest = await readGame(chatId);
-    if (!latest || latest.roundToken !== roundToken || !latest.questionClosed) return;
-    await postNextQuestion(sock, chatId, latest);
-  }, 1800);
-  return true;
+  });
 }
 
 function armTimer(sock, chatId, game) {
@@ -196,45 +212,47 @@ function mentionBot(sock, message) {
 
 export async function handleTriviaContinuity(sock, chatId, message, senderId) {
   if (!chatId?.endsWith('@g.us') || message?.key?.fromMe || !isFeatureGroup(chatId)) return false;
-  const game = await readGame(chatId);
-  if (!game) return false;
-  armTimer(sock, chatId, game);
   const contextInfo = message.message?.extendedTextMessage?.contextInfo || message.message?.imageMessage?.contextInfo || {};
-  const replied = !!(contextInfo.stanzaId && game.questionMessageId && contextInfo.stanzaId === game.questionMessageId);
+  const replied = !!contextInfo.stanzaId;
   const tagged = mentionBot(sock, message);
   if (!replied && !tagged) return false;
-  const access = await isGameAllowed(chatId, 'trivia');
-  if (!access.ok) {
-    await sock.sendMessage(chatId, { text: access.msg }, { quoted: message });
+  const result = await withChatLock(chatId, async () => {
+    const game = await readGame(chatId);
+    if (!game) return false;
+    armTimer(sock, chatId, game);
+    const isCurrentQuestion = !!(contextInfo.stanzaId && game.questionMessageId && contextInfo.stanzaId === game.questionMessageId);
+    if (!isCurrentQuestion && !tagged) return false;
+    const access = await isGameAllowed(chatId, 'trivia');
+    if (!access.ok) {
+      await sock.sendMessage(chatId, { text: access.msg }, { quoted: message });
+      return true;
+    }
+    if (tagged && !isCurrentQuestion) return { handled: true, closeToken: game.roundToken, reason: 'skipped' };
+    if (game.questionClosed || Date.now() >= game.closesAt) {
+      return { handled: true, closeToken: game.roundToken, reason: 'timeout' };
+    }
+    const sender = senderId || message.key.participant;
+    if (!sender) return true;
+    if (game.answers?.[sender]) {
+      await sock.sendMessage(chatId, { text: 'Your answer for this question has already been submitted.' }, { quoted: message });
+      return true;
+    }
+    const raw = message.message?.conversation || message.message?.extendedTextMessage?.text ||
+      message.message?.imageMessage?.caption || message.message?.videoMessage?.caption || '';
+    if (!raw.trim()) return true;
+    game.answers = game.answers || {};
+    game.answers[sender] = { correct: parseAnswer(raw, game), submitted: normalize(raw), answeredAt: Date.now() };
+    game.participants = game.participants || {};
+    game.participants[sender] = true;
+    await saveGame(chatId, game);
+    await sock.sendMessage(chatId, {
+      text: `📝 Answer received, ${mention(sender)}. Results will be revealed when the timer closes.`,
+      mentions: [sender]
+    }, { quoted: message });
     return true;
-  }
-  if (tagged && !replied) {
-    await closeQuestion(sock, chatId, game.roundToken, 'skipped');
-    return true;
-  }
-  if (game.questionClosed || Date.now() >= game.closesAt) {
-    await closeQuestion(sock, chatId, game.roundToken, 'timeout');
-    return true;
-  }
-  const sender = senderId || message.key.participant;
-  if (!sender) return true;
-  if (game.answers?.[sender]) {
-    await sock.sendMessage(chatId, { text: 'Your answer for this question has already been submitted.' }, { quoted: message });
-    return true;
-  }
-  const raw = message.message?.conversation || message.message?.extendedTextMessage?.text ||
-    message.message?.imageMessage?.caption || message.message?.videoMessage?.caption || '';
-  if (!raw.trim()) return true;
-  game.answers = game.answers || {};
-  game.answers[sender] = { correct: parseAnswer(raw, game), submitted: normalize(raw), answeredAt: Date.now() };
-  game.participants = game.participants || {};
-  game.participants[sender] = true;
-  await saveGame(chatId, game);
-  await sock.sendMessage(chatId, {
-    text: `📝 Answer received, ${mention(sender)}. Results will be revealed when the timer closes.`,
-    mentions: [sender]
-  }, { quoted: message });
-  return true;
+  });
+  if (result?.closeToken) await closeQuestion(sock, chatId, result.closeToken, result.reason);
+  return result === true || !!result?.handled;
 }
 
 async function canEnd(sock, chatId, senderId, context, message, game) {
