@@ -273,7 +273,6 @@ async function postNextQuestion(sock, chatId, game) {
   game.round += 1;
   game.questionClosed = false;
   game.roundStartedAt = Date.now();
-  game.answerSeconds = 30;
   game.answers = {};
   Object.assign(game, getQuestion(game));
   game.closesAt = game.roundStartedAt + (game.answerSeconds * 1000);
