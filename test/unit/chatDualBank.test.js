@@ -3,6 +3,7 @@ import {
   dualExpansionStats,
   dualBankExpansionComplete,
 } from '../../data/chatDual/chatDual_expansion_index.js';
+import { classifyIntent } from '../../data/chatbotResponseLibrary.js';
 import { pickDualReply, getDualBankStats } from '../../data/chatDual/dualBankSelector.js';
 
 describe('ChatDual expansion bank', () => {
@@ -20,6 +21,40 @@ describe('ChatDual expansion bank', () => {
     });
   });
 
+  it('routes classified relationship, friendship, work-life and advice prompts', () => {
+    const cases = [
+      ['My situationship only texts at night', 'relationships'],
+      ['My friend betrayed my trust', 'friendship'],
+      ['What should I do about my boss?', 'advice'],
+      ['I need advice about my career', 'advice'],
+    ];
+    for (const [prompt, expectedIntent] of cases) {
+      expect(classifyIntent(prompt)).toBe(expectedIntent);
+      expect(pickDualReply(prompt, {
+        chatId: `routing-${expectedIntent}-${prompt}`,
+        intent: classifyIntent(prompt),
+      })).toBeTruthy();
+    }
+  });
+
+  it('routes financial, wellbeing, Yoruba, pidgin, gist and flirty prompts', () => {
+    const cases = [
+      ['I need money urgently', 'financialNeed'],
+      ['I feel burnt out and anxious', 'empathy'],
+      ['Mo n gbo e', 'yoruba'],
+      ['Abeg yarn me well', 'pidgin'],
+      ['Spill the gist', 'fallback'],
+      ['I have a crush on someone', 'flirty'],
+    ];
+    for (const [prompt, expectedIntent] of cases) {
+      expect(classifyIntent(prompt)).toBe(expectedIntent);
+      expect(pickDualReply(prompt, {
+        chatId: `routing-${expectedIntent}-${prompt}`,
+        intent: classifyIntent(prompt),
+      })).toBeTruthy();
+    }
+  });
+
   it('routes sexual-health and consent advice to ChatDual', () => {
     const reply = pickDualReply('Is continuous consent required during a scene?', { chatId: 'test-sex-advice' });
     expect(typeof reply).toBe('string');
@@ -30,17 +65,11 @@ describe('ChatDual expansion bank', () => {
     expect(pickDualReply('talk dirty to me', { chatId: 'test-dirty-talk' })).toBeNull();
   });
 
-  it('routes relationship, financial, wellbeing and Yoruba prompts', () => {
-    expect(pickDualReply('My situationship only texts at night', { chatId: 'test-relationship' })).toBeTruthy();
-    expect(pickDualReply('I need money urgently', { chatId: 'test-money', intent: 'financialNeed' })).toBeTruthy();
-    expect(pickDualReply('I feel burnt out and anxious', { chatId: 'test-wellbeing', intent: 'empathy' })).toBeTruthy();
-    expect(pickDualReply('Bawo ni?', { chatId: 'test-yoruba' })).toBeTruthy();
-  });
-
-  it('exposes populated category pools', () => {
+  it('exposes populated category pools used by the router', () => {
     const stats = getDualBankStats();
     expect(stats.complete).toBe(true);
-    expect(stats.categories.sexAdvice).toBeGreaterThan(0);
-    expect(stats.categories.relationship).toBeGreaterThan(0);
+    for (const category of ['sexAdvice', 'relationship', 'wellbeing', 'advice', 'flirty', 'yoruba', 'conversational', 'gist', 'financialNeed']) {
+      expect(stats.categories[category], `missing category pool: ${category}`).toBeGreaterThan(0);
+    }
   });
 });
