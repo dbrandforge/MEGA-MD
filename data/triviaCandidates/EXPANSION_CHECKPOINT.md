@@ -20,8 +20,8 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current live-bank baseline
 
-- 152 questions in `data/nigeriaTrivia.js`
-- 152 unique IDs
+- 160 questions in `data/nigeriaTrivia.js`
+- 160 unique IDs
 - 78 category/difficulty combinations below the 25-question initial-release grade target across the 20 player-selectable pools
 - The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
 - Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
@@ -41,8 +41,8 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 | Technology | 6 | 2 | 2 | 1 | 1 |
 | Business | 8 | 1 | 4 | 2 | 1 |
 | Science | 12 | 3 | 3 | 3 | 3 |
-| Gaming | 4 | 1 | 1 | 1 | 1 |
-| Literature | 4 | 1 | 1 | 1 | 1 |
+| Gaming | 8 | 2 | 2 | 2 | 2 |
+| Literature | 8 | 2 | 2 | 2 | 2 |
 | Nigeria | 71 | 28 | 35 | 4 | 4 |
 | Nollywood | 6 | 2 | 2 | 1 | 1 |
 | Hollywood | 4 | 1 | 1 | 1 | 1 |
@@ -80,6 +80,10 @@ Four original, source-linked Science questions were added (`fx018`–`fx021`), o
 ## Seventh approved content batch
 
 Two original, source-linked Nigeria history questions were added (`fx022`–`fx023`), one Hard and one Expert. They cover the First Republic presidency of Dr. Nnamdi Azikiwe and Professor Kenneth Onwuka Dike’s status as the first Nigerian Vice-Chancellor of the University College Ibadan. Sources are the State House and University of Ibadan. The Nigeria pool now has 71 approved questions, including four Hard and four Expert entries; both grades remain below the 25-question target.
+
+## Eighth approved content batch
+
+Eight original, source-linked questions were added (`gl063`–`gl070`): four Gaming and four Literature, with one new question at each difficulty in each pool. Gaming additions cover Nintendo release-history milestones, the creation of Tetris, and the full Hades launch. Literature additions cover Jane Austen’s *Pride and Prejudice* and its first-edition publication details, plus the first newspaper publication of Poe’s *The Raven*. Sources include Nintendo, The Tetris Company, Supergiant Games, Jane Austen’s House and the Morgan Library & Museum. Both pools now have eight approved questions, evenly distributed at two per difficulty; neither is close to the 25-per-grade release target.
 
 ## Staged candidate inventory
 
