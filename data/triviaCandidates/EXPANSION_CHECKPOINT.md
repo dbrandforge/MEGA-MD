@@ -20,8 +20,8 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current live-bank baseline
 
-- 133 questions in `data/nigeriaTrivia.js`
-- 133 unique IDs
+- 137 questions in `data/nigeriaTrivia.js`
+- 137 unique IDs
 - 80 category/difficulty combinations below the 25-question initial-release grade target across the 20 player-selectable pools
 - The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
 - Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
@@ -40,7 +40,7 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 | Food | 9 | 4 | 3 | 1 | 1 |
 | Technology | 6 | 2 | 2 | 1 | 1 |
 | Business | 8 | 1 | 4 | 2 | 1 |
-| Science | 4 | 1 | 1 | 1 | 1 |
+| Science | 8 | 2 | 2 | 2 | 2 |
 | Gaming | 4 | 1 | 1 | 1 | 1 |
 | Literature | 4 | 1 | 1 | 1 | 1 |
 | Nigeria | 63 | 28 | 35 | 0 | 0 |
@@ -56,6 +56,10 @@ The audit scope is aligned to the 20 actual player-facing category choices in th
 ## First approved content batch
 
 Four original, source-linked Current Affairs questions were added (`fx001`–`fx004`), covering the 2025 FIFA Club World Cup winner, COP30 host city, tournament field size and total goals. Each carries a review date and an authoritative FIFA or UNFCCC source URL. The Current Affairs pool now has seven approved questions, including one each at Hard and Expert; it remains below the 25-per-grade milestone.
+
+## Second approved content batch
+
+Four original, source-linked Science questions were added (`fx005`–`fx008`), covering atmospheric composition, the definition of a light-year, the first confirmed pulsar planets, and pulsar-timing detection. The Science pool now has eight approved questions, evenly distributed at two per difficulty; it remains below the 25-per-grade milestone.
 
 ## Staged candidate inventory
 
