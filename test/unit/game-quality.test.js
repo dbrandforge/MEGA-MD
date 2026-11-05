@@ -177,7 +177,7 @@ describe('game quality foundations', () => {
       expect(new Set(q.options.map(option => option.toLowerCase())).size).toBe(4);
       expect(q.answer).toBeGreaterThanOrEqual(0);
       expect(q.answer).toBeLessThan(4);
-      expect(TRIVIA_CATEGORIES).toContain(q.category);
+      expect(normalizeTriviaCategory(q.category)).not.toBeNull();
     }
   });
 
