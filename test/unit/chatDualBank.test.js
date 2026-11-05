@@ -7,6 +7,7 @@ import { classifyIntent } from '../../data/chatbotResponseLibrary.js';
 import { pickDualReply, getDualBankStats } from '../../data/chatDual/dualBankSelector.js';
 import firstSexAdviceModule from '../../data/chatDual/ev_0_0.js';
 import secondSexAdviceModule from '../../data/chatDual/ev_0_1.js';
+import thirdSexAdviceModule from '../../data/chatDual/ev_0_2.js';
 
 describe('ChatDual expansion bank', () => {
   it('reports complete and exact 5,183-pair expansion', () => {
@@ -23,8 +24,8 @@ describe('ChatDual expansion bank', () => {
     });
   });
 
-  it('keeps both rewritten sex-advice modules at 182 rows with 182 distinct responses per side', () => {
-    for (const module of [firstSexAdviceModule, secondSexAdviceModule]) {
+  it('keeps all three rewritten sex-advice modules at 182 rows with 182 distinct responses per side', () => {
+    for (const module of [firstSexAdviceModule, secondSexAdviceModule, thirdSexAdviceModule]) {
       const rows = module.sexAdvice;
       expect(rows).toHaveLength(182);
       expect(new Set(rows.map(row => row.a)).size).toBe(182);
