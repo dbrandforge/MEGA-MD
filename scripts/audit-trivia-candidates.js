@@ -34,6 +34,10 @@ for (const file of files) {
       errors.push(label + ': invalid JSON (' + error.message + ')');
       continue;
     }
+    if (!question || typeof question !== 'object' || Array.isArray(question)) {
+      errors.push(label + ': record must be a JSON object');
+      continue;
+    }
     total++;
     const source = question.sourceCategory || 'unclassified-source';
     const proposal = question.proposedCategory || 'needs-category-review';
