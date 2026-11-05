@@ -50,7 +50,7 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 | Animation | 4 | 1 | 1 | 1 | 1 |
 | Series | 4 | 1 | 1 | 1 | 1 |
 | Current Affairs | 7 | 3 | 2 | 1 | 1 |
-| Forge | 54 | 50 | 1 | 1 | 1 |
+| Forge | 53 | 50 | 1 | 1 | 1 |
 
 The audit scope is aligned to the 21 actual player-facing category choices in the Trivia menu. Hidden legacy aliases (sports, everyday, tech) and the unadvertised empty general mode are not separate coverage targets. The Forge pool is a dedicated cross-disciplinary session for branding, creative direction, design, marketing, content strategy and entrepreneurship. Its Easy grade is now complete at 50 questions; Normal, Hard and Expert each have one question and remain to be expanded. The command aliases still route sports to Football, everyday to Lifestyle, and tech to Technology; general is rejected.
 
@@ -223,4 +223,4 @@ Ten original questions (`fg035`–`fg044`) extend the Easy pool to 41/50. This b
 
 ### Forge Easy — fifth content batch and grade completion
 
-Nine original, source-linked questions (`fg045`–`fg053`) complete the Forge Easy grade at **50/50**. Topics include NIQ Brand Choice and Brand Premium, primary benefits, feature-versus-benefit thinking, competitive alternatives, brand personality, supporting benefits, proof points and conversion measurement. Sources include NIQ, the American Advertising and Marketing Association and Google Analytics. Forge now contains 54 questions overall: Easy 50, Normal 1, Hard 1 and Expert 1. The next step is Forge Normal, building from 1 to 50 before moving to Hard and Expert.
+Nine original, source-linked questions (`fg045`–`fg053`) complete the Forge Easy grade at **50/50**. Topics include NIQ Brand Choice and Brand Premium, primary benefits, feature-versus-benefit thinking, competitive alternatives, brand personality, supporting benefits, proof points and conversion measurement. Sources include NIQ, the American Advertising and Marketing Association and Google Analytics. Forge now contains 53 questions overall: Easy 50, Normal 1, Hard 1 and Expert 1. The next step is Forge Normal, building from 1 to 50 before moving to Hard and Expert.
