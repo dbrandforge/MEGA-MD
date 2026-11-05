@@ -20,8 +20,8 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current live-bank baseline
 
-- 146 questions in `data/nigeriaTrivia.js`
-- 146 unique IDs
+- 150 questions in `data/nigeriaTrivia.js`
+- 150 unique IDs
 - 78 category/difficulty combinations below the 25-question initial-release grade target across the 20 player-selectable pools
 - The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
 - Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
@@ -40,7 +40,7 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 | Food | 9 | 4 | 3 | 1 | 1 |
 | Technology | 6 | 2 | 2 | 1 | 1 |
 | Business | 8 | 1 | 4 | 2 | 1 |
-| Science | 8 | 2 | 2 | 2 | 2 |
+| Science | 12 | 3 | 3 | 3 | 3 |
 | Gaming | 4 | 1 | 1 | 1 | 1 |
 | Literature | 4 | 1 | 1 | 1 | 1 |
 | Nigeria | 69 | 28 | 35 | 3 | 3 |
@@ -72,6 +72,10 @@ Three original, source-linked questions were added (`fx013`–`fx015`), filling 
 ## Fifth approved content batch
 
 Two original, source-linked Nigeria history questions were added (`fx016`–`fx017`), one Hard and one Expert. They cover the West African Currency Board’s role before the CBN began issuing Nigerian currency, and the 1962 banknote inscription change reflecting Nigeria’s republican status. Both use Central Bank of Nigeria historical references and carry a review date. The Nigeria pool now has 69 approved questions, with three Hard and three Expert entries; these grades remain below the 25-question target.
+
+## Sixth approved content batch
+
+Four original, source-linked Science questions were added (`fx018`–`fx021`), one at each difficulty. They cover iron’s atomic number, the estimated age of the universe, electron capacity in a p subshell, and the Pauli exclusion principle. Sources are the Royal Society of Chemistry, NASA, NIST and OpenStax. The Science pool now has 12 approved questions, evenly distributed at three per difficulty; it remains below the 25-per-grade target.
 
 ## Staged candidate inventory
 
