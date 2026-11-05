@@ -124,8 +124,8 @@ describe('game quality foundations', () => {
 
   it('provides curated sound-alike clues only where a reliable rhyme or homophone exists', () => {
     const withSoundAlike = WORDS.filter(entry => typeof entry.soundAlikeHint === 'string' && entry.soundAlikeHint.trim());
-    expect(withSoundAlike).toHaveLength(39);
-    expect(new Set(withSoundAlike.map(entry => entry.word)).size).toBe(39);
+    expect(withSoundAlike).toHaveLength(37);
+    expect(new Set(withSoundAlike.map(entry => entry.word)).size).toBe(37);
     expect(WORDS.some(entry => !entry.soundAlikeHint)).toBe(true);
   });
 
