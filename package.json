@@ -25,7 +25,8 @@
     "test:watch": "vitest",
     "audit": "npm audit --omit=dev",
     "trivia:audit": "node scripts/audit-trivia-bank.js",
-    "trivia:candidates:audit": "node scripts/audit-trivia-candidates.js"
+    "trivia:candidates:audit": "node scripts/audit-trivia-candidates.js",
+    "trivia:audit:release": "node scripts/audit-trivia-bank.js --require=forge,music"
   },
   "keywords": [
     "whatsapp-bot",
