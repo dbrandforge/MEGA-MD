@@ -165,7 +165,7 @@ describe('game quality foundations', () => {
     expect(TRIVIA_CATEGORIES).toContain('current-affairs');
     expect(getTriviaQuestionCount('all')).toBe(NIGERIA_TRIVIA.length);
     expect(getTriviaQuestionCount('current-affairs')).toBe(7);
-    expect(getTriviaQuestionCount('forge')).toBe(54);
+    expect(getTriviaQuestionCount('forge')).toBe(53);
     expect(getTriviaQuestionCount('forge', 'easy')).toBe(50);
     expect(getTriviaQuestionCount('forge', 'normal')).toBe(1);
     expect(getTriviaQuestionCount('forge', 'hard')).toBe(1);
