@@ -38,3 +38,10 @@ These figures measure exact string diversity, not semantic diversity. They estab
 ## Engineering follow-up
 
 The selector has been extended to route the classifier's `friendship` intent into the relationship pool and `workLife` into the existing advice pool. Unit tests now explicitly exercise those paths and the major supported category routes. This does not alter the personality bank's ownership of pure dirty-talk prompts.
+
+
+## Rewrite progress (2026-11-05)
+
+The first expansion module, `ev_0_0.js`, has been rewritten without changing its 182-row inventory. Its 182 repeated prompt/response variants were replaced with 182 distinct, substantive sexual-health and consent response statements. Each row contains two different statements, and each side has 182 distinct strings. The rewrite covers consent, boundaries, safer sex, contraception, STI testing, symptoms that warrant clinical care, privacy, digital consent, aftercare, and coercion-aware safety.
+
+A regression test now locks the module at 182 rows and verifies 182 distinct strings on both response sides. This is a first module-level correction, not a claim that the full 5,183-row bank is now release-ready. The other 15 expansion modules and the specialty banks still require the same substantive rewrite and re-audit.
