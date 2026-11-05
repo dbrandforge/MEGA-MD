@@ -192,6 +192,7 @@ describe('game quality foundations', () => {
       expect(getTriviaQuestionCount(category), category).toBeGreaterThan(0);
     }
     expect(getTriviaQuestionCount('general')).toBe(0);
+    expect(normalizeTriviaCategory('general')).toBeNull();
   });
 
   it('supports worldwide categories, four grades and never returns a used question', () => {
