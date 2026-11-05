@@ -1,5 +1,5 @@
 import { NIGERIA_TRIVIA } from '../data/nigeriaTrivia.js';
-import { auditTriviaBank, TRIVIA_DIFFICULTY_LEVELS } from '../lib/triviaBankAudit.js';
+import { auditTriviaBank, TRIVIA_DIFFICULTY_LEVELS, TRIVIA_BANK_TARGETS } from '../lib/triviaBankAudit.js';
 
 const report = auditTriviaBank(NIGERIA_TRIVIA);
 console.log(`Trivia bank: ${report.totalQuestions} questions / ${report.uniqueIds} unique IDs`);
@@ -12,10 +12,10 @@ if (report.errors.length) {
   for (const error of report.errors) console.error(`- ${error}`);
 }
 if (report.deficits.length) {
-  console.error(`\nCoverage deficits: ${report.deficits.length} category/grade combinations remain below 250.`);
+  console.error(`\nCoverage deficits: ${report.deficits.length} category/grade combinations remain below ${TRIVIA_BANK_TARGETS.perDifficulty}.`);
   for (const deficit of report.deficits) {
     console.error(`- ${deficit.category} / ${deficit.difficulty}: ${deficit.actual}/${deficit.required} (need ${deficit.missing})`);
   }
 }
 if (!report.ready) process.exitCode = 1;
-else console.log('\nPASS: every Trivia category meets the 1,000-question / four-grade requirement.');
+else console.log('\nPASS: every Trivia category meets the 100-question / four-grade initial release requirement.');
