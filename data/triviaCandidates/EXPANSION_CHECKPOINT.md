@@ -20,8 +20,8 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current live-bank baseline
 
-- 202 questions in `data/nigeriaTrivia.js`
-- 202 unique IDs
+- 212 questions in `data/nigeriaTrivia.js`
+- 212 unique IDs
 - 84 category/difficulty combinations below the 50-question first-cycle grade target across the 21 player-selectable pools
 - The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
 - Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
@@ -50,7 +50,7 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 | Animation | 4 | 1 | 1 | 1 | 1 |
 | Series | 4 | 1 | 1 | 1 | 1 |
 | Current Affairs | 7 | 3 | 2 | 1 | 1 |
-| Forge | 34 | 31 | 1 | 1 | 1 |
+| Forge | 44 | 41 | 1 | 1 | 1 |
 
 The audit scope is aligned to the 21 actual player-facing category choices in the Trivia menu. Hidden legacy aliases (sports, everyday, tech) and the unadvertised empty general mode are not separate coverage targets. The new Forge pool is a dedicated cross-disciplinary session for branding, creative direction, design, marketing, content strategy and entrepreneurship. It currently has four starter questions, one per grade, and remains below the 50-per-grade first-cycle target. The command aliases still route sports to Football, everyday to Lifestyle, and tech to Technology; general is rejected.
 
@@ -214,3 +214,8 @@ Ten further original, source-linked questions (`fg015`–`fg024`) bring Forge to
 ### Forge Easy — third content batch
 
 Ten additional original, source-linked questions (`fg025`–`fg034`) bring Forge to 34 approved questions: 31 Easy, one Normal, one Hard and one Expert. This batch covers brand-marketing channels, consumer behaviour research, goods versus services, patents, WIPO brand search, typography leading and tracking, colour accessibility, image context and original SEO content. Sources include AMA, NIQ, USPTO, WIPO, AIGA, W3C and Google Search Central.
+
+
+### Forge Easy — fourth content batch
+
+Ten original questions (`fg035`–`fg044`) extend the Easy pool to 41/50. This batch covers positioning statements, messaging versus copywriting, audience insights and needs, points of difference, reasons to believe, voice and tone, calls to action, core messages and messaging hierarchy. The questions are grounded in the American Advertising and Marketing Association's positioning and messaging framework.
