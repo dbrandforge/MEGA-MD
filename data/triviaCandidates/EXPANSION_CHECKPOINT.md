@@ -20,8 +20,8 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current live-bank baseline
 
-- 182 questions in `data/nigeriaTrivia.js`
-- 182 unique IDs
+- 192 questions in `data/nigeriaTrivia.js`
+- 192 unique IDs
 - 84 category/difficulty combinations below the 50-question first-cycle grade target across the 21 player-selectable pools
 - The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
 - Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
@@ -50,7 +50,7 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 | Animation | 4 | 1 | 1 | 1 | 1 |
 | Series | 4 | 1 | 1 | 1 | 1 |
 | Current Affairs | 7 | 3 | 2 | 1 | 1 |
-| Forge | 14 | 11 | 1 | 1 | 1 |
+| Forge | 24 | 21 | 1 | 1 | 1 |
 
 The audit scope is aligned to the 21 actual player-facing category choices in the Trivia menu. Hidden legacy aliases (sports, everyday, tech) and the unadvertised empty general mode are not separate coverage targets. The new Forge pool is a dedicated cross-disciplinary session for branding, creative direction, design, marketing, content strategy and entrepreneurship. It currently has four starter questions, one per grade, and remains below the 50-per-grade first-cycle target. The command aliases still route sports to Football, everyday to Lifestyle, and tech to Technology; general is rejected.
 
@@ -204,3 +204,8 @@ Four original, source-linked questions (`fg001`–`fg004`) establish the new ded
 ## New production sequence — 50-question grade blocks
 
 The approved production order is now sequential by category and grade: complete 50 Easy questions, then 50 Normal, 50 Hard and 50 Expert for the same category before moving to the next category. The first cycle therefore establishes 200 questions per category. Repeat in further 50-question blocks per grade until each category reaches 1,000 questions (250 per grade). The first category in this sequence is **Forge**. Its Easy bank is currently 11/50; Normal, Hard and Expert are each 1/50. The latest batch adds ten original Easy questions (`fg005`–`fg014`) covering brand marketing, personal/corporate branding, brand equity, trademarks, brand guidelines, accessibility contrast, people-first SEO content and typography. Sources include AMA, USPTO, WIPO, W3C, Google Search Central and AIGA.
+
+
+### Forge Easy — second content batch
+
+Ten further original, source-linked questions (`fg015`–`fg024`) bring Forge to 24 approved questions: 21 Easy, one Normal, one Hard and one Expert. The new Easy set covers trademark scope and protection, copyright basics, image alt text, search-result relevance, WCAG large-text contrast and Google Analytics key events. Sources include USPTO, U.S. Copyright Office, Google Search Central, W3C and Google Analytics.
