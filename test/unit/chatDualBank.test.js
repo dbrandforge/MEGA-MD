@@ -5,6 +5,7 @@ import {
 } from '../../data/chatDual/chatDual_expansion_index.js';
 import { classifyIntent } from '../../data/chatbotResponseLibrary.js';
 import { pickDualReply, getDualBankStats } from '../../data/chatDual/dualBankSelector.js';
+import firstSexAdviceModule from '../../data/chatDual/ev_0_0.js';
 
 describe('ChatDual expansion bank', () => {
   it('reports complete and exact 5,183-pair expansion', () => {
@@ -19,6 +20,14 @@ describe('ChatDual expansion bank', () => {
       relationshipExtra: 450,
       total: 5183,
     });
+  });
+
+  it('keeps the rewritten first sex-advice module at 182 rows with 182 distinct responses', () => {
+    const rows = firstSexAdviceModule.sexAdvice;
+    expect(rows).toHaveLength(182);
+    expect(new Set(rows.map(row => row.a)).size).toBe(182);
+    expect(new Set(rows.map(row => row.b)).size).toBe(182);
+    expect(rows.every(row => typeof row.a === 'string' && typeof row.b === 'string')).toBe(true);
   });
 
   it('routes classified relationship, friendship, work-life and advice prompts', () => {
