@@ -400,7 +400,7 @@ export default {
         '🔬 Science: .trivia science · 💻 Technology: .trivia technology',
         '💼 Business: .trivia business · 🎮 Gaming: .trivia gaming',
         '📚 Literature: .trivia literature · 🇳🇬 Nigeria: .trivia nigeria',
-        '🗞️ Current Affairs: .trivia current-affairs · 🧠 General: .trivia general',
+        '🗞️ Current Affairs: .trivia current-affairs',
         '',
         '*GRADES*',
         '🟢 Easy · 🔵 Normal · 🟠 Hard · 🔴 Expert',
