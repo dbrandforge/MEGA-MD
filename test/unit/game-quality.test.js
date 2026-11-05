@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getLagosDay, getManualLockableGames } from '../../plugins/daylock.js';
 import { auditTriviaBank, getTriviaCoverage, TRIVIA_BANK_TARGETS, TRIVIA_CATEGORY_POOLS } from '../../lib/triviaBankAudit.js';
+import { auditTriviaCandidates } from '../../lib/triviaCandidateAudit.js';
 import { WORDS, QUESTIONS_PER_ROUND, canEndHangman } from '../../plugins/hangman.js';
 import { FALLBACK } from '../../data/wyrPairs.js';
 import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
@@ -74,6 +75,32 @@ describe('game quality foundations', () => {
     expect(getTriviaCoverage(questions).music.byDifficulty).toEqual({
       easy: 50, normal: 50, hard: 50, expert: 50
     });
+  });
+
+  it('keeps staged Trivia candidates ungraded, review-only and fully attributed', () => {
+    const candidate = {
+      id: 'candidate-audit-test',
+      question: 'Which instrument is associated with a standard piano trio?',
+      options: ['Piano, bass and drums', 'Two guitars and drums', 'Flute, oboe and clarinet', 'Trumpet, trombone and tuba'],
+      answer: 0,
+      difficulty: null,
+      status: 'needs-editorial-review',
+      source: 'https://github.com/uberspot/OpenTriviaQA',
+      license: 'CC BY-SA 4.0',
+      attribution: 'OpenTriviaQA contributors'
+    };
+    expect(auditTriviaCandidates([candidate]).errors).toHaveLength(0);
+
+    const invalid = {
+      ...candidate,
+      difficulty: 'easy',
+      status: 'approved',
+      license: ''
+    };
+    const report = auditTriviaCandidates([invalid]);
+    expect(report.errors.some(error => error.includes('candidate must remain ungraded'))).toBe(true);
+    expect(report.errors.some(error => error.includes('not marked for editorial review'))).toBe(true);
+    expect(report.errors.some(error => error.includes('source attribution and license are required'))).toBe(true);
   });
 
   it('accepts distinct currency-symbol answer options', () => {
