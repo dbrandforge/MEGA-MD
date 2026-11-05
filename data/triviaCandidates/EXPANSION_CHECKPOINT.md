@@ -20,8 +20,8 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current live-bank baseline
 
-- 230 questions in `data/nigeriaTrivia.js`
-- 230 unique IDs
+- 240 questions in `data/nigeriaTrivia.js`
+- 240 unique IDs
 - 83 category/difficulty combinations below the 50-question first-cycle grade target across the 21 player-selectable pools
 - The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
 - Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
@@ -50,7 +50,7 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 | Animation | 4 | 1 | 1 | 1 | 1 |
 | Series | 4 | 1 | 1 | 1 | 1 |
 | Current Affairs | 7 | 3 | 2 | 1 | 1 |
-| Forge | 62 | 50 | 10 | 1 | 1 |
+| Forge | 72 | 50 | 20 | 1 | 1 |
 
 The audit scope is aligned to the 21 actual player-facing category choices in the Trivia menu. Hidden legacy aliases (sports, everyday, tech) and the unadvertised empty general mode are not separate coverage targets. The Forge pool is a dedicated cross-disciplinary session for branding, creative direction, design, marketing, content strategy and entrepreneurship. Its Easy grade is now complete at 50 questions; Normal, Hard and Expert each have one question and remain to be expanded. The command aliases still route sports to Football, everyday to Lifestyle, and tech to Technology; general is rejected.
 
@@ -229,3 +229,8 @@ Nine original, source-linked questions (`fg045`–`fg053`) complete the Forge Ea
 ### Forge Normal — first content batch
 
 Nine original, source-linked questions (`fg054`–`fg062`) begin the Normal grade, bringing it to 10/50. They cover target-audience research, competitive alternatives, meaningful differentiation, evidence standards, positioning evaluation, strategic focus, brand-health measurement and the distinction between Google Analytics key events and conversions. Sources include the American Advertising and Marketing Association, NIQ and Google Analytics.
+
+
+### Forge Normal — second content batch
+
+Ten original, source-linked questions (`fg063`–`fg072`) bring Forge Normal to 20/50. They cover the distinction between brand strategy and identity, non-visual identity assets, distinctive brand cues, voice consistency, audience insight quality, evidence for claims, competitive framing, deliverability and positioning versus slogans. Sources include the American Advertising and Marketing Association.
