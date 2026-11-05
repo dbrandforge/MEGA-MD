@@ -20,35 +20,36 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 - 129 questions in `data/nigeriaTrivia.js`
 - 129 unique IDs
-- 96 category/difficulty combinations below the 250-question grade target
+- 80 category/difficulty combinations below the 250-question grade target across the 20 player-selectable pools
 - The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
 - Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
 
 Selected live pool counts (categories overlap through aliases and the Nigeria subset; do not sum these rows):
 
-| Selectable pool | Live questions |
-|---|---:|
-| Music | 10 |
-| Football | 10 |
-| Movies aggregate | 20 |
-| Lifestyle | 11 |
-| Geography | 20 |
-| History | 10 |
-| Culture | 10 |
-| Food | 9 |
-| Technology | 6 |
-| Business | 8 |
-| Science | 4 |
-| Gaming | 4 |
-| Literature | 4 |
-| Nigeria | 63 |
-| Nollywood | 6 |
-| Hollywood | 4 |
-| Bollywood | 3 |
-| Animation | 3 |
-| Series | 3 |
-| Current Affairs | 3 |
-| General | 0 |
+| Selectable pool | Live questions | Easy | Normal | Hard | Expert |
+|---|---:|---:|---:|---:|---:|
+| Music | 10 | 3 | 5 | 1 | 1 |
+| Football | 10 | 3 | 5 | 1 | 1 |
+| Movies aggregate | 20 | 5 | 7 | 5 | 3 |
+| Lifestyle | 11 | 5 | 2 | 2 | 2 |
+| Geography | 20 | 7 | 11 | 1 | 1 |
+| History | 10 | 2 | 5 | 1 | 2 |
+| Culture | 10 | 4 | 4 | 1 | 1 |
+| Food | 9 | 4 | 3 | 1 | 1 |
+| Technology | 6 | 2 | 2 | 1 | 1 |
+| Business | 8 | 1 | 4 | 2 | 1 |
+| Science | 4 | 1 | 1 | 1 | 1 |
+| Gaming | 4 | 1 | 1 | 1 | 1 |
+| Literature | 4 | 1 | 1 | 1 | 1 |
+| Nigeria | 63 | 28 | 35 | 0 | 0 |
+| Nollywood | 6 | 2 | 2 | 1 | 1 |
+| Hollywood | 4 | 1 | 1 | 1 | 1 |
+| Bollywood | 3 | 1 | 1 | 1 | 0 |
+| Animation | 3 | 0 | 1 | 1 | 1 |
+| Series | 3 | 1 | 1 | 1 | 0 |
+| Current Affairs | 3 | 2 | 1 | 0 | 0 |
+
+The audit scope is aligned to the 20 actual player-facing category choices in the Trivia menu. Hidden legacy aliases (sports, everyday, tech) and the unadvertised empty general mode are not separate coverage targets. The command aliases still route sports to Football, everyday to Lifestyle, and tech to Technology; general is rejected.
 
 ## Staged candidate inventory
 
