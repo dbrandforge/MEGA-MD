@@ -7,12 +7,14 @@ Draft pull request: https://github.com/dbrandforge/MEGA-MD/pull/87
 
 ## Locked expansion target
 
-Every selectable Trivia category must have at least **1,000 approved, unique playable questions**, distributed evenly:
+**Initial release milestone:** every selectable Trivia category must have at least **100 approved, unique playable questions**, distributed evenly:
 
-- Easy: 250
-- Normal: 250
-- Hard: 250
-- Expert: 250
+- Easy: 25
+- Normal: 25
+- Hard: 25
+- Expert: 25
+
+The long-term target remains **1,000 per category / 250 per difficulty**. Expand in subsequent quality-gated batches; this first milestone does not replace the long-term ambition.
 
 Do not count raw candidate inventory as playable coverage. Do not assign difficulty or promote records automatically. Preserve the existing non-Trivia games and all current gameplay behavior unless separately authorized.
 
@@ -20,7 +22,7 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 - 129 questions in `data/nigeriaTrivia.js`
 - 129 unique IDs
-- 80 category/difficulty combinations below the 250-question grade target across the 20 player-selectable pools
+- 80 category/difficulty combinations below the 25-question initial-release grade target across the 20 player-selectable pools
 - The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
 - Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
 
@@ -132,25 +134,25 @@ Latest verified branch checks:
 - Forge Bot unit tests: **passed** (includes currency-symbol regression test and the corrected category registry)
 - Forge Guard integration tests: **passed**
 - Trivia unit/regression tests: **passed**
-- Blocking live-bank coverage audit: **failed as intended**; the 20 selectable pools remain below 1,000 total / 250 per grade
+- Blocking live-bank coverage audit: **failed as intended**; the 20 selectable pools remain below 100 total / 25 per grade
 - No candidate records promoted into the live bank
 - No merge or deployment performed
 
 Useful commands:
 
 - `npm run trivia:candidates:audit` — staged candidate integrity and editorial-flag report
-- `npm run trivia:audit` — actual live-bank validation against the 1,000 / 250-per-grade target
+- `npm run trivia:audit` — actual live-bank validation against the initial 100 / 25-per-grade release target
 
 ## Next execution sequence
 
-1. Classify the 8,958 unassigned candidates by actual question content, not source filename.
+1. Build the first 100-question bank for each selectable category, with 25 verified questions at each difficulty; prioritize categories with the largest deficits.
 2. Fact-check every answer and distractor; rewrite incomplete stems and repair encoding.
 3. Date-anchor or reject volatile/current-affairs and ranking-dependent claims.
 4. Assign difficulty only after editorial review.
-5. Fill the under-supplied pools: Nigeria, Nollywood, Hollywood, Bollywood, Animation, Food, Business, Current Affairs, Gaming, Science, and the remaining category gaps.
+5. Fact-check and grade every first-release question; keep unreviewed OpenTriviaQA candidates staged and respect their CC BY-SA 4.0 attribution obligations.
 6. Promote only approved questions into the live bank.
 7. Run the live-bank audit and unit/integration tests.
-8. Merge and deploy only after all quality gates pass.
+8. Once every category meets 100 / 25 and all quality gates pass, merge and deploy the first milestone. Continue expanding toward 1,000 / 250 afterward.
 
 ## Recovery after an app interruption
 
