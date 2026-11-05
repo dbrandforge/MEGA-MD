@@ -6,9 +6,24 @@ import { FALLBACK } from '../../data/wyrPairs.js';
 import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
 import { getLagosWeekKey } from '../../plugins/rank.js';
 import { MATH_MODES, generateMathQuestion } from '../../plugins/math.js';
-import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES, getTriviaQuestionCount, getAvailableTriviaQuestions, shouldEndTriviaForNoParticipation, secondsForQuestion } from '../../plugins/trivia.js';
+import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES, getTriviaQuestionCount, getAvailableTriviaQuestions, shouldEndTriviaForNoParticipation, secondsForQuestion, normalizeTriviaCategory } from '../../plugins/trivia.js';
 
 describe('game quality foundations', () => {
+
+  it('routes every selectable Trivia category and rejects unknown category names', () => {
+    const expected = TRIVIA_CATEGORIES.filter(category => category !== 'mixed');
+    for (const category of expected) {
+      expect(normalizeTriviaCategory(category)).not.toBeNull();
+    }
+    expect(normalizeTriviaCategory('sports')).toBe('football');
+    expect(normalizeTriviaCategory('everyday')).toBe('lifestyle');
+    expect(normalizeTriviaCategory('tech')).toBe('technology');
+    expect(normalizeTriviaCategory('film')).toBe('movies');
+    expect(normalizeTriviaCategory('all')).toBe('mixed');
+    expect(normalizeTriviaCategory('current-affairs')).toBe('current-affairs');
+    expect(normalizeTriviaCategory('not-a-real-category')).toBeNull();
+  });
+
 
   it('enforces 1,000 unique questions per Trivia category with 250 per grade', () => {
     const questions = [];
