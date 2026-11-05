@@ -20,8 +20,8 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current live-bank baseline
 
-- 160 questions in `data/nigeriaTrivia.js`
-- 160 unique IDs
+- 168 questions in `data/nigeriaTrivia.js`
+- 168 unique IDs
 - 78 category/difficulty combinations below the 25-question initial-release grade target across the 20 player-selectable pools
 - The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
 - Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
@@ -30,8 +30,8 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 
 | Selectable pool | Live questions | Easy | Normal | Hard | Expert |
 |---|---:|---:|---:|---:|---:|
-| Music | 10 | 3 | 5 | 1 | 1 |
-| Football | 10 | 3 | 5 | 1 | 1 |
+| Music | 14 | 4 | 6 | 2 | 2 |
+| Football | 14 | 4 | 6 | 2 | 2 |
 | Movies aggregate | 23 | 6 | 7 | 5 | 5 |
 | Lifestyle | 11 | 5 | 2 | 2 | 2 |
 | Geography | 20 | 7 | 11 | 1 | 1 |
@@ -84,6 +84,10 @@ Two original, source-linked Nigeria history questions were added (`fx022`–`fx0
 ## Eighth approved content batch
 
 Eight original, source-linked questions were added (`gl063`–`gl070`): four Gaming and four Literature, with one new question at each difficulty in each pool. Gaming additions cover Nintendo release-history milestones, the creation of Tetris, and the full Hades launch. Literature additions cover Jane Austen’s *Pride and Prejudice* and its first-edition publication details, plus the first newspaper publication of Poe’s *The Raven*. Sources include Nintendo, The Tetris Company, Supergiant Games, Jane Austen’s House and the Morgan Library & Museum. Both pools now have eight approved questions, evenly distributed at two per difficulty; neither is close to the 25-per-grade release target.
+
+## Ninth approved content batch
+
+Eight original, source-linked questions were added (`gl079`–`gl086`): four Music and four Football, one at each difficulty in each pool. Music covers Freddie Mercury’s authorship of “Bohemian Rhapsody,” Taylor Swift’s record-setting *1989* GRAMMY win, and Alban Berg’s opera *Wozzeck*. Football covers standard match duration, the 2026 FIFA World Cup winner, the first World Cup goalscorer, and Just Fontaine’s single-tournament scoring record. Sources include Queen, the Recording Academy, the Metropolitan Opera, IFAB and FIFA. Both pools now have 14 approved questions, distributed at four Easy, six Normal, two Hard and two Expert; all four grades remain below the 25-question milestone.
 
 ## Staged candidate inventory
 
