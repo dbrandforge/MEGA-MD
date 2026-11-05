@@ -51,7 +51,7 @@ A third review-only batch adds **6,493 more records**:
 | For kids | 591 | Unclassified |
 | Brain teasers | 160 | Unclassified |
 
-The committed JSONL files verified in the repository total **17,672 candidate records** across the available batches. The previously listed 1,000-record Television file is not present at the documented path and is excluded from this verified total until its file is recovered or regenerated. This is a raw review inventory, not the approved bank. Some sources overlap; global duplicate detection and editorial classification are required before promotion. Every record remains ungraded and excluded from live gameplay.
+The committed JSONL files verified in the repository total **17,672 candidate records** across the available batches. The Television source file is not present at the documented path, so there is currently no verified staged Series pool. Recover or regenerate that source before counting it toward Series coverage. This is a raw review inventory, not the approved bank. Some sources overlap; global duplicate detection and editorial classification are required before promotion. Every record remains ungraded and excluded from live gameplay.
 
 ## Candidate audit commands
 
@@ -60,3 +60,12 @@ Run `npm run trivia:candidates:audit` to scan every staged JSONL file for malfor
 Run `npm run trivia:audit` to audit the actual live `NIGERIA_TRIVIA` bank against the selectable category and difficulty coverage requirements. Candidate inventory totals must never be reported as live playable coverage.
 
 The importer fetch list is unique by source category; duplicate entries previously caused redundant source requests and misleading repeated per-pool logs.
+
+
+## Known editorial risks from sample inspection
+
+- The `sports` source pool contains at least one clearly non-sports question (an Aristotle/metaphysics item), so source-folder membership cannot be trusted as a live category assignment.
+- Some music records are clue fragments rather than complete question stems and need rewriting before approval.
+- Some imported text shows possible mojibake/encoding corruption; the candidate audit flags suspicious characters.
+- The `newest` pool contains historical ranking claims and outdated monetary/grossing figures. These must be independently re-sourced, date-anchored or rejected rather than treated as current facts.
+- No automated difficulty assignment or source-category-to-live-category promotion is permitted.
