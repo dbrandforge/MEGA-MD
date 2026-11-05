@@ -44,6 +44,5 @@ jobs:
         run: npm ci
       - name: Run unit regression tests
         run: npm run test:unit
-      - name: Audit live Trivia bank
+      - name: Enforce approved Trivia bank coverage
         run: npm run trivia:audit
-        continue-on-error: true
