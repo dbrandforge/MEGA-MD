@@ -1,21 +1,38 @@
 import { describe, expect, it } from 'vitest';
 import { getLagosDay, getManualLockableGames } from '../../plugins/daylock.js';
 import { auditTriviaBank, getTriviaCoverage, TRIVIA_BANK_TARGETS, TRIVIA_CATEGORY_POOLS } from '../../lib/triviaBankAudit.js';
+import { auditTriviaCandidates } from '../../lib/triviaCandidateAudit.js';
 import { WORDS, QUESTIONS_PER_ROUND, canEndHangman } from '../../plugins/hangman.js';
 import { FALLBACK } from '../../data/wyrPairs.js';
 import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
 import { getLagosWeekKey } from '../../plugins/rank.js';
 import { MATH_MODES, generateMathQuestion } from '../../plugins/math.js';
-import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES, getTriviaQuestionCount, getAvailableTriviaQuestions, shouldEndTriviaForNoParticipation, secondsForQuestion } from '../../plugins/trivia.js';
+import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES, getTriviaQuestionCount, getAvailableTriviaQuestions, shouldEndTriviaForNoParticipation, secondsForQuestion, normalizeTriviaCategory } from '../../plugins/trivia.js';
 
 describe('game quality foundations', () => {
 
-  it('enforces 1,000 unique questions per Trivia category with 250 per grade', () => {
+  it('routes every selectable Trivia category and rejects unknown category names', () => {
+    const expected = TRIVIA_CATEGORIES.filter(category => category !== 'mixed');
+    for (const category of expected) {
+      expect(normalizeTriviaCategory(category)).not.toBeNull();
+    }
+    expect(normalizeTriviaCategory('sports')).toBe('football');
+    expect(normalizeTriviaCategory('everyday')).toBe('lifestyle');
+    expect(normalizeTriviaCategory('tech')).toBe('technology');
+    expect(normalizeTriviaCategory('film')).toBe('movies');
+    expect(normalizeTriviaCategory('all')).toBe('mixed');
+    expect(normalizeTriviaCategory('current-affairs')).toBe('current-affairs');
+    expect(normalizeTriviaCategory('forge')).toBe('forge');
+    expect(normalizeTriviaCategory('not-a-real-category')).toBeNull();
+  });
+
+
+  it('enforces 200 unique questions per Trivia category with 50 per grade', () => {
     const questions = [];
     let id = 0;
-    for (const category of ['music', 'sports', 'nollywood', 'everyday', 'geography', 'history', 'culture', 'food', 'tech', 'business', 'science', 'gaming', 'literature', 'general', 'hollywood', 'bollywood', 'animation', 'series', 'current-affairs']) {
+    for (const category of ['music', 'sports', 'nollywood', 'everyday', 'geography', 'history', 'culture', 'food', 'tech', 'business', 'science', 'gaming', 'literature', 'hollywood', 'bollywood', 'animation', 'series', 'current-affairs', 'forge']) {
       for (const difficulty of ['easy', 'normal', 'hard', 'expert']) {
-        for (let n = 0; n < 250; n++) {
+        for (let n = 0; n < 50; n++) {
           id += 1;
           questions.push({
             id: `synthetic-${id}`, category, difficulty,
@@ -26,7 +43,7 @@ describe('game quality foundations', () => {
       }
     }
     for (const difficulty of ['easy', 'normal', 'hard', 'expert']) {
-      for (let n = 0; n < 250; n++) {
+      for (let n = 0; n < 50; n++) {
         id += 1;
         questions.push({
           id: `synthetic-${id}`, category: 'geography', difficulty,
@@ -36,8 +53,8 @@ describe('game quality foundations', () => {
       }
     }
     const report = auditTriviaBank(questions);
-    expect(TRIVIA_BANK_TARGETS.perCategory).toBe(1000);
-    expect(TRIVIA_BANK_TARGETS.perDifficulty).toBe(250);
+    expect(TRIVIA_BANK_TARGETS.perCategory).toBe(200);
+    expect(TRIVIA_BANK_TARGETS.perDifficulty).toBe(50);
     expect(report.errors).toHaveLength(0);
     expect(report.categories.music.meetsTarget).toBe(true);
     expect(report.categories.football.meetsTarget).toBe(true);
@@ -45,7 +62,10 @@ describe('game quality foundations', () => {
     for (const category of ['nollywood', 'hollywood', 'bollywood', 'animation', 'series']) {
       expect(report.categories[category].meetsTarget).toBe(true);
     }
-    expect(report.categories.general.meetsTarget).toBe(true);
+    expect(report.categories).not.toHaveProperty('general');
+    expect(report.categories).not.toHaveProperty('sports');
+    expect(report.categories).not.toHaveProperty('everyday');
+    expect(report.categories).not.toHaveProperty('tech');
     expect(Object.keys(TRIVIA_CATEGORY_POOLS).sort()).toEqual(
       TRIVIA_CATEGORIES.filter(category => category !== 'mixed').sort()
     );
@@ -53,8 +73,46 @@ describe('game quality foundations', () => {
     expect(report.categories.nigeria.meetsTarget).toBe(true);
     expect(report.ready).toBe(true); // Synthetic fixture covers every selectable category and grade.
     expect(getTriviaCoverage(questions).music.byDifficulty).toEqual({
-      easy: 250, normal: 250, hard: 250, expert: 250
+      easy: 50, normal: 50, hard: 50, expert: 50
     });
+  });
+
+  it('keeps staged Trivia candidates ungraded, review-only and fully attributed', () => {
+    const candidate = {
+      id: 'candidate-audit-test',
+      question: 'Which instrument is associated with a standard piano trio?',
+      options: ['Piano, bass and drums', 'Two guitars and drums', 'Flute, oboe and clarinet', 'Trumpet, trombone and tuba'],
+      answer: 0,
+      difficulty: null,
+      status: 'needs-editorial-review',
+      source: 'https://github.com/uberspot/OpenTriviaQA',
+      license: 'CC BY-SA 4.0',
+      attribution: 'OpenTriviaQA contributors'
+    };
+    expect(auditTriviaCandidates([candidate]).errors).toHaveLength(0);
+
+    const invalid = {
+      ...candidate,
+      difficulty: 'easy',
+      status: 'approved',
+      license: ''
+    };
+    const report = auditTriviaCandidates([invalid]);
+    expect(report.errors.some(error => error.includes('candidate must remain ungraded'))).toBe(true);
+    expect(report.errors.some(error => error.includes('not marked for editorial review'))).toBe(true);
+    expect(report.errors.some(error => error.includes('source attribution and license are required'))).toBe(true);
+  });
+
+  it('accepts distinct currency-symbol answer options', () => {
+    const report = auditTriviaBank([{
+      id: 'currency-symbol-options',
+      category: 'geography',
+      difficulty: 'easy',
+      question: 'What symbol represents the Nigerian naira?',
+      options: ['₦', '₵', '₡', '£'],
+      answer: 0
+    }]);
+    expect(report.errors.some(error => error.includes('options must be non-empty and unique'))).toBe(false);
   });
 
   it('flags duplicate IDs, duplicate wording, malformed choices and ungraded questions', () => {
@@ -89,6 +147,13 @@ describe('game quality foundations', () => {
       expect(entry.synonymHint.length).toBeGreaterThan(0);
       expect(entry.extraHints.length).toBeGreaterThanOrEqual(1);
     }
+  });
+
+  it('provides curated sound-alike clues only where a reliable rhyme or homophone exists', () => {
+    const withSoundAlike = WORDS.filter(entry => typeof entry.soundAlikeHint === 'string' && entry.soundAlikeHint.trim());
+    expect(withSoundAlike).toHaveLength(37);
+    expect(new Set(withSoundAlike.map(entry => entry.word)).size).toBe(37);
+    expect(WORDS.some(entry => !entry.soundAlikeHint)).toBe(true);
   });
 
   it('uses twenty questions per Hangman round and provides synonym clues', () => {
@@ -133,9 +198,19 @@ describe('game quality foundations', () => {
     expect(new Set(NIGERIA_TRIVIA.map(q => q.id)).size).toBe(NIGERIA_TRIVIA.length);
     expect(TRIVIA_CATEGORIES).toContain('current-affairs');
     expect(getTriviaQuestionCount('all')).toBe(NIGERIA_TRIVIA.length);
-    expect(getTriviaQuestionCount('current-affairs')).toBe(3);
-    expect(getTriviaQuestionCount('nigeria')).toBe(63);
-    expect(getTriviaQuestionCount('current-affairs', 'hard')).toBe(0);
+    expect(getTriviaQuestionCount('current-affairs')).toBe(7);
+    expect(getTriviaQuestionCount('forge')).toBe(200);
+    expect(getTriviaQuestionCount('forge', 'easy')).toBe(50);
+    expect(getTriviaQuestionCount('forge', 'normal')).toBe(50);
+    expect(getTriviaQuestionCount('forge', 'hard')).toBe(50);
+    expect(getTriviaQuestionCount('forge', 'expert')).toBe(50);
+    expect(getTriviaQuestionCount('music')).toBeGreaterThanOrEqual(70);
+    expect(getTriviaQuestionCount('music', 'easy')).toBeGreaterThanOrEqual(50);
+    expect(getTriviaQuestionCount('music', 'normal')).toBeGreaterThanOrEqual(50);
+    expect(getTriviaQuestionCount('music', 'hard')).toBeGreaterThanOrEqual(50);
+    expect(getTriviaQuestionCount('music', 'expert')).toBeGreaterThanOrEqual(50);
+    expect(getTriviaQuestionCount('nigeria')).toBe(71);
+    expect(getTriviaQuestionCount('current-affairs', 'hard')).toBe(1);
     expect(getTriviaQuestionCount('football', 'hard')).toBeGreaterThan(0);
     expect(getTriviaQuestionCount('football', 'expert')).toBeGreaterThan(0);
     expect(getTriviaQuestionCount('movies', 'expert')).toBeGreaterThan(0);
@@ -147,8 +222,22 @@ describe('game quality foundations', () => {
       expect(new Set(q.options.map(option => option.toLowerCase())).size).toBe(4);
       expect(q.answer).toBeGreaterThanOrEqual(0);
       expect(q.answer).toBeLessThan(4);
-      expect(TRIVIA_CATEGORIES).toContain(q.category);
+      expect(normalizeTriviaCategory(q.category)).not.toBeNull();
     }
+  });
+
+  it('does not advertise empty Trivia categories as playable choices', () => {
+    const advertised = [
+      'music', 'football', 'movies', 'lifestyle', 'geography', 'history',
+      'culture', 'food', 'technology', 'business', 'science', 'gaming',
+      'literature', 'nigeria', 'nollywood', 'hollywood', 'bollywood',
+      'animation', 'series', 'current-affairs', 'forge'
+    ];
+    for (const category of advertised) {
+      expect(getTriviaQuestionCount(category), category).toBeGreaterThan(0);
+    }
+    expect(getTriviaQuestionCount('general')).toBe(0);
+    expect(normalizeTriviaCategory('general')).toBeNull();
   });
 
   it('supports worldwide categories, four grades and never returns a used question', () => {

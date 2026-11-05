@@ -17,7 +17,8 @@ const CATEGORY_ALIASES = {
   lifestyle: ['everyday', 'lifestyle'], technology: ['tech', 'technology'],
   nigeria: ['nigeria'], music: ['music'], geography: ['geography'],
   history: ['history'], culture: ['culture'], food: ['food'], business: ['business'],
-  science: ['science'], gaming: ['gaming'], literature: ['literature'], general: ['general']
+  science: ['science'], gaming: ['gaming'], literature: ['literature'],
+  'current-affairs': ['current-affairs'], forge: ['forge'], forge: ['forge']
 };
 const DIFFICULTIES = ['easy', 'normal', 'hard', 'expert'];
 const MATCH_EXPIRY_MS = 45 * 60 * 1000;
@@ -50,6 +51,17 @@ const shuffle = values => {
 };
 
 export { NIGERIA_TRIVIA, TRIVIA_CATEGORIES };
+
+const TRIVIA_COMMAND_ALIASES = Object.freeze({
+  all: 'mixed', sports: 'football', film: 'movies',
+  everyday: 'lifestyle', tech: 'technology'
+});
+
+export function normalizeTriviaCategory(value) {
+  const raw = String(value || '').toLowerCase().trim();
+  const category = TRIVIA_COMMAND_ALIASES[raw] || raw;
+  return category === 'mixed' || Object.hasOwn(CATEGORY_ALIASES, category) ? category : null;
+}
 
 function questionMatchesCategory(question, category = 'mixed') {
   if (!category || category === 'all' || category === 'mixed') return true;
@@ -375,22 +387,31 @@ export default {
         'Choose a category, then choose a grade.',
         '',
         '*CATEGORIES*',
-        '🎵 Music — Nigerian favourites + international hits',
-        '⚽ Football — Nigerian and world football',
-        '🎬 MOVIES: .trivia nollywood · .trivia hollywood · .trivia bollywood',
-        '🎞️ Animation: .trivia animation · Series: .trivia series',
-        '📺 Lifestyle — everyday life and popular culture',
-        '🌍 Geography · 📜 History · 🔬 Science',
-        '💻 Technology · 💼 Business · 🍲 Food',
-        '🎮 Gaming · 📚 Literature · 🇳🇬 Nigeria',
+        '🎵 Music: .trivia music',
+        '⚽ Football: .trivia football',
+        '🎬 Movies: .trivia movies',
+        '🎥 Nollywood: .trivia nollywood',
+        '🎞️ Hollywood: .trivia hollywood',
+        '🇮🇳 Bollywood: .trivia bollywood',
+        '🧩 Animation: .trivia animation · 📺 Series: .trivia series',
+        '🌿 Lifestyle: .trivia lifestyle',
+        '🌍 Geography: .trivia geography · 📜 History: .trivia history',
+        '🎭 Culture: .trivia culture · 🍲 Food: .trivia food',
+        '🔬 Science: .trivia science · 💻 Technology: .trivia technology',
+        '💼 Business: .trivia business · 🎮 Gaming: .trivia gaming',
+        '📚 Literature: .trivia literature · 🇳🇬 Nigeria: .trivia nigeria',
+        '🗞️ Current Affairs: .trivia current-affairs',
+        '🔥 FORGE: .trivia forge — branding, creative, marketing and business strategy',
         '',
         '*GRADES*',
         '🟢 Easy · 🔵 Normal · 🟠 Hard · 🔴 Expert',
         '',
         '*PLAY COMMANDS*',
         '.trivia music · .trivia music easy',
-        '.trivia football hard · .trivia movies expert',
-        '.trivia nollywood normal · .trivia hollywood hard',
+        '.trivia lifestyle normal · .trivia football hard',
+        '.trivia movies expert · .trivia nollywood normal',
+        '.trivia hollywood hard · .trivia current-affairs',
+        '.trivia forge · .trivia forge expert',
         '.trivia mixed · .trivia mixed normal',
         '',
         '*MATCH CONTROLS*',
@@ -422,12 +443,15 @@ export default {
     if (game) return sock.sendMessage(chatId, { text: 'A Trivia match is already active. Reply to its question, or use *.trivia status*.', ...channelInfo }, { quoted: message });
 
     const startArgs = (rawAction === 'start' ? args.slice(1) : args).map(v => String(v).toLowerCase().trim());
-    const aliases = { all: 'mixed', sports: 'football', film: 'movies', everyday: 'lifestyle', tech: 'technology' };
     let category = 'mixed', difficulty = null;
     for (const raw of startArgs) {
-      const value = aliases[raw] || raw;
-      if (value === 'mixed' || Object.hasOwn(CATEGORY_ALIASES, value)) category = value;
-      else if (DIFFICULTIES.includes(value) || value === 'medium') difficulty = normalizeDifficulty(value);
+      const normalizedCategory = normalizeTriviaCategory(raw);
+      if (normalizedCategory) category = normalizedCategory;
+      else if (DIFFICULTIES.includes(raw) || raw === 'medium') difficulty = normalizeDifficulty(raw);
+      else return sock.sendMessage(chatId, {
+        text: `⚠️ Unknown Trivia category or grade: *${raw}*. Use *.trivia* to view the available categories and grades.`,
+        ...channelInfo
+      }, { quoted: message });
     }
     const availableQuestions = getTriviaQuestionCount(category, difficulty);
     if (!availableQuestions) return sock.sendMessage(chatId, {

@@ -1,0 +1,39 @@
+name: Trivia candidate quality gate
+
+on:
+  pull_request:
+    paths:
+      - 'data/triviaCandidates/**'
+      - 'scripts/audit-trivia-candidates.js'
+      - 'package.json'
+      - '.github/workflows/trivia-candidate-audit.yml'
+  push:
+    branches:
+      - main
+      - 'forge/**'
+    paths:
+      - 'data/triviaCandidates/**'
+      - 'scripts/audit-trivia-candidates.js'
+      - 'package.json'
+      - '.github/workflows/trivia-candidate-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  candidate-audit:
+    name: Audit staged Trivia candidates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Report current live Trivia bank coverage (baseline)
+        run: npm run trivia:audit
+        continue-on-error: true
+      - name: Validate candidate inventory
+        run: npm run trivia:candidates:audit

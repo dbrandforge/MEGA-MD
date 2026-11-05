@@ -1,0 +1,352 @@
+# Forge Guard Trivia Expansion — Continuity Checkpoint
+
+Last verified: 2026-11-05
+Repository: `dbrandforge/MEGA-MD`
+Working branch: `forge/trivia-expansion-quality-gates`
+Draft pull request: https://github.com/dbrandforge/MEGA-MD/pull/87
+
+## Locked expansion target
+
+**Initial release milestone:** every selectable Trivia category must have at least **200 approved, unique playable questions**, distributed evenly:
+
+- Easy: 50
+- Normal: 50
+- Hard: 50
+- Expert: 50
+
+The long-term target remains **1,000 per category / 250 per difficulty**. Expand in subsequent quality-gated batches; this first milestone does not replace the long-term ambition.
+
+Do not count raw candidate inventory as playable coverage. Do not assign difficulty or promote records automatically. Preserve the existing non-Trivia games and all current gameplay behavior unless separately authorized.
+
+## Current live-bank baseline
+
+- 388 questions in `data/nigeriaTrivia.js`
+- 388 unique IDs
+- 83 category/difficulty combinations below the 50-question first-cycle grade target across the 21 player-selectable pools
+- The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
+- Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
+
+Selected live pool counts (categories overlap through aliases and the Nigeria subset; do not sum these rows):
+
+| Selectable pool | Live questions | Easy | Normal | Hard | Expert |
+|---|---:|---:|---:|---:|---:|
+| Music | 34 | 24 | 6 | 2 | 2 |
+| Football | 14 | 4 | 6 | 2 | 2 |
+| Movies aggregate | 23 | 6 | 7 | 5 | 5 |
+| Lifestyle | 11 | 5 | 2 | 2 | 2 |
+| Geography | 20 | 7 | 11 | 1 | 1 |
+| History | 18 | 2 | 5 | 5 | 6 |
+| Culture | 10 | 4 | 4 | 1 | 1 |
+| Food | 9 | 4 | 3 | 1 | 1 |
+| Technology | 6 | 2 | 2 | 1 | 1 |
+| Business | 8 | 1 | 4 | 2 | 1 |
+| Science | 12 | 3 | 3 | 3 | 3 |
+| Gaming | 8 | 2 | 2 | 2 | 2 |
+| Literature | 8 | 2 | 2 | 2 | 2 |
+| Nigeria | 71 | 28 | 35 | 4 | 4 |
+| Nollywood | 6 | 2 | 2 | 1 | 1 |
+| Hollywood | 4 | 1 | 1 | 1 | 1 |
+| Bollywood | 4 | 1 | 1 | 1 | 1 |
+| Animation | 4 | 1 | 1 | 1 | 1 |
+| Series | 4 | 1 | 1 | 1 | 1 |
+| Current Affairs | 7 | 3 | 2 | 1 | 1 |
+| Forge | 200 | 50 | 50 | 50 | 50 |
+
+The audit scope is aligned to the 21 actual player-facing category choices in the Trivia menu. Hidden legacy aliases (sports, everyday, tech) and the unadvertised empty general mode are not separate coverage targets. The Forge pool is a dedicated cross-disciplinary session for branding, creative direction, design, marketing, content strategy and entrepreneurship. Its Easy grade is now complete at 50 questions; Normal, Hard and Expert each have one question and remain to be expanded. The command aliases still route sports to Football, everyday to Lifestyle, and tech to Technology; general is rejected.
+
+## First approved content batch
+
+Four original, source-linked Current Affairs questions were added (`fx001`–`fx004`), covering the 2025 FIFA Club World Cup winner, COP30 host city, tournament field size and total goals. Each carries a review date and an authoritative FIFA or UNFCCC source URL. The Current Affairs pool now has seven approved questions, including one each at Hard and Expert; it remains below the 25-per-grade milestone.
+
+## Second approved content batch
+
+Four original, source-linked Science questions were added (`fx005`–`fx008`), covering atmospheric composition, the definition of a light-year, the first confirmed pulsar planets, and pulsar-timing detection. The Science pool now has eight approved questions, evenly distributed at two per difficulty; it remains below the 25-per-grade milestone.
+
+## Third approved content batch
+
+Four original, source-linked Nigeria history questions were added (`fx009`–`fx012`), covering the 1954 Lyttleton Constitution, the 1914 amalgamation, and the Asquith and Elliot Commissions. They are tagged for the Nigeria regional pool at two Hard and two Expert. The Nigeria pool now has 67 approved questions, including its first Hard and Expert entries; both grades remain below 25.
+
+## Fourth approved content batch
+
+Three original, source-linked questions were added (`fx013`–`fx015`), filling the first missing difficulty slots in Bollywood (Expert), Animation (Easy), and Series (Expert). Sources are the Academy of Motion Picture Arts and Sciences, Studio Ghibli, and Apple TV episode listing. These additions also raise the Movies aggregate pool to 23. Each question has a review date and a source URL; all three remain far below the 25-per-grade release target.
+
+## Fifth approved content batch
+
+Two original, source-linked Nigeria history questions were added (`fx016`–`fx017`), one Hard and one Expert. They cover the West African Currency Board’s role before the CBN began issuing Nigerian currency, and the 1962 banknote inscription change reflecting Nigeria’s republican status. Both use Central Bank of Nigeria historical references and carry a review date. The Nigeria pool now has 69 approved questions, with three Hard and three Expert entries; these grades remain below the 25-question target.
+
+## Sixth approved content batch
+
+Four original, source-linked Science questions were added (`fx018`–`fx021`), one at each difficulty. They cover iron’s atomic number, the estimated age of the universe, electron capacity in a p subshell, and the Pauli exclusion principle. Sources are the Royal Society of Chemistry, NASA, NIST and OpenStax. The Science pool now has 12 approved questions, evenly distributed at three per difficulty; it remains below the 25-per-grade target.
+
+## Seventh approved content batch
+
+Two original, source-linked Nigeria history questions were added (`fx022`–`fx023`), one Hard and one Expert. They cover the First Republic presidency of Dr. Nnamdi Azikiwe and Professor Kenneth Onwuka Dike’s status as the first Nigerian Vice-Chancellor of the University College Ibadan. Sources are the State House and University of Ibadan. The Nigeria pool now has 71 approved questions, including four Hard and four Expert entries; both grades remain below the 25-question target.
+
+## Eighth approved content batch
+
+Eight original, source-linked questions were added (`gl063`–`gl070`): four Gaming and four Literature, with one new question at each difficulty in each pool. Gaming additions cover Nintendo release-history milestones, the creation of Tetris, and the full Hades launch. Literature additions cover Jane Austen’s *Pride and Prejudice* and its first-edition publication details, plus the first newspaper publication of Poe’s *The Raven*. Sources include Nintendo, The Tetris Company, Supergiant Games, Jane Austen’s House and the Morgan Library & Museum. Both pools now have eight approved questions, evenly distributed at two per difficulty; neither is close to the 25-per-grade release target.
+
+## Ninth approved content batch
+
+Eight original, source-linked questions were added (`gl079`–`gl086`): four Music and four Football, one at each difficulty in each pool. Music covers Freddie Mercury’s authorship of “Bohemian Rhapsody,” Taylor Swift’s record-setting *1989* GRAMMY win, and Alban Berg’s opera *Wozzeck*. Football covers standard match duration, the 2026 FIFA World Cup winner, the first World Cup goalscorer, and Just Fontaine’s single-tournament scoring record. Sources include Queen, the Recording Academy, the Metropolitan Opera, IFAB and FIFA. Both pools now have 14 approved questions, distributed at four Easy, six Normal, two Hard and two Expert; all four grades remain below the 25-question milestone.
+
+## Staged candidate inventory
+
+Automated audit of 22 JSONL files:
+
+- 18,653 staged records
+- 18,653 unique IDs
+- 4 duplicate-wording records explicitly quarantined; **18,649 non-quarantined records remain for editorial review**
+- 8,958 records have no proposed live category
+- 18,653 records are still ungraded
+- 0 invalid four-option / answer-index structures
+- 33,340 editorial review flags (many are expected because every record is ungraded or needs category review)
+
+Candidate counts by source pool:
+
+| Source pool | Records |
+|---|---:|
+| Animals | 1,000 |
+| Brain teasers | 154 |
+| Celebrities | 1,000 |
+| Entertainment | 221 |
+| For kids | 584 |
+| General | 1,000 |
+| Geography | 777 |
+| History | 1,000 |
+| Hobbies | 1,000 |
+| Humanities | 948 |
+| Literature | 1,000 |
+| Movies | 996 |
+| Music | 1,000 |
+| Newest | 999 |
+| People | 1,000 |
+| Rated | 1,000 |
+| Religion & faith | 520 |
+| Science & technology | 1,000 |
+| Sports | 1,000 |
+| Television | 1,000 |
+| Video games | 454 |
+| World | 1,000 |
+| **Total** | **18,653** |
+
+Existing proposed-category counts are not approvals:
+
+- Culture: 1,468
+- Science: 1,000
+- History: 1,000
+- Lifestyle: 1,000
+- Literature: 1,000
+- Music: 1,000
+- Series: 1,000
+- Movies: 996
+- Geography: 777
+- Gaming: 454
+- Needs category review: 8,958
+
+## Quarantine
+
+Four duplicate video-game prompts overlap with the Entertainment pool and must not be promoted:
+
+- `otqa-video-games-0031`
+- `otqa-video-games-0055`
+- `otqa-video-games-0056`
+- `otqa-video-games-0129`
+
+Seventeen other duplicate rows were removed. The candidate audit fails if an unquarantined duplicate appears or a quarantine entry becomes stale.
+
+## Confirmed source-quality risks
+
+- The Sports source pool includes at least one Aristotle/metaphysics question; source folder labels are not reliable category assignments.
+- Some Music entries are clue fragments, not complete question stems.
+- Some text contains mojibake/encoding corruption.
+- The Newest pool contains old ranking and grossing claims; these must be re-sourced, date-anchored or rejected.
+- The candidate inventory is review-only and carries OpenTriviaQA CC BY-SA 4.0 attribution requirements.
+
+## Automated validation
+
+Latest verified branch checks (Forge session included):
+
+- Candidate quality gate: **passed**
+- Forge Bot unit tests: **passed** (includes currency-symbol regression test and the corrected category registry)
+- Forge Guard integration tests: **passed**
+- Trivia and game unit regression suite: **passed** (134 unit tests); the separate live-bank coverage audit **fails as intended** with 83 category/grade deficits
+- Blocking live-bank coverage audit: **failed as intended**; the 21 selectable pools remain below 200 total / 50 per grade
+- No candidate records promoted into the live bank
+- No merge or deployment performed
+
+Useful commands:
+
+- `npm run trivia:candidates:audit` — staged candidate integrity and editorial-flag report
+- `npm run trivia:audit` — actual live-bank validation against the initial 100 / 25-per-grade release target
+
+## Next execution sequence
+
+1. Build the first 100-question bank for each selectable category, with 25 verified questions at each difficulty; prioritize categories with the largest deficits.
+2. Fact-check every answer and distractor; rewrite incomplete stems and repair encoding.
+3. Date-anchor or reject volatile/current-affairs and ranking-dependent claims.
+4. Assign difficulty only after editorial review.
+5. Fact-check and grade every first-release question; keep unreviewed OpenTriviaQA candidates staged and respect their CC BY-SA 4.0 attribution obligations.
+6. Promote only approved questions into the live bank.
+7. Run the live-bank audit and unit/integration tests.
+8. Once every category meets 100 / 25 and all quality gates pass, merge and deploy the first milestone. Continue expanding toward 1,000 / 250 afterward.
+
+## Recovery after an app interruption
+
+Resume from this file and PR #87. The GitHub branch contains the committed work; reopening ChatGPT is not required to preserve it. Do not restart the audit from scratch and do not deploy this draft.
+
+
+## Tenth approved content batch — Forge session
+
+Four original, source-linked questions (`fg001`–`fg004`) establish the new dedicated **Forge** Trivia category. The starter set covers the AMA definition of a brand, brand identity elements, brand positioning, and the four components of a useful positioning statement. Sources are the American Marketing Association and NielsenIQ. One question is present at each difficulty. The session is now routable as `.trivia forge` and `.trivia forge expert`; the content bank will continue expanding across branding, creative direction, design, marketing, content strategy and entrepreneurship. This new pool is not yet at the 25-per-grade release target.
+
+
+## New production sequence — 50-question grade blocks
+
+The approved production order is now sequential by category and grade: complete 50 Easy questions, then 50 Normal, 50 Hard and 50 Expert for the same category before moving to the next category. The first cycle therefore establishes 200 questions per category. Repeat in further 50-question blocks per grade until each category reaches 1,000 questions (250 per grade). The first category in this sequence is **Forge**. Its Easy bank is currently 11/50; Normal, Hard and Expert are each 1/50. The latest batch adds ten original Easy questions (`fg005`–`fg014`) covering brand marketing, personal/corporate branding, brand equity, trademarks, brand guidelines, accessibility contrast, people-first SEO content and typography. Sources include AMA, USPTO, WIPO, W3C, Google Search Central and AIGA.
+
+
+### Forge Easy — second content batch
+
+Ten further original, source-linked questions (`fg015`–`fg024`) bring Forge to 24 approved questions: 21 Easy, one Normal, one Hard and one Expert. The new Easy set covers trademark scope and protection, copyright basics, image alt text, search-result relevance, WCAG large-text contrast and Google Analytics key events. Sources include USPTO, U.S. Copyright Office, Google Search Central, W3C and Google Analytics.
+
+
+### Forge Easy — third content batch
+
+Ten additional original, source-linked questions (`fg025`–`fg034`) bring Forge to 34 approved questions: 31 Easy, one Normal, one Hard and one Expert. This batch covers brand-marketing channels, consumer behaviour research, goods versus services, patents, WIPO brand search, typography leading and tracking, colour accessibility, image context and original SEO content. Sources include AMA, NIQ, USPTO, WIPO, AIGA, W3C and Google Search Central.
+
+
+### Forge Easy — fourth content batch
+
+Ten original questions (`fg035`–`fg044`) extend the Easy pool to 41/50. This batch covers positioning statements, messaging versus copywriting, audience insights and needs, points of difference, reasons to believe, voice and tone, calls to action, core messages and messaging hierarchy. The questions are grounded in the American Advertising and Marketing Association's positioning and messaging framework.
+
+
+### Forge Easy — fifth content batch and grade completion
+
+Nine original, source-linked questions (`fg045`–`fg053`) complete the Forge Easy grade at **50/50**. Topics include NIQ Brand Choice and Brand Premium, primary benefits, feature-versus-benefit thinking, competitive alternatives, brand personality, supporting benefits, proof points and conversion measurement. Sources include NIQ, the American Advertising and Marketing Association and Google Analytics. Forge now contains 53 questions overall: Easy 50, Normal 1, Hard 1 and Expert 1. The next step is Forge Normal, building from 1 to 50 before moving to Hard and Expert.
+
+
+### Forge Normal — first content batch
+
+Nine original, source-linked questions (`fg054`–`fg062`) begin the Normal grade, bringing it to 10/50. They cover target-audience research, competitive alternatives, meaningful differentiation, evidence standards, positioning evaluation, strategic focus, brand-health measurement and the distinction between Google Analytics key events and conversions. Sources include the American Advertising and Marketing Association, NIQ and Google Analytics.
+
+
+### Forge Normal — second content batch
+
+Ten original, source-linked questions (`fg063`–`fg072`) bring Forge Normal to 20/50. They cover the distinction between brand strategy and identity, non-visual identity assets, distinctive brand cues, voice consistency, audience insight quality, evidence for claims, competitive framing, deliverability and positioning versus slogans. Sources include the American Advertising and Marketing Association.
+
+
+### Forge Normal — third content batch
+
+Ten source-linked questions (`fg073`–`fg082`) bring Forge Normal to 30/50. This batch covers WCAG contrast and text resizing, accessible heading structure, crawlable links, competitive framing, copyright versus ideas, patents, international brand-name checks and positioning credibility. Sources include W3C, Google Search Central, Google developer documentation, the U.S. Copyright Office, USPTO, WIPO and the AAMA positioning framework.
+
+
+### Forge Normal — fourth content batch
+
+Ten source-linked questions (`fg083`–`fg092`) bring Forge Normal to 40/50. They cover marketing strategy, go-to-market planning, marketing research, segmentation-targeting-positioning, the four Ps, promotion, distribution, marketing plans, competitive analysis and value propositions. Sources include the American Marketing Association and U.S. Small Business Administration.
+
+
+### Forge Normal — fifth content batch and grade completion
+
+Ten original, source-linked questions (`fg093`–`fg102`) complete Forge Normal at **50/50**. They cover the AMA marketing definition, marketing plans, market research, direct research methods, indirect competitors, value propositions, the five-A customer path, the four As, the four Cs and the marketing-planning sequence. Sources include the American Marketing Association and U.S. Small Business Administration. Forge now has 102 questions: Easy 50, Normal 50, Hard 1 and Expert 1. The next grade block is Forge Hard.
+
+
+### Forge Hard — first content batch
+
+Ten source-linked questions (`fg103`–`fg112`) begin Forge Hard at 11/50. They test interpretation of Brand Choice and Brand Premium, the role of price in simulated choice, NIQ’s mental availability, brand image and attachment pillars, brand-health measurement versus market activation, and the use of marketing research and planning diagnostics. Sources include NIQ and the American Marketing Association.
+
+
+### Forge Hard — second content batch
+
+Ten source-linked questions (`fg113`–`fg122`) bring Forge Hard to 21/50. They test the difference between brand choice and premium, the role of distinctive value, channel-budget ROI, value-proposition alignment across channels, phased marketing-plan execution, audience segmentation, KPI selection and cross-functional marketing alignment. Sources include NIQ and the American Marketing Association.
+
+
+### Forge Hard — third content batch
+
+Ten NIQ-sourced questions (`fg123`–`fg132`) bring Forge Hard to 31/50. They apply the brand-capsule evaluation framework: strategic hypotheses, distinctiveness, consumer connection, mental availability, accessibility, everyday relevance, trial versus repeat, limits of awareness metrics and brand-equity dimensions. Source: NIQ Brand Health.
+
+
+### Forge Hard — fourth content batch
+
+Ten original, source-linked questions (`fg133`–`fg142`) bring Forge Hard to 41/50. They cover campaign-to-business alignment, market research inputs, cross-functional marketing plans, positioning before channel tactics, buyer-persona segmentation, channel planning, ROI and KPIs, phased implementation, marketing-mix alignment and strategy-to-tactic consistency. Sources include the AMA Marketing Competency Model, AMA Marketing Plan Template, AMA Four Ps and SBA guidance.
+
+
+### Forge Hard — fifth content batch and grade completion
+
+Nine original, source-linked questions (`fg143`–`fg151`) complete Forge Hard at **50/50**. They test market-entry research, secondary versus direct research, competitor and barrier analysis, sales planning, marketing action plans, expansion planning and specific target-market definition. Sources include the U.S. Small Business Administration. Forge now has 151 questions: Easy 50, Normal 50, Hard 50 and Expert 1. The next grade block is Forge Expert.
+
+
+### Forge Expert — first content batch
+
+Ten original, source-linked scenario questions (`fg152`–`fg161`) begin Forge Expert at 11/50. They test positioning credibility, brand activation versus equity, message architecture, strategy versus identity, premium strategy, research design, market-entry sequencing, insight-led positioning, brand-health measurement and strategic trade-offs. Sources include the AAMA positioning framework, NIQ and SBA.
+
+
+### Forge Expert — second content batch
+
+Ten scenario-led questions (`fg162`–`fg171`) bring Forge Expert to 21/50. They test STP decisions, translating audience needs into benefits, operational credibility, distinctive assets, U.S. copyright versus trademark, rights in commissioned imagery, strategy-to-identity alignment and brand-guideline governance. Sources include AMA, AAMA, WIPO and the U.S. Copyright Office.
+
+
+### Forge Expert — third content batch
+
+Ten scenario questions (`fg172`–`fg181`) bring Forge Expert to 31/50. They focus on choosing meaningful Analytics key events, distinguishing engagement from business outcomes, the Event → Key Event → Conversion workflow, campaign bidding optimisation and reporting alignment. Sources are official Google Analytics Help documentation.
+
+
+### Forge Expert — fourth content batch
+
+Ten scenario questions (`fg182`–`fg191`) bring Forge Expert to 41/50. They cover marketing-plan accountability, channel-to-value alignment, B2B buyer-role segmentation, strategy-to-identity coherence, commissioned IP ownership, trademark clearance, verbal brand guidelines, positioning proof and delivery, brand attachment and customer advocacy. Sources include AMA, AAMA, WIPO, NIQ and the USPTO/WIPO intellectual-property guidance.
+
+
+### Forge Expert — fifth content batch and grade completion
+
+Nine scenario questions (`fg192`–`fg200`) complete Forge Expert at **50/50**. They examine Brand Choice versus Brand Premium, premium accessibility, attachment and repeat behaviour, lead-conversion optimisation, Analytics conversion setup, marketing-plan execution, STP sequencing and strategy-to-identity coherence. Sources include NIQ, Google Analytics, AMA and AAMA.
+
+## Forge category — first 50-question cycle complete
+
+**Forge is now complete at 200 approved, unique questions: Easy 50, Normal 50, Hard 50 and Expert 50.** This completes the first category under the new sequential 50-question process. The next category in the sequence is Music, beginning with Easy 50. No other category has been re-ordered or modified by this process.
+
+
+## Music Easy — first content batch
+
+Ten source-linked questions (`mx001`–`mx010`) bring Music Easy from 4/50 to 14/50. The batch covers GRAMMY wins by Tems, Tyla, Matt B, Angélique Kidjo and Masa Takumi, plus Rock & Roll Hall of Fame inductions for Fela Kuti, OutKast and Sade. Sources are the Recording Academy and Rock & Roll Hall of Fame.
+
+
+### Music Easy — second content batch
+
+Ten source-linked questions (`mx011`–`mx020`) bring Music Easy to 24/50. This batch covers Adele and Beyoncé’s GRAMMY totals, Bob Marley’s *Exodus*, Chubby Checker, Cyndi Lauper, OutKast, Shakti, amapiano and the 2026 Global Music Album winner. Sources include the Recording Academy, Rock & Roll Hall of Fame and Bob Marley’s official site.
+
+
+## Eleventh approved content batch — Music Easy completion
+
+Sixteen original, source-linked Music questions (mx031–mx046) were added on 2026-11-05. The new Easy questions cover Michael Jackson and the Jackson 5, Lady Gaga, Jay-Z and Stevie Wonder, with official GRAMMY Museum, Recording Academy and artist-history references. Music Easy now has **50/50** questions. The current Music pool totals 60 questions: Easy 50, Normal 6 (including four legacy `medium` records normalized to Normal), Hard 2 and Expert 2. No new candidate inventory was promoted. Commit: a338612ff67594fb0dbb142093db9fa752615687.
+
+Next: complete Music Normal to 50 before starting Music Hard; then Expert. Run the editorial/duplicate audit and CI checks after each batch. Do not merge or deploy until the full approved release gate is met.
+
+
+## Twelfth approved content batch — Music Normal underway
+
+Ten original, source-linked Music Normal questions (mx047–mx056) were added on 2026-11-05. Topics include Whitney Houston, Bob Dylan, the Fugees and Lauryn Hill, Madonna, and Miles Davis. Music now has 70 questions: Easy 50, Normal 16 (including four legacy `medium` entries normalized to Normal), Hard 2 and Expert 2. The first CI run exposed stale exact-count assertions in test/unit/game-quality.test.js (the test still expected the pre-expansion Music total of 44 and Easy count of 34); these assertions were changed to forward-compatible minimum coverage checks. The question-bank quality audit and test suite must be rerun against the latest branch head before this batch is treated as verified. Latest content commit: 43c0ff8286135bebf8064f179373499fafcab997. Test correction commit: f1069c95381b0458f418e79a75fd8b9de6e7eea9.
+
+
+## Thirteenth approved content batch — Music Normal progress
+
+Ten additional source-linked Music Normal questions (mx057–mx066) were added on 2026-11-05, covering Whitney Houston’s chart milestones, Bob Dylan’s early recordings, Madonna’s singles and GRAMMY history, Miles Davis’s albums, and Lauryn Hill’s 1999 GRAMMY achievements. Music Normal now has 26/50 questions; 24 remain before moving to Hard. Current counts: Easy 50, Normal 26, Hard 2, Expert 2 (80 total). The editorial duplicate check on the Music pool currently reports unique IDs and unique normalized question stems across all 80 records. The CI run for the regression correction is still in progress at the time of this checkpoint; no merge or deployment has occurred.
+
+
+## Fourteenth approved content batch — Music Normal progress
+
+Ten additional source-linked Music Normal questions (mx067–mx076) were added on 2026-11-05. Topics include Whitney Houston’s album and GRAMMY milestones, Bob Dylan’s Blonde on Blonde, the Fugees and Lauryn Hill, Madonna’s early albums, and Miles Davis’s legacy. Music Normal now has 36/50 questions; 14 remain before moving to Hard. Current Music counts: Easy 50, Normal 36, Hard 2, Expert 2 (90 total). The earlier CI run confirmed the corrected unit suite passed (134 tests), integration passed, and candidate audit passed; the composite trivia regression job remains red by design because the live-bank coverage gate still reports dozens of incomplete category/grade pools. A fresh run for the latest content commit is in progress. No merge or production deployment has occurred.
+
+
+## Fifteenth approved content batch — Music Normal completion
+
+Fourteen original, source-linked Music Normal questions (mx077–mx090) completed the Normal grade on 2026-11-05. Topics include Whitney Houston’s career, Bob Dylan, Madonna, and Miles Davis. A duplicate-concept review caught and replaced a repeated Miles Davis first-GRAMMY fact; the Bodyguard question wording was also cleaned up. Music now has **104 total records**: Easy 50, Normal 50, Hard 2, Expert 2. The four legacy `medium` questions are normalized into Normal, so the official four-grade coverage is exactly 50/50/2/2. Music Easy and Normal are complete; next active block is Music Hard (48 questions needed), followed by Expert (48 needed). The Music bank currently has unique IDs and unique normalized question stems across all 104 rows. The regression assertion was raised to require at least 50 Normal questions. No merge or production deployment has occurred.
+
+
+## Sixteenth approved content batch — Music Hard completion
+
+Forty-eight new source-linked Music Hard questions (mx091–mx138) completed the Hard grade on 2026-11-05. Coverage spans recorded-sound technology and formats, early jazz and blues recordings, opera, classical and jazz history, and hip-hop. Sources are primarily Library of Congress, Recording Academy, and Rock & Roll Hall of Fame references. Two malformed Library of Congress URLs were caught and corrected during review. The Music pool now has **152 records**: Easy 50, Normal 50, Hard 50, Expert 2 (including four legacy `medium` records normalized into Normal). The Music Hard regression assertion now requires at least 50. Only Music Expert remains, with 48 additional questions required. The current editorial pass finds 152 unique IDs and 152 unique normalized question stems. No merge or production deployment has occurred.
+
+
+## Seventeenth approved content batch — Music Expert completion
+
+Forty-eight new expert-level Music questions (mx139–mx186) completed the Expert grade on 2026-11-05. The material covers Miles Davis’s “Kind of Blue,” Pink Floyd’s “The Dark Side of the Moon,” Stravinsky’s “The Rite of Spring,” John Coltrane’s “A Love Supreme,” and Queen’s “A Night at the Opera” / “Bohemian Rhapsody,” with artist, studio, Recording Academy, Library of Congress, and specialist discography references. A duplicate-concept review replaced a repeated Queen production fact with the single’s B-side detail. The Music category now has **200 questions: 50 Easy, 50 Normal, 50 Hard, 50 Expert**. The regression suite now asserts minimum coverage of 50 for every Music difficulty. A final bank check reports 200 unique IDs and 200 unique normalized question stems. The latest CI run for the final Expert/test commit is queued; verify it before marking this batch fully validated. Next step is a full Music editorial/source audit, then update PR #87 and run the release consolidation and deployment gate. Do not merge/deploy until all required release checks pass.
