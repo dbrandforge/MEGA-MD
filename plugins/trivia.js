@@ -18,7 +18,7 @@ const CATEGORY_ALIASES = {
   nigeria: ['nigeria'], music: ['music'], geography: ['geography'],
   history: ['history'], culture: ['culture'], food: ['food'], business: ['business'],
   science: ['science'], gaming: ['gaming'], literature: ['literature'],
-  'current-affairs': ['current-affairs']
+  'current-affairs': ['current-affairs'], forge: ['forge']
 };
 const DIFFICULTIES = ['easy', 'normal', 'hard', 'expert'];
 const MATCH_EXPIRY_MS = 45 * 60 * 1000;
@@ -401,6 +401,7 @@ export default {
         '💼 Business: .trivia business · 🎮 Gaming: .trivia gaming',
         '📚 Literature: .trivia literature · 🇳🇬 Nigeria: .trivia nigeria',
         '🗞️ Current Affairs: .trivia current-affairs',
+        '🔥 FORGE: .trivia forge — branding, creative, marketing and business strategy',
         '',
         '*GRADES*',
         '🟢 Easy · 🔵 Normal · 🟠 Hard · 🔴 Expert',
@@ -410,6 +411,7 @@ export default {
         '.trivia lifestyle normal · .trivia football hard',
         '.trivia movies expert · .trivia nollywood normal',
         '.trivia hollywood hard · .trivia current-affairs',
+        '.trivia forge · .trivia forge expert',
         '.trivia mixed · .trivia mixed normal',
         '',
         '*MATCH CONTROLS*',
