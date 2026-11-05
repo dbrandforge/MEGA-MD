@@ -313,3 +313,10 @@ Ten source-linked questions (`mx001`–`mx010`) bring Music Easy from 4/50 to 14
 ### Music Easy — second content batch
 
 Ten source-linked questions (`mx011`–`mx020`) bring Music Easy to 24/50. This batch covers Adele and Beyoncé’s GRAMMY totals, Bob Marley’s *Exodus*, Chubby Checker, Cyndi Lauper, OutKast, Shakti, amapiano and the 2026 Global Music Album winner. Sources include the Recording Academy, Rock & Roll Hall of Fame and Bob Marley’s official site.
+
+
+## Eleventh approved content batch — Music Easy completion
+
+Sixteen original, source-linked Music questions (mx031–mx046) were added on 2026-11-05. The new Easy questions cover Michael Jackson and the Jackson 5, Lady Gaga, Jay-Z and Stevie Wonder, with official GRAMMY Museum, Recording Academy and artist-history references. Music Easy now has **50/50** questions. The current Music pool totals 60 questions: Easy 50, Normal 6 (including four legacy `medium` records normalized to Normal), Hard 2 and Expert 2. No new candidate inventory was promoted. Commit: a338612ff67594fb0dbb142093db9fa752615687.
+
+Next: complete Music Normal to 50 before starting Music Hard; then Expert. Run the editorial/duplicate audit and CI checks after each batch. Do not merge or deploy until the full approved release gate is met.
