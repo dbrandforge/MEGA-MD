@@ -129,8 +129,10 @@ Seventeen other duplicate rows were removed. The candidate audit fails if an unq
 Latest verified branch checks:
 
 - Candidate quality gate: **passed**
-- Forge Bot unit tests: **passed** (includes currency-symbol regression test)
+- Forge Bot unit tests: **passed** (includes currency-symbol regression test and the corrected category registry)
 - Forge Guard integration tests: **passed**
+- Trivia unit/regression tests: **passed**
+- Blocking live-bank coverage audit: **failed as intended**; the 20 selectable pools remain below 1,000 total / 250 per grade
 - No candidate records promoted into the live bank
 - No merge or deployment performed
 
