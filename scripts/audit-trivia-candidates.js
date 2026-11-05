@@ -15,6 +15,8 @@ const bySource = {};
 const byProposal = {};
 const errors = [];
 const reviewFlags = [];
+const quarantinedDuplicateIds = new Set(['otqa-video-games-0031', 'otqa-video-games-0055', 'otqa-video-games-0056', 'otqa-video-games-0129']);
+const quarantinedDuplicatesSeen = new Set();
 let total = 0;
 let ungraded = 0;
 let invalidOptions = 0;
@@ -54,7 +56,12 @@ for (const file of files) {
     if (!fingerprint) errors.push(label + ': empty question text');
     else if (wording.has(fingerprint)) {
       duplicateWording++;
-      errors.push(label + ': duplicate wording also found at ' + wording.get(fingerprint));
+      if (quarantinedDuplicateIds.has(question.id)) {
+        quarantinedDuplicatesSeen.add(question.id);
+        reviewFlags.push(label + ': duplicate wording is quarantined and must not be promoted');
+      } else {
+        errors.push(label + ': duplicate wording also found at ' + wording.get(fingerprint));
+      }
     } else wording.set(fingerprint, label);
 
     const options = Array.isArray(question.options) ? question.options : [];
@@ -93,6 +100,7 @@ for (const file of files) {
 console.log('Trivia candidate audit: ' + total + ' records across ' + files.length + ' JSONL files');
 console.log('Unique IDs: ' + ids.size + ' | Duplicate wording: ' + duplicateWording + ' | Ungraded: ' + ungraded);
 console.log('Records needing category review: ' + missingCategory + ' | Invalid option/answer structures: ' + invalidOptions);
+console.log('Quarantined duplicate records: ' + quarantinedDuplicatesSeen.size + ' (excluded from promotion)');
 console.log('Editorial review flags: ' + reviewFlags.length);
 console.log('\nBy source pool:');
 for (const [name, count] of Object.entries(bySource).sort()) console.log('- ' + name + ': ' + count);
@@ -102,6 +110,9 @@ if (reviewFlags.length) {
   console.log('\nEditorial review flags (first 100):');
   for (const flag of reviewFlags.slice(0, 100)) console.log('- ' + flag);
   if (reviewFlags.length > 100) console.log('- ... ' + (reviewFlags.length - 100) + ' additional flags omitted');
+}
+for (const id of quarantinedDuplicateIds) {
+  if (!quarantinedDuplicatesSeen.has(id)) errors.push('Quarantine entry is stale or no longer a duplicate: ' + id);
 }
 if (errors.length) {
   console.error('\nCandidate integrity findings: ' + errors.length);
