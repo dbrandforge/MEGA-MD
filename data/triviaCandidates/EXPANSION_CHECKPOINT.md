@@ -49,7 +49,7 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 | Bollywood | 3 | 1 | 1 | 1 | 0 |
 | Animation | 3 | 0 | 1 | 1 | 1 |
 | Series | 3 | 1 | 1 | 1 | 0 |
-| Current Affairs | 3 | 2 | 1 | 0 | 0 |
+| Current Affairs | 7 | 2 | 2 | 1 | 1 |
 
 The audit scope is aligned to the 20 actual player-facing category choices in the Trivia menu. Hidden legacy aliases (sports, everyday, tech) and the unadvertised empty general mode are not separate coverage targets. The command aliases still route sports to Football, everyday to Lifestyle, and tech to Technology; general is rejected.
 
