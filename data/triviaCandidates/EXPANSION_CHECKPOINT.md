@@ -20,8 +20,8 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current live-bank baseline
 
-- 137 questions in `data/nigeriaTrivia.js`
-- 137 unique IDs
+- 141 questions in `data/nigeriaTrivia.js`
+- 141 unique IDs
 - 80 category/difficulty combinations below the 25-question initial-release grade target across the 20 player-selectable pools
 - The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
 - Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
@@ -35,7 +35,7 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 | Movies aggregate | 20 | 5 | 7 | 5 | 3 |
 | Lifestyle | 11 | 5 | 2 | 2 | 2 |
 | Geography | 20 | 7 | 11 | 1 | 1 |
-| History | 10 | 2 | 5 | 1 | 2 |
+| History | 14 | 2 | 5 | 3 | 4 |
 | Culture | 10 | 4 | 4 | 1 | 1 |
 | Food | 9 | 4 | 3 | 1 | 1 |
 | Technology | 6 | 2 | 2 | 1 | 1 |
@@ -43,7 +43,7 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 | Science | 8 | 2 | 2 | 2 | 2 |
 | Gaming | 4 | 1 | 1 | 1 | 1 |
 | Literature | 4 | 1 | 1 | 1 | 1 |
-| Nigeria | 63 | 28 | 35 | 0 | 0 |
+| Nigeria | 67 | 28 | 35 | 2 | 2 |
 | Nollywood | 6 | 2 | 2 | 1 | 1 |
 | Hollywood | 4 | 1 | 1 | 1 | 1 |
 | Bollywood | 3 | 1 | 1 | 1 | 0 |
@@ -60,6 +60,10 @@ Four original, source-linked Current Affairs questions were added (`fx001`–`fx
 ## Second approved content batch
 
 Four original, source-linked Science questions were added (`fx005`–`fx008`), covering atmospheric composition, the definition of a light-year, the first confirmed pulsar planets, and pulsar-timing detection. The Science pool now has eight approved questions, evenly distributed at two per difficulty; it remains below the 25-per-grade milestone.
+
+## Third approved content batch
+
+Four original, source-linked Nigeria history questions were added (`fx009`–`fx012`), covering the 1954 Lyttleton Constitution, the 1914 amalgamation, and the Asquith and Elliot Commissions. They are tagged for the Nigeria regional pool at two Hard and two Expert. The Nigeria pool now has 67 approved questions, including its first Hard and Expert entries; both grades remain below 25.
 
 ## Staged candidate inventory
 
