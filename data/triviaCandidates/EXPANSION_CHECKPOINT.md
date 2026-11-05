@@ -20,8 +20,8 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current live-bank baseline
 
-- 141 questions in `data/nigeriaTrivia.js`
-- 141 unique IDs
+- 144 questions in `data/nigeriaTrivia.js`
+- 144 unique IDs
 - 80 category/difficulty combinations below the 25-question initial-release grade target across the 20 player-selectable pools
 - The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
 - Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
@@ -32,7 +32,7 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 |---|---:|---:|---:|---:|---:|
 | Music | 10 | 3 | 5 | 1 | 1 |
 | Football | 10 | 3 | 5 | 1 | 1 |
-| Movies aggregate | 20 | 5 | 7 | 5 | 3 |
+| Movies aggregate | 23 | 6 | 7 | 5 | 5 |
 | Lifestyle | 11 | 5 | 2 | 2 | 2 |
 | Geography | 20 | 7 | 11 | 1 | 1 |
 | History | 14 | 2 | 5 | 3 | 4 |
@@ -46,10 +46,10 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 | Nigeria | 67 | 28 | 35 | 2 | 2 |
 | Nollywood | 6 | 2 | 2 | 1 | 1 |
 | Hollywood | 4 | 1 | 1 | 1 | 1 |
-| Bollywood | 3 | 1 | 1 | 1 | 0 |
-| Animation | 3 | 0 | 1 | 1 | 1 |
-| Series | 3 | 1 | 1 | 1 | 0 |
-| Current Affairs | 7 | 2 | 2 | 1 | 1 |
+| Bollywood | 4 | 1 | 1 | 1 | 1 |
+| Animation | 4 | 1 | 1 | 1 | 1 |
+| Series | 4 | 1 | 1 | 1 | 1 |
+| Current Affairs | 7 | 3 | 2 | 1 | 1 |
 
 The audit scope is aligned to the 20 actual player-facing category choices in the Trivia menu. Hidden legacy aliases (sports, everyday, tech) and the unadvertised empty general mode are not separate coverage targets. The command aliases still route sports to Football, everyday to Lifestyle, and tech to Technology; general is rejected.
 
@@ -64,6 +64,10 @@ Four original, source-linked Science questions were added (`fx005`–`fx008`), c
 ## Third approved content batch
 
 Four original, source-linked Nigeria history questions were added (`fx009`–`fx012`), covering the 1954 Lyttleton Constitution, the 1914 amalgamation, and the Asquith and Elliot Commissions. They are tagged for the Nigeria regional pool at two Hard and two Expert. The Nigeria pool now has 67 approved questions, including its first Hard and Expert entries; both grades remain below 25.
+
+## Fourth approved content batch
+
+Three original, source-linked questions were added (`fx013`–`fx015`), filling the first missing difficulty slots in Bollywood (Expert), Animation (Easy), and Series (Expert). Sources are the Academy of Motion Picture Arts and Sciences, Studio Ghibli, and Apple TV episode listing. These additions also raise the Movies aggregate pool to 23. Each question has a review date and a source URL; all three remain far below the 25-per-grade release target.
 
 ## Staged candidate inventory
 
