@@ -21,6 +21,7 @@ describe('game quality foundations', () => {
     expect(normalizeTriviaCategory('film')).toBe('movies');
     expect(normalizeTriviaCategory('all')).toBe('mixed');
     expect(normalizeTriviaCategory('current-affairs')).toBe('current-affairs');
+    expect(normalizeTriviaCategory('forge')).toBe('forge');
     expect(normalizeTriviaCategory('not-a-real-category')).toBeNull();
   });
 
@@ -28,7 +29,7 @@ describe('game quality foundations', () => {
   it('enforces 100 unique questions per Trivia category with 25 per grade', () => {
     const questions = [];
     let id = 0;
-    for (const category of ['music', 'sports', 'nollywood', 'everyday', 'geography', 'history', 'culture', 'food', 'tech', 'business', 'science', 'gaming', 'literature', 'hollywood', 'bollywood', 'animation', 'series', 'current-affairs']) {
+    for (const category of ['music', 'sports', 'nollywood', 'everyday', 'geography', 'history', 'culture', 'food', 'tech', 'business', 'science', 'gaming', 'literature', 'hollywood', 'bollywood', 'animation', 'series', 'current-affairs', 'forge', 'forge']) {
       for (const difficulty of ['easy', 'normal', 'hard', 'expert']) {
         for (let n = 0; n < 25; n++) {
           id += 1;
@@ -164,6 +165,11 @@ describe('game quality foundations', () => {
     expect(TRIVIA_CATEGORIES).toContain('current-affairs');
     expect(getTriviaQuestionCount('all')).toBe(NIGERIA_TRIVIA.length);
     expect(getTriviaQuestionCount('current-affairs')).toBe(7);
+    expect(getTriviaQuestionCount('forge')).toBe(4);
+    expect(getTriviaQuestionCount('forge', 'easy')).toBe(1);
+    expect(getTriviaQuestionCount('forge', 'normal')).toBe(1);
+    expect(getTriviaQuestionCount('forge', 'hard')).toBe(1);
+    expect(getTriviaQuestionCount('forge', 'expert')).toBe(1);
     expect(getTriviaQuestionCount('nigeria')).toBe(71);
     expect(getTriviaQuestionCount('current-affairs', 'hard')).toBe(1);
     expect(getTriviaQuestionCount('football', 'hard')).toBeGreaterThan(0);
