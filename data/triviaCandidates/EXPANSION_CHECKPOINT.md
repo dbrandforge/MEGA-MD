@@ -7,12 +7,12 @@ Draft pull request: https://github.com/dbrandforge/MEGA-MD/pull/87
 
 ## Locked expansion target
 
-**Initial release milestone:** every selectable Trivia category must have at least **100 approved, unique playable questions**, distributed evenly:
+**Initial release milestone:** every selectable Trivia category must have at least **200 approved, unique playable questions**, distributed evenly:
 
-- Easy: 25
-- Normal: 25
-- Hard: 25
-- Expert: 25
+- Easy: 50
+- Normal: 50
+- Hard: 50
+- Expert: 50
 
 The long-term target remains **1,000 per category / 250 per difficulty**. Expand in subsequent quality-gated batches; this first milestone does not replace the long-term ambition.
 
@@ -20,9 +20,9 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current live-bank baseline
 
-- 172 questions in `data/nigeriaTrivia.js`
-- 172 unique IDs
-- 82 category/difficulty combinations below the 25-question initial-release grade target across the 21 player-selectable pools
+- 182 questions in `data/nigeriaTrivia.js`
+- 182 unique IDs
+- 84 category/difficulty combinations below the 50-question first-cycle grade target across the 21 player-selectable pools
 - The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
 - Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
 
@@ -50,9 +50,9 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 | Animation | 4 | 1 | 1 | 1 | 1 |
 | Series | 4 | 1 | 1 | 1 | 1 |
 | Current Affairs | 7 | 3 | 2 | 1 | 1 |
-| Forge | 4 | 1 | 1 | 1 | 1 |
+| Forge | 14 | 11 | 1 | 1 | 1 |
 
-The audit scope is aligned to the 21 actual player-facing category choices in the Trivia menu. Hidden legacy aliases (sports, everyday, tech) and the unadvertised empty general mode are not separate coverage targets. The new Forge pool is a dedicated cross-disciplinary session for branding, creative direction, design, marketing, content strategy and entrepreneurship. It currently has four starter questions, one per grade, and remains below the 25-per-grade release threshold. The command aliases still route sports to Football, everyday to Lifestyle, and tech to Technology; general is rejected.
+The audit scope is aligned to the 21 actual player-facing category choices in the Trivia menu. Hidden legacy aliases (sports, everyday, tech) and the unadvertised empty general mode are not separate coverage targets. The new Forge pool is a dedicated cross-disciplinary session for branding, creative direction, design, marketing, content strategy and entrepreneurship. It currently has four starter questions, one per grade, and remains below the 50-per-grade first-cycle target. The command aliases still route sports to Football, everyday to Lifestyle, and tech to Technology; general is rejected.
 
 ## First approved content batch
 
@@ -170,8 +170,8 @@ Latest verified branch checks (Forge session included):
 - Candidate quality gate: **passed**
 - Forge Bot unit tests: **passed** (includes currency-symbol regression test and the corrected category registry)
 - Forge Guard integration tests: **passed**
-- Trivia and game unit regression suite: **passed** (134 unit tests); the separate live-bank coverage audit **fails as intended** with 82 category/grade deficits
-- Blocking live-bank coverage audit: **failed as intended**; the 21 selectable pools remain below 100 total / 25 per grade
+- Trivia and game unit regression suite: **passed** (134 unit tests); the separate live-bank coverage audit **fails as intended** with 84 category/grade deficits
+- Blocking live-bank coverage audit: **failed as intended**; the 21 selectable pools remain below 200 total / 50 per grade
 - No candidate records promoted into the live bank
 - No merge or deployment performed
 
@@ -199,3 +199,8 @@ Resume from this file and PR #87. The GitHub branch contains the committed work;
 ## Tenth approved content batch — Forge session
 
 Four original, source-linked questions (`fg001`–`fg004`) establish the new dedicated **Forge** Trivia category. The starter set covers the AMA definition of a brand, brand identity elements, brand positioning, and the four components of a useful positioning statement. Sources are the American Marketing Association and NielsenIQ. One question is present at each difficulty. The session is now routable as `.trivia forge` and `.trivia forge expert`; the content bank will continue expanding across branding, creative direction, design, marketing, content strategy and entrepreneurship. This new pool is not yet at the 25-per-grade release target.
+
+
+## New production sequence — 50-question grade blocks
+
+The approved production order is now sequential by category and grade: complete 50 Easy questions, then 50 Normal, 50 Hard and 50 Expert for the same category before moving to the next category. The first cycle therefore establishes 200 questions per category. Repeat in further 50-question blocks per grade until each category reaches 1,000 questions (250 per grade). The first category in this sequence is **Forge**. Its Easy bank is currently 11/50; Normal, Hard and Expert are each 1/50. The latest batch adds ten original Easy questions (`fg005`–`fg014`) covering brand marketing, personal/corporate branding, brand equity, trademarks, brand guidelines, accessibility contrast, people-first SEO content and typography. Sources include AMA, USPTO, WIPO, W3C, Google Search Central and AIGA.
