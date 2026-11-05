@@ -26,12 +26,12 @@ for (const file of files) {
   for (let index = 0; index < rows.length; index++) {
     const line = rows[index].trim();
     if (!line) continue;
-    const label = `${file}:${index + 1}`;
+    const label = file + ':' + (index + 1);
     let question;
     try {
       question = JSON.parse(line);
     } catch (error) {
-      errors.push(`${label}: invalid JSON (${error.message})`);
+      errors.push(label + ': invalid JSON (' + error.message + ')');
       continue;
     }
     total++;
@@ -41,16 +41,16 @@ for (const file of files) {
     byProposal[proposal] = (byProposal[proposal] || 0) + 1;
 
     if (!question.id || ids.has(question.id)) {
-      errors.push(`${label}: missing or duplicate candidate ID ${question.id || '(empty)'}`);
+      errors.push(label + ': missing or duplicate candidate ID ' + (question.id || '(empty)'));
     } else {
       ids.set(question.id, label);
     }
 
     const fingerprint = normalize(question.question);
-    if (!fingerprint) errors.push(`${label}: empty question text`);
+    if (!fingerprint) errors.push(label + ': empty question text');
     else if (wording.has(fingerprint)) {
       duplicateWording++;
-      errors.push(`${label}: duplicate wording also found at ${wording.get(fingerprint)}`);
+      errors.push(label + ': duplicate wording also found at ' + wording.get(fingerprint));
     } else wording.set(fingerprint, label);
 
     const options = Array.isArray(question.options) ? question.options : [];
@@ -59,43 +59,50 @@ for (const file of files) {
         new Set(normalizedOptions).size !== 4 ||
         !Number.isInteger(question.answer) || question.answer < 0 || question.answer > 3) {
       invalidOptions++;
-      errors.push(`${label}: requires four distinct non-empty options and answer index 0–3`);
+      errors.push(label + ': requires four distinct non-empty options and answer index 0–3');
     }
+
     if (!question.proposedCategory) {
       missingCategory++;
-      reviewFlags.push(`${label}: category not assigned; inspect content rather than trusting source pool`);
+      reviewFlags.push(label + ': category not assigned; inspect content rather than trusting source pool');
     }
     if (!question.difficulty) {
       ungraded++;
-      reviewFlags.push(`${label}: difficulty not assigned`);
+      reviewFlags.push(label + ': difficulty not assigned');
     }
     if (/[ÃÂâ€]|�/.test(question.question || '') ||
         options.some(option => /[ÃÂâ€]|�/.test(String(option)))) {
-      reviewFlags.push(`${label}: possible character-encoding corruption`);
+      reviewFlags.push(label + ': possible character-encoding corruption');
     }
     if (String(question.question || '').trim().length < 24) {
-      reviewFlags.push(`${label}: unusually short stem; check whether it is a complete question`);
+      reviewFlags.push(label + ': unusually short stem; check whether it is a complete question');
     }
     if (!/[?]/.test(question.question || '')) {
-      reviewFlags.push(`${label}: stem has no question mark; check clarity and whether it is a usable prompt`);
+      reviewFlags.push(label + ': stem has no question mark; check clarity and whether it is a usable prompt');
     }
-    if (/highest[- ]grossing|#\\s?\\d+ on the list|this year|current record|latest record/i.test(question.question || '')) {
-      reviewFlags.push(`${label}: potentially time-sensitive or ranking-dependent fact; verify and date-anchor`);
+    if (/highest[- ]grossing|#\s?\d+ on the list|this year|current record|latest record/i.test(question.question || '')) {
+      reviewFlags.push(label + ': potentially time-sensitive or ranking-dependent fact; verify and date-anchor');
     }
   }
 }
 
-console.log(`Trivia candidate audit: ${total} records across ${files.length} JSONL files`);
-console.log(`Unique IDs: ${ids.size} | Duplicate wording: ${duplicateWording} | Ungraded: ${ungraded}`);
-console.log(`Records needing category review: ${missingCategory} | Invalid option/answer structures: ${invalidOptions}`);\nconsole.log(`Editorial review flags: ${reviewFlags.length}`);
+console.log('Trivia candidate audit: ' + total + ' records across ' + files.length + ' JSONL files');
+console.log('Unique IDs: ' + ids.size + ' | Duplicate wording: ' + duplicateWording + ' | Ungraded: ' + ungraded);
+console.log('Records needing category review: ' + missingCategory + ' | Invalid option/answer structures: ' + invalidOptions);
+console.log('Editorial review flags: ' + reviewFlags.length);
 console.log('\nBy source pool:');
-for (const [name, count] of Object.entries(bySource).sort()) console.log(`- ${name}: ${count}`);
+for (const [name, count] of Object.entries(bySource).sort()) console.log('- ' + name + ': ' + count);
 console.log('\nBy proposed live category:');
-for (const [name, count] of Object.entries(byProposal).sort()) console.log(`- ${name}: ${count}`);
-if (reviewFlags.length) {\n  console.log('\\nEditorial review flags (first 100):');\n  for (const flag of reviewFlags.slice(0, 100)) console.log(`- ${flag}`);\n  if (reviewFlags.length > 100) console.log(`- ... ${reviewFlags.length - 100} additional flags omitted`);\n}\nif (errors.length) {
-  console.error(`\nCandidate integrity findings: ${errors.length}`);
-  for (const error of errors.slice(0, 100)) console.error(`- ${error}`);
-  if (errors.length > 100) console.error(`- ... ${errors.length - 100} additional findings omitted`);
+for (const [name, count] of Object.entries(byProposal).sort()) console.log('- ' + name + ': ' + count);
+if (reviewFlags.length) {
+  console.log('\nEditorial review flags (first 100):');
+  for (const flag of reviewFlags.slice(0, 100)) console.log('- ' + flag);
+  if (reviewFlags.length > 100) console.log('- ... ' + (reviewFlags.length - 100) + ' additional flags omitted');
+}
+if (errors.length) {
+  console.error('\nCandidate integrity findings: ' + errors.length);
+  for (const error of errors.slice(0, 100)) console.error('- ' + error);
+  if (errors.length > 100) console.error('- ... ' + (errors.length - 100) + ' additional findings omitted');
   process.exitCode = 1;
 }
 console.log('\nNOTE: Candidate records are not approved/live questions. This audit does not fact-check answers, establish difficulty, grant rights, or promote records.');
