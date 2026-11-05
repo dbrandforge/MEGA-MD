@@ -32,5 +32,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Report current live Trivia bank coverage (baseline)
+        run: npm run trivia:audit
+        continue-on-error: true
       - name: Validate candidate inventory
         run: npm run trivia:candidates:audit
