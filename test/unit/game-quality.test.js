@@ -60,7 +60,10 @@ describe('game quality foundations', () => {
     for (const category of ['nollywood', 'hollywood', 'bollywood', 'animation', 'series']) {
       expect(report.categories[category].meetsTarget).toBe(true);
     }
-    expect(report.categories.general.meetsTarget).toBe(true);
+    expect(report.categories).not.toHaveProperty('general');
+    expect(report.categories).not.toHaveProperty('sports');
+    expect(report.categories).not.toHaveProperty('everyday');
+    expect(report.categories).not.toHaveProperty('tech');
     expect(Object.keys(TRIVIA_CATEGORY_POOLS).sort()).toEqual(
       TRIVIA_CATEGORIES.filter(category => category !== 'mixed').sort()
     );
