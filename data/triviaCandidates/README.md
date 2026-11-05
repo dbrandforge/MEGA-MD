@@ -13,7 +13,7 @@ Imported records are staging material only. They must be fact-checked, checked f
 
 ## Staged candidate batches (not live questions)
 
-The first intake batches contain **12,179 review-only candidate records** across these source pools:
+The first intake batches contain **11,179 review-only candidate records confirmed in committed JSONL files** across these source pools:
 
 | Candidate pool | Staged | Proposed use |
 |---|---:|---|
@@ -51,7 +51,7 @@ A third review-only batch adds **6,493 more records**:
 | For kids | 591 | Unclassified |
 | Brain teasers | 160 | Unclassified |
 
-The staged inventory now totals **18,672 candidate records** across the three batches. This is a raw review inventory, not the approved bank. Some sources overlap; global duplicate detection and editorial classification are required before promotion. Every record remains ungraded and excluded from live gameplay.
+The committed JSONL files verified in the repository total **17,672 candidate records** across the available batches. The previously listed 1,000-record Television file is not present at the documented path and is excluded from this verified total until its file is recovered or regenerated. This is a raw review inventory, not the approved bank. Some sources overlap; global duplicate detection and editorial classification are required before promotion. Every record remains ungraded and excluded from live gameplay.
 
 ## Candidate audit commands
 
