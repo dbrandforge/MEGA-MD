@@ -45,4 +45,4 @@ jobs:
       - name: Run unit regression tests
         run: npm run test:unit
       - name: Enforce approved Trivia bank coverage
-        run: npm run trivia:audit
+        run: npm run trivia:audit:release
