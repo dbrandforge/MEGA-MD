@@ -172,7 +172,7 @@ describe('game quality foundations', () => {
     expect(getTriviaQuestionCount('forge', 'expert')).toBe(50);
     expect(getTriviaQuestionCount('music')).toBeGreaterThanOrEqual(70);
     expect(getTriviaQuestionCount('music', 'easy')).toBeGreaterThanOrEqual(50);
-    expect(getTriviaQuestionCount('music', 'normal')).toBeGreaterThanOrEqual(16);
+    expect(getTriviaQuestionCount('music', 'normal')).toBeGreaterThanOrEqual(50);
     expect(getTriviaQuestionCount('nigeria')).toBe(71);
     expect(getTriviaQuestionCount('current-affairs', 'hard')).toBe(1);
     expect(getTriviaQuestionCount('football', 'hard')).toBeGreaterThan(0);
