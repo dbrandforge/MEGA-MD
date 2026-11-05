@@ -3,6 +3,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { auditTriviaCandidates } from '../lib/triviaCandidateAudit.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../data/triviaCandidates');
 const normalize = value => String(value ?? '').normalize('NFKC')
@@ -41,6 +42,13 @@ for (const file of files) {
       continue;
     }
     total++;
+    const metadataAudit = auditTriviaCandidates([question]);
+    for (const finding of metadataAudit.errors.filter(item =>
+      item.includes('candidate must remain ungraded') ||
+      item.includes('not marked for editorial review') ||
+      item.includes('source attribution and license are required')
+    )) errors.push(label + ': ' + finding);
+
     const source = question.sourceCategory || 'unclassified-source';
     const proposal = question.proposedCategory || 'needs-category-review';
     bySource[source] = (bySource[source] || 0) + 1;
