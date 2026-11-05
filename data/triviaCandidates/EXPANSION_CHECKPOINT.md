@@ -20,8 +20,8 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current live-bank baseline
 
-- 150 questions in `data/nigeriaTrivia.js`
-- 150 unique IDs
+- 152 questions in `data/nigeriaTrivia.js`
+- 152 unique IDs
 - 78 category/difficulty combinations below the 25-question initial-release grade target across the 20 player-selectable pools
 - The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
 - Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
@@ -35,7 +35,7 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 | Movies aggregate | 23 | 6 | 7 | 5 | 5 |
 | Lifestyle | 11 | 5 | 2 | 2 | 2 |
 | Geography | 20 | 7 | 11 | 1 | 1 |
-| History | 16 | 2 | 5 | 4 | 5 |
+| History | 18 | 2 | 5 | 5 | 6 |
 | Culture | 10 | 4 | 4 | 1 | 1 |
 | Food | 9 | 4 | 3 | 1 | 1 |
 | Technology | 6 | 2 | 2 | 1 | 1 |
@@ -43,7 +43,7 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 | Science | 12 | 3 | 3 | 3 | 3 |
 | Gaming | 4 | 1 | 1 | 1 | 1 |
 | Literature | 4 | 1 | 1 | 1 | 1 |
-| Nigeria | 69 | 28 | 35 | 3 | 3 |
+| Nigeria | 71 | 28 | 35 | 4 | 4 |
 | Nollywood | 6 | 2 | 2 | 1 | 1 |
 | Hollywood | 4 | 1 | 1 | 1 | 1 |
 | Bollywood | 4 | 1 | 1 | 1 | 1 |
@@ -76,6 +76,10 @@ Two original, source-linked Nigeria history questions were added (`fx016`–`fx0
 ## Sixth approved content batch
 
 Four original, source-linked Science questions were added (`fx018`–`fx021`), one at each difficulty. They cover iron’s atomic number, the estimated age of the universe, electron capacity in a p subshell, and the Pauli exclusion principle. Sources are the Royal Society of Chemistry, NASA, NIST and OpenStax. The Science pool now has 12 approved questions, evenly distributed at three per difficulty; it remains below the 25-per-grade target.
+
+## Seventh approved content batch
+
+Two original, source-linked Nigeria history questions were added (`fx022`–`fx023`), one Hard and one Expert. They cover the First Republic presidency of Dr. Nnamdi Azikiwe and Professor Kenneth Onwuka Dike’s status as the first Nigerian Vice-Chancellor of the University College Ibadan. Sources are the State House and University of Ibadan. The Nigeria pool now has 71 approved questions, including four Hard and four Expert entries; both grades remain below the 25-question target.
 
 ## Staged candidate inventory
 
