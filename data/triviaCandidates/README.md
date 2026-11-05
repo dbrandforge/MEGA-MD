@@ -13,14 +13,14 @@ Imported records are staging material only. They must be fact-checked, checked f
 
 ## Staged candidate batches (not live questions)
 
-The first intake batches contain **11,179 review-only candidate records confirmed in committed JSONL files** across these source pools:
+The first intake batches contain **12,175 review-only candidate records confirmed in committed JSONL files** across these source pools:
 
 | Candidate pool | Staged | Proposed use |
 |---|---:|---|
 | Music | 1,000 | Music |
-| Movies | 1,000 | Movies |
+| Movies | 996 | Movies |
 | Television | 1,000 | Series |
-| Geography | 777 | Geography |
+| Television | 1,000 | Series |\n| Geography | 777 | Geography |
 | History | 1,000 | History |
 | Literature | 1,000 | Literature |
 | Hobbies | 1,000 | Lifestyle |
@@ -37,21 +37,21 @@ The music batch excludes obvious lyric-fragment and multi-line entries. This is 
 
 ## Additional candidate intake batch
 
-A third review-only batch adds **6,493 more records**:
+A third review-only batch adds **6,478 more records after duplicate cleanup**:
 
 | Candidate pool | Staged | Proposed use |
 |---|---:|---|
 | Animals | 1,000 | Science |
 | Celebrities | 1,000 | Unclassified |
 | Sports | 1,000 | Unclassified; not all are association football |
-| Newest | 1,000 | Unclassified; not automatically current affairs |
+| Newest | 999 | Unclassified; not automatically current affairs |
 | Rated | 1,000 | Unclassified |
 | Religion & faith | 520 | Culture |
-| Entertainment | 222 | Unclassified |
-| For kids | 591 | Unclassified |
-| Brain teasers | 160 | Unclassified |
+| Entertainment | 221 | Unclassified |
+| For kids | 584 | Unclassified |
+| Brain teasers | 154 | Unclassified |
 
-The committed JSONL files verified in the repository total **17,672 candidate records** across the available batches. The Television source file is not present at the documented path, so there is currently no verified staged Series pool. Recover or regenerate that source before counting it toward Series coverage. This is a raw review inventory, not the approved bank. Some sources overlap; global duplicate detection and editorial classification are required before promotion. Every record remains ungraded and excluded from live gameplay.
+The committed JSONL files verified in the repository total **18,653 candidate records** across the available batches. The Television source file is present in the committed candidate inventory and provides a 1,000-record review-only Series pool. This is a raw review inventory, not the approved bank. Some sources overlap; global duplicate detection and editorial classification are required before promotion. Every record remains ungraded and excluded from live gameplay.
 
 ## Candidate audit commands
 
@@ -69,3 +69,8 @@ The importer fetch list is unique by source category; duplicate entries previous
 - Some imported text shows possible mojibake/encoding corruption; the candidate audit flags suspicious characters.
 - The `newest` pool contains historical ranking claims and outdated monetary/grossing figures. These must be independently re-sourced, date-anchored or rejected rather than treated as current facts.
 - No automated difficulty assignment or source-category-to-live-category promotion is permitted.
+
+
+## Duplicate cleanup and quarantine
+
+The automated cross-file audit initially found 21 duplicate question stems. Seventeen duplicate rows were removed from the staged candidate files. Four remaining video-game prompts overlap with the Entertainment pool and are explicitly quarantined by candidate ID (`otqa-video-games-0031`, `otqa-video-games-0055`, `otqa-video-games-0056`, `otqa-video-games-0129`). They remain visible for provenance but are not eligible for promotion. The audit fails if any unquarantined duplicate appears or if a quarantine entry becomes stale.
