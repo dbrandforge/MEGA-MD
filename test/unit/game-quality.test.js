@@ -163,9 +163,9 @@ describe('game quality foundations', () => {
     expect(new Set(NIGERIA_TRIVIA.map(q => q.id)).size).toBe(NIGERIA_TRIVIA.length);
     expect(TRIVIA_CATEGORIES).toContain('current-affairs');
     expect(getTriviaQuestionCount('all')).toBe(NIGERIA_TRIVIA.length);
-    expect(getTriviaQuestionCount('current-affairs')).toBe(3);
+    expect(getTriviaQuestionCount('current-affairs')).toBe(7);
     expect(getTriviaQuestionCount('nigeria')).toBe(63);
-    expect(getTriviaQuestionCount('current-affairs', 'hard')).toBe(0);
+    expect(getTriviaQuestionCount('current-affairs', 'hard')).toBe(1);
     expect(getTriviaQuestionCount('football', 'hard')).toBeGreaterThan(0);
     expect(getTriviaQuestionCount('football', 'expert')).toBeGreaterThan(0);
     expect(getTriviaQuestionCount('movies', 'expert')).toBeGreaterThan(0);
