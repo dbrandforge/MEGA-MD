@@ -20,8 +20,8 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current live-bank baseline
 
-- 290 questions in `data/nigeriaTrivia.js`
-- 290 unique IDs
+- 300 questions in `data/nigeriaTrivia.js`
+- 300 unique IDs
 - 83 category/difficulty combinations below the 50-question first-cycle grade target across the 21 player-selectable pools
 - The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
 - Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
@@ -50,7 +50,7 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 | Animation | 4 | 1 | 1 | 1 | 1 |
 | Series | 4 | 1 | 1 | 1 | 1 |
 | Current Affairs | 7 | 3 | 2 | 1 | 1 |
-| Forge | 122 | 50 | 50 | 21 | 1 |
+| Forge | 132 | 50 | 50 | 31 | 1 |
 
 The audit scope is aligned to the 21 actual player-facing category choices in the Trivia menu. Hidden legacy aliases (sports, everyday, tech) and the unadvertised empty general mode are not separate coverage targets. The Forge pool is a dedicated cross-disciplinary session for branding, creative direction, design, marketing, content strategy and entrepreneurship. Its Easy grade is now complete at 50 questions; Normal, Hard and Expert each have one question and remain to be expanded. The command aliases still route sports to Football, everyday to Lifestyle, and tech to Technology; general is rejected.
 
@@ -259,3 +259,8 @@ Ten source-linked questions (`fg103`–`fg112`) begin Forge Hard at 11/50. They 
 ### Forge Hard — second content batch
 
 Ten source-linked questions (`fg113`–`fg122`) bring Forge Hard to 21/50. They test the difference between brand choice and premium, the role of distinctive value, channel-budget ROI, value-proposition alignment across channels, phased marketing-plan execution, audience segmentation, KPI selection and cross-functional marketing alignment. Sources include NIQ and the American Marketing Association.
+
+
+### Forge Hard — third content batch
+
+Ten NIQ-sourced questions (`fg123`–`fg132`) bring Forge Hard to 31/50. They apply the brand-capsule evaluation framework: strategic hypotheses, distinctiveness, consumer connection, mental availability, accessibility, everyday relevance, trial versus repeat, limits of awareness metrics and brand-equity dimensions. Source: NIQ Brand Health.
