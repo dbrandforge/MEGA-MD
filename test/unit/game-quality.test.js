@@ -28,7 +28,7 @@ describe('game quality foundations', () => {
   it('enforces 1,000 unique questions per Trivia category with 250 per grade', () => {
     const questions = [];
     let id = 0;
-    for (const category of ['music', 'sports', 'nollywood', 'everyday', 'geography', 'history', 'culture', 'food', 'tech', 'business', 'science', 'gaming', 'literature', 'general', 'hollywood', 'bollywood', 'animation', 'series', 'current-affairs']) {
+    for (const category of ['music', 'sports', 'nollywood', 'everyday', 'geography', 'history', 'culture', 'food', 'tech', 'business', 'science', 'gaming', 'literature', 'hollywood', 'bollywood', 'animation', 'series', 'current-affairs']) {
       for (const difficulty of ['easy', 'normal', 'hard', 'expert']) {
         for (let n = 0; n < 250; n++) {
           id += 1;
