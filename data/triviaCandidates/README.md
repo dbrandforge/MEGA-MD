@@ -52,3 +52,11 @@ A third review-only batch adds **6,493 more records**:
 | Brain teasers | 160 | Unclassified |
 
 The staged inventory now totals **18,672 candidate records** across the three batches. This is a raw review inventory, not the approved bank. Some sources overlap; global duplicate detection and editorial classification are required before promotion. Every record remains ungraded and excluded from live gameplay.
+
+## Candidate audit commands
+
+Run `npm run trivia:candidates:audit` to scan every staged JSONL file for malformed records, missing or duplicate IDs, duplicate question wording across files, invalid four-option answer structures, missing category proposals and ungraded records. The command is read-only and intentionally does not approve, grade or promote candidates.
+
+Run `npm run trivia:audit` to audit the actual live `NIGERIA_TRIVIA` bank against the selectable category and difficulty coverage requirements. Candidate inventory totals must never be reported as live playable coverage.
+
+The importer fetch list is unique by source category; duplicate entries previously caused redundant source requests and misleading repeated per-pool logs.
