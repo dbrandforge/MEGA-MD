@@ -42,7 +42,7 @@ describe('game quality foundations', () => {
       }
     }
     for (const difficulty of ['easy', 'normal', 'hard', 'expert']) {
-      for (let n = 0; n < 25; n++) {
+      for (let n = 0; n < 50; n++) {
         id += 1;
         questions.push({
           id: `synthetic-${id}`, category: 'geography', difficulty,
