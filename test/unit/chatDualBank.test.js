@@ -6,6 +6,7 @@ import {
 import { classifyIntent } from '../../data/chatbotResponseLibrary.js';
 import { pickDualReply, getDualBankStats } from '../../data/chatDual/dualBankSelector.js';
 import firstSexAdviceModule from '../../data/chatDual/ev_0_0.js';
+import secondSexAdviceModule from '../../data/chatDual/ev_0_1.js';
 
 describe('ChatDual expansion bank', () => {
   it('reports complete and exact 5,183-pair expansion', () => {
@@ -22,12 +23,14 @@ describe('ChatDual expansion bank', () => {
     });
   });
 
-  it('keeps the rewritten first sex-advice module at 182 rows with 182 distinct responses', () => {
-    const rows = firstSexAdviceModule.sexAdvice;
-    expect(rows).toHaveLength(182);
-    expect(new Set(rows.map(row => row.a)).size).toBe(182);
-    expect(new Set(rows.map(row => row.b)).size).toBe(182);
-    expect(rows.every(row => typeof row.a === 'string' && typeof row.b === 'string')).toBe(true);
+  it('keeps both rewritten sex-advice modules at 182 rows with 182 distinct responses per side', () => {
+    for (const module of [firstSexAdviceModule, secondSexAdviceModule]) {
+      const rows = module.sexAdvice;
+      expect(rows).toHaveLength(182);
+      expect(new Set(rows.map(row => row.a)).size).toBe(182);
+      expect(new Set(rows.map(row => row.b)).size).toBe(182);
+      expect(rows.every(row => typeof row.a === 'string' && typeof row.b === 'string')).toBe(true);
+    }
   });
 
   it('routes classified relationship, friendship, work-life and advice prompts', () => {
