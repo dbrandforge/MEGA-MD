@@ -325,3 +325,8 @@ Next: complete Music Normal to 50 before starting Music Hard; then Expert. Run t
 ## Twelfth approved content batch — Music Normal underway
 
 Ten original, source-linked Music Normal questions (mx047–mx056) were added on 2026-11-05. Topics include Whitney Houston, Bob Dylan, the Fugees and Lauryn Hill, Madonna, and Miles Davis. Music now has 70 questions: Easy 50, Normal 16 (including four legacy `medium` entries normalized to Normal), Hard 2 and Expert 2. The first CI run exposed stale exact-count assertions in test/unit/game-quality.test.js (the test still expected the pre-expansion Music total of 44 and Easy count of 34); these assertions were changed to forward-compatible minimum coverage checks. The question-bank quality audit and test suite must be rerun against the latest branch head before this batch is treated as verified. Latest content commit: 43c0ff8286135bebf8064f179373499fafcab997. Test correction commit: f1069c95381b0458f418e79a75fd8b9de6e7eea9.
+
+
+## Thirteenth approved content batch — Music Normal progress
+
+Ten additional source-linked Music Normal questions (mx057–mx066) were added on 2026-11-05, covering Whitney Houston’s chart milestones, Bob Dylan’s early recordings, Madonna’s singles and GRAMMY history, Miles Davis’s albums, and Lauryn Hill’s 1999 GRAMMY achievements. Music Normal now has 26/50 questions; 24 remain before moving to Hard. Current counts: Easy 50, Normal 26, Hard 2, Expert 2 (80 total). The editorial duplicate check on the Music pool currently reports unique IDs and unique normalized question stems across all 80 records. The CI run for the regression correction is still in progress at the time of this checkpoint; no merge or deployment has occurred.
