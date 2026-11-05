@@ -20,9 +20,9 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current live-bank baseline
 
-- 144 questions in `data/nigeriaTrivia.js`
-- 144 unique IDs
-- 80 category/difficulty combinations below the 25-question initial-release grade target across the 20 player-selectable pools
+- 146 questions in `data/nigeriaTrivia.js`
+- 146 unique IDs
+- 78 category/difficulty combinations below the 25-question initial-release grade target across the 20 player-selectable pools
 - The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
 - Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
 
@@ -35,7 +35,7 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 | Movies aggregate | 23 | 6 | 7 | 5 | 5 |
 | Lifestyle | 11 | 5 | 2 | 2 | 2 |
 | Geography | 20 | 7 | 11 | 1 | 1 |
-| History | 14 | 2 | 5 | 3 | 4 |
+| History | 16 | 2 | 5 | 4 | 5 |
 | Culture | 10 | 4 | 4 | 1 | 1 |
 | Food | 9 | 4 | 3 | 1 | 1 |
 | Technology | 6 | 2 | 2 | 1 | 1 |
@@ -43,7 +43,7 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 | Science | 8 | 2 | 2 | 2 | 2 |
 | Gaming | 4 | 1 | 1 | 1 | 1 |
 | Literature | 4 | 1 | 1 | 1 | 1 |
-| Nigeria | 67 | 28 | 35 | 2 | 2 |
+| Nigeria | 69 | 28 | 35 | 3 | 3 |
 | Nollywood | 6 | 2 | 2 | 1 | 1 |
 | Hollywood | 4 | 1 | 1 | 1 | 1 |
 | Bollywood | 4 | 1 | 1 | 1 | 1 |
@@ -68,6 +68,10 @@ Four original, source-linked Nigeria history questions were added (`fx009`–`fx
 ## Fourth approved content batch
 
 Three original, source-linked questions were added (`fx013`–`fx015`), filling the first missing difficulty slots in Bollywood (Expert), Animation (Easy), and Series (Expert). Sources are the Academy of Motion Picture Arts and Sciences, Studio Ghibli, and Apple TV episode listing. These additions also raise the Movies aggregate pool to 23. Each question has a review date and a source URL; all three remain far below the 25-per-grade release target.
+
+## Fifth approved content batch
+
+Two original, source-linked Nigeria history questions were added (`fx016`–`fx017`), one Hard and one Expert. They cover the West African Currency Board’s role before the CBN began issuing Nigerian currency, and the 1962 banknote inscription change reflecting Nigeria’s republican status. Both use Central Bank of Nigeria historical references and carry a review date. The Nigeria pool now has 69 approved questions, with three Hard and three Expert entries; these grades remain below the 25-question target.
 
 ## Staged candidate inventory
 
@@ -149,7 +153,7 @@ Latest verified branch checks:
 - Candidate quality gate: **passed**
 - Forge Bot unit tests: **passed** (includes currency-symbol regression test and the corrected category registry)
 - Forge Guard integration tests: **passed**
-- Trivia unit/regression tests: **passed**
+- Trivia and game unit regression suite: **passed** (115 unit tests); the separate live-bank coverage audit **fails as intended** with 78 category/grade deficits
 - Blocking live-bank coverage audit: **failed as intended**; the 20 selectable pools remain below 100 total / 25 per grade
 - No candidate records promoted into the live bank
 - No merge or deployment performed
