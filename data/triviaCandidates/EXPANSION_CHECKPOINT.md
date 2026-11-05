@@ -20,9 +20,9 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current live-bank baseline
 
-- 168 questions in `data/nigeriaTrivia.js`
-- 168 unique IDs
-- 78 category/difficulty combinations below the 25-question initial-release grade target across the 20 player-selectable pools
+- 172 questions in `data/nigeriaTrivia.js`
+- 172 unique IDs
+- 82 category/difficulty combinations below the 25-question initial-release grade target across the 21 player-selectable pools
 - The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
 - Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
 
@@ -50,8 +50,9 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 | Animation | 4 | 1 | 1 | 1 | 1 |
 | Series | 4 | 1 | 1 | 1 | 1 |
 | Current Affairs | 7 | 3 | 2 | 1 | 1 |
+| Forge | 4 | 1 | 1 | 1 | 1 |
 
-The audit scope is aligned to the 20 actual player-facing category choices in the Trivia menu. Hidden legacy aliases (sports, everyday, tech) and the unadvertised empty general mode are not separate coverage targets. The command aliases still route sports to Football, everyday to Lifestyle, and tech to Technology; general is rejected.
+The audit scope is aligned to the 21 actual player-facing category choices in the Trivia menu. Hidden legacy aliases (sports, everyday, tech) and the unadvertised empty general mode are not separate coverage targets. The new Forge pool is a dedicated cross-disciplinary session for branding, creative direction, design, marketing, content strategy and entrepreneurship. It currently has four starter questions, one per grade, and remains below the 25-per-grade release threshold. The command aliases still route sports to Football, everyday to Lifestyle, and tech to Technology; general is rejected.
 
 ## First approved content batch
 
@@ -193,3 +194,8 @@ Useful commands:
 ## Recovery after an app interruption
 
 Resume from this file and PR #87. The GitHub branch contains the committed work; reopening ChatGPT is not required to preserve it. Do not restart the audit from scratch and do not deploy this draft.
+
+
+## Tenth approved content batch — Forge session
+
+Four original, source-linked questions (`fg001`–`fg004`) establish the new dedicated **Forge** Trivia category. The starter set covers the AMA definition of a brand, brand identity elements, brand positioning, and the four components of a useful positioning statement. Sources are the American Marketing Association and NielsenIQ. One question is present at each difficulty. The session is now routable as `.trivia forge` and `.trivia forge expert`; the content bank will continue expanding across branding, creative direction, design, marketing, content strategy and entrepreneurship. This new pool is not yet at the 25-per-grade release target.
