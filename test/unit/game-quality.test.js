@@ -57,6 +57,18 @@ describe('game quality foundations', () => {
     });
   });
 
+  it('accepts distinct currency-symbol answer options', () => {
+    const report = auditTriviaBank([{
+      id: 'currency-symbol-options',
+      category: 'geography',
+      difficulty: 'easy',
+      question: 'What symbol represents the Nigerian naira?',
+      options: ['₦', '₵', '₡', '£'],
+      answer: 0
+    }]);
+    expect(report.errors.some(error => error.includes('options must be non-empty and unique'))).toBe(false);
+  });
+
   it('flags duplicate IDs, duplicate wording, malformed choices and ungraded questions', () => {
     const broken = [
       { id: 'dup', category: 'music', difficulty: 'easy', question: 'Same question?', options: ['A', 'B', 'C', 'D'], answer: 0 },
