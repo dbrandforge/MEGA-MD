@@ -22,7 +22,7 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 - 221 questions in `data/nigeriaTrivia.js`
 - 221 unique IDs
-- 84 category/difficulty combinations below the 50-question first-cycle grade target across the 21 player-selectable pools
+- 83 category/difficulty combinations below the 50-question first-cycle grade target across the 21 player-selectable pools
 - The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
 - Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
 
@@ -170,7 +170,7 @@ Latest verified branch checks (Forge session included):
 - Candidate quality gate: **passed**
 - Forge Bot unit tests: **passed** (includes currency-symbol regression test and the corrected category registry)
 - Forge Guard integration tests: **passed**
-- Trivia and game unit regression suite: **passed** (134 unit tests); the separate live-bank coverage audit **fails as intended** with 84 category/grade deficits
+- Trivia and game unit regression suite: **passed** (134 unit tests); the separate live-bank coverage audit **fails as intended** with 83 category/grade deficits
 - Blocking live-bank coverage audit: **failed as intended**; the 21 selectable pools remain below 200 total / 50 per grade
 - No candidate records promoted into the live bank
 - No merge or deployment performed
