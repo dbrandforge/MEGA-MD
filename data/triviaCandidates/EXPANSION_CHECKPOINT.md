@@ -20,8 +20,8 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current live-bank baseline
 
-- 368 questions in `data/nigeriaTrivia.js`
-- 368 unique IDs
+- 378 questions in `data/nigeriaTrivia.js`
+- 378 unique IDs
 - 83 category/difficulty combinations below the 50-question first-cycle grade target across the 21 player-selectable pools
 - The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
 - Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
@@ -30,7 +30,7 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 
 | Selectable pool | Live questions | Easy | Normal | Hard | Expert |
 |---|---:|---:|---:|---:|---:|
-| Music | 14 | 4 | 6 | 2 | 2 |
+| Music | 24 | 14 | 6 | 2 | 2 |
 | Football | 14 | 4 | 6 | 2 | 2 |
 | Movies aggregate | 23 | 6 | 7 | 5 | 5 |
 | Lifestyle | 11 | 5 | 2 | 2 | 2 |
@@ -303,3 +303,8 @@ Nine scenario questions (`fg192`–`fg200`) complete Forge Expert at **50/50**. 
 ## Forge category — first 50-question cycle complete
 
 **Forge is now complete at 200 approved, unique questions: Easy 50, Normal 50, Hard 50 and Expert 50.** This completes the first category under the new sequential 50-question process. The next category in the sequence is Music, beginning with Easy 50. No other category has been re-ordered or modified by this process.
+
+
+## Music Easy — first content batch
+
+Ten source-linked questions (`mx001`–`mx010`) bring Music Easy from 4/50 to 14/50. The batch covers GRAMMY wins by Tems, Tyla, Matt B, Angélique Kidjo and Masa Takumi, plus Rock & Roll Hall of Fame inductions for Fela Kuti, OutKast and Sade. Sources are the Recording Academy and Rock & Roll Hall of Fame.
