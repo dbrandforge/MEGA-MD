@@ -330,3 +330,8 @@ Ten original, source-linked Music Normal questions (mx047–mx056) were added on
 ## Thirteenth approved content batch — Music Normal progress
 
 Ten additional source-linked Music Normal questions (mx057–mx066) were added on 2026-11-05, covering Whitney Houston’s chart milestones, Bob Dylan’s early recordings, Madonna’s singles and GRAMMY history, Miles Davis’s albums, and Lauryn Hill’s 1999 GRAMMY achievements. Music Normal now has 26/50 questions; 24 remain before moving to Hard. Current counts: Easy 50, Normal 26, Hard 2, Expert 2 (80 total). The editorial duplicate check on the Music pool currently reports unique IDs and unique normalized question stems across all 80 records. The CI run for the regression correction is still in progress at the time of this checkpoint; no merge or deployment has occurred.
+
+
+## Fourteenth approved content batch — Music Normal progress
+
+Ten additional source-linked Music Normal questions (mx067–mx076) were added on 2026-11-05. Topics include Whitney Houston’s album and GRAMMY milestones, Bob Dylan’s Blonde on Blonde, the Fugees and Lauryn Hill, Madonna’s early albums, and Miles Davis’s legacy. Music Normal now has 36/50 questions; 14 remain before moving to Hard. Current Music counts: Easy 50, Normal 36, Hard 2, Expert 2 (90 total). The earlier CI run confirmed the corrected unit suite passed (134 tests), integration passed, and candidate audit passed; the composite trivia regression job remains red by design because the live-bank coverage gate still reports dozens of incomplete category/grade pools. A fresh run for the latest content commit is in progress. No merge or production deployment has occurred.
