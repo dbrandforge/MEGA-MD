@@ -14,6 +14,7 @@ const wording = new Map();
 const bySource = {};
 const byProposal = {};
 const errors = [];
+const reviewFlags = [];
 let total = 0;
 let ungraded = 0;
 let invalidOptions = 0;
@@ -60,19 +61,38 @@ for (const file of files) {
       invalidOptions++;
       errors.push(`${label}: requires four distinct non-empty options and answer index 0–3`);
     }
-    if (!question.proposedCategory) missingCategory++;
-    if (!question.difficulty) ungraded++;
+    if (!question.proposedCategory) {
+      missingCategory++;
+      reviewFlags.push(`${label}: category not assigned; inspect content rather than trusting source pool`);
+    }
+    if (!question.difficulty) {
+      ungraded++;
+      reviewFlags.push(`${label}: difficulty not assigned`);
+    }
+    if (/[ÃÂâ€]|�/.test(question.question || '') ||
+        options.some(option => /[ÃÂâ€]|�/.test(String(option)))) {
+      reviewFlags.push(`${label}: possible character-encoding corruption`);
+    }
+    if (String(question.question || '').trim().length < 24) {
+      reviewFlags.push(`${label}: unusually short stem; check whether it is a complete question`);
+    }
+    if (!/[?]/.test(question.question || '')) {
+      reviewFlags.push(`${label}: stem has no question mark; check clarity and whether it is a usable prompt`);
+    }
+    if (/highest[- ]grossing|#\\s?\\d+ on the list|this year|current record|latest record/i.test(question.question || '')) {
+      reviewFlags.push(`${label}: potentially time-sensitive or ranking-dependent fact; verify and date-anchor`);
+    }
   }
 }
 
 console.log(`Trivia candidate audit: ${total} records across ${files.length} JSONL files`);
 console.log(`Unique IDs: ${ids.size} | Duplicate wording: ${duplicateWording} | Ungraded: ${ungraded}`);
-console.log(`Records needing category review: ${missingCategory} | Invalid option/answer structures: ${invalidOptions}`);
+console.log(`Records needing category review: ${missingCategory} | Invalid option/answer structures: ${invalidOptions}`);\nconsole.log(`Editorial review flags: ${reviewFlags.length}`);
 console.log('\nBy source pool:');
 for (const [name, count] of Object.entries(bySource).sort()) console.log(`- ${name}: ${count}`);
 console.log('\nBy proposed live category:');
 for (const [name, count] of Object.entries(byProposal).sort()) console.log(`- ${name}: ${count}`);
-if (errors.length) {
+if (reviewFlags.length) {\n  console.log('\\nEditorial review flags (first 100):');\n  for (const flag of reviewFlags.slice(0, 100)) console.log(`- ${flag}`);\n  if (reviewFlags.length > 100) console.log(`- ... ${reviewFlags.length - 100} additional flags omitted`);\n}\nif (errors.length) {
   console.error(`\nCandidate integrity findings: ${errors.length}`);
   for (const error of errors.slice(0, 100)) console.error(`- ${error}`);
   if (errors.length > 100) console.error(`- ... ${errors.length - 100} additional findings omitted`);
