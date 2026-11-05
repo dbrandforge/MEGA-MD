@@ -20,6 +20,7 @@ The first intake batches contain **12,175 review-only candidate records confirme
 | Music | 1,000 | Music |
 | Movies | 996 | Movies |
 | Television | 1,000 | Series |
+| Geography | 777 | Geography |
 | History | 1,000 | History |
 | Literature | 1,000 | Literature |
 | Hobbies | 1,000 | Lifestyle |
