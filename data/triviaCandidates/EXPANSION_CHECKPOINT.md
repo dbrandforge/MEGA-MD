@@ -20,8 +20,8 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current live-bank baseline
 
-- 240 questions in `data/nigeriaTrivia.js`
-- 240 unique IDs
+- 250 questions in `data/nigeriaTrivia.js`
+- 250 unique IDs
 - 83 category/difficulty combinations below the 50-question first-cycle grade target across the 21 player-selectable pools
 - The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
 - Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
@@ -50,7 +50,7 @@ Selected live pool counts (categories overlap through aliases and the Nigeria su
 | Animation | 4 | 1 | 1 | 1 | 1 |
 | Series | 4 | 1 | 1 | 1 | 1 |
 | Current Affairs | 7 | 3 | 2 | 1 | 1 |
-| Forge | 72 | 50 | 20 | 1 | 1 |
+| Forge | 82 | 50 | 30 | 1 | 1 |
 
 The audit scope is aligned to the 21 actual player-facing category choices in the Trivia menu. Hidden legacy aliases (sports, everyday, tech) and the unadvertised empty general mode are not separate coverage targets. The Forge pool is a dedicated cross-disciplinary session for branding, creative direction, design, marketing, content strategy and entrepreneurship. Its Easy grade is now complete at 50 questions; Normal, Hard and Expert each have one question and remain to be expanded. The command aliases still route sports to Football, everyday to Lifestyle, and tech to Technology; general is rejected.
 
@@ -234,3 +234,8 @@ Nine original, source-linked questions (`fg054`–`fg062`) begin the Normal grad
 ### Forge Normal — second content batch
 
 Ten original, source-linked questions (`fg063`–`fg072`) bring Forge Normal to 20/50. They cover the distinction between brand strategy and identity, non-visual identity assets, distinctive brand cues, voice consistency, audience insight quality, evidence for claims, competitive framing, deliverability and positioning versus slogans. Sources include the American Advertising and Marketing Association.
+
+
+### Forge Normal — third content batch
+
+Ten source-linked questions (`fg073`–`fg082`) bring Forge Normal to 30/50. This batch covers WCAG contrast and text resizing, accessible heading structure, crawlable links, competitive framing, copyright versus ideas, patents, international brand-name checks and positioning credibility. Sources include W3C, Google Search Central, Google developer documentation, the U.S. Copyright Office, USPTO, WIPO and the AAMA positioning framework.
