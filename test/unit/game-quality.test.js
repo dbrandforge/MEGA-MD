@@ -178,6 +178,19 @@ describe('game quality foundations', () => {
     }
   });
 
+  it('does not advertise empty Trivia categories as playable choices', () => {
+    const advertised = [
+      'music', 'football', 'movies', 'lifestyle', 'geography', 'history',
+      'culture', 'food', 'technology', 'business', 'science', 'gaming',
+      'literature', 'nigeria', 'nollywood', 'hollywood', 'bollywood',
+      'animation', 'series', 'current-affairs'
+    ];
+    for (const category of advertised) {
+      expect(getTriviaQuestionCount(category), category).toBeGreaterThan(0);
+    }
+    expect(getTriviaQuestionCount('general')).toBe(0);
+  });
+
   it('supports worldwide categories, four grades and never returns a used question', () => {
     expect(['music','football','movies','science','technology','gaming','literature']).toEqual(
       expect.arrayContaining(TRIVIA_CATEGORIES.filter(value => ['music','football','movies','science','technology','gaming','literature'].includes(value)))
