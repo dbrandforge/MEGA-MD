@@ -17,7 +17,7 @@ const CATEGORY_ALIASES = {
   lifestyle: ['everyday', 'lifestyle'], technology: ['tech', 'technology'],
   nigeria: ['nigeria'], music: ['music'], geography: ['geography'],
   history: ['history'], culture: ['culture'], food: ['food'], business: ['business'],
-  science: ['science'], gaming: ['gaming'], literature: ['literature'], general: ['general'],
+  science: ['science'], gaming: ['gaming'], literature: ['literature'],
   'current-affairs': ['current-affairs']
 };
 const DIFFICULTIES = ['easy', 'normal', 'hard', 'expert'];
