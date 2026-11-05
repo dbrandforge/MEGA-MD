@@ -149,6 +149,9 @@ export const NIGERIA_TRIVIA = [
   { id:'fx013', category:'bollywood', difficulty:'expert', question:'Which Indian film became the first Indian production nominated for the Academy Award for Best Foreign Language Film?', options:['Mother India','Pather Panchali','Mughal-e-Azam','Do Bigha Zamin'], answer:0, reviewedAt:'2026-11-05', source:'https://www.oscars.org/oscars/ceremonies/1958' },
   { id:'fx014', category:'animation', difficulty:'easy', question:'Which Japanese animation studio produced “My Neighbor Totoro”?', options:['Studio Ghibli','Toei Animation','Madhouse','Sunrise'], answer:0, reviewedAt:'2026-11-05', source:'https://www.ghibli.jp/works/totoro/' },
   { id:'fx015', category:'series', difficulty:'expert', question:'What is the title of the series finale of “The Sopranos”?', options:['Made in America','The Blue Comet','Kennedy and Heidi','Long Term Parking'], answer:0, reviewedAt:'2026-11-05', source:'https://tv.apple.com/us/episode/made-in-america/umc.cmc.6i73hkhdbulo6g2vjiho0nnw2?showId=umc.cmc.7fvpbc4pqotnxhpx36c739tyd' }
+
+  { id:'fx016', category:'history', region:'nigeria', difficulty:'hard', question:'Which institution issued banknotes and coins in Nigeria from 1912 until the Central Bank of Nigeria began issuing currency in 1959?', options:['West African Currency Board','Bank of British West Africa','Nigerian Stock Exchange','Colonial Development Corporation'], answer:0, reviewedAt:'2026-11-05', source:'https://www.cbn.gov.ng/currency/historycur.html' },
+  { id:'fx017', category:'history', region:'nigeria', difficulty:'expert', question:'What wording replaced “FEDERATION OF NIGERIA” on Nigerian banknotes in 1962 to reflect the country’s republican status?', options:['FEDERAL REPUBLIC OF NIGERIA','REPUBLIC OF NIGERIA','UNITED STATES OF NIGERIA','SOVEREIGN NIGERIAN REPUBLIC'], answer:0, reviewedAt:'2026-11-05', source:'https://www.cbn.gov.ng/currency/historycur.html' }
 ]; 
 
 export const TRIVIA_CATEGORIES = [
