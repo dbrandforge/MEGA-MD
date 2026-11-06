@@ -4,7 +4,7 @@ Last verified: 2026-11-06
 Repository: `dbrandforge/MEGA-MD`
 Working branch: `geography-easy-batch-01` (stacked on PR #89's Lifestyle completion)
 Previous staged release: PR #88 merged to `main` (commit `5bfa6a15b0dcb822c2aa42760a104d3d85d84c3f`).
-Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current active block: Geography Hard `gh001`–`gh030`; Geography Easy and Normal are complete.
+Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current active block: Geography Hard `gh001`–`gh049`; Geography Easy and Normal are complete.
 
 ## Locked expansion target
 
@@ -682,7 +682,7 @@ Thirty-nine original, source-linked questions (`gn001`–`gn039`) complete Geogr
 
 ## Geography Hard — first content batch
 
-Ten original, source-linked questions (`gh001`–`gh010`) begin Geography Hard. Topics include the Benguela and Humboldt currents, the Volga, Bosporus, Arabian Plate, Afar Triple Junction, Danube Delta, Pacific Ring of Fire, Bab-el-Mandeb and Bass Strait. Sources include Encyclopaedia Britannica, UNESCO and the U.S. Geological Survey. Geography Hard now has 31/50 questions; 19 remain.
+Ten original, source-linked questions (`gh001`–`gh010`) begin Geography Hard. Topics include the Benguela and Humboldt currents, the Volga, Bosporus, Arabian Plate, Afar Triple Junction, Danube Delta, Pacific Ring of Fire, Bab-el-Mandeb and Bass Strait. Sources include Encyclopaedia Britannica, UNESCO and the U.S. Geological Survey. Geography Hard is now complete at 50/50 questions.
 
 
 ## Geography Hard — second content batch
@@ -693,6 +693,11 @@ Ten additional original, source-linked questions (`gh011`–`gh020`) extend Geog
 ## Geography Hard — third content batch
 
 Ten additional original, source-linked questions (`gh021`–`gh030`) extend Geography Hard. Topics include the Nazca Plate and Peru–Chile Trench, Lake Baikal, Kuroshio Current, Danube border, Dardanelles, Gulf of Aqaba, Congo Basin, Somalia, Brazil's latitude range and the Kalahari. Sources include Encyclopaedia Britannica and WWF. Geography Hard now has 31/50 questions; 19 remain.
+
+
+## Geography Hard — grade completed
+
+Forty-nine original, source-linked questions (`gh001`–`gh049`) complete Geography Hard at **50/50**, including one retained existing question. The questions cover ocean currents, tectonic plates and subduction, ocean trenches, mountain systems, inland seas, river basins and deltas, straits, deserts, islands, and regional physical geography. Sources include Encyclopaedia Britannica, UNESCO, WWF and the U.S. Geological Survey. Across the full 50-question grade, correct-answer positions are balanced: 12 at A, 13 at B, 13 at C and 12 at D. Geography Expert is next at 1/50; 49 additional questions are needed.
 
 
 ## Sparse-array regression correction
