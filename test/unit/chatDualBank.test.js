@@ -9,6 +9,7 @@ import firstSexAdviceModule from '../../data/chatDual/ev_0_0.js';
 import secondSexAdviceModule from '../../data/chatDual/ev_0_1.js';
 import thirdSexAdviceModule from '../../data/chatDual/ev_0_2.js';
 import fourthSexAdviceModule from '../../data/chatDual/ev_0_3.js';
+import fifthSexAdviceModule from '../../data/chatDual/ev_1_0.js';
 
 describe('ChatDual expansion bank', () => {
   it('reports complete and exact 5,183-pair expansion', () => {
@@ -25,9 +26,9 @@ describe('ChatDual expansion bank', () => {
     });
   });
 
-  it('checks the preserved row inventory and exact-string uniqueness of the four sex-advice modules', () => {
-    const modules = [firstSexAdviceModule, secondSexAdviceModule, thirdSexAdviceModule, fourthSexAdviceModule];
-    const expectedRows = [182, 182, 182, 181];
+  it('checks the preserved row inventory and exact-string uniqueness of the five sex-advice modules', () => {
+    const modules = [firstSexAdviceModule, secondSexAdviceModule, thirdSexAdviceModule, fourthSexAdviceModule, fifthSexAdviceModule];
+    const expectedRows = [182, 182, 182, 181, 182];
     modules.forEach((module, index) => {
       const rows = module.sexAdvice;
       expect(rows).toHaveLength(expectedRows[index]);
@@ -57,6 +58,16 @@ describe('ChatDual expansion bank', () => {
     ];
     const content = rows.map(row => `${row.a} ${row.b}`).join(' ').toLowerCase();
     expect(legacyFragments.some(fragment => content.includes(fragment))).toBe(false);
+  });
+
+  it('keeps the fifth sex-advice module substantive and free of repeated filler', () => {
+    const rows = fifthSexAdviceModule.sexAdvice;
+    expect(rows).toHaveLength(182);
+    expect(new Set(rows.map(row => row.a)).size).toBe(182);
+    expect(new Set(rows.map(row => row.b)).size).toBe(182);
+    expect(new Set(rows.flatMap(row => [row.a, row.b])).size).toBe(364);
+    expect(rows.every(row => row.a.length >= 60 && row.b.length >= 60)).toBe(true);
+    expect(rows.every(row => row.a !== row.b)).toBe(true);
   });
 
   it("scores the response that shares the user's actual topic more highly", () => {
