@@ -4,7 +4,7 @@ Last verified: 2026-11-06
 Repository: `dbrandforge/MEGA-MD`
 Working branch: `geography-easy-batch-01` (stacked on PR #89's Lifestyle completion)
 Previous staged release: PR #88 merged to `main` (commit `5bfa6a15b0dcb822c2aa42760a104d3d85d84c3f`).
-Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current completed block: Geography Easy `ge001`–`ge043`, Normal `gn001`–`gn039`, Hard `gh001`–`gh049`, Expert `gx001`–`gx049`; all four Geography grades are complete.
+Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current completed block: Geography Easy `ge001`–`ge043`, Normal `gn001`–`gn039`, Hard `gh001`–`gh049`, Expert `gx001`–`gx049`; all four Geography grades are complete. Next active block: History Easy.
 
 ## Locked expansion target
 
@@ -153,20 +153,19 @@ Seventeen other duplicate rows were removed. The candidate audit fails if an unq
 
 ## Automated validation
 
-Latest verified branch checks (Forge session included):
-
-- Candidate quality gate: **passed**
-- Forge Bot unit tests: **passed** (includes currency-symbol regression test and the corrected category registry)
-- Forge Guard integration tests: **passed**
-- Trivia and game unit regression suite: **passed** (134 unit tests); the separate live-bank coverage audit **fails as intended** with 83 category/grade deficits
-- Blocking live-bank coverage audit: **failed as intended**; the 21 selectable pools remain below 200 total / 50 per grade
-- No candidate records promoted into the live bank
-- No merge or deployment performed
+- PR #89's latest verified checks passed: candidate-quality gate, Forge Bot unit tests, Trivia regression and staged coverage gate, and Forge Guard integration tests.
+- Geography's static bank audit passes: 1,288 records and 1,288 unique IDs; no sparse array slots; no duplicate normalized question stems; 200 Geography questions with 50 at each difficulty.
+- All 180 new Geography questions have four distinct options, valid answer indexes, review dates and source URLs.
+- Geography answer positions are balanced across each complete 50-question grade: A 12, B 13, C 13, D 12.
+- PR #90 is stacked on PR #89; fresh CI for the Geography diff is pending until PR #89 is merged and PR #90 is retargeted to `main`.
+- No candidate records promoted into the live bank.
+- No merge or deployment performed.
 
 Useful commands:
 
 - `npm run trivia:candidates:audit` — staged candidate integrity and editorial-flag report
-- `npm run trivia:audit` — actual live-bank validation against the initial 100 / 25-per-grade release target
+- `npm run trivia:audit` — full live-bank validation
+- `npm run trivia:audit:release` — staged release gate for the completed categories
 
 ## Next execution sequence
 
