@@ -1,136 +1,136 @@
 /** Expansion volume 0, part 3. Legacy sex-advice inventory; 181 rows. Rewrite pending. */
 export default {"sexAdvice":[
   {
-    "a": "Chlamydia and gonorrhoea can be present without symptoms. Testing is important after a possible exposure, even if you feel well.",
-    "b": "A clinic can advise which sites need testing and when. If diagnosed, follow treatment advice and ensure partners are assessed as recommended."
+    "a": "If you are recovering from genital surgery or another procedure, follow your surgeon's instructions about when sexual activity can resume.",
+    "b": "Healing time varies by procedure and person. Ask about warning signs, wound care, and whether any activities should be avoided during recovery."
   },
   {
-    "a": "Syphilis can cause symptoms that are easy to miss or mistaken for other conditions. Testing is the way to identify it.",
-    "b": "If you notice a painless sore, rash, or other unexplained change after possible exposure, seek clinical assessment rather than waiting."
+    "a": "After an injury, do not resume sexual activity until pain and healing have been assessed when the injury is significant or symptoms persist.",
+    "b": "A clinician can advise what movement is safe and whether further treatment is needed. Stop if pain, bleeding, or swelling returns."
   },
   {
-    "a": "HIV cannot be diagnosed by appearance or symptoms alone. A test is needed to know your status.",
-    "b": "Ask a clinic about the appropriate test and window period. If exposure may have occurred within the last 72 hours, seek urgent advice about PEP."
+    "a": "If you have concerns about fertility, both partners may need assessment. Fertility is not solely one person's responsibility.",
+    "b": "A healthcare professional can explain when testing is appropriate and what factors may affect conception. Avoid unproven fertility supplements or treatments."
   },
   {
-    "a": "HIV treatment can help people live long, healthy lives, and sustained undetectable viral load prevents sexual transmission.",
-    "b": "Support accurate information rather than stigma. A person living with HIV deserves privacy, respect, and access to ongoing care."
+    "a": "Trying to conceive can make sex feel scheduled or pressured. Talk about the emotional impact and keep affection separate from timing when possible.",
+    "b": "If pregnancy has not occurred after a period of trying, seek advice based on age and health history. A clinician can guide both partners through evaluation."
   },
   {
-    "a": "If a partner tells you they are living with HIV, do not share that information without permission.",
-    "b": "Ask what support they want and learn from reliable medical sources. Their status is private health information, not gossip."
+    "a": "If you do not want children, discuss contraception before sex and make sure both partners understand the plan.",
+    "b": "Do not rely on assumptions or promises made in the heat of the moment. Each person has a role in preventing an unintended pregnancy."
   },
   {
-    "a": "If you are worried about a possible HIV exposure, seek care promptly even if you feel fine.",
-    "b": "A clinician can assess the exposure, explain PEP timing, and arrange testing. Early advice gives you more options."
+    "a": "A decision to be child-free is valid. You do not owe a partner or family an explanation for your reproductive choices.",
+    "b": "Discuss compatibility honestly with a partner, especially if your long-term plans differ. Do not pressure someone to change a deeply personal decision."
   },
   {
-    "a": "PrEP requires appropriate HIV testing and ongoing clinical follow-up. Do not start or stop it based only on online advice.",
-    "b": "A provider can explain the correct regimen, monitoring, and what to do if doses are missed. PrEP is one part of a broader prevention plan."
+    "a": "If you are considering sterilisation, ask about permanence, risks, alternatives, and the possibility of regret before deciding.",
+    "b": "A clinician can explain the procedure and whether reversal is possible; reversal is not guaranteed. Make the decision freely, without partner pressure."
   },
   {
-    "a": "PEP is a 28-day course of medication prescribed after a possible HIV exposure. It is most effective when started quickly.",
-    "b": "Contact an emergency department or sexual-health service immediately; it must be started within 72 hours. Follow-up testing is also important."
+    "a": "Emergency contraception does not end an established pregnancy. It helps prevent pregnancy after sex when used within the recommended window.",
+    "b": "A pharmacist or clinician can explain the available methods and timing. If your period is late afterward, take a pregnancy test."
   },
   {
-    "a": "Hepatitis B can be sexually transmitted, and vaccination is an effective prevention measure for people who are not immune.",
-    "b": "Ask a healthcare professional whether you need vaccination or testing, particularly if a partner has hepatitis B."
+    "a": "If you are concerned about an unintended pregnancy, seek confidential, qualified healthcare advice about your options and local laws.",
+    "b": "You deserve accurate information without coercion. Ask about timing, medical safety, costs, and emotional support before making a decision."
   },
   {
-    "a": "Some HPV types can cause cervical and other cancers, while others cause genital warts. Vaccination reduces risk from important types.",
-    "b": "Follow the screening guidance for your age and location even if you are vaccinated. A clinician can explain which tests are recommended."
+    "a": "A partner should not control another person's contraception or sabotage it. That behaviour is reproductive coercion.",
+    "b": "If you suspect tampering or pressure, seek confidential support from a clinician or trusted service. Consider a safety plan if raising the issue could put you at risk."
   },
   {
-    "a": "If you have a cervix, attend recommended cervical screening even if you feel healthy and have no symptoms.",
-    "b": "Screening intervals vary by age and location. Ask your healthcare provider when you are due and what follow-up an abnormal result requires."
+    "a": "Do not pressure a partner to become pregnant, continue a pregnancy, or end a pregnancy. The decision must be free from coercion.",
+    "b": "You can share your feelings honestly, but threats, financial control, or repeated intimidation are not acceptable ways to influence the decision."
   },
   {
-    "a": "An abnormal cervical screening result does not automatically mean cancer. It usually means follow-up is needed.",
-    "b": "Ask the clinician what was found, whether HPV testing or repeat screening is advised, and when the next step should happen."
+    "a": "If you and your partner disagree about pregnancy plans, pause sexual activity that could result in pregnancy until you have a clear, mutually understood plan.",
+    "b": "A disagreement this significant deserves a calm conversation. If you cannot reach agreement, consider counselling and respect each person's autonomy."
   },
   {
-    "a": "If you are unsure which sexual-health tests you need, describe the contact honestly to the clinician. They are there to help, not judge.",
-    "b": "You can ask what each test involves, how results are delivered, and what confidentiality protections apply before proceeding."
+    "a": "Sexual compatibility includes communication, trust, health, and respect—not just frequency or technique.",
+    "b": "Talk about what each of you enjoys and what feels uncomfortable. A good fit is built through mutual curiosity rather than performance expectations."
   },
   {
-    "a": "You can ask a clinician to explain a genital examination before it begins and to pause at any time.",
-    "b": "You may request a chaperone or support person where available. Your consent to an examination is separate from consent to treatment."
+    "a": "Do not compare your sex life with pornography or social-media claims. They rarely show ordinary bodies, communication, or realistic expectations.",
+    "b": "Use your own comfort and mutual enjoyment as the measure. If online content is shaping expectations in a distressing way, discuss it openly."
   },
   {
-    "a": "If you feel dismissed during a sexual-health appointment, ask for the reasoning and what symptoms should prompt follow-up.",
-    "b": "You can request another clinician or a second opinion if concerns remain. Clear communication is part of good healthcare."
+    "a": "Pornography does not teach consent by itself. Real intimacy requires direct communication and respect for boundaries.",
+    "b": "Do not assume a partner wants acts they have seen online. Ask what they are comfortable with and accept a no without debate."
   },
   {
-    "a": "Do not share prescription medication with a partner, even if their symptoms seem identical to yours.",
-    "b": "The right medicine and dose depend on the diagnosis and individual factors. Encourage them to seek their own assessment."
+    "a": "If pornography use is affecting your relationship, work, finances, or wellbeing, discuss the impact without insults or shame.",
+    "b": "Agree on specific concerns and boundaries. A qualified therapist can help if the pattern feels compulsive or difficult to change."
   },
   {
-    "a": "If you miss a dose of prescribed sexual-health medication, check the patient leaflet or contact a pharmacist for specific advice.",
-    "b": "Do not double the next dose unless the instructions say to. Correct guidance depends on the medication and timing."
+    "a": "If a partner's sexual preferences differ from yours, neither person should be mocked or forced to participate.",
+    "b": "Discuss what is genuinely appealing, what is off-limits, and whether there is a mutually satisfying alternative. A respectful no remains a complete answer."
   },
   {
-    "a": "If a medication causes a possible side effect, contact the prescriber or pharmacist rather than stopping essential treatment abruptly.",
-    "b": "Seek urgent help for severe allergic symptoms, breathing difficulty, or other serious reactions. Keep a note of the medicine and when symptoms began."
+    "a": "Before experimenting with kink or power exchange, negotiate limits, risks, safewords, and aftercare while everyone is calm and sober.",
+    "b": "Start conservatively, check in often, and agree that consent can be withdrawn. Never use a scene as permission to ignore someone's distress."
   },
   {
-    "a": "If you are prescribed treatment for erectile difficulties, discuss heart conditions and all other medicines with the prescriber first.",
-    "b": "Some drugs used for chest pain can interact dangerously with erectile-dysfunction medication. Avoid buying prescription products from unverified sellers."
+    "a": "A dominant or submissive role does not remove anyone's right to stop. The person with less power in a scene must still have real control over consent.",
+    "b": "Agree on boundaries outside the scene and treat a safeword as immediate instruction. Afterward, check in and discuss anything that did not feel right."
   },
   {
-    "a": "Do not mix erectile-dysfunction medicines or take more than the prescribed dose to try to improve results.",
-    "b": "If you experience chest pain, fainting, or a prolonged painful erection, seek emergency care. Ask the prescriber before changing your treatment."
+    "a": "Do not introduce choking or breath restriction as a surprise. These activities can cause serious injury or death, even when they seem controlled.",
+    "b": "The safest choice is to avoid pressure on the neck. If someone has been choked and develops breathing, swallowing, voice, or neurological symptoms, seek emergency care."
   },
   {
-    "a": "If sexual activity brings on chest pain, severe breathlessness, or faintness, stop and seek urgent medical assessment.",
-    "b": "Do not assume it is simply exertion or anxiety. A clinician can assess cardiovascular risk and advise when activity is safe."
+    "a": "If a partner is curious about anal sex, discuss it beforehand and proceed only if both people freely want to. Pain is a reason to stop.",
+    "b": "Use plenty of compatible lubricant, go slowly, and use a new condom when switching from anal to vaginal contact. Never force or push through pain."
   },
   {
-    "a": "Permission to save an intimate image does not permit any new activity begins. privacy.",
-    "b": "Ask separately before sharing the exact recipient and platform. privacy."
+    "a": "Do not move from anal to vaginal penetration with the same condom or without cleaning first. This can transfer bacteria and increase infection risk.",
+    "b": "Change the condom and clean any shared toy or body part before switching areas. Hygiene and clear communication reduce avoidable risks."
   },
   {
-    "a": "Permission to save an intimate image does not permit the activity or partner changes. privacy.",
-    "b": "Ask separately before sharing every new use or audience. privacy."
+    "a": "If you are unsure whether an intimate activity is medically safe for you, ask a qualified healthcare professional who knows your health history.",
+    "b": "Explain the activity and any relevant conditions or medication. General online guidance cannot replace individual medical advice."
   },
   {
-    "a": "Permission to save an intimate image does not permit someone withdraws permission. privacy.",
-    "b": "Ask separately before sharing any recording or storage plan. privacy."
+    "a": "A respectful partner will accept that intimacy may be postponed because of illness, fatigue, stress, or simply not wanting it.",
+    "b": "You can offer another kind of closeness if you both want, but do not promise a later yes. The decision remains yours each time."
   },
   {
-    "a": "Permission to save an intimate image does not permit one person feels pressured. privacy.",
-    "b": "Ask separately before sharing a change in privacy expectations. privacy."
+    "a": "A healthy sexual relationship makes room for honest conversations about pleasure, protection, boundaries, and concerns.",
+    "b": "Choose a time when neither person feels rushed. Listen to understand rather than preparing a rebuttal, and agree on one practical next step."
   },
   {
-    "a": "Permission to save an intimate image does not permit someone is impaired or asleep. privacy.",
-    "b": "Ask separately before sharing a request to delete shared material. privacy."
+    "a": "If a conversation about sex becomes heated, take a break and return when both people can speak respectfully.",
+    "b": "Do not use silence as punishment or keep arguing until someone gives in. The goal is mutual understanding, not winning permission."
   },
   {
-    "a": "Permission to save an intimate image does not permit the agreed plan no longer feels safe. privacy.",
-    "b": "Ask separately before sharing a new partner joining the situation. privacy."
+    "a": "If you feel embarrassed asking for sexual-health help, remember that clinicians handle these questions routinely.",
+    "b": "You can write down the concern or show it on your phone if speaking feels difficult. Accurate information is more useful than enduring worry alone."
   },
   {
-    "a": "Permission to save an intimate image does not permit either person asks to stop. privacy.",
-    "b": "Ask separately before sharing content being moved to another service. privacy."
+    "a": "Keep sexual-health records and test results private, and share them only with people who need the information and have your permission.",
+    "b": "Use secure portals and protect your devices. Do not forward another person's results or disclose their diagnosis without consent."
   },
   {
-    "a": "A condom should be replaced between any new activity begins. condoms.",
-    "b": "Check package integrity before using the exact recipient and platform. condoms."
+    "a": "If a partner asks for time to think about a sexual decision, give them space and do not keep pressing for an answer.",
+    "b": "Agree on whether and when to revisit the topic. A delayed answer is not permission, and a final no should be accepted."
   },
   {
-    "a": "A condom should be replaced between the activity or partner changes. condoms.",
-    "b": "Check package integrity before using every new use or audience. condoms."
+    "a": "If you are unsure whether your partner is comfortable, pause and ask a direct, non-leading question such as 'Would you like to continue?'",
+    "b": "Make it easy to answer honestly by showing that either answer is okay. If the response is unclear, stop rather than interpreting it in your favour."
   },
   {
-    "a": "A condom should be replaced between someone withdraws permission. condoms.",
-    "b": "Check package integrity before using any recording or storage plan. condoms."
+    "a": "After intimacy, ask how your partner is feeling and whether anything would help them feel cared for or comfortable.",
+    "b": "Aftercare can be as simple as water, a conversation, quiet time, or space. Ask rather than assuming everyone wants the same thing."
   },
   {
-    "a": "A condom should be replaced between one person feels pressured. condoms.",
-    "b": "Check package integrity before using a change in privacy expectations. condoms."
+    "a": "A relationship does not entitle either person to sex, even if you have been together for years or have had sex many times before.",
+    "b": "Consent is ongoing and specific. Affection, commitment, marriage, and previous agreement never cancel someone's right to say no."
   },
   {
-    "a": "A condom should be replaced between someone is impaired or asleep. condoms.",
-    "b": "Check package integrity before using a request to delete shared material. condoms."
+    "a": "If you have a question about sexual health that feels urgent, contact a clinic, pharmacist, or emergency service rather than waiting for an online reply.",
+    "b": "For severe pain, heavy bleeding, breathing difficulty, suspected assault, or possible HIV exposure within 72 hours, seek urgent in-person care."
   },
   {
     "a": "A condom should be replaced between the agreed plan no longer feels safe. condoms.",
