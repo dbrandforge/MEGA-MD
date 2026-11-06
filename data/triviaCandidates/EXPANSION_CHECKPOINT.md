@@ -465,3 +465,8 @@ Ten original, source-linked Movies Easy questions (`mv001`–`mv010`) begin the 
 ## Movies Easy — second content batch
 
 Ten more original Movies Easy questions (`mv011`–`mv020`) extend the mixed-film pool with The Wedding Party, Pirates of the Caribbean, The Matrix, Jaws, Frozen, WALL-E, Dangal, Stranger Things and Squid Game. Subcategory labels remain intact. Every question carries a review date and an official studio, platform, film archive or production source. Movies Easy now has 26 approved questions overall (6 existing + 20 new); 24 remain to reach 50.
+
+
+## Movies Easy — third content batch
+
+Ten more original Movies Easy questions (`mv021`–`mv030`) extend the subcategory mix across Hollywood, animation, Bollywood, series and Nollywood. Topics include Wonder Woman, Thor, Finding Nemo, Moana, DDLJ, 3 Idiots, Wednesday, Nevermore Academy, Squid Game and The Wedding Party. Each item carries a review date and official studio, distributor, production or platform source. Movies Easy now has 36 approved questions overall (6 existing + 30 new); 14 remain to reach 50.
