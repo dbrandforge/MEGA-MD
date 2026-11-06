@@ -4,7 +4,7 @@ Last verified: 2026-11-06
 Repository: `dbrandforge/MEGA-MD`
 Working branch: `geography-easy-batch-01` (stacked on PR #89's Lifestyle completion)
 Previous staged release: PR #88 merged to `main` (commit `5bfa6a15b0dcb822c2aa42760a104d3d85d84c3f`).
-Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current active block: Geography Normal `gn001`–`gn020`; PR #90 is stacked on PR #89.
+Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current active block: Geography Normal `gn001`–`gn030`; PR #90 is stacked on PR #89.
 
 ## Locked expansion target
 
@@ -667,7 +667,12 @@ Ten original, source-linked questions (`gn001`–`gn010`) begin Geography Normal
 
 ## Geography Normal — second content batch
 
-Ten additional original, source-linked questions (`gn011`–`gn020`) extend Geography Normal. Topics include the Ural Mountains, Atacama Desert, Türkiye's two-sea coastline, Isthmus of Panama, English Channel, Samarkand, Finland, the Alps, Caspian Sea and Lisbon. Sources include Encyclopaedia Britannica. The correct-answer positions across the 20 numbered Normal questions are balanced at A 1, B 6, C 7 and D 6; the existing 11 questions remain preserved. Geography Normal now has 31/50 questions; 19 remain.
+Ten additional original, source-linked questions (`gn011`–`gn020`) extend Geography Normal. Topics include the Ural Mountains, Atacama Desert, Türkiye's two-sea coastline, Isthmus of Panama, English Channel, Samarkand, Finland, the Alps, Caspian Sea and Lisbon. Sources include Encyclopaedia Britannica. The correct-answer positions across the 20 numbered Normal questions are balanced at A 1, B 6, C 7 and D 6; the existing 11 questions remain preserved. Geography Normal now has 41/50 questions; 9 remain.
+
+
+## Geography Normal — third content batch
+
+Ten additional original, source-linked questions (`gn021`–`gn030`) extend Geography Normal. Topics include the Scandinavian Mountains, Vltava, Timbuktu, Gobi Desert, Adriatic Sea, Hispaniola, Brazil, Tigris, Canary Islands and Vienna. Sources include Encyclopaedia Britannica. Geography Normal now has 41/50 questions; 9 remain.
 
 
 ## Sparse-array regression correction
