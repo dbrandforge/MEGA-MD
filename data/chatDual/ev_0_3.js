@@ -682,8 +682,8 @@ export default {
       "b": "The correct timing depends on the infection and test. A clinician can explain window periods and whether a follow-up test is needed."
     },
     {
-      "a": "Use the language a person chooses for a new prescription is started. identity.",
-      "b": "Keep another person's identity private unless a possible side effect. identity."
+      "a": "Use the language and terms a person chooses for their own identity, body, and health needs.",
+      "b": "Do not assume someone's identity from appearance or medical history. Ask respectfully, and keep personal information private unless they choose to share it."
     },
     {
       "a": "Use the language a person chooses for one partner's needs or circumstances change. identity.",
@@ -694,24 +694,24 @@ export default {
       "b": "Keep another person's identity private unless sharing personal information online. identity."
     },
     {
-      "a": "Use the language a person chooses for a boundary has already been stated. identity.",
-      "b": "Keep another person's identity private unless responding to a disclosure of harm. identity."
+      "a": "If someone has stated a boundary, respect it without requiring them to repeat or defend it.",
+      "b": "Use the person's chosen language when discussing the boundary, and focus on what you need to do differently to honour it."
     },
     {
       "a": "Use the language a person chooses for symptoms continue or worsen. identity.",
       "b": "Keep another person's identity private unless returning to an activity after injury. identity."
     },
     {
-      "a": "Follow the clinician's advice about repeat testing after oral, genital, or anal contact as relevant. screening follow-up.",
-      "b": "Ask what a result means before the activity and its risks. screening follow-up."
+      "a": "Ask the clinic which repeat tests are appropriate for the type of sexual contact and body sites involved.",
+      "b": "Testing schedules depend on the infection and the test used. Follow the clinician's timing rather than relying on a generic interval."
     },
     {
-      "a": "Follow the clinician's advice about repeat testing after an unfamiliar symptom appears. screening follow-up.",
-      "b": "Ask what a result means before an appointment about sexual wellbeing. screening follow-up."
+      "a": "If a new symptom appears after possible exposure, contact a sexual-health clinic for advice about examination and testing.",
+      "b": "Do not wait for a routine screening date if you have symptoms. A clinician can advise whether immediate assessment or later repeat testing is needed."
     },
     {
-      "a": "Follow the clinician's advice about repeat testing after a new prescription is started. screening follow-up.",
-      "b": "Ask what a result means before a possible side effect. screening follow-up."
+      "a": "When starting a new prescription, ask the prescriber whether it affects sexual health or interacts with contraception or other medicines.",
+      "b": "Do not stop or change the prescription on your own. A pharmacist or clinician can explain side effects and safer alternatives."
     },
     {
       "a": "Follow the clinician's advice about repeat testing after one partner's needs or circumstances change. screening follow-up.",
@@ -722,8 +722,8 @@ export default {
       "b": "Ask what a result means before sharing personal information online. screening follow-up."
     },
     {
-      "a": "Follow the clinician's advice about repeat testing after a boundary has already been stated. screening follow-up.",
-      "b": "Ask what a result means before responding to a disclosure of harm. screening follow-up."
+      "a": "If a boundary has been crossed, pause sexual activity and discuss what support or care the affected person wants.",
+      "b": "A clinic can advise about injuries, pregnancy risk, STI exposure, and follow-up testing. Let the person choose what care to pursue."
     }
   ]
 };
