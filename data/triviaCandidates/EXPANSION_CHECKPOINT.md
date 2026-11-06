@@ -490,3 +490,8 @@ Ten original Movies Normal questions (`mn001`–`mn010`) begin the second diffic
 ## Movies Normal — second content batch
 
 Ten more original Movies Normal questions (`mn011`–`mn020`) cover Parasite, The Godfather, Jurassic Park, Mission: Impossible, The Silence of the Lambs, Crouching Tiger, Hidden Dragon and Sherlock. Each item carries a review date and official Academy, AFI, Paramount, Sony Pictures Classics or platform source. Movies Normal now has 27 approved questions overall (7 existing + 20 new); 23 remain to reach 50.
+
+
+## Movies Normal — third content batch
+
+Ten more original Movies Normal questions (`mn021`–`mn030`) cover The Dark Knight, Gladiator, The Social Network, Breaking Bad, Scandal, Better Call Saul, Mission: Impossible and The Sopranos. The batch balances film direction and casting with television character knowledge. Each item carries a review date and an official AFI, AMC, ABC, Paramount or HBO source. Movies Normal now has 37 approved questions overall (7 existing + 30 new); 13 remain to reach 50.
