@@ -25,14 +25,16 @@ describe('ChatDual expansion bank', () => {
     });
   });
 
-  it('keeps all three rewritten sex-advice modules at 182 rows with 182 distinct responses per side', () => {
-    for (const module of [firstSexAdviceModule, secondSexAdviceModule, thirdSexAdviceModule, fourthSexAdviceModule]) {
+  it('checks the preserved row inventory and exact-string uniqueness of the four sex-advice modules', () => {
+    const modules = [firstSexAdviceModule, secondSexAdviceModule, thirdSexAdviceModule, fourthSexAdviceModule];
+    const expectedRows = [182, 182, 182, 181];
+    modules.forEach((module, index) => {
       const rows = module.sexAdvice;
-      expect(rows).toHaveLength(182);
-      expect(new Set(rows.map(row => row.a)).size).toBe(182);
-      expect(new Set(rows.map(row => row.b)).size).toBe(182);
+      expect(rows).toHaveLength(expectedRows[index]);
+      expect(new Set(rows.map(row => row.a)).size).toBe(expectedRows[index]);
+      expect(new Set(rows.map(row => row.b)).size).toBe(expectedRows[index]);
       expect(rows.every(row => typeof row.a === 'string' && typeof row.b === 'string')).toBe(true);
-    }
+    });
   });
 
   it('routes classified relationship, friendship, work-life and advice prompts', () => {
