@@ -530,3 +530,8 @@ Ten more original Movies Hard questions (`mh031`–`mh040`) add Academy Award an
 ## Movies Hard — grade completed
 
 Five final questions (`mh041`–`mh045`) complete Movies Hard at 50 questions (5 existing + 45 new). The grade now includes international cinema, Academy Award history, Nollywood’s Oscar submission history, and specialist series casting. Movies Expert remains at its existing count and is next in sequence.
+
+
+## Movies Expert — first content batch
+
+Ten original Movies Expert questions (`me001`–`me010`) begin the fourth difficulty grade. The batch spans foundational Nollywood history, Living in Bondage, Lagaan, Slumdog Millionaire’s Oscar history, Seven Samurai, The Nightmare Before Christmas, Beauty and the Beast’s Best Picture nomination, and the creators of The Wire and The Sopranos. Each question carries a review date and an official production, studio, Academy, platform or reputable media source. Movies Expert now has 15 approved questions overall (5 existing + 10 new); 35 remain to reach 50.
