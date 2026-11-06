@@ -535,3 +535,8 @@ Five final questions (`mh041`–`mh045`) complete Movies Hard at 50 questions (5
 ## Movies Expert — first content batch
 
 Ten original Movies Expert questions (`me001`–`me010`) begin the fourth difficulty grade. The batch spans foundational Nollywood history, Living in Bondage, Lagaan, Slumdog Millionaire’s Oscar history, Seven Samurai, The Nightmare Before Christmas, Beauty and the Beast’s Best Picture nomination, and the creators of The Wire and The Sopranos. Each question carries a review date and an official production, studio, Academy, platform or reputable media source. Movies Expert now has 15 approved questions overall (5 existing + 10 new); 35 remain to reach 50.
+
+
+## Movies Expert — second content batch
+
+Ten more original Movies Expert questions (`me011`–`me020`) cover French New Wave cinema, the inaugural Academy Awards, Peter Finch’s posthumous Oscar, Satyajit Ray’s Apu Trilogy, and Akira Kurosawa’s Seven Samurai. Each item carries a review date and official BFI, Academy or Criterion source. Movies Expert now has 25 approved questions overall (5 existing + 20 new); 25 remain to reach 50.
