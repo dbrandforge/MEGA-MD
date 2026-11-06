@@ -171,7 +171,7 @@ Useful commands:
 
 1. Geography is complete at 50 Easy, 50 Normal, 50 Hard and 50 Expert.
 2. History is next in the selectable-category sequence: Easy 2/50, Normal 5/50, Hard 5/50 and Expert 6/50.
-3. Complete History Easy first (38 additional questions), then Normal, Hard and Expert in order.
+3. History Easy is complete. Complete History Normal next (45 additional questions), then Hard and Expert in order.
 4. Fact-check every answer and distractor; rewrite incomplete stems and repair encoding.
 5. Date-anchor or reject volatile/current-affairs and ranking-dependent claims.
 6. Keep unreviewed OpenTriviaQA candidates staged and respect their CC BY-SA 4.0 attribution obligations.
@@ -738,6 +738,11 @@ Ten additional original, source-linked questions (`he011`–`he020`) extend Hist
 ## History Easy — third content batch
 
 Ten additional original, source-linked questions (`he021`–`he030`) extend History Easy. Topics include Ghanaian independence, Nelson Mandela and South Africa's 1994 election, the first modern Olympics, the Russian Revolution, the American Civil War, Indian independence, Roald Amundsen, the Aztec capital Tenochtitlan, Augustus and Amelia Earhart. Sources include Encyclopaedia Britannica and the International Olympic Committee. History Easy now has 32/50 questions; 18 remain.
+
+
+## History Easy — grade completed
+
+Forty-eight original, source-linked questions (`he001`–`he048`) complete History Easy at **50/50**, including two retained existing questions. Topics range across ancient and classical civilisations, major political revolutions, independence movements, wars, treaties, scientific and exploration milestones, and twentieth-century world events. Sources include NASA, the International Olympic Committee, the White House, UNESCO, the U.S. National Archives, the U.S. National Park Service, the Nobel Prize organisation and Encyclopaedia Britannica. Correct-answer positions across the full grade are balanced at A 12, B 13, C 13 and D 12. History Normal is next at 5/50; 45 additional questions are needed.
 
 
 ## Sparse-array regression correction
