@@ -585,3 +585,8 @@ Ten more original Lifestyle Easy questions (`ls021`–`ls030`) cover bank statem
 ## Lifestyle Easy — fourth content batch
 
 Ten more original Lifestyle Easy questions (`ls031`–`ls040`) cover consumer refunds and exchanges, warranties, subscriptions and auto-renewal, multi-factor authentication, phishing, Airplane Mode, power banks and password managers. Each item carries a review date and an official government, consumer-protection, standards or cybersecurity source. Lifestyle Easy now has 45 approved questions overall (5 existing + 40 new); 5 remain to reach 50.
+
+
+## Lifestyle Easy — grade completed
+
+Five final questions (`ls041`–`ls045`) complete Lifestyle Easy at 50 questions (5 existing + 45 new). The grade now includes Nigerian consumer and public-service knowledge, digital safety, financial literacy, household safety, food handling and environmental basics. Lifestyle Normal is next in the approved sequence.
