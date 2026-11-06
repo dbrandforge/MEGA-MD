@@ -63,3 +63,10 @@ The first CI run for this checkpoint failed only on the expansion inventory asse
 The live chatbot now passes the current message and up to eight recent conversation messages into ChatDual. The selector scores each candidate pair against the current message, gives the current message greater weight than older context, and returns the A or B side with the stronger topical match. If neither side has a meaningful distinction, it uses a tie-break rather than pretending the evidence is decisive. The normal chatbot path uses this reasoned mode; explicit A, B, and both modes remain available to callers.
 
 This is deterministic lexical relevance scoring informed by the existing intent classifier and conversation history. It is not an LLM-based semantic reasoning layer. The content still needs to be authored so the alternatives genuinely differ in angle and remain appropriate to the same situation. The fourth module, `ev_0_3.js`, remains a known content-quality blocker and has not yet been rewritten.
+
+
+## Follow-up context routing (2026-11-06)
+
+The selector now uses recent conversation context to recover the topic for short follow-ups (for example, "What if they say no?") when the current message does not introduce a clear new subject. The current message remains the primary scoring signal; older context contributes only a smaller relevance weight. A regression test covers recovery of a consent topic from the preceding turn.
+
+The `ev_0_3.js` header has also been corrected to state its actual 181-row inventory. Its content remains legacy templated material and is still explicitly pending rewrite; the header correction is not an editorial approval.
