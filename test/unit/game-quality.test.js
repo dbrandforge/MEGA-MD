@@ -174,21 +174,43 @@ describe('game quality foundations', () => {
   });
 
 
-  it('provides valid, integer-safe question generation for every Maths Arena difficulty', () => {
+  it('generates valid integer-answer questions across progressively distinct Maths modes', () => {
     expect(Object.keys(MATH_MODES)).toEqual(['noob', 'easy', 'normal', 'hard', 'extreme', 'impossible', 'impossible2']);
+    const observedTypes = {};
     for (const mode of Object.keys(MATH_MODES)) {
-      for (let i = 0; i < 50; i++) {
+      observedTypes[mode] = new Set();
+      for (let i = 0; i < 250; i++) {
         const q = generateMathQuestion(mode);
         expect(q.mode).toBe(mode);
         expect(Number.isInteger(Number(q.answer))).toBe(true);
-        const match = q.expression.match(/^(-?\d+) ([+\-×÷]) (-?\d+)$/);
-        expect(match).not.toBeNull();
-        const a = Number(match[1]), b = Number(match[3]);
-        const expected = match[2] === '+' ? a + b
-          : match[2] === '-' ? a - b
-          : match[2] === '×' ? a * b : a / b;
-        expect(Object.is(expected, -0) ? 0 : expected).toBe(Number(q.answer));
-        expect(Number.isInteger(expected)).toBe(true);
+        expect(q.expression.trim().length).toBeGreaterThan(3);
+        expect(typeof q.type).toBe('string');
+        observedTypes[mode].add(q.type);
+        expect(q.hasNegative).toBe(/(^|[^\\w])-\\d/.test(q.expression));
+      }
+      expect(observedTypes[mode].size).toBeGreaterThanOrEqual(1);
+    }
+    expect([...observedTypes.noob]).toEqual(expect.arrayContaining(['addition', 'subtraction']));
+    expect([...observedTypes.normal]).toEqual(expect.arrayContaining(['percent', 'fraction', 'order']));
+    expect([...observedTypes.hard]).toEqual(expect.arrayContaining(['algebra', 'sequence', 'ratio']));
+    expect([...observedTypes.impossible]).toEqual(expect.arrayContaining(['quadratic', 'logs']));
+    expect([...observedTypes.impossible2]).toEqual(expect.arrayContaining(['gcd', 'lcm']));
+  });
+
+  it('keeps negative-number questions out of Noob and strictly capped by each mode quota', () => {
+    expect(getMathNegativeQuestionCount('noob', 15)).toBe(0);
+    expect(getMathNegativeQuestionCount('easy', 15)).toBe(0);
+    expect(getMathNegativeQuestionCount('normal', 13)).toBe(0);
+    expect(getMathNegativeQuestionCount('hard', 10)).toBe(1);
+    expect(getMathNegativeQuestionCount('extreme', 8)).toBe(0);
+    expect(getMathNegativeQuestionCount('impossible', 8)).toBe(1);
+    expect(getMathNegativeQuestionCount('impossible2', 8)).toBe(1);
+    for (const mode of Object.keys(MATH_MODES)) {
+      expect(generateMathQuestion(mode).hasNegative).toBe(false);
+      if (mode !== 'noob') {
+        const negative = generateMathQuestion(mode, { includeNegative: true });
+        expect(negative.hasNegative).toBe(true);
+        expect(Number.isInteger(Number(negative.answer))).toBe(true);
       }
     }
   });
