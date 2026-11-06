@@ -17,8 +17,8 @@ export default {"sexAdvice":[
     "b": "If pregnancy has not occurred after a period of trying, seek advice based on age and health history. A clinician can guide both partners through evaluation."
   },
   {
-    "a": "If someone freezes, goes quiet, or seems disconnected during intimacy, stop and check in. Silence is not consent.",
-    "b": "A pause is always allowed. Ask a simple question, give them time, and do not resume unless they can freely and clearly say they want to."
+    "a": "After a possible HIV exposure, seek urgent advice about PEP immediately. It must be started as soon as possible and within 72 hours.",
+    "b": "Do not wait for symptoms or a later test. An emergency department or sexual-health service can assess whether PEP is appropriate and arrange follow-up."
   },
   {
     "a": "A decision to be child-free is valid. You do not owe a partner or family an explanation for your reproductive choices.",
@@ -37,8 +37,8 @@ export default {"sexAdvice":[
     "b": "Make it safe to change course. No one should have to manage your disappointment before they can protect their own comfort."
   },
   {
-    "a": "A sleeping or unconscious person cannot give present consent. Wait until they are awake and able to make a clear choice.",
-    "b": "Being partners or having discussed sex earlier does not create permission while someone cannot respond. Prioritise their safety."
+    "a": "PrEP can greatly reduce the risk of acquiring HIV when used as prescribed, but it does not prevent other STIs.",
+    "b": "Ask a qualified provider about testing, follow-up, and the correct regimen before starting PrEP. It is one part of a broader prevention plan."
   },
   {
     "a": "If alcohol or drugs have significantly affected someone's awareness or judgment, do not proceed with sex.",
@@ -145,8 +145,8 @@ export default {"sexAdvice":[
     "b": "Use a new condom for each act and when switching between anal and vaginal sex. If it breaks or slips, stop and seek timely advice."
   },
   {
-    "a": "Oil-based products can damage latex condoms. Choose a lubricant labelled compatible with the condom material.",
-    "b": "Lubricant can reduce friction and help prevent breakage. Stop using any product that causes burning, rash, or irritation."
+    "a": "HPV and hepatitis B vaccines can prevent infections relevant to sexual health. Ask which vaccines are recommended for you.",
+    "b": "Check your vaccination history with a clinician. Catch-up vaccination may be available if you missed earlier doses."
   },
   {
     "a": "Choose contraception based on your health, preferences, and how reliably you can use the method.",
@@ -173,76 +173,76 @@ export default {"sexAdvice":[
     "b": "Avoid self-diagnosing or taking leftover antibiotics. The right tests and treatment depend on the cause."
   },
   {
-    "a": "Contraception decisions should account for the activity or partner changes. contraception.",
-    "b": "Ask a pharmacist promptly about every new use or audience. contraception."
+    "a": "Before sex with a new partner, discuss protection, recent testing, and any agreements about exclusivity.",
+    "b": "Make it a shared conversation rather than an interrogation. Both people should be able to ask questions and set boundaries."
   },
   {
-    "a": "Contraception decisions should account for someone withdraws permission. contraception.",
-    "b": "Ask a pharmacist promptly about any recording or storage plan. contraception."
+    "a": "Being in a committed relationship does not remove the need to discuss STI testing or contraception.",
+    "b": "Talk about what exclusivity means to each of you and revisit the agreement if circumstances change. Trust is supported by clarity."
   },
   {
-    "a": "Contraception decisions should account for one person feels pressured. contraception.",
-    "b": "Ask a pharmacist promptly about a change in privacy expectations. contraception."
+    "a": "Differences in sexual desire do not automatically mean either partner is doing something wrong.",
+    "b": "Discuss what each person misses without turning sex into an obligation. Stress, health, medication, and relationship tension can all affect desire."
   },
   {
-    "a": "Contraception decisions should account for someone is impaired or asleep. contraception.",
-    "b": "Ask a pharmacist promptly about a request to delete shared material. contraception."
+    "a": "A drop in libido can have many causes, including stress, illness, hormonal changes, and medication effects.",
+    "b": "If it concerns you, discuss it with a clinician. Do not stop prescribed treatment or take hormones without medical advice."
   },
   {
-    "a": "Contraception decisions should account for the agreed plan no longer feels safe. contraception.",
-    "b": "Ask a pharmacist promptly about a new partner joining the situation. contraception."
+    "a": "An erection that does not happen every time is common and does not prove a lack of attraction.",
+    "b": "Avoid making it a performance test. If the difficulty is persistent or sudden, a healthcare professional can check for underlying causes."
   },
   {
-    "a": "Contraception decisions should account for either person asks to stop. contraception.",
-    "b": "Ask a pharmacist promptly about content being moved to another service. contraception."
+    "a": "Difficulty reaching orgasm is not a measure of whether someone enjoyed intimacy or whether their partner succeeded.",
+    "b": "Talk about what feels good without making orgasm compulsory. If the change is persistent or distressing, consider clinical advice."
   },
   {
-    "a": "A pregnancy test should be used according to any new activity begins. pregnancy.",
-    "b": "Seek clinical advice when the exact recipient and platform. pregnancy."
+    "a": "Vaginal dryness can be related to hormones, stress, breastfeeding, or some medicines. A compatible lubricant may reduce friction.",
+    "b": "If dryness is persistent or painful, or comes with bleeding or irritation, seek medical advice instead of simply tolerating it."
   },
   {
-    "a": "A pregnancy test should be used according to the activity or partner changes. pregnancy.",
-    "b": "Seek clinical advice when every new use or audience. pregnancy."
+    "a": "Repeated bleeding after sex should be assessed by a healthcare professional, even if the amount is small.",
+    "b": "Seek urgent care for heavy bleeding, severe pain, dizziness, or fainting. A clinician can investigate possible causes."
   },
   {
-    "a": "A pregnancy test should be used according to someone withdraws permission. pregnancy.",
-    "b": "Seek clinical advice when any recording or storage plan. pregnancy."
+    "a": "If you suspect a genital infection, get an accurate diagnosis before choosing a treatment.",
+    "b": "Different conditions can cause similar symptoms. A pharmacist or clinician can advise whether an examination, test, or prescription is needed."
   },
   {
-    "a": "A pregnancy test should be used according to one person feels pressured. pregnancy.",
-    "b": "Seek clinical advice when a change in privacy expectations. pregnancy."
+    "a": "Avoid douching and perfumed products inside the vagina. They can irritate tissue and disrupt its natural balance.",
+    "b": "Wash the external genital area gently. Persistent odour, itching, pain, or unusual discharge deserves clinical advice."
   },
   {
-    "a": "A pregnancy test should be used according to someone is impaired or asleep. pregnancy.",
-    "b": "Seek clinical advice when a request to delete shared material. pregnancy."
+    "a": "Gentle external washing is usually enough for genital hygiene; harsh scrubbing and antiseptics can cause irritation.",
+    "b": "Stop any new product that causes discomfort. The vagina is self-cleaning, so internal washing is unnecessary."
   },
   {
-    "a": "A pregnancy test should be used according to the agreed plan no longer feels safe. pregnancy.",
-    "b": "Seek clinical advice when a new partner joining the situation. pregnancy."
+    "a": "If a condom breaks or slips, stop and promptly consider emergency contraception and STI advice where relevant.",
+    "b": "Even brief exposure can carry some risk. A pharmacist or clinic can explain the options and timing based on what happened."
   },
   {
-    "a": "A pregnancy test should be used according to either person asks to stop. pregnancy.",
-    "b": "Seek clinical advice when content being moved to another service. pregnancy."
+    "a": "Withdrawal is less reliable than many contraceptive methods and offers no STI protection.",
+    "b": "If avoiding pregnancy is important, discuss methods with lower typical-use failure rates with a qualified provider."
   },
   {
-    "a": "Screening should match the sites of exposure for any new activity begins. STI testing.",
-    "b": "Ask a clinic about window periods after the exact recipient and platform. STI testing."
+    "a": "Cycle tracking can help someone understand their menstrual pattern, but it cannot guarantee pregnancy prevention.",
+    "b": "Ovulation can shift and sperm can survive for several days. Discuss a more reliable contraceptive option if pregnancy would be a serious concern."
   },
   {
-    "a": "Screening should match the sites of exposure for the activity or partner changes. STI testing.",
-    "b": "Ask a clinic about window periods after every new use or audience. STI testing."
+    "a": "What to do after a missed contraceptive pill depends on the pill type and how many doses were missed.",
+    "b": "Check the specific leaflet or contact a pharmacist promptly. You may need backup contraception or emergency contraception."
   },
   {
-    "a": "Screening should match the sites of exposure for someone withdraws permission. STI testing.",
-    "b": "Ask a clinic about window periods after any recording or storage plan. STI testing."
+    "a": "If you plan to stop contraception, decide what will replace it if you do not want to become pregnant.",
+    "b": "Fertility may return quickly after some methods. A clinician can explain the transition and possible changes in your cycle."
   },
   {
-    "a": "Screening should match the sites of exposure for one person feels pressured. STI testing.",
-    "b": "Ask a clinic about window periods after a change in privacy expectations. STI testing."
+    "a": "Sexual-health appointments are routine healthcare, and you can ask about privacy before sharing personal details.",
+    "b": "Write your questions down if that helps. You deserve respectful care and clear explanations of tests and treatment."
   },
   {
-    "a": "Screening should match the sites of exposure for someone is impaired or asleep. STI testing.",
-    "b": "Ask a clinic about window periods after a request to delete shared material. STI testing."
+    "a": "If discussing condoms feels awkward, raise it calmly outside the bedroom and explain why it matters to you.",
+    "b": "A simple statement such as 'I want us both to feel safe, so condoms are important to me' makes the boundary clear."
   },
   {
     "a": "Screening should match the sites of exposure for the agreed plan no longer feels safe. STI testing.",
