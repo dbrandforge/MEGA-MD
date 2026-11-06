@@ -113,24 +113,33 @@ export function pickDualReply(text, options = {}) {
   const { chatId = 'global', previousReply = '', intent = null, context = [], responseMode = 'reasoned' } = options;
   if (DIRTY_RE.test(input) && !SEX_ADVICE_RE.test(input) && !/\b(advice|should i|is it ok|safe)\b/i.test(input)) return null;
 
+  // Short follow-ups often rely on the previous turns ("what if they refuse?",
+  // "and if it hurts?"). Use recent context to recover the topic only when the
+  // current message does not introduce a clear new subject.
+  const isContextualFollowUp = terms(input).length <= 8 ||
+    /\b(what about|what if|and then|why|how so|really|are you sure|then what|in that case|what should i do)\b/i.test(input);
+  const routeText = isContextualFollowUp
+    ? [input, ...context.slice(-3)].join(' ')
+    : input;
+
   let category = null;
-  if (SEX_ADVICE_RE.test(input) || (DIRTY_RE.test(input) && /\b(advice|should i|is it ok|safe|consent)\b/i.test(input))) {
+  if (SEX_ADVICE_RE.test(routeText) || (DIRTY_RE.test(routeText) && /\b(advice|should i|is it ok|safe|consent)\b/i.test(routeText))) {
     category = dualPools.sexAdvice?.length ? 'sexAdvice' : null;
-  } else if (YORUBA_RE.test(input) || intent === 'yoruba') {
+  } else if (YORUBA_RE.test(routeText) || intent === 'yoruba') {
     category = dualPools.yoruba?.length ? 'yoruba' : null;
-  } else if (intent === 'financialNeed' || MONEY_RE.test(input)) {
+  } else if (intent === 'financialNeed' || MONEY_RE.test(routeText)) {
     category = dualPools.financialNeed?.length ? 'financialNeed' : (dualPools.advice?.length ? 'advice' : null);
-  } else if (intent === 'relationships' || intent === 'boundaries' || intent === 'friendship' || RELATIONSHIP_RE.test(input)) {
+  } else if (intent === 'relationships' || intent === 'boundaries' || intent === 'friendship' || RELATIONSHIP_RE.test(routeText)) {
     category = dualPools.relationship?.length ? 'relationship' : null;
-  } else if (intent === 'empathy' || intent === 'wellbeing' || WELLBEING_RE.test(input)) {
+  } else if (intent === 'empathy' || intent === 'wellbeing' || WELLBEING_RE.test(routeText)) {
     category = dualPools.wellbeing?.length ? 'wellbeing' : (dualPools.advice?.length ? 'advice' : null);
-  } else if (intent === 'advice' || intent === 'workLife' || ADVICE_RE.test(input)) {
+  } else if (intent === 'advice' || intent === 'workLife' || ADVICE_RE.test(routeText)) {
     category = dualPools.advice?.length ? 'advice' : (dualPools.relationship?.length ? 'relationship' : null);
-  } else if (intent === 'pidgin' || (PIDGIN_RE.test(input) && dualPools.conversational?.length)) {
+  } else if (intent === 'pidgin' || (PIDGIN_RE.test(routeText) && dualPools.conversational?.length)) {
     category = dualPools.conversational?.length ? 'conversational' : (dualPools.gist?.length ? 'gist' : null);
   } else if (intent === 'flirty' && dualPools.flirty?.length) {
     category = 'flirty';
-  } else if (/\b(gist|spill|story|wahala)\b/i.test(input) && dualPools.gist?.length) {
+  } else if (/\b(gist|spill|story|wahala)\b/i.test(routeText) && dualPools.gist?.length) {
     category = 'gist';
   }
   if (!category) return null;
