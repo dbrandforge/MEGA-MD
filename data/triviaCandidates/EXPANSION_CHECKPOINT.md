@@ -21,7 +21,7 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current verified expansion coverage
 
-The staged release completed Forge, Music, Football and Movies at 50 questions in each difficulty (200 per category). Lifestyle is now complete at Easy 50, Normal 50, Hard 50 and Expert 50 (two retained legacy records plus 48 numbered questions).
+The staged release completed Forge, Music, Football and Movies at 50 questions in each difficulty (200 per category). Lifestyle is now complete at Easy 50, Normal 52, Hard 50 and Expert 50 (202 total; the two retained legacy Normal questions and two retained legacy Expert questions are preserved).
 
 | Selectable pool | Easy | Normal | Hard | Expert | Total |
 |---|---:|---:|---:|---:|---:|
@@ -29,7 +29,7 @@ The staged release completed Forge, Music, Football and Movies at 50 questions i
 | Music | 50 | 50 | 50 | 50 | 200 |
 | Football | 50 | 50 | 50 | 50 | 200 |
 | Movies | 50 | 50 | 50 | 50 | 200 |
-| Lifestyle | 50 | 50 | 50 | 50 | 200 |
+| Lifestyle | 50 | 52 | 50 | 50 | 202 |
 
 These rows describe the completed expansion pools; category aliases and legacy routing may overlap and must not be summed as unique bank records. Other player-selectable categories remain outside this completed expansion milestone and require a fresh audit before planning their grade sequence.
 
@@ -169,8 +169,8 @@ Useful commands:
 
 ## Next execution sequence
 
-1. Run the full live-bank audit now that Lifestyle is complete and use its per-category/per-grade deficits to select the next category in the approved sequence.
-2. Complete that category one grade at a time, reaching 50 approved questions per grade before moving to its next grade.
+1. The latest full live-bank audit identifies Geography as the next selectable category in sequence: Easy 7/50, Normal 11/50, Hard 1/50, Expert 1/50.
+2. Complete Geography Easy first (43 additional questions to reach 50), then Normal, Hard and Expert in order.
 3. Fact-check every answer and distractor; rewrite incomplete stems and repair encoding.
 4. Date-anchor or reject volatile/current-affairs and ranking-dependent claims.
 5. Keep unreviewed OpenTriviaQA candidates staged and respect their CC BY-SA 4.0 attribution obligations.
@@ -648,6 +648,8 @@ The previous bank contained one accidental empty array slot caused by a doubled 
 
 - Before the final Lifestyle Expert completion, candidate-quality and Forge Guard integration checks passed; the Trivia regression suite exposed the sparse-array defect described above.
 - The sparse-array defect, incorrect origination-fee answer placement and near-duplicate annualized-return stem have been corrected in the current branch.
-- Fresh regression, candidate-quality, staged bank-coverage and integration checks must pass on the latest PR head before merge or deployment.
+- Latest PR head checks all passed: Forge Bot unit tests, Trivia regression and staged bank-coverage gate, Forge Guard integration tests, and Trivia candidate-quality gate.
+- Live bank: 1,108 questions / 1,108 unique IDs; no bank quality errors. The staged release gate passed for Forge, Music, Football, Movies and Lifestyle. Sixty-four other category/grade combinations remain below 50.
+- Lifestyle audit result: 202 total (Easy 50, Normal 52, Hard 50, Expert 50).
 - No candidate records were promoted into the live bank.
 - No merge or deployment has been performed.
