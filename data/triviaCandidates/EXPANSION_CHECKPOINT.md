@@ -605,3 +605,8 @@ Ten more original Lifestyle Normal questions (`ln011`–`ln020`) cover overdraft
 ## Lifestyle Normal — third content batch
 
 Ten more original Lifestyle Normal questions (`ln021`–`ln030`) introduce investment and insurance concepts: dividends, capital gains, bonds, mutual funds, ETFs, equity, insurance claims and beneficiaries, mortgage escrow, and asset allocation. Each item carries a review date and an official Investor.gov, NAICOM or consumer-finance source. Lifestyle Normal now has 32 approved questions overall (2 existing + 30 new); 18 remain to reach 50.
+
+
+## Lifestyle Normal — grade completed
+
+Eighteen original, source-linked questions (`ln031`–`ln048`) complete Lifestyle Normal at **50/50**. The batch covers net income, opportunity cost, budget surplus, variable expenses, purchasing power, capital loss, diversification, time horizon, risk tolerance, fund expense ratios, liquidity, early-withdrawal terms, APR, secured-loan collateral, debt consolidation, irregular-income budgeting, emergency reserves and real versus nominal returns. Sources include the Consumer Financial Protection Bureau and Investor.gov. Lifestyle now has 50 approved Normal questions; Lifestyle Hard is next in the locked sequence.
