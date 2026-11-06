@@ -470,3 +470,8 @@ Ten more original Movies Easy questions (`mv011`–`mv020`) extend the mixed-fil
 ## Movies Easy — third content batch
 
 Ten more original Movies Easy questions (`mv021`–`mv030`) extend the subcategory mix across Hollywood, animation, Bollywood, series and Nollywood. Topics include Wonder Woman, Thor, Finding Nemo, Moana, DDLJ, 3 Idiots, Wednesday, Nevermore Academy, Squid Game and The Wedding Party. Each item carries a review date and official studio, distributor, production or platform source. Movies Easy now has 36 approved questions overall (6 existing + 30 new); 14 remain to reach 50.
+
+
+## Movies Easy — fourth content batch
+
+Ten more original Movies Easy questions (`mv031`–`mv040`) add Nollywood, Hollywood, animation, Bollywood and series coverage. Topics include Chinedu Ikedieze, Wolverine, Deadpool, Zootopia, The Lion King, Gully Boy, The Office, Game of Thrones and The Big Bang Theory. Each item carries a review date and official studio, distributor, platform or industry source. Movies Easy now has 46 approved questions overall (6 existing + 40 new); 4 remain to reach 50.
