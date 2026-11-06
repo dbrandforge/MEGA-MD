@@ -2,9 +2,9 @@
 
 Last verified: 2026-11-06
 Repository: `dbrandforge/MEGA-MD`
-Working branch: `lifestyle-expert-batch-01`
+Working branch: `geography-easy-batch-01` (stacked on PR #89's Lifestyle completion)
 Previous staged release: PR #88 merged to `main` (commit `5bfa6a15b0dcb822c2aa42760a104d3d85d84c3f`).
-Current batches: Lifestyle Expert `le001`–`le048`; PR #89 contains the complete 48-question numbered block plus two retained legacy records and is awaiting fresh CI/review.
+Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current completed block: Geography Easy `ge001`–`ge043`, Normal `gn001`–`gn039`, Hard `gh001`–`gh049`, Expert `gx001`–`gx049`; all four Geography grades are complete. Next active block: History Easy.
 
 ## Locked expansion target
 
@@ -21,7 +21,7 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current verified expansion coverage
 
-The staged release completed Forge, Music, Football and Movies at 50 questions in each difficulty (200 per category). Lifestyle is now complete at Easy 50, Normal 52, Hard 50 and Expert 50 (202 total; the two retained legacy Normal questions and two retained legacy Expert questions are preserved).
+The staged release completed Forge, Music, Football and Movies at 50 questions in each difficulty (200 per category). Lifestyle is complete at Easy 50, Normal 52, Hard 50 and Expert 50 (202 total). Geography is now complete at 50 questions in each difficulty (200 total).
 
 | Selectable pool | Easy | Normal | Hard | Expert | Total |
 |---|---:|---:|---:|---:|---:|
@@ -30,6 +30,7 @@ The staged release completed Forge, Music, Football and Movies at 50 questions i
 | Football | 50 | 50 | 50 | 50 | 200 |
 | Movies | 50 | 50 | 50 | 50 | 200 |
 | Lifestyle | 50 | 52 | 50 | 50 | 202 |
+| Geography | 50 | 50 | 50 | 50 | 200 |
 
 These rows describe the completed expansion pools; category aliases and legacy routing may overlap and must not be summed as unique bank records. Other player-selectable categories remain outside this completed expansion milestone and require a fresh audit before planning their grade sequence.
 
@@ -152,35 +153,35 @@ Seventeen other duplicate rows were removed. The candidate audit fails if an unq
 
 ## Automated validation
 
-Latest verified branch checks (Forge session included):
-
-- Candidate quality gate: **passed**
-- Forge Bot unit tests: **passed** (includes currency-symbol regression test and the corrected category registry)
-- Forge Guard integration tests: **passed**
-- Trivia and game unit regression suite: **passed** (134 unit tests); the separate live-bank coverage audit **fails as intended** with 83 category/grade deficits
-- Blocking live-bank coverage audit: **failed as intended**; the 21 selectable pools remain below 200 total / 50 per grade
-- No candidate records promoted into the live bank
-- No merge or deployment performed
+- PR #89's latest verified checks passed: candidate-quality gate, Forge Bot unit tests, Trivia regression and staged coverage gate, and Forge Guard integration tests.
+- Geography's static bank audit passes: 1,288 records and 1,288 unique IDs; no sparse array slots; no duplicate normalized question stems; 200 Geography questions with 50 at each difficulty.
+- All 180 new Geography questions have four distinct options, valid answer indexes, review dates and source URLs.
+- Geography answer positions are balanced across each complete 50-question grade: A 12, B 13, C 13, D 12.
+- PR #90 is stacked on PR #89; fresh CI for the Geography diff is pending until PR #89 is merged and PR #90 is retargeted to `main`.
+- No candidate records promoted into the live bank.
+- No merge or deployment performed.
 
 Useful commands:
 
 - `npm run trivia:candidates:audit` — staged candidate integrity and editorial-flag report
-- `npm run trivia:audit` — actual live-bank validation against the initial 100 / 25-per-grade release target
+- `npm run trivia:audit` — full live-bank validation
+- `npm run trivia:audit:release` — staged release gate for the completed categories
 
 ## Next execution sequence
 
-1. The latest full live-bank audit identifies Geography as the next selectable category in sequence: Easy 7/50, Normal 11/50, Hard 1/50, Expert 1/50.
-2. Complete Geography Easy first (43 additional questions to reach 50), then Normal, Hard and Expert in order.
-3. Fact-check every answer and distractor; rewrite incomplete stems and repair encoding.
-4. Date-anchor or reject volatile/current-affairs and ranking-dependent claims.
-5. Keep unreviewed OpenTriviaQA candidates staged and respect their CC BY-SA 4.0 attribution obligations.
-6. Promote only approved questions into the live bank.
-7. Run the live-bank audit and unit/integration tests after each meaningful batch.
-8. Continue the same sequence until each selected category reaches 200 questions, then expand each grade toward 250 (1,000 per category).
+1. Geography is complete at 50 Easy, 50 Normal, 50 Hard and 50 Expert.
+2. History is next in the selectable-category sequence: Easy 2/50, Normal 5/50, Hard 5/50 and Expert 6/50.
+3. Complete History Easy first (48 additional questions), then Normal, Hard and Expert in order.
+4. Fact-check every answer and distractor; rewrite incomplete stems and repair encoding.
+5. Date-anchor or reject volatile/current-affairs and ranking-dependent claims.
+6. Keep unreviewed OpenTriviaQA candidates staged and respect their CC BY-SA 4.0 attribution obligations.
+7. Promote only approved questions into the live bank.
+8. Run the live-bank audit and unit/integration tests after each meaningful batch.
+9. Continue the same sequence until each selected category reaches 200 questions, then expand each grade toward 250 (1,000 per category).
 
 ## Recovery after an app interruption
 
-Resume from this file and PR #89. The GitHub branch contains the committed work; reopening ChatGPT is not required to preserve it. Do not restart the audit from scratch and do not deploy this draft.
+Resume from this file and the stacked PRs #89 (Lifestyle) and #90 (Geography). The GitHub branch contains the committed work; reopening ChatGPT is not required to preserve it. Do not restart the audit from scratch and do not deploy this draft.
 
 
 ## Tenth approved content batch — Forge session
@@ -637,6 +638,91 @@ Ten additional original, source-linked applied questions (`le011`–`le020`) ext
 ## Lifestyle Expert — grade completed
 
 Twenty-eight original, source-linked applied questions (`le021`–`le048`) complete Lifestyle Expert at **50/50**, counting two retained legacy records. The set covers liquidity and working-capital analysis, bond pricing and yield, receivables and inventory days, insurance deductibles, fund expenses, variable-rate exposure, weighted portfolio returns, break-even volume, effective and annualized returns, cash-flow adjustments, operating margin, credit terms, foreign-exchange effects, accounting-equation changes, origination fees, net present value, gross margin, portfolio rebalancing and leverage. Every numbered question has four distinct options, a valid answer index, a review date and a source URL. Across `le001`–`le048`, correct-answer positions are evenly distributed: 12 each at A, B, C and D.
+
+
+
+
+## Geography Easy — first content batch
+
+Ten original, source-linked questions (`ge001`–`ge010`) begin the Geography Easy grade. The set covers the Equator, Greenwich Prime Meridian, Andes, Sahara, Nile, Himalayas, Great Barrier Reef, Lake Baikal, Amazon basin and Antarctica. Sources include NOAA, Royal Museums Greenwich, UNESCO and Encyclopaedia Britannica. Geography Easy now has 17/50 questions; 33 remain. The other Geography grades remain at Normal 11/50, Hard 1/50 and Expert 1/50.
+
+## Geography Easy — second content batch
+
+Ten additional original, source-linked questions (`ge011`–`ge020`) extend Geography Easy. Topics include continental size, the Indian Ocean, the Iberian Peninsula, capitals and major rivers, the Giza pyramids, and the Panama Canal. Sources include Encyclopaedia Britannica, UNESCO and the Panama Canal Authority. Geography Easy now has 27/50 questions; 23 remain.
+
+
+## Geography Easy — third content batch
+
+Ten additional original, source-linked questions (`ge021`–`ge030`) extend Geography Easy. Topics include country and city geography across Russia, Vatican City, Ecuador, Kenya, Canada, Brazil, the Mediterranean, Japan, Mexico and Peru. Sources include Encyclopaedia Britannica and UNESCO. Geography Easy now has 37/50 questions; 13 remain.
+
+
+## Geography Easy — grade completed
+
+Forty-three original, source-linked questions (`ge001`–`ge043`) complete Geography Easy at **50/50**, including seven retained existing questions. The new questions cover world physical geography, continents, oceans, major rivers, mountain ranges, deserts, islands, capitals, landmarks, straits and waterways. Sources include NOAA, Royal Museums Greenwich, UNESCO, the Panama Canal Authority and Encyclopaedia Britannica. Across the completed 50-question grade, correct-answer positions are balanced: 12 at A, 13 at B, 13 at C and 12 at D. Geography Normal is next at 11/50, with 39 additional questions needed.
+
+
+## Geography Normal — first content batch
+
+Ten original, source-linked questions (`gn001`–`gn010`) begin Geography Normal. Topics include Lake Titicaca, the Suez Canal, Danube, Pyrenees, Strait of Gibraltar, Mount Kenya, Mongolia, Indonesia, the Rio Grande and Mekong. Sources include Encyclopaedia Britannica. Geography Normal now has 21/50 questions; 29 remain.
+
+
+## Geography Normal — second content batch
+
+Ten additional original, source-linked questions (`gn011`–`gn020`) extend Geography Normal. Topics include the Ural Mountains, Atacama Desert, Türkiye's two-sea coastline, Isthmus of Panama, English Channel, Samarkand, Finland, the Alps, Caspian Sea and Lisbon. Sources include Encyclopaedia Britannica. The correct-answer positions across the 20 numbered Normal questions are balanced at A 1, B 6, C 7 and D 6; the existing 11 questions remain preserved. Geography Normal now has 41/50 questions; 9 remain.
+
+
+## Geography Normal — third content batch
+
+Ten additional original, source-linked questions (`gn021`–`gn030`) extend Geography Normal. Topics include the Scandinavian Mountains, Vltava, Timbuktu, Gobi Desert, Adriatic Sea, Hispaniola, Brazil, Tigris, Canary Islands and Vienna. Sources include Encyclopaedia Britannica. Geography Normal now has 41/50 questions; 9 remain.
+
+
+## Geography Normal — grade completed
+
+Thirty-nine original, source-linked questions (`gn001`–`gn039`) complete Geography Normal at **50/50**, including eleven retained existing questions. Topics span major rivers, canals, mountain ranges, deserts, straits, islands, coastlines, inland seas, historic cities and regional geography. Sources include Encyclopaedia Britannica and UNESCO. Across the 39 numbered Normal questions, correct-answer positions are balanced at A 1, B 13, C 13 and D 12; including the eleven retained existing answers, the full grade totals A 12, B 13, C 13 and D 12. Geography Hard now has 11/50 questions (one retained existing question plus ten new); 39 remain.
+
+
+## Geography Hard — first content batch
+
+Ten original, source-linked questions (`gh001`–`gh010`) begin Geography Hard. Topics include the Benguela and Humboldt currents, the Volga, Bosporus, Arabian Plate, Afar Triple Junction, Danube Delta, Pacific Ring of Fire, Bab-el-Mandeb and Bass Strait. Sources include Encyclopaedia Britannica, UNESCO and the U.S. Geological Survey. Geography Hard is now complete at 50/50 questions.
+
+
+## Geography Hard — second content batch
+
+Ten additional original, source-linked questions (`gh011`–`gh020`) extend Geography Hard. Topics include the Gulf Stream, Tibetan Plateau, Strait of Hormuz, Mozambique Channel, Caucasus, Aegean Sea, Karakum Desert, Ob River, Lake Superior and Pamir Mountains. Sources include Encyclopaedia Britannica. Geography Hard now has 21/50 questions; 29 remain.
+
+
+## Geography Hard — third content batch
+
+Ten additional original, source-linked questions (`gh021`–`gh030`) extend Geography Hard. Topics include the Nazca Plate and Peru–Chile Trench, Lake Baikal, Kuroshio Current, Danube border, Dardanelles, Gulf of Aqaba, Congo Basin, Somalia, Brazil's latitude range and the Kalahari. Sources include Encyclopaedia Britannica and WWF. Geography Hard now has 31/50 questions; 19 remain.
+
+
+## Geography Hard — grade completed
+
+Forty-nine original, source-linked questions (`gh001`–`gh049`) complete Geography Hard at **50/50**, including one retained existing question. The questions cover ocean currents, tectonic plates and subduction, ocean trenches, mountain systems, inland seas, river basins and deltas, straits, deserts, islands, and regional physical geography. Sources include Encyclopaedia Britannica, UNESCO, WWF and the U.S. Geological Survey. Across the full 50-question grade, correct-answer positions are balanced: 12 at A, 13 at B, 13 at C and 12 at D. Geography Expert is next at 1/50; 49 additional questions are needed.
+
+
+## Geography Expert — first content batch
+
+Ten original, source-linked advanced questions (`gx001`–`gx010`) begin Geography Expert. Topics include Hadley circulation, Coriolis deflection, thermohaline circulation, geostrophic balance, El Niño, post-glacial isostatic rebound, karst processes, drainage divides, transform plate boundaries and rain shadows. Sources include NOAA, USGS, the U.S. National Park Service and Encyclopaedia Britannica. Geography Expert now has 31/50 questions; 19 remain.
+
+
+## Geography Expert — second content batch
+
+Ten additional original, source-linked advanced questions (`gx011`–`gx020`) extend Geography Expert. Topics include coastal upwelling and Ekman transport, thermoclines, isohyets, hypsometric curves, monsoon circulation, aridity indices, western boundary currents, periglacial processes, river base level and the Mercator projection. Sources include NOAA, UNEP and Encyclopaedia Britannica. Geography Expert now has 21/50 questions; 29 remain.
+
+
+## Geography Expert — third content batch
+
+Ten additional original, source-linked advanced questions (`gx021`–`gx030`) extend Geography Expert. Topics include the beta effect and Rossby waves, Ekman transport, the Intertropical Convergence Zone, oxbow lakes, braided streams, knickpoints, perched aquifers, longitudinal river profiles and chemical weathering. Sources include NOAA, USGS and Encyclopaedia Britannica. Geography Expert now has 31/50 questions; 19 remain.
+
+
+## Geography Expert — grade completed
+
+Forty-nine original, source-linked advanced questions (`gx001`–`gx049`) complete Geography Expert at **50/50**, including one retained existing question. The set covers atmospheric and ocean circulation, climate dynamics, tectonic processes, hydrology, river and coastal geomorphology, periglacial environments, aeolian landforms and glacial landscapes. Sources include NOAA, USGS, UNEP, WWF, the U.S. National Park Service, UNESCO and Encyclopaedia Britannica. Across the full 50-question Expert grade, correct-answer positions are balanced: 12 at A, 13 at B, 13 at C and 12 at D.
+
+## Geography — category completed
+
+Geography now has **200 approved questions: 50 Easy, 50 Normal, 50 Hard and 50 Expert**. Easy contains 43 new numbered questions plus seven retained questions; Normal contains 39 new numbered questions plus eleven retained questions; Hard contains 49 new numbered questions plus one retained question; Expert contains 49 new numbered questions plus one retained question. All four grade blocks are complete. The staged release gate and unit regression tests now include Geography alongside the previously completed categories.
 
 
 ## Sparse-array regression correction

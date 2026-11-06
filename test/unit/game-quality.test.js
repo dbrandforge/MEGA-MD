@@ -205,6 +205,10 @@ describe('game quality foundations', () => {
     expect(getTriviaQuestionCount('forge', 'normal')).toBe(50);
     expect(getTriviaQuestionCount('forge', 'hard')).toBe(50);
     expect(getTriviaQuestionCount('forge', 'expert')).toBe(50);
+    for (const grade of ['easy', 'normal', 'hard', 'expert']) {
+      expect(getTriviaQuestionCount('lifestyle', grade)).toBeGreaterThanOrEqual(50);
+      expect(getTriviaQuestionCount('geography', grade)).toBeGreaterThanOrEqual(50);
+    }
     expect(getTriviaQuestionCount('music')).toBeGreaterThanOrEqual(70);
     expect(getTriviaQuestionCount('music', 'easy')).toBeGreaterThanOrEqual(50);
     expect(getTriviaQuestionCount('music', 'normal')).toBeGreaterThanOrEqual(50);
