@@ -400,3 +400,8 @@ Ten more original Football Normal questions (`fn031`–`fn040`) cover African Wo
 ## Football Normal — grade completed
 
 Four final questions (`fn041`–`fn044`) complete Football Normal at 50 questions (6 existing + 44 new). The grade now spans international milestones, African football, major national-team tournaments, and European club competition history. The next grade in the locked sequence is Football Hard.
+
+
+## Football Hard — first content batch
+
+Ten original Football Hard questions (`fh001`–`fh010`) begin the third difficulty grade. Topics include World Cup final milestones, Brazil’s 1970 record, Denmark’s 1992 EURO run, Greece’s 2004 title, Abedi Pelé’s European Cup final appearance, the 2005 Champions League shoot-out and Nigeria’s 1996 Olympic final. Each item carries a review date and official FIFA, UEFA or Olympics/FIFA source. Football Hard now has 12 approved questions overall (2 existing + 10 new); 38 remain to reach 50.
