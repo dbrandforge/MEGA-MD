@@ -653,3 +653,12 @@ The previous bank contained one accidental empty array slot caused by a doubled 
 - Lifestyle audit result: 202 total (Easy 50, Normal 52, Hard 50, Expert 50).
 - No candidate records were promoted into the live bank.
 - No merge or deployment has been performed.
+
+
+## Geography first-cycle expansion completed — 2026-11-06
+
+- Geography now has 200 live questions: Easy 50, Normal 50, Hard 50 and Expert 50.
+- Added 43 Easy, 39 Normal, 49 Hard and 49 Expert questions; existing approved questions were preserved.
+- New records carry stable IDs, four answer options, answer indexes, review dates and reference metadata.
+- The staged release gate now requires Geography alongside Forge, Music, Football, Movies and Lifestyle.
+- Full CI, bank audit, regression and candidate-quality checks must pass on the latest PR head before merge. No Render environment, WhatsApp session, pairing code or non-Trivia gameplay behavior is to be changed.
