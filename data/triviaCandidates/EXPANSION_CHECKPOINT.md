@@ -425,3 +425,8 @@ Ten more original Football Hard questions (`fh031`–`fh040`) cover the 2002, 20
 ## Football Hard — grade completed
 
 Eight final questions (`fh041`–`fh048`) complete Football Hard at 50 questions (2 existing + 48 new). The grade now covers advanced match-law interpretation, historic World Cup and AFCON records, Nigerian football milestones, and decisive tournament moments. The next grade in the locked sequence is Football Expert.
+
+
+## Football Expert — first content batch
+
+Ten original Football Expert questions (`fe001`–`fe010`) begin the fourth difficulty grade. They focus on decisive World Cup final scorers, Golden Boot records and landmark individual performances from 1954 through 2014, plus the fastest goal in tournament history. Each question carries a review date and official FIFA source. Football Expert now has 12 approved questions overall (2 existing + 10 new); 38 remain to reach 50.
