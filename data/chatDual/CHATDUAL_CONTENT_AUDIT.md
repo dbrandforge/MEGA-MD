@@ -53,4 +53,6 @@ The third expansion module, `ev_0_2.js`, has now been rewritten with 182 distinc
 
 ### Fourth module checkpoint (2026-11-06)
 
-`ev_0_3.js` has been replaced while preserving 182 rows. The module-level regression now checks this fourth module alongside the first three for row count, string values, and exact-string uniqueness on both sides. This check establishes structural diversity only; semantic review remains necessary before treating the bank as release-ready. The remaining twelve expansion modules and specialty banks are not yet rewritten.
+`ev_0_3.js` was initially replaced at 182 rows, but CI exposed that the original module inventory was 181 rows. The module has now been restored to 181 rows, and the regression test checks the preserved inventory for all four modules (182, 182, 182, 181). Exact-string uniqueness is a structural check only: `ev_0_3.js` still contains templated, semantically repetitive statements and is not accepted as a substantive editorial rewrite. The remaining twelve expansion modules and specialty banks are not yet rewritten.
+
+The first CI run for this checkpoint failed only on the expansion inventory assertion: 2,909 expansion pairs were observed instead of the expected 2,908 (5,184 total instead of 5,183). The row-count regression has been corrected on the feature branch; a fresh CI result is still required.
