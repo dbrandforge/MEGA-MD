@@ -2,9 +2,9 @@
 
 Last verified: 2026-11-06
 Repository: `dbrandforge/MEGA-MD`
-Working branch: `lifestyle-expert-batch-01`
+Working branch: `geography-easy-batch-01` (stacked on PR #89's Lifestyle completion)
 Previous staged release: PR #88 merged to `main` (commit `5bfa6a15b0dcb822c2aa42760a104d3d85d84c3f`).
-Current batches: Lifestyle Expert `le001`–`le048`; PR #89 contains the complete 48-question numbered block plus two retained legacy records and is awaiting fresh CI/review.
+Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current active block: Geography Easy `ge001`–`ge010`; PR #90 is stacked on PR #89.
 
 ## Locked expansion target
 
@@ -169,8 +169,8 @@ Useful commands:
 
 ## Next execution sequence
 
-1. The latest full live-bank audit identifies Geography as the next selectable category in sequence: Easy 7/50, Normal 11/50, Hard 1/50, Expert 1/50.
-2. Complete Geography Easy first (43 additional questions to reach 50), then Normal, Hard and Expert in order.
+1. Complete Geography Easy: currently 17/50 (10 new questions added to the seven existing questions; 33 remain).
+2. Then complete Geography Normal (11/50), Hard (1/50) and Expert (1/50), in that order.
 3. Fact-check every answer and distractor; rewrite incomplete stems and repair encoding.
 4. Date-anchor or reject volatile/current-affairs and ranking-dependent claims.
 5. Keep unreviewed OpenTriviaQA candidates staged and respect their CC BY-SA 4.0 attribution obligations.
@@ -638,6 +638,12 @@ Ten additional original, source-linked applied questions (`le011`–`le020`) ext
 
 Twenty-eight original, source-linked applied questions (`le021`–`le048`) complete Lifestyle Expert at **50/50**, counting two retained legacy records. The set covers liquidity and working-capital analysis, bond pricing and yield, receivables and inventory days, insurance deductibles, fund expenses, variable-rate exposure, weighted portfolio returns, break-even volume, effective and annualized returns, cash-flow adjustments, operating margin, credit terms, foreign-exchange effects, accounting-equation changes, origination fees, net present value, gross margin, portfolio rebalancing and leverage. Every numbered question has four distinct options, a valid answer index, a review date and a source URL. Across `le001`–`le048`, correct-answer positions are evenly distributed: 12 each at A, B, C and D.
 
+
+
+
+## Geography Easy — first content batch
+
+Ten original, source-linked questions (`ge001`–`ge010`) begin the Geography Easy grade. The set covers the Equator, Greenwich Prime Meridian, Andes, Sahara, Nile, Himalayas, Great Barrier Reef, Lake Baikal, Amazon basin and Antarctica. Sources include NOAA, Royal Museums Greenwich, UNESCO and Encyclopaedia Britannica. Geography Easy now has 17/50 questions; 33 remain. The other Geography grades remain at Normal 11/50, Hard 1/50 and Expert 1/50.
 
 ## Sparse-array regression correction
 
