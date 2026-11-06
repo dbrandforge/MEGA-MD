@@ -4,7 +4,7 @@ Last verified: 2026-11-06
 Repository: `dbrandforge/MEGA-MD`
 Working branch: `geography-easy-batch-01` (stacked on PR #89's Lifestyle completion)
 Previous staged release: PR #88 merged to `main` (commit `5bfa6a15b0dcb822c2aa42760a104d3d85d84c3f`).
-Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current active block: Geography Easy `ge001`–`ge043`; PR #90 is stacked on PR #89.
+Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current active block: Geography Normal `gn001`–`gn010`; PR #90 is stacked on PR #89.
 
 ## Locked expansion target
 
@@ -658,6 +658,11 @@ Ten additional original, source-linked questions (`ge021`–`ge030`) extend Geog
 ## Geography Easy — grade completed
 
 Forty-three original, source-linked questions (`ge001`–`ge043`) complete Geography Easy at **50/50**, including seven retained existing questions. The new questions cover world physical geography, continents, oceans, major rivers, mountain ranges, deserts, islands, capitals, landmarks, straits and waterways. Sources include NOAA, Royal Museums Greenwich, UNESCO, the Panama Canal Authority and Encyclopaedia Britannica. Across the completed 50-question grade, correct-answer positions are balanced: 12 at A, 13 at B, 13 at C and 12 at D. Geography Normal is next at 11/50, with 39 additional questions needed.
+
+
+## Geography Normal — first content batch
+
+Ten original, source-linked questions (`gn001`–`gn010`) begin Geography Normal. Topics include Lake Titicaca, the Suez Canal, Danube, Pyrenees, Strait of Gibraltar, Mount Kenya, Mongolia, Indonesia, the Rio Grande and Mekong. Sources include Encyclopaedia Britannica. Geography Normal now has 21/50 questions; 29 remain.
 
 
 ## Sparse-array regression correction
