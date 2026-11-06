@@ -2,6 +2,13 @@ import { ENTERTAINMENT_TRIVIA } from './entertainmentTrivia.js';
 import { HISTORY_TRIVIA } from './historyTrivia.js';
 import { FOOD_TRIVIA } from './foodTrivia.js';
 import { NIGERIA_GENERAL_TRIVIA } from './nigeriaGeneralTrivia.js';
+import { CULTURE_TRIVIA } from './cultureTrivia.js';
+import { TECHNOLOGY_TRIVIA } from './technologyTrivia.js';
+import { BUSINESS_TRIVIA } from './businessTrivia.js';
+import { SCIENCE_TRIVIA } from './scienceTrivia.js';
+import { GAMING_TRIVIA } from './gamingTrivia.js';
+import { LITERATURE_TRIVIA } from './literatureTrivia.js';
+import { CURRENT_AFFAIRS_TRIVIA } from './currentAffairsTrivia.js';
 
 // Curated Nigeria-focused trivia. Keep answers factual, unambiguous and periodically reviewed.
 // "current" here means locally relatable culture and everyday knowledge; volatile office-holder/news
@@ -1505,6 +1512,13 @@ NIGERIA_TRIVIA.push(...ENTERTAINMENT_TRIVIA);
 NIGERIA_TRIVIA.push(...HISTORY_TRIVIA);
 NIGERIA_TRIVIA.push(...FOOD_TRIVIA);
 NIGERIA_TRIVIA.push(...NIGERIA_GENERAL_TRIVIA);
+NIGERIA_TRIVIA.push(...CULTURE_TRIVIA);
+NIGERIA_TRIVIA.push(...TECHNOLOGY_TRIVIA);
+NIGERIA_TRIVIA.push(...BUSINESS_TRIVIA);
+NIGERIA_TRIVIA.push(...SCIENCE_TRIVIA);
+NIGERIA_TRIVIA.push(...GAMING_TRIVIA);
+NIGERIA_TRIVIA.push(...LITERATURE_TRIVIA);
+NIGERIA_TRIVIA.push(...CURRENT_AFFAIRS_TRIVIA);
 
 export const TRIVIA_CATEGORIES = [
   'mixed','music','football','movies','lifestyle','geography','history','culture','food',
