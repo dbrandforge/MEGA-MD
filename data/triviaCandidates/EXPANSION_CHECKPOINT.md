@@ -355,3 +355,8 @@ Forty-eight new expert-level Music questions (mx139–mx186) completed the Exper
 ## Football Easy — first content batch
 
 Ten original, source-linked Football Easy questions (`ft001`–`ft010`) begin the next category in the approved sequence. Topics cover official ball specifications, goal and penalty-area measurements, throw-in and corner-kick scoring rules, offside exceptions, assistant referees and referee authority. Sources are the International Football Association Board (IFAB) Laws of the Game. Football now has 24 approved questions overall: Easy 14, Normal 6, Hard 2 and Expert 2. The Easy block has 36 questions remaining before Football Normal begins. All ten additions carry a review date and official IFAB source URL.
+
+
+## Football Easy — second content batch
+
+Ten additional original Football Easy questions (`ft011`–`ft020`) extend the current grade block. Topics cover team player limits, minimum players, match and half-time duration, goal validity, ball in/out of play, kick-off restarts, throw-in awards, goalkeeper handling area and disciplinary cards. Each item carries a review date and an official IFAB Laws of the Game source. Football now has 34 approved questions overall: Easy 24, Normal 6, Hard 2 and Expert 2. The Easy block has 26 questions remaining before Football Normal begins.
