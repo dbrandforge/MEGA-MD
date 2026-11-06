@@ -173,12 +173,12 @@ export default {"sexAdvice":[
     "b": "Avoid self-diagnosing or taking leftover antibiotics. The right tests and treatment depend on the cause."
   },
   {
-    "a": "Before sex with a new partner, discuss protection, recent testing, and any agreements about exclusivity.",
-    "b": "Make it a shared conversation rather than an interrogation. Both people should be able to ask questions and set boundaries."
+    "a": "A partner should never remove a condom without the other person's knowledge and agreement. That crosses a clear boundary.",
+    "b": "If this happened, you can stop contact and seek support. Ask a pharmacist or clinic promptly about pregnancy and STI risks."
   },
   {
-    "a": "Being in a committed relationship does not remove the need to discuss STI testing or contraception.",
-    "b": "Talk about what exclusivity means to each of you and revisit the agreement if circumstances change. Trust is supported by clarity."
+    "a": "If someone refuses the protection you need, you are allowed to decline sex. You do not owe anyone access to your body.",
+    "b": "State the boundary clearly and do not negotiate under pressure. Respect for health decisions is part of compatibility."
   },
   {
     "a": "Differences in sexual desire do not automatically mean either partner is doing something wrong.",
@@ -229,8 +229,8 @@ export default {"sexAdvice":[
     "b": "Ovulation can shift and sperm can survive for several days. Discuss a more reliable contraceptive option if pregnancy would be a serious concern."
   },
   {
-    "a": "What to do after a missed contraceptive pill depends on the pill type and how many doses were missed.",
-    "b": "Check the specific leaflet or contact a pharmacist promptly. You may need backup contraception or emergency contraception."
+    "a": "Having an STI does not make someone dirty or unworthy of intimacy. Many infections are treatable or manageable.",
+    "b": "Focus on accurate information, care, and honest communication. Shame discourages people from seeking testing and treatment."
   },
   {
     "a": "If you plan to stop contraception, decide what will replace it if you do not want to become pregnant.",
@@ -245,76 +245,76 @@ export default {"sexAdvice":[
     "b": "A simple statement such as 'I want us both to feel safe, so condoms are important to me' makes the boundary clear."
   },
   {
-    "a": "Screening should match the sites of exposure for the agreed plan no longer feels safe. STI testing.",
-    "b": "Ask a clinic about window periods after a new partner joining the situation. STI testing."
+    "a": "If a partner tells you they have an STI, listen without blaming or humiliating them.",
+    "b": "Take time to process the information, then discuss testing and treatment with a clinician. Respectful communication protects both people."
   },
   {
-    "a": "Screening should match the sites of exposure for either person asks to stop. STI testing.",
-    "b": "Ask a clinic about window periods after content being moved to another service. STI testing."
+    "a": "An STI result cannot always show when or from whom an infection was acquired. Some infections remain unnoticed for a long time.",
+    "b": "Avoid jumping to accusations. Get clear medical information and then discuss testing, agreements, and next steps honestly."
   },
   {
-    "a": "New sores, discharge, or burning warrant assessment for any new activity begins. STI symptoms.",
-    "b": "Avoid self-prescribing antibiotics when the exact recipient and platform. STI symptoms."
+    "a": "Take prescribed STI treatment exactly as directed, even if symptoms improve before the course is finished.",
+    "b": "Ask whether partners need treatment and when follow-up testing is due. Do not stop medication early without medical advice."
   },
   {
-    "a": "New sores, discharge, or burning warrant assessment for the activity or partner changes. STI symptoms.",
-    "b": "Avoid self-prescribing antibiotics when every new use or audience. STI symptoms."
+    "a": "If a clinician advises avoiding sex during treatment, follow that advice until they say it is safe to resume.",
+    "b": "Ask whether the guidance covers all sexual contact and how long it applies. This can help prevent reinfection or transmission."
   },
   {
-    "a": "New sores, discharge, or burning warrant assessment for someone withdraws permission. STI symptoms.",
-    "b": "Avoid self-prescribing antibiotics when any recording or storage plan. STI symptoms."
+    "a": "A negative STI result only covers the infections, sites, and period that were tested. It is not a lifetime guarantee.",
+    "b": "Ask what the test included and whether it was taken after the correct window period. Repeat testing may be recommended."
   },
   {
-    "a": "New sores, discharge, or burning warrant assessment for one person feels pressured. STI symptoms.",
-    "b": "Avoid self-prescribing antibiotics when a change in privacy expectations. STI symptoms."
+    "a": "If you are worried about confidentiality at a clinic, ask staff to explain who can access your records and what exceptions apply.",
+    "b": "You can ask about privacy before sharing details. Do not let uncertainty delay urgent medical care."
   },
   {
-    "a": "New sores, discharge, or burning warrant assessment for someone is impaired or asleep. STI symptoms.",
-    "b": "Avoid self-prescribing antibiotics when a request to delete shared material. STI symptoms."
+    "a": "If anxiety makes intimacy difficult, slow down and talk about what would help you feel safe.",
+    "b": "You do not have to push through fear to reassure someone. Agree on a manageable pace or stop and revisit the subject later."
   },
   {
-    "a": "New sores, discharge, or burning warrant assessment for the agreed plan no longer feels safe. STI symptoms.",
-    "b": "Avoid self-prescribing antibiotics when a new partner joining the situation. STI symptoms."
+    "a": "Past sexual experiences do not obligate you to repeat an activity with a current partner.",
+    "b": "You can set a different boundary now, even if you agreed before. Consent applies to the present situation."
   },
   {
-    "a": "New sores, discharge, or burning warrant assessment for either person asks to stop. STI symptoms.",
-    "b": "Avoid self-prescribing antibiotics when content being moved to another service. STI symptoms."
+    "a": "Clothing, flirting, relationship status, and previous sexual activity never establish consent.",
+    "b": "Only a freely given yes to the specific activity counts. If you are unsure, ask and accept the answer."
   },
   {
-    "a": "PEP is time-sensitive after any new activity begins. HIV prevention.",
-    "b": "Discuss PrEP with a qualified provider when the exact recipient and platform. HIV prevention."
+    "a": "If someone seems frightened, frozen, or disconnected, do not treat silence as permission.",
+    "b": "Pause and check in calmly. If they cannot clearly choose, end the sexual activity and focus on their wellbeing."
   },
   {
-    "a": "PEP is time-sensitive after the activity or partner changes. HIV prevention.",
-    "b": "Discuss PrEP with a qualified provider when every new use or audience. HIV prevention."
+    "a": "If someone agrees because they fear your anger or retaliation, that is not freely given consent.",
+    "b": "Take responsibility for making no safe. Do not threaten, sulk, punish, or keep asking after a refusal."
   },
   {
-    "a": "PEP is time-sensitive after someone withdraws permission. HIV prevention.",
-    "b": "Discuss PrEP with a qualified provider when any recording or storage plan. HIV prevention."
+    "a": "A person can agree to one activity and refuse another during the same encounter.",
+    "b": "Ask before changing what you are doing. Being intimate already does not remove the need to check."
   },
   {
-    "a": "PEP is time-sensitive after one person feels pressured. HIV prevention.",
-    "b": "Discuss PrEP with a qualified provider when a change in privacy expectations. HIV prevention."
+    "a": "Revisit consent when the circumstances change, such as adding a partner, changing location, or introducing a new activity.",
+    "b": "An earlier agreement does not cover every new situation. Make sure everyone affected freely agrees to the change."
   },
   {
-    "a": "PEP is time-sensitive after someone is impaired or asleep. HIV prevention.",
-    "b": "Discuss PrEP with a qualified provider when a request to delete shared material. HIV prevention."
+    "a": "In a group encounter, each participant must be able to agree or decline independently.",
+    "b": "Discuss boundaries, protection, privacy, and how anyone can pause or leave. One person's agreement cannot speak for another."
   },
   {
-    "a": "PEP is time-sensitive after the agreed plan no longer feels safe. HIV prevention.",
-    "b": "Discuss PrEP with a qualified provider when a new partner joining the situation. HIV prevention."
+    "a": "If someone wants to stop during a group encounter, stop the relevant activity immediately.",
+    "b": "The expectations of other participants never override an individual's boundary. Ask privately what support they want."
   },
   {
-    "a": "PEP is time-sensitive after either person asks to stop. HIV prevention.",
-    "b": "Discuss PrEP with a qualified provider when content being moved to another service. HIV prevention."
+    "a": "Discuss inviting another person into a relationship or sexual situation privately before making plans.",
+    "b": "Do not surprise your partner in the moment or frame refusal as insecurity. Everyone affected deserves a genuine choice."
   },
   {
-    "a": "Restraints must be quickly releasable during any new activity begins. restraints.",
-    "b": "Check circulation and sensation when using the exact recipient and platform. restraints."
+    "a": "If someone pressures you to send an intimate picture, you can refuse or end the conversation.",
+    "b": "A person who respects you will not demand proof of affection. Save evidence and seek help if they threaten or blackmail you."
   },
   {
-    "a": "Restraints must be quickly releasable during the activity or partner changes. restraints.",
-    "b": "Check circulation and sensation when using every new use or audience. restraints."
+    "a": "If an intimate image is shared without permission, preserve evidence such as messages, dates, usernames, and links.",
+    "b": "Report the content to the platform and seek trusted support. Avoid forwarding the image yourself, even when trying to prove what happened."
   },
   {
     "a": "Restraints must be quickly releasable during someone withdraws permission. restraints.",
