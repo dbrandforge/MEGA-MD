@@ -747,12 +747,17 @@ Forty-eight original, source-linked questions (`he001`–`he048`) complete Histo
 
 ## History Normal — first content batch
 
-Ten original, source-linked questions (`hn001`–`hn010`) begin History Normal. Topics include the fall of Constantinople, Vladimir Lenin, Shah Jahan and the Taj Mahal, Sumerian cuneiform, the Aztec capital, the February Revolution, the Storming of the Bastille, King John and Magna Carta, the Yuan dynasty, and the Achaemenid Persian Empire. Sources include Encyclopaedia Britannica. History Normal now has 25/50 questions; 25 remain.
+Ten original, source-linked questions (`hn001`–`hn010`) begin History Normal. Topics include the fall of Constantinople, Vladimir Lenin, Shah Jahan and the Taj Mahal, Sumerian cuneiform, the Aztec capital, the February Revolution, the Storming of the Bastille, King John and Magna Carta, the Yuan dynasty, and the Achaemenid Persian Empire. Sources include Encyclopaedia Britannica. History Normal now has 35/50 questions; 15 remain.
 
 
 ## History Normal — second content batch
 
 Ten additional original, source-linked questions (`hn011`–`hn020`) extend History Normal. Topics include the Battle of Waterloo, Sundiata Keita and the Mali Empire, Abbasid Baghdad, Assyrian Nineveh, the Indian Rebellion of 1857, Great Zimbabwe, the Qing dynasty and Opium War, Kwame Nkrumah, Charlemagne and Toussaint Louverture. Sources include Encyclopaedia Britannica and UNESCO. History Normal now has 25/50 questions; 25 remain.
+
+
+## History Normal — third content batch
+
+Ten additional original, source-linked questions (`hn021`–`hn030`) extend History Normal. Topics include Elizabeth I and the Spanish Armada, the Norman Conquest, the Kingdom of Kush, Genghis Khan, Babur and the Mughal Empire, the Revolutions of 1848, Carthage, Cleopatra VII, the American Revolution and Constantine XI. Sources include Encyclopaedia Britannica. History Normal now has 35/50 questions; 15 remain.
 
 
 ## Sparse-array regression correction
