@@ -385,3 +385,8 @@ Ten original, source-linked Football Normal questions (`fn001`–`fn010`) begin 
 ## Football Normal — second content batch
 
 Ten more original Football Normal questions (`fn011`–`fn020`) add Nigerian AFCON history, the 2014 FIFA World Cup, UEFA EURO 2016 and Arsenal’s unbeaten 2003–04 Premier League campaign. Sources are official CAF, FIFA, UEFA and Premier League publications. Football Normal now has 26 approved questions overall (6 existing + 20 new); 24 remain to reach 50.
+
+
+## Football Normal — third content batch
+
+Ten more original Football Normal questions (`fn021`–`fn030`) deepen the Nigerian football history component: Nigeria’s first AFCON title, the 1994 final and Emmanuel Amunike’s brace, the Super Eagles’ first World Cup goal and debut win, Stephen Keshi’s 2013 AFCON title, and the 2023 AFCON final and awards. Each entry carries a review date and official CAF or FIFA source. Football Normal now has 36 approved questions overall (6 existing + 30 new); 14 remain to reach 50.
