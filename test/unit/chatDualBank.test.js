@@ -37,6 +37,20 @@ describe('ChatDual expansion bank', () => {
     });
   });
 
+  it('can return response A, response B, or both complementary sides', () => {
+    const prompt = 'I need advice about my career';
+    const base = { chatId: 'response-mode-check', intent: 'advice' };
+    const a = pickDualReply(prompt, { ...base, responseMode: 'a' });
+    const b = pickDualReply(prompt, { ...base, responseMode: 'b' });
+    const both = pickDualReply(prompt, { ...base, responseMode: 'both' });
+
+    expect(typeof a).toBe('string');
+    expect(typeof b).toBe('string');
+    expect(a.length).toBeGreaterThan(0);
+    expect(b.length).toBeGreaterThan(0);
+    expect(both).toBe(a + '\\n\\n' + b);
+  });
+
   it('routes classified relationship, friendship, work-life and advice prompts', () => {
     const cases = [
       ['My situationship only texts at night', 'relationships'],
