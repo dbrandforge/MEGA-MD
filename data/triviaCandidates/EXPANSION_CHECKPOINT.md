@@ -570,3 +570,8 @@ The staged release command now requires all four completed categories: Forge, Mu
 ## Lifestyle Easy — first content batch
 
 Ten original Lifestyle Easy questions (`ls001`–`ls010`) begin the next category after Movies. The batch focuses on practical Nigerian everyday knowledge: banking abbreviations, NAFDAC and FRSC, electricity regulation, the national emergency number, QR codes, payslip terminology and VAT. Each question carries a review date and an official Nigerian regulator, government or standards source. Lifestyle Easy now has 15 approved questions overall (5 existing + 10 new); 35 remain to reach 50.
+
+
+## Lifestyle Easy — second content batch
+
+Ten more original Lifestyle Easy questions (`ls011`–`ls020`) cover digital security, mobile and navigation technology, document formats, budgeting, emergency savings, recycling, basic first aid, smoke alarms and temperature measurement. Each item carries a review date and an official regulator, government, standards, consumer-finance or safety source. Lifestyle Easy now has 25 approved questions overall (5 existing + 20 new); 25 remain to reach 50.
