@@ -440,3 +440,8 @@ Ten more Football Expert questions (`fe011`–`fe020`) cover the early CAF Champ
 ## Football Expert — third content batch
 
 Ten more Football Expert questions (`fe021`–`fe030`) cover CAF Champions League records and UEFA all-time player, coach and club milestones, including Al Ahly’s 12 continental titles, Cristiano Ronaldo’s UCL records, Carlo Ancelotti’s coaching record, Seedorf’s three-club achievement and Francisco Gento’s eight finals. The 2025 AFCON title question is explicitly time-qualified because Senegal’s CAS appeal remains pending as of the review date. Each new question carries a review date and official CAF or UEFA source. Football Expert now has 32 approved questions overall (2 existing + 30 new); 18 remain to reach 50.
+
+
+## Football Expert — fourth content batch
+
+Ten more Football Expert questions (`fe031`–`fe040`) cover the 2025/26 CAF Champions League and UEFA Champions League finals: Mamelodi Sundowns’ second continental title, AS FAR, the aggregate result, Teboho Mokoena and Ronwen Williams; then PSG’s title defence against Arsenal, the shoot-out, Kai Havertz and Vitinha’s Player of the Match award. Each item carries a review date and official CAF or UEFA source. Football Expert now has 42 approved questions overall (2 existing + 40 new); 8 remain to reach 50.
