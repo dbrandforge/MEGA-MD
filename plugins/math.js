@@ -2,7 +2,6 @@ import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
 import isAdmin from '../lib/isAdmin.js';
-import { generateMathQuestion, getMathNegativeQuestionCount } from '../lib/mathQuestionEngine.js';
 import { TRIVIA_DIFFICULTY_SECONDS, getTriviaMatchQuestionCount } from './trivia.js';
 
 const STATE_KEY = 'mathGame';
@@ -24,22 +23,45 @@ async function withChatLock(chatId, task) {
   }
 }
 
-export const MATH_MODES = Object.freeze({
-  noob: { time: TRIVIA_DIFFICULTY_SECONDS.easy * 1000 },
-  easy: { time: TRIVIA_DIFFICULTY_SECONDS.easy * 1000 },
-  normal: { time: TRIVIA_DIFFICULTY_SECONDS.normal * 1000 },
-  hard: { time: TRIVIA_DIFFICULTY_SECONDS.hard * 1000 },
-  extreme: { time: TRIVIA_DIFFICULTY_SECONDS.expert * 1000 },
-  impossible: { time: TRIVIA_DIFFICULTY_SECONDS.expert * 1000 },
-  impossible2: { time: TRIVIA_DIFFICULTY_SECONDS.expert * 1000 }
-});
+export const MATH_MODES = {
+  noob: { min: -9, max: 9, operators: ['+', '-'], time: TRIVIA_DIFFICULTY_SECONDS.easy * 1000 },
+  easy: { min: -20, max: 20, operators: ['+', '-', '*'], time: TRIVIA_DIFFICULTY_SECONDS.easy * 1000 },
+  normal: { min: -60, max: 60, operators: ['+', '-', '*', '/'], time: TRIVIA_DIFFICULTY_SECONDS.normal * 1000 },
+  hard: { min: -150, max: 150, operators: ['+', '-', '*', '/'], time: TRIVIA_DIFFICULTY_SECONDS.hard * 1000 },
+  extreme: { min: -500, max: 500, operators: ['+', '-', '*', '/'], time: TRIVIA_DIFFICULTY_SECONDS.expert * 1000 },
+  impossible: { min: -2000, max: 2000, operators: ['+', '-', '*', '/'], time: TRIVIA_DIFFICULTY_SECONDS.expert * 1000 },
+  impossible2: { min: -10000, max: 10000, operators: ['+', '-', '*', '/'], time: TRIVIA_DIFFICULTY_SECONDS.expert * 1000 }
+};
+
+const pick = values => values[Math.floor(Math.random() * values.length)];
+const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const mention = jid => '@' + String(jid || '').split('@')[0].split(':')[0];
-export { generateMathQuestion, getMathNegativeQuestionCount };
 
 export function getMathMatchQuestionCount(mode = 'normal') {
   const difficulty = mode === 'noob' || mode === 'easy' ? 'easy'
     : mode === 'normal' ? 'normal' : mode === 'hard' ? 'hard' : 'expert';
   return getTriviaMatchQuestionCount('maths', difficulty);
+}
+
+export function generateMathQuestion(mode = 'normal') {
+  const settings = MATH_MODES[mode] || MATH_MODES.normal;
+  let a = randomInt(settings.min, settings.max);
+  let b = randomInt(settings.min, settings.max);
+  const op = pick(settings.operators);
+  let result;
+  if (op === '+') result = a + b;
+  else if (op === '-') result = a - b;
+  else if (op === '*') result = a * b;
+  else {
+    // Generate exact integer division; never expose a rounded or fractional answer.
+    b = randomInt(Math.max(1, Math.abs(settings.min)), Math.max(2, Math.abs(settings.max)));
+    result = randomInt(settings.min, settings.max);
+    a = result * b;
+  }
+  if (Object.is(a, -0)) a = 0;
+  if (Object.is(b, -0)) b = 0;
+  if (Object.is(result, -0)) result = 0;
+  return { expression: `${a} ${op === '*' ? '×' : op === '/' ? '÷' : op} ${b}`, answer: String(result), mode, time: settings.time };
 }
 
 async function readGame(chatId) {
@@ -139,7 +161,7 @@ async function postNextQuestion(sock, chatId, game) {
   game.roundWinner = null;
   game.roundStartedAt = Date.now();
   game.attemptedBy = {};
-  const question = generateMathQuestion(game.mode, { includeNegative: (game.negativeRounds || []).includes(game.round) });
+  const question = generateMathQuestion(game.mode);
   game.expression = question.expression;
   game.answer = question.answer;
   game.questionTime = question.time;
@@ -250,15 +272,8 @@ export default {
       return sock.sendMessage(chatId, { text: `🧮 *MATHS ARENA DIFFICULTIES*\n\n${Object.keys(MATH_MODES).join(' · ')}\n\nExample: ${config.prefix}math normal\n10 questions · first correct answer wins each round · speed bonus · group leaderboard.`, ...channelInfo }, { quoted: message });
     }
     const totalRounds = getMathMatchQuestionCount(mode);
-    const negativeQuestionCount = getMathNegativeQuestionCount(mode, totalRounds);
-    const roundOrder = Array.from({ length: totalRounds }, (_, index) => index + 1);
-    for (let i = roundOrder.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [roundOrder[i], roundOrder[j]] = [roundOrder[j], roundOrder[i]];
-    }
-    const negativeRounds = roundOrder.slice(0, negativeQuestionCount).sort((a, b) => a - b);
     game = {
-      active: true, mode, round: 0, totalRounds, negativeRounds,
+      active: true, mode, round: 0, totalRounds,
       scores: {}, attemptedBy: {}, participants: {}, startedBy: senderId,
       startedAt: Date.now(), matchExpiresAt: Date.now() + MATCH_EXPIRY_MS
     };

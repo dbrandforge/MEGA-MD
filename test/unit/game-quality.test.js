@@ -197,6 +197,21 @@ describe('game quality foundations', () => {
     expect([...observedTypes.hard]).toEqual(expect.arrayContaining(['algebra', 'sequence', 'ratio']));
     expect([...observedTypes.impossible]).toEqual(expect.arrayContaining(['quadratic', 'logs']));
     expect([...observedTypes.impossible2]).toEqual(expect.arrayContaining(['gcd', 'lcm']));
+    for (const mode of Object.keys(MATH_MODES)) {
+      for (let i = 0; i < 250; i++) {
+        const q = generateMathQuestion(mode);
+        if (q.type === 'division') {
+          const [dividend, divisor] = q.expression.split(' ÷ ').map(Number);
+          expect(dividend).toBeLessThanOrEqual(({ noob: 20, easy: 30, normal: 60, hard: 120, extreme: 180, impossible: 250, impossible2: 400 })[mode]);
+          expect(dividend % divisor).toBe(0);
+        }
+        if (q.type === 'ratio') {
+          const ratio = q.expression.match(/ratio (\\d+):(\\d+)/);
+          expect(ratio).not.toBeNull();
+          expect(Number(ratio[1])).not.toBe(Number(ratio[2]));
+        }
+      }
+    }
   });
 
   it('keeps negative-number questions out of Noob and strictly capped by each mode quota', () => {
