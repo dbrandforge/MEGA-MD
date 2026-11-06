@@ -1,88 +1,88 @@
 /** Expansion volume 0, part 3. Legacy sex-advice inventory; 181 rows. Rewrite pending. */
 export default {"sexAdvice":[
   {
-    "a": "If you feel nervous about discussing condoms, choose a calm moment outside the bedroom and explain what would help you feel safe.",
-    "b": "You can keep it simple: 'I want us both to enjoy this, and using a condom is important to me.' A respectful partner will take that seriously."
+    "a": "If an intimate image is shared without permission, save evidence such as messages, usernames, dates, and links before reporting it.",
+    "b": "Ask the platform to remove the content and seek support from a trusted person or specialist service. Avoid resharing the image as proof."
   },
   {
-    "a": "A partner should never remove a condom without the other person's knowledge and agreement. That violates an important boundary.",
-    "b": "If this happened, you are entitled to stop contact and seek support. Consider pregnancy and STI advice promptly, and speak with someone you trust."
+    "a": "Use strong, unique passwords and two-factor authentication on accounts that contain private photos or conversations.",
+    "b": "Review logged-in devices and recovery details regularly. If you suspect access, change passwords from a trusted device and secure your email account too."
   },
   {
-    "a": "If someone refuses a protection method that you need, you can decide not to have sex. You do not owe anyone access to your body.",
-    "b": "Try stating the boundary plainly and avoid negotiating under pressure. Compatibility includes respecting each other's health and safety decisions."
+    "a": "Do not give a dating-app match money, banking codes, or identity documents because they claim an emergency or promise romance.",
+    "b": "Pause before sending anything and verify claims independently. Romance scams often build urgency and emotional pressure before asking for money."
   },
   {
-    "a": "A person who has an STI is not dirty or unworthy of intimacy. Many infections are treatable, and some are manageable with care.",
-    "b": "Focus on accurate information, treatment, and honest communication. Stigma makes people less likely to seek testing and support."
+    "a": "If you meet someone from an app, choose a public place, arrange your own transport, and tell a trusted person your plan.",
+    "b": "Keep your phone charged and retain the option to leave. You do not owe a date further time or intimacy if you feel uncomfortable."
   },
   {
-    "a": "If a partner discloses an STI, listen without shaming them. Ask what their clinician recommended and discuss your own testing needs.",
-    "b": "You can take time to process the news while still treating them respectfully. A clinic can explain transmission, treatment, and when sex can safely resume."
+    "a": "You can leave a date at any point, even if the other person paid or travelled a long distance.",
+    "b": "A meal, gift, or invitation does not purchase access to your body. Arrange a safe exit and contact someone you trust if you feel threatened."
   },
   {
-    "a": "An STI diagnosis does not establish when or from whom an infection was acquired. Some infections can remain unnoticed for a long time.",
-    "b": "Avoid jumping to accusations. Get medical facts first, then have an honest conversation about testing, agreements, and next steps."
+    "a": "For a first meeting, avoid sharing your home address or sensitive personal details before trust has been established.",
+    "b": "Use the app's safety tools and keep early communication on-platform where possible. Be cautious if someone pushes quickly to move to private channels."
   },
   {
-    "a": "Finish prescribed STI treatment exactly as directed, and follow advice about when partners should be treated too.",
-    "b": "Do not stop medication when symptoms improve. Ask the clinician when follow-up testing is needed and when it is safe to resume sexual contact."
+    "a": "If a partner tracks your location or checks your phone without agreement, treat it as a privacy and safety concern.",
+    "b": "Review location sharing and account access from a safe device. If you fear retaliation, seek specialist support before making changes that could alert them."
   },
   {
-    "a": "If you are told to avoid sex during treatment, follow that advice even if symptoms disappear quickly.",
-    "b": "The restriction helps prevent reinfection or transmission. Ask the clinic whether it applies to all sexual contact and how long it lasts."
+    "a": "A healthy relationship allows both people to maintain friendships, privacy, and independent decisions.",
+    "b": "Control disguised as jealousy or protection can become isolating. Talk with someone you trust if you feel monitored or cut off."
   },
   {
-    "a": "A negative STI result only covers the infections, body sites, and time period tested. It is not a lifetime guarantee.",
-    "b": "Ask the clinic what was included and whether the test was taken after the relevant window period. Repeat testing may be recommended."
+    "a": "If you are afraid to refuse sex because of a partner's anger, prioritise your immediate safety rather than trying to persuade them.",
+    "b": "Consider speaking privately with a trusted person or a local support organisation and make a safety plan that fits your circumstances."
   },
   {
-    "a": "If you are worried about confidentiality at a clinic, ask staff to explain their privacy policy before sharing details.",
-    "b": "You can ask who may access your records and what exceptions apply. Do not let uncertainty stop you from seeking urgent care."
+    "a": "Sexual violence is never the survivor's fault. Responsibility belongs to the person who chose to violate consent.",
+    "b": "Listen without interrogation or blame. Ask what support they want, believe their account, and let them make decisions about next steps."
   },
   {
-    "a": "If sex feels uncomfortable because of anxiety, slow down and talk about what would make the situation feel safer.",
-    "b": "You do not have to push through fear to reassure a partner. Agree on a pace that feels manageable, or stop and revisit the conversation later."
+    "a": "If someone discloses sexual assault, do not demand details or ask why they did not resist or report sooner.",
+    "b": "You can say, 'I'm sorry this happened. I believe you. What would help right now?' Let them control the pace of the conversation."
   },
   {
-    "a": "Past sexual experiences do not create an obligation to repeat an activity with a current partner.",
-    "b": "You can set a different boundary now, even if you agreed to something before. Consent belongs to the present situation."
+    "a": "A survivor may want medical care, emotional support, privacy, or simply someone to stay nearby. Ask rather than deciding for them.",
+    "b": "Offer choices without pressure and respect a decision to decline. Practical support can include transport, contacting a trusted person, or finding a clinic."
   },
   {
-    "a": "A person's clothing, flirting, relationship status, or previous sexual activity does not imply consent.",
-    "b": "Only their freely given agreement to the specific activity matters. If you are unsure, ask and accept the answer without pressure."
+    "a": "After an assault, urgent medical care can address injuries, pregnancy risk, and possible STI exposure. Time-sensitive options may be available.",
+    "b": "A healthcare professional can explain care and evidence-collection choices. The survivor should be told what each step involves and retain as much control as possible."
   },
   {
-    "a": "Do not treat a partner's silence as permission, especially when they seem frightened, frozen, or disconnected.",
-    "b": "Pause and check in using calm, direct language. If they cannot clearly choose, end the sexual activity and focus on their wellbeing."
+    "a": "If a survivor wants forensic evidence collected, seek a specialist service as soon as possible and ask about local time limits.",
+    "b": "They can ask about the process before agreeing. If they have already washed or changed clothes, they should still seek care; help is not automatically unavailable."
   },
   {
-    "a": "If someone says yes because they fear your reaction, that is not freely given consent. Make it safe for them to say no.",
-    "b": "Take responsibility for your response. Do not threaten, sulk, retaliate, or repeatedly ask after a refusal."
+    "a": "A survivor does not have to decide immediately whether to report an assault to police in order to seek medical attention.",
+    "b": "Ask the clinic about confidentiality and reporting rules in your location. Their choices should be explained clearly, without threats or pressure."
   },
   {
-    "a": "A partner can consent to one activity and refuse another, even within the same encounter.",
-    "b": "Ask before changing what you are doing. Do not use momentum or the fact that you are already intimate as a reason to skip consent."
+    "a": "If a person is in immediate danger, contact local emergency services or move to a safer place if possible.",
+    "b": "If calling is unsafe, consider a trusted person or a discreet way to request help. Follow a safety plan that does not increase the danger."
   },
   {
-    "a": "Consent should be checked again when circumstances change, such as adding a partner, changing location, or introducing a new activity.",
-    "b": "A previous agreement does not cover every new situation. Talk through the change and make sure everyone involved freely agrees."
+    "a": "When supporting someone who has experienced abuse, avoid confronting the person harming them without the survivor's agreement.",
+    "b": "An unexpected confrontation can increase risk. Help them identify safe contacts and specialist support while respecting their choices."
   },
   {
-    "a": "In a group encounter, each person needs the freedom to agree or decline independently. One person's yes cannot speak for another.",
-    "b": "Discuss boundaries, safer-sex plans, privacy, and how anyone can leave or pause. Never assume group participation means blanket consent."
+    "a": "A sexual boundary can be based on comfort, values, health, or simply not wanting an activity. It does not need a defence.",
+    "b": "You can state it briefly and repeat it if needed. Someone who cares about you should not require a detailed explanation before respecting it."
   },
   {
-    "a": "If a partner wants to stop during a group encounter, stop the relevant activity immediately and respect their choice.",
-    "b": "Do not let the presence or expectations of others override one person's boundary. Check privately what support they want."
+    "a": "If your partner's boundary differs from yours, treat it as information about compatibility rather than a challenge to overcome.",
+    "b": "Discuss whether there are mutually comfortable options. If not, accept the difference instead of trying to wear them down."
   },
   {
-    "a": "Before inviting another person into a relationship or sexual situation, discuss it privately with your existing partner and respect their answer.",
-    "b": "Do not spring the idea on someone in the moment or frame refusal as insecurity. Everyone affected deserves an honest choice without pressure."
+    "a": "Do not use gifts, financial support, housing, or status to make someone feel they owe you sex.",
+    "b": "Material support must not become a debt collected through intimacy. Make expectations clear and accept that affection cannot be purchased."
   },
   {
-    "a": "If you feel pressured to send an intimate picture, you can refuse, change the subject, or end the conversation.",
-    "b": "Someone who respects you will not demand proof of affection. If they threaten or blackmail you, preserve the messages and seek support."
+    "a": "If you are unsure whether a sexual joke or comment is welcome, stop and check rather than escalating it.",
+    "b": "A comfortable conversation should allow either person to say that a topic is not welcome. Respect the answer without mocking or testing the boundary."
   },
   {
     "a": "Permission to save an intimate image does not permit any new activity begins. privacy.",
