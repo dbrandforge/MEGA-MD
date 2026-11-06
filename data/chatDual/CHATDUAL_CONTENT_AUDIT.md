@@ -48,12 +48,12 @@ A regression test now locks the module at 182 rows and verifies 182 distinct str
 
 The second expansion module, `ev_0_1.js`, has now also been rewritten while preserving its 182-row inventory. It contains 182 distinct statements on each response side, covering consent, boundaries, contraception, STI testing, digital privacy, safer-sex practices, aftercare, communication, and access to clinical support. The regression test now checks both rewritten modules independently. This remains partial progress: the remaining 14 expansion modules and specialty banks still require substantive rewriting and re-audit.
 
-The third expansion module, `ev_0_2.js`, has now been rewritten with 182 distinct statements on each response side while preserving its 182-row inventory. The new material addresses consent and negotiation, sexual-health testing and prevention, contraception, clinical care, privacy, reproductive autonomy, trauma-informed communication, and relationship boundaries. The regression test now validates all three rewritten modules independently. Twelve expansion modules and the specialty banks remain outstanding; the full bank is still not release-ready.
+The third expansion module, `ev_0_2.js`, has now been rewritten with 182 distinct statements on each response side while preserving its 182-row inventory. The new material addresses consent and negotiation, sexual-health testing and prevention, contraception, clinical care, privacy, reproductive autonomy, trauma-informed communication, and relationship boundaries. The regression test now validates the first three rewritten modules independently. Thirteen expansion modules and the specialty banks remained outstanding at this checkpoint; the full bank was still not release-ready.
 
 
 ### Fourth module checkpoint (2026-11-06)
 
-`ev_0_3.js` was initially replaced at 182 rows, but CI exposed that the original module inventory was 181 rows. The module has now been restored to 181 rows, and the regression test checks the preserved inventory for all four modules (182, 182, 182, 181). Exact-string uniqueness is a structural check only: `ev_0_3.js` still contains templated, semantically repetitive statements and is not accepted as a substantive editorial rewrite. The remaining twelve expansion modules and specialty banks are not yet rewritten.
+`ev_0_3.js` was initially replaced at 182 rows, but CI exposed that the original module inventory was 181 rows. It was restored to 181 rows and then substantively rewritten. All 181 A statements and 181 B statements are unique, with 362 distinct statements overall. The content covers consent, boundaries, safer sex, contraception, STI/HIV prevention, clinical symptoms, privacy, dating safety, survivor support, accessibility, and inclusive care. A dedicated regression test checks the 181-row inventory, uniqueness across both sides, minimum response length, and known legacy-template fragments.
 
 The first CI run for this checkpoint failed only on the expansion inventory assertion: 2,909 expansion pairs were observed instead of the expected 2,908 (5,184 total instead of 5,183). The row-count regression has been corrected on the feature branch; a fresh CI result is still required.
 
@@ -62,7 +62,7 @@ The first CI run for this checkpoint failed only on the expansion inventory asse
 
 The live chatbot now passes the current message and up to eight recent conversation messages into ChatDual. The selector scores each candidate pair against the current message, gives the current message greater weight than older context, and returns the A or B side with the stronger topical match. If neither side has a meaningful distinction, it uses a tie-break rather than pretending the evidence is decisive. The normal chatbot path uses this reasoned mode; explicit A, B, and both modes remain available to callers.
 
-This is deterministic lexical relevance scoring informed by the existing intent classifier and conversation history. It is not an LLM-based semantic reasoning layer. The content still needs to be authored so the alternatives genuinely differ in angle and remain appropriate to the same situation. The fourth module, `ev_0_3.js`, remains a known content-quality blocker and has not yet been rewritten.
+This is deterministic lexical relevance scoring informed by the existing intent classifier and conversation history. It is not an LLM-based semantic reasoning layer. The content still needs to be authored so the alternatives genuinely differ in angle and remain appropriate to the same situation. The first four modules have since received substantive rewrites; the fifth module is now being completed.
 
 
 ## Follow-up context routing (2026-11-06)
@@ -71,4 +71,8 @@ The selector now uses recent conversation context to recover the topic for short
 
 The fourth expansion module, `ev_0_3.js`, has now been substantively rewritten while preserving its verified 181-row inventory. All 181 A statements and all 181 B statements are distinct, and no statement is shared across the two sides. The replacement content covers consent, boundaries, safer sex, contraception, STI/HIV prevention, clinical symptoms, privacy, dating safety, survivor support, accessibility, and inclusive care. Each A/B pair addresses the same broad situation from a different practical angle.
 
-A dedicated regression check now locks the module at 181 rows, verifies 362 distinct statements, enforces a minimum response length, and rejects known legacy template fragments. These are structural and editorial guardrails, not a substitute for human review of every pair. Twelve expansion modules and the specialty banks remain outstanding; the complete 5,183-row bank is not release-ready.
+A dedicated regression check locks the module at 181 rows, verifies 362 distinct statements, enforces a minimum response length, and rejects known legacy template fragments. These are structural and editorial guardrails, not a substitute for human review of every pair.
+
+### Fifth module checkpoint (2026-11-06)
+
+`ev_1_0.js` has now been rewritten while preserving its 182-row inventory. All 182 A statements and 182 B statements are unique, with 364 distinct statements overall. The rewrite addresses intimate communication, consent, safer sex, contraception, sexual-health concerns, relationship dynamics, trauma-informed support, digital privacy, and inclusive care. A regression check now verifies the row count, uniqueness across both sides, and a minimum response length of 60 characters. The remaining 11 expansion modules and specialty banks still require substantive rewriting and review; the complete 5,183-row bank is not release-ready.
