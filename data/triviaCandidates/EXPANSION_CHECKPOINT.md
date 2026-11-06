@@ -550,3 +550,8 @@ International productions are tagged as the generic `movies` subcategory rather 
 ## Movies Expert — third content batch
 
 Ten more original Movies Expert questions (`me021`–`me030`) focus on Cannes Palme d’Or history from 1980 through 2016, including Pulp Fiction, Taste of Cherry, Kagemusha, Dancer in the Dark, Uncle Boonmee, The Tree of Life, Amour, Winter Sleep, Dheepan and I, Daniel Blake. Each item carries a review date and official Festival de Cannes source. Movies Expert now has 35 approved questions overall (5 existing + 30 new); 15 remain to reach 50.
+
+
+## Movies Expert — fourth content batch
+
+Ten more original Movies Expert questions (`me031`–`me040`) focus on international-feature Oscar history and filmmakers from Iran, Germany and South Africa. The batch covers The Salesman, A Separation, The Lives of Others, Tsotsi and The Sea Inside, plus key director and Cannes acting-award details. Each question carries a review date and official Academy, BFI or Festival de Cannes source. Movies Expert now has 45 approved questions overall (5 existing + 40 new); 5 remain to reach 50.
