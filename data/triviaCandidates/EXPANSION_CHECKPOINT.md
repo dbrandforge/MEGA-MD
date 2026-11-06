@@ -590,3 +590,8 @@ Ten more original Lifestyle Easy questions (`ls031`–`ls040`) cover consumer re
 ## Lifestyle Easy — grade completed
 
 Five final questions (`ls041`–`ls045`) complete Lifestyle Easy at 50 questions (5 existing + 45 new). The grade now includes Nigerian consumer and public-service knowledge, digital safety, financial literacy, household safety, food handling and environmental basics. Lifestyle Normal is next in the approved sequence.
+
+
+## Lifestyle Normal — first content batch
+
+Ten original Lifestyle Normal questions (`ln001`–`ln010`) begin the second difficulty grade. The batch develops practical financial literacy through compound interest, APR, credit scores, net worth, liquidity, collateral, loan principal, debt-to-income ratios and fixed versus adjustable interest rates. Each item carries a review date and an official investor-education or consumer-finance source. Lifestyle Normal now has 12 approved questions overall (2 existing + 10 new); 38 remain to reach 50.
