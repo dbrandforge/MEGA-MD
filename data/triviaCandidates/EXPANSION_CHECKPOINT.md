@@ -4,7 +4,7 @@ Last verified: 2026-11-06
 Repository: `dbrandforge/MEGA-MD`
 Working branch: `history-easy-batch-01` (stacked on PR #90 Geography, which is stacked on PR #89 Lifestyle)
 Previous staged release: PR #88 merged to `main` (commit `5bfa6a15b0dcb822c2aa42760a104d3d85d84c3f`).
-Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current completed block: Geography Easy `ge001`–`ge043`, Normal `gn001`–`gn039`, Hard `gh001`–`gh049`, Expert `gx001`–`gx049`; all four Geography grades are complete. Current active block: History Easy `he001`–`he010`.
+Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current completed block: Geography Easy `ge001`–`ge043`, Normal `gn001`–`gn039`, Hard `gh001`–`gh049`, Expert `gx001`–`gx049`; all four Geography grades are complete. Current active block: History Easy `he001`–`he020`.
 
 ## Locked expansion target
 
@@ -727,7 +727,12 @@ Geography now has **200 approved questions: 50 Easy, 50 Normal, 50 Hard and 50 E
 
 ## History Easy — first content batch
 
-Ten original, source-linked questions (`he001`–`he010`) begin History Easy. Topics include Apollo 11, the ancient Olympic Games, George Washington, the Roman Colosseum, the Renaissance, the Titanic, the Berlin Wall, Mahatma Gandhi, the Statue of Liberty and Egyptian hieroglyphs. Sources include NASA, the International Olympic Committee, the White House, UNESCO, the U.S. National Park Service and Encyclopaedia Britannica. History Easy now has 12/50 questions; 38 remain.
+Ten original, source-linked questions (`he001`–`he010`) begin History Easy. Topics include Apollo 11, the ancient Olympic Games, George Washington, the Roman Colosseum, the Renaissance, the Titanic, the Berlin Wall, Mahatma Gandhi, the Statue of Liberty and Egyptian hieroglyphs. Sources include NASA, the International Olympic Committee, the White House, UNESCO, the U.S. National Park Service and Encyclopaedia Britannica. History Easy now has 22/50 questions; 28 remain.
+
+
+## History Easy — second content batch
+
+Ten additional original, source-linked questions (`he011`–`he020`) extend History Easy. Topics include the First and Second World Wars, Magna Carta, the French Revolution, Johannes Gutenberg, Qin Shi Huang, Pompeii, Columbus's 1492 voyage, the Byzantine Empire and the U.S. Declaration of Independence. Sources include Encyclopaedia Britannica, UNESCO and the U.S. National Archives. History Easy now has 22/50 questions; 28 remain.
 
 
 ## Sparse-array regression correction
