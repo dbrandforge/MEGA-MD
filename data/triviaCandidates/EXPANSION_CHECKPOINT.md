@@ -380,3 +380,8 @@ Six final questions (`ft041`–`ft046`) complete the Easy grade at 50 questions.
 ## Football Normal — first content batch
 
 Ten original, source-linked Football Normal questions (`fn001`–`fn010`) begin the second difficulty grade. Coverage includes FIFA World Cup records, AFCON history, UEFA club honours, African World Cup milestones, the 2010 final, the inaugural Women’s World Cup and current IFAB time-wasting procedures. Each item carries a review date and an official FIFA, CAF, UEFA or IFAB source. Football Normal now has 16 approved questions overall (6 existing + 10 new); 34 remain to reach 50.
+
+
+## Football Normal — second content batch
+
+Ten more original Football Normal questions (`fn011`–`fn020`) add Nigerian AFCON history, the 2014 FIFA World Cup, UEFA EURO 2016 and Arsenal’s unbeaten 2003–04 Premier League campaign. Sources are official CAF, FIFA, UEFA and Premier League publications. Football Normal now has 26 approved questions overall (6 existing + 20 new); 24 remain to reach 50.
