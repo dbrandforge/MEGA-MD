@@ -11,6 +11,7 @@ import thirdSexAdviceModule from '../../data/chatDual/ev_0_2.js';
 import fourthSexAdviceModule from '../../data/chatDual/ev_0_3.js';
 import fifthSexAdviceModule from '../../data/chatDual/ev_1_0.js';
 import sixthSexAdviceModule from '../../data/chatDual/ev_1_1.js';
+import firstRelationshipExpansionModule from '../../data/chatDual/ev_1_2.js';
 
 describe('ChatDual expansion bank', () => {
   it('reports complete and exact 5,183-pair expansion', () => {
@@ -77,6 +78,15 @@ describe('ChatDual expansion bank', () => {
     expect(new Set(rows.map(row => row.a)).size).toBe(51);
     expect(new Set(rows.map(row => row.b)).size).toBe(51);
     expect(new Set(rows.flatMap(row => [row.a, row.b])).size).toBe(102);
+    expect(rows.every(row => row.a.length >= 60 && row.b.length >= 60)).toBe(true);
+  });
+
+  it('keeps the first relationship expansion module substantive and free of repeated filler', () => {
+    const rows = firstRelationshipExpansionModule.relationship;
+    expect(rows).toHaveLength(182);
+    expect(new Set(rows.map(row => row.a)).size).toBe(182);
+    expect(new Set(rows.map(row => row.b)).size).toBe(182);
+    expect(new Set(rows.flatMap(row => [row.a, row.b])).size).toBe(364);
     expect(rows.every(row => row.a.length >= 60 && row.b.length >= 60)).toBe(true);
   });
 
