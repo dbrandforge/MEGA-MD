@@ -1,88 +1,88 @@
 /** Expansion volume 0, part 3. Legacy sex-advice inventory; 181 rows. Rewrite pending. */
 export default {"sexAdvice":[
   {
-    "a": "If you notice sores, unusual discharge, burning, or a new rash, pause sexual contact and arrange a clinical assessment.",
-    "b": "Avoid guessing the cause or using leftover antibiotics. A clinician can examine the symptoms and recommend the right tests and treatment."
+    "a": "If you feel nervous about discussing condoms, choose a calm moment outside the bedroom and explain what would help you feel safe.",
+    "b": "You can keep it simple: 'I want us both to enjoy this, and using a condom is important to me.' A respectful partner will take that seriously."
   },
   {
-    "a": "After a possible HIV exposure, seek urgent medical advice about PEP. It must be started as soon as possible and no later than 72 hours after exposure.",
-    "b": "Do not wait for symptoms or a test result before asking about PEP. A clinic can assess the exposure and explain whether treatment is indicated."
+    "a": "A partner should never remove a condom without the other person's knowledge and agreement. That violates an important boundary.",
+    "b": "If this happened, you are entitled to stop contact and seek support. Consider pregnancy and STI advice promptly, and speak with someone you trust."
   },
   {
-    "a": "PrEP can substantially reduce the risk of acquiring HIV when taken as prescribed, but it does not prevent other STIs.",
-    "b": "Ask a qualified provider whether PrEP fits your circumstances, what testing is required, and which dosing schedule is appropriate."
+    "a": "If someone refuses a protection method that you need, you can decide not to have sex. You do not owe anyone access to your body.",
+    "b": "Try stating the boundary plainly and avoid negotiating under pressure. Compatibility includes respecting each other's health and safety decisions."
   },
   {
-    "a": "Vaccines can prevent some infections relevant to sexual health, including HPV and hepatitis B. Ask a healthcare professional which vaccines you need.",
-    "b": "Vaccination works best as prevention before exposure. Check your records and discuss catch-up doses with a clinician if you are unsure."
+    "a": "A person who has an STI is not dirty or unworthy of intimacy. Many infections are treatable, and some are manageable with care.",
+    "b": "Focus on accurate information, treatment, and honest communication. Stigma makes people less likely to seek testing and support."
   },
   {
-    "a": "If you have a new sexual partner, agree on protection and testing before sex rather than relying on assumptions about either person's history.",
-    "b": "Make the conversation mutual and matter-of-fact. You can both share recent test dates, discuss exclusivity, and decide what precautions feel right."
+    "a": "If a partner discloses an STI, listen without shaming them. Ask what their clinician recommended and discuss your own testing needs.",
+    "b": "You can take time to process the news while still treating them respectfully. A clinic can explain transmission, treatment, and when sex can safely resume."
   },
   {
-    "a": "Being in a committed relationship does not remove the need to discuss STI testing, contraception, or changing boundaries.",
-    "b": "Trust is strengthened by clear agreements. Talk about what exclusivity means to each of you and revisit the agreement if circumstances change."
+    "a": "An STI diagnosis does not establish when or from whom an infection was acquired. Some infections can remain unnoticed for a long time.",
+    "b": "Avoid jumping to accusations. Get medical facts first, then have an honest conversation about testing, agreements, and next steps."
   },
   {
-    "a": "If you and your partner have different levels of desire, neither person is automatically at fault. Talk about the difference without pressure.",
-    "b": "Look for patterns such as stress, medication, pain, sleep, or relationship tension. A couples therapist or clinician may help if the issue is persistent."
+    "a": "Finish prescribed STI treatment exactly as directed, and follow advice about when partners should be treated too.",
+    "b": "Do not stop medication when symptoms improve. Ask the clinician when follow-up testing is needed and when it is safe to resume sexual contact."
   },
   {
-    "a": "A low sex drive can have many causes, including stress, depression, hormonal changes, illness, and medication effects.",
-    "b": "If the change concerns you, discuss it with a healthcare professional. Do not stop prescribed medication or buy hormones without medical advice."
+    "a": "If you are told to avoid sex during treatment, follow that advice even if symptoms disappear quickly.",
+    "b": "The restriction helps prevent reinfection or transmission. Ask the clinic whether it applies to all sexual contact and how long it lasts."
   },
   {
-    "a": "An erection that does not happen every time is common and does not mean someone is unattracted to their partner.",
-    "b": "Reduce performance pressure and focus on comfort and communication. If the problem is persistent or sudden, a clinician can check for underlying causes."
+    "a": "A negative STI result only covers the infections, body sites, and time period tested. It is not a lifetime guarantee.",
+    "b": "Ask the clinic what was included and whether the test was taken after the relevant window period. Repeat testing may be recommended."
   },
   {
-    "a": "Difficulty reaching orgasm is not proof that a partner has failed. Bodies respond differently, and pressure often makes pleasure harder.",
-    "b": "Talk about what feels comfortable and enjoyable without treating orgasm as a required outcome. A clinician can help if the change is new or distressing."
+    "a": "If you are worried about confidentiality at a clinic, ask staff to explain their privacy policy before sharing details.",
+    "b": "You can ask who may access your records and what exceptions apply. Do not let uncertainty stop you from seeking urgent care."
   },
   {
-    "a": "Vaginal dryness can happen for several reasons, including hormonal changes, stress, breastfeeding, or some medicines. Lubricant may help with friction.",
-    "b": "If dryness is persistent, painful, or accompanied by bleeding or irritation, seek clinical advice rather than assuming it is normal for you."
+    "a": "If sex feels uncomfortable because of anxiety, slow down and talk about what would make the situation feel safer.",
+    "b": "You do not have to push through fear to reassure a partner. Agree on a pace that feels manageable, or stop and revisit the conversation later."
   },
   {
-    "a": "Bleeding after sex should not be ignored, especially if it happens repeatedly, is heavy, or comes with pain.",
-    "b": "Arrange a medical assessment to identify the cause. Seek urgent care for heavy bleeding, severe pain, dizziness, or fainting."
+    "a": "Past sexual experiences do not create an obligation to repeat an activity with a current partner.",
+    "b": "You can set a different boundary now, even if you agreed to something before. Consent belongs to the present situation."
   },
   {
-    "a": "If you suspect a yeast infection or another genital infection, get an accurate diagnosis before choosing treatment.",
-    "b": "Symptoms can overlap across different conditions. A pharmacist or clinician can advise whether testing or a prescription is needed."
+    "a": "A person's clothing, flirting, relationship status, or previous sexual activity does not imply consent.",
+    "b": "Only their freely given agreement to the specific activity matters. If you are unsure, ask and accept the answer without pressure."
   },
   {
-    "a": "Do not douche or use perfumed products inside the vagina. They can irritate tissue and disrupt its normal balance.",
-    "b": "Wash the external genital area gently with water or a mild unscented cleanser. Persistent odour, itching, or discharge warrants medical advice."
+    "a": "Do not treat a partner's silence as permission, especially when they seem frightened, frozen, or disconnected.",
+    "b": "Pause and check in using calm, direct language. If they cannot clearly choose, end the sexual activity and focus on their wellbeing."
   },
   {
-    "a": "Genital hygiene does not require harsh scrubbing, scented washes, or antiseptics. Gentle external washing is usually enough.",
-    "b": "If irritation develops, stop the new product and seek advice if symptoms persist. The vagina is self-cleaning; internal washing is unnecessary."
+    "a": "If someone says yes because they fear your reaction, that is not freely given consent. Make it safe for them to say no.",
+    "b": "Take responsibility for your response. Do not threaten, sulk, retaliate, or repeatedly ask after a refusal."
   },
   {
-    "a": "If a condom breaks or slips, stop and discuss the next steps promptly, including emergency contraception and STI assessment where relevant.",
-    "b": "Do not assume the risk is zero because it happened briefly. A pharmacist or clinic can help you assess timing and available options."
+    "a": "A partner can consent to one activity and refuse another, even within the same encounter.",
+    "b": "Ask before changing what you are doing. Do not use momentum or the fact that you are already intimate as a reason to skip consent."
   },
   {
-    "a": "Withdrawal is less reliable than many contraceptive methods and offers no protection against STIs.",
-    "b": "If avoiding pregnancy is important, consider a method with a lower typical-use failure rate and discuss options with a qualified provider."
+    "a": "Consent should be checked again when circumstances change, such as adding a partner, changing location, or introducing a new activity.",
+    "b": "A previous agreement does not cover every new situation. Talk through the change and make sure everyone involved freely agrees."
   },
   {
-    "a": "Cycle tracking can help someone understand their menstrual pattern, but it is not a guarantee against pregnancy.",
-    "b": "Ovulation timing can shift, and sperm can survive for several days. If pregnancy prevention is essential, discuss a more reliable contraceptive method."
+    "a": "In a group encounter, each person needs the freedom to agree or decline independently. One person's yes cannot speak for another.",
+    "b": "Discuss boundaries, safer-sex plans, privacy, and how anyone can leave or pause. Never assume group participation means blanket consent."
   },
   {
-    "a": "A missed contraceptive pill can change protection depending on the pill type and how many doses were missed. Check the leaflet or ask a pharmacist promptly.",
-    "b": "Use the product-specific missed-pill instructions rather than doubling doses by guesswork. You may need backup contraception or emergency contraception."
+    "a": "If a partner wants to stop during a group encounter, stop the relevant activity immediately and respect their choice.",
+    "b": "Do not let the presence or expectations of others override one person's boundary. Check privately what support they want."
   },
   {
-    "a": "If you are considering stopping contraception, plan for what will replace it if you do not want to become pregnant.",
-    "b": "Fertility can return quickly after some methods are stopped. A clinician or pharmacist can explain the transition and any expected changes."
+    "a": "Before inviting another person into a relationship or sexual situation, discuss it privately with your existing partner and respect their answer.",
+    "b": "Do not spring the idea on someone in the moment or frame refusal as insecurity. Everyone affected deserves an honest choice without pressure."
   },
   {
-    "a": "Sexual health appointments are routine healthcare. You can ask about confidentiality, tests, and what information will be shared before the consultation.",
-    "b": "Write down your questions and symptoms beforehand. You deserve respectful care, and you can ask the clinician to explain each step."
+    "a": "If you feel pressured to send an intimate picture, you can refuse, change the subject, or end the conversation.",
+    "b": "Someone who respects you will not demand proof of affection. If they threaten or blackmail you, preserve the messages and seek support."
   },
   {
     "a": "Permission to save an intimate image does not permit any new activity begins. privacy.",
