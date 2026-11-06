@@ -53,15 +53,18 @@ function mergeCategoryPools() {
 const dualPools = mergeCategoryPools();
 const recentDual = new Map();
 
-function pickSide(pair) {
+function pickSide(pair, responseMode = 'random') {
   if (!pair || typeof pair !== 'object') return null;
   const a = pair.a ?? pair.A;
   const b = pair.b ?? pair.B;
   if (typeof a !== 'string' || typeof b !== 'string') return null;
+  if (responseMode === 'a') return a;
+  if (responseMode === 'b') return b;
+  if (responseMode === 'both') return a.trim() + '\n\n' + b.trim();
   return Math.random() < 0.55 ? a : b;
 }
 
-function choosePair(chatId, category, previousReply = '') {
+function choosePair(chatId, category, previousReply = '', responseMode = 'random') {
   const pool = dualPools[category];
   if (!Array.isArray(pool) || pool.length === 0) return null;
   const key = `${chatId || 'global'}:dual:${category}`;
@@ -76,7 +79,7 @@ function choosePair(chatId, category, previousReply = '') {
   });
   const use = candidates.length ? candidates : pool;
   const pair = use[Math.floor(Math.random() * use.length)];
-  const text = pickSide(pair);
+  const text = pickSide(pair, responseMode);
   if (!text) return null;
   recentDual.set(key, [...recent, text].slice(-30));
   return text;
@@ -99,7 +102,7 @@ export function pickDualReply(text, options = {}) {
   if (!dualBankExpansionComplete) return null;
   const input = String(text || '').trim();
   if (!input) return null;
-  const { chatId = 'global', previousReply = '', intent = null } = options;
+  const { chatId = 'global', previousReply = '', intent = null, responseMode = 'random' } = options;
 
   if (DIRTY_RE.test(input) && !SEX_ADVICE_RE.test(input) && !/\b(advice|should i|is it ok|safe)\b/i.test(input)) {
     return null;
@@ -130,7 +133,7 @@ export function pickDualReply(text, options = {}) {
   }
 
   if (!category) return null;
-  return choosePair(chatId, category, previousReply);
+  return choosePair(chatId, category, previousReply, responseMode);
 }
 
 export function getDualBankStats() {
