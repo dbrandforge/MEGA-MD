@@ -4,7 +4,7 @@ Last verified: 2026-11-06
 Repository: `dbrandforge/MEGA-MD`
 Working branch: `lifestyle-expert-batch-01`
 Previous staged release: PR #88 merged to `main` (commit `5bfa6a15b0dcb822c2aa42760a104d3d85d84c3f`).
-Current batch: Lifestyle Expert `le001`–`le010`; PR pending.
+Current batches: Lifestyle Expert `le001`–`le020`; PR #89 contains both batches and is awaiting review/merge.
 
 ## Locked expansion target
 
@@ -21,7 +21,7 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current verified expansion coverage
 
-The staged release completed Forge, Music, Football and Movies at 50 questions in each difficulty (200 per category). Lifestyle has Easy 50, Normal 50, Hard 50, and Expert now 12 (two retained legacy records plus ten new numbered records).
+The staged release completed Forge, Music, Football and Movies at 50 questions in each difficulty (200 per category). Lifestyle has Easy 50, Normal 50, Hard 50, and Expert now 22 (two retained legacy records plus twenty new numbered records).
 
 | Selectable pool | Easy | Normal | Hard | Expert | Total |
 |---|---:|---:|---:|---:|---:|
@@ -29,7 +29,7 @@ The staged release completed Forge, Music, Football and Movies at 50 questions i
 | Music | 50 | 50 | 50 | 50 | 200 |
 | Football | 50 | 50 | 50 | 50 | 200 |
 | Movies | 50 | 50 | 50 | 50 | 200 |
-| Lifestyle | 50 | 50 | 50 | 12 | 162 |
+| Lifestyle | 50 | 50 | 50 | 22 | 172 |
 
 These rows describe the completed expansion pools; category aliases and legacy routing may overlap and must not be summed as unique bank records. Other player-selectable categories remain outside this completed expansion milestone and require a fresh audit before planning their grade sequence.
 
@@ -37,9 +37,9 @@ These rows describe the completed expansion pools; category aliases and legacy r
 
 Ten original, source-linked Expert questions (`le001`–`le010`) have been added on this branch. Topics: Rule of 72; bond duration and interest-rate sensitivity; property-insurance coinsurance; negative amortisation; exact real return; cash conversion cycle; quick ratio; ETF holdings overlap; quarterly compounding; and depreciation in the indirect cash-flow method.
 
-All ten include `reviewedAt: '2026-11-06'` and source URLs. The batch passed its initial structural check for unique IDs and stems, four distinct options, valid answer indexes, and difficulty/category fields. The ten new answer indexes are distributed 1/3/3/3 across options A–D; together with the two retained legacy Expert records, the 12-question grade has three correct answers at each option position.
+All twenty numbered records include `reviewedAt: '2026-11-06'` and source URLs. The first ten passed the initial structural check; the second ten have been added as a separate batch and are awaiting the same full bank-wide and regression checks. Do not mark the grade complete or add it to the release gate until it reaches 50 and passes the full audit.
 
-Lifestyle Expert coverage is now **12/50**, with **38 remaining**. Do not mark the grade complete or add it to the release gate until it reaches 50 and passes the full audit.
+Lifestyle Expert coverage is now **22/50**, with **28 remaining**.
 
 ## First approved content batch
 
@@ -626,4 +626,9 @@ The completed 48-question numbered Hard block (lh001–lh048) has been checked f
 
 ## Lifestyle Expert — first content batch
 
-Ten original, source-linked applied questions (`le001`–`le010`) begin Lifestyle Expert. Topics include compound-growth estimation, bond duration, property-insurance coinsurance, negative amortisation, inflation-adjusted return, working-capital cycle, liquidity ratio, fund overlap, quarterly compounding and non-cash depreciation. Each record carries a review date and a relevant Investor.gov, NAIC, CFPB or U.S. Small Business Administration source. Lifestyle Expert now has 12 live questions including two retained legacy records; 38 remain to reach 50. This batch must pass the bank-wide audit and code review before release.
+Ten original, source-linked applied questions (`le001`–`le010`) begin Lifestyle Expert. Topics include compound-growth estimation, bond duration, property-insurance coinsurance, negative amortisation, inflation-adjusted return, working-capital cycle, liquidity ratio, fund overlap, quarterly compounding and non-cash depreciation. Each record carries a review date and a relevant Investor.gov, NAIC, CFPB or U.S. Small Business Administration source. Lifestyle Expert now has 22 live questions including two retained legacy records; 28 remain to reach 50. Both batches must pass the bank-wide audit and code review before release.
+
+
+## Lifestyle Expert — second content batch
+
+Ten additional original, source-linked applied questions (`le011`–`le020`) extend Lifestyle Expert to 22/50 (including two retained legacy records). Topics: break-even volume, debt-to-income ratio, APR versus interest rate, accrual revenue recognition, portfolio rebalancing, contribution margin ratio, debt ratio, loan amortisation, credit-sale cash-flow timing and principal prepayment. Sources include the U.S. Small Business Administration, Consumer Financial Protection Bureau, IRS and Investor.gov. Each record includes a review date and source URL. The second batch requires full audit and CI verification before release; 28 questions remain to reach 50.
