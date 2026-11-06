@@ -1,88 +1,88 @@
 /** Expansion volume 0, part 3. Legacy sex-advice inventory; 181 rows. Rewrite pending. */
 export default {"sexAdvice":[
   {
-    "a": "If you are considering a sexual-health supplement or enhancement product, check its ingredients and safety with a clinician or pharmacist first.",
-    "b": "Products marketed online may contain undisclosed drugs or interact with medication. Be wary of guaranteed results and avoid unregulated treatments."
+    "a": "Chlamydia and gonorrhoea can be present without symptoms. Testing is important after a possible exposure, even if you feel well.",
+    "b": "A clinic can advise which sites need testing and when. If diagnosed, follow treatment advice and ensure partners are assessed as recommended."
   },
   {
-    "a": "Do not use antibiotics or antifungal medicines left over from an earlier illness to treat new genital symptoms.",
-    "b": "The cause may be different, and the wrong treatment can delay care or contribute to resistance. Get an accurate assessment."
+    "a": "Syphilis can cause symptoms that are easy to miss or mistaken for other conditions. Testing is the way to identify it.",
+    "b": "If you notice a painless sore, rash, or other unexplained change after possible exposure, seek clinical assessment rather than waiting."
   },
   {
-    "a": "If a product causes burning, swelling, rash, or pain, stop using it and rinse the area gently with water.",
-    "b": "Seek medical advice if symptoms are severe, persist, or involve breathing difficulty or widespread swelling. Keep the product packaging for reference."
+    "a": "HIV cannot be diagnosed by appearance or symptoms alone. A test is needed to know your status.",
+    "b": "Ask a clinic about the appropriate test and window period. If exposure may have occurred within the last 72 hours, seek urgent advice about PEP."
   },
   {
-    "a": "Avoid inserting household objects or products not designed for intimate use. They can cause injury, infection, or become stuck.",
-    "b": "Choose body-safe products from reputable manufacturers, follow cleaning instructions, and stop if anything hurts or causes numbness."
+    "a": "HIV treatment can help people live long, healthy lives, and sustained undetectable viral load prevents sexual transmission.",
+    "b": "Support accurate information rather than stigma. A person living with HIV deserves privacy, respect, and access to ongoing care."
   },
   {
-    "a": "Clean sex toys according to the manufacturer's instructions and allow them to dry before storage.",
-    "b": "Use a new condom on shared toys between partners or body areas, and do not share porous items unless they can be safely covered and cleaned."
+    "a": "If a partner tells you they are living with HIV, do not share that information without permission.",
+    "b": "Ask what support they want and learn from reliable medical sources. Their status is private health information, not gossip."
   },
   {
-    "a": "If a sex toy is shared, discuss cleaning and barrier use before anyone uses it.",
-    "b": "A new condom between users and body sites can reduce transfer of bodily fluids. Follow product-specific hygiene guidance."
+    "a": "If you are worried about a possible HIV exposure, seek care promptly even if you feel fine.",
+    "b": "A clinician can assess the exposure, explain PEP timing, and arrange testing. Early advice gives you more options."
   },
   {
-    "a": "Do not use numbing creams to push through pain during sex. Pain can be a warning that something is wrong.",
-    "b": "If discomfort is recurring, seek an assessment rather than masking it. Numbing products can also reduce awareness of injury."
+    "a": "PrEP requires appropriate HIV testing and ongoing clinical follow-up. Do not start or stop it based only on online advice.",
+    "b": "A provider can explain the correct regimen, monitoring, and what to do if doses are missed. PrEP is one part of a broader prevention plan."
   },
   {
-    "a": "If you experience sudden severe testicular pain, seek emergency medical care immediately.",
-    "b": "Some causes are time-critical and need urgent assessment. Do not wait to see whether the pain settles."
+    "a": "PEP is a 28-day course of medication prescribed after a possible HIV exposure. It is most effective when started quickly.",
+    "b": "Contact an emergency department or sexual-health service immediately; it must be started within 72 hours. Follow-up testing is also important."
   },
   {
-    "a": "Sudden severe pelvic or lower abdominal pain, especially with fainting, fever, or possible pregnancy, needs urgent medical assessment.",
-    "b": "Do not try to diagnose it at home. Seek emergency care if symptoms are intense, worsening, or accompanied by weakness or dizziness."
+    "a": "Hepatitis B can be sexually transmitted, and vaccination is an effective prevention measure for people who are not immune.",
+    "b": "Ask a healthcare professional whether you need vaccination or testing, particularly if a partner has hepatitis B."
   },
   {
-    "a": "A painful erection lasting four hours or more is a medical emergency. Seek emergency care immediately.",
-    "b": "Do not wait for it to resolve on its own or try unproven home treatments. Prompt treatment can prevent lasting damage."
+    "a": "Some HPV types can cause cervical and other cancers, while others cause genital warts. Vaccination reduces risk from important types.",
+    "b": "Follow the screening guidance for your age and location even if you are vaccinated. A clinician can explain which tests are recommended."
   },
   {
-    "a": "If you notice a new lump, persistent sore, or change in the genital area, arrange a medical examination.",
-    "b": "Many causes are treatable, but only an assessment can identify what is happening. Avoid squeezing or applying harsh chemicals."
+    "a": "If you have a cervix, attend recommended cervical screening even if you feel healthy and have no symptoms.",
+    "b": "Screening intervals vary by age and location. Ask your healthcare provider when you are due and what follow-up an abnormal result requires."
   },
   {
-    "a": "If urination burns or becomes unusually frequent, seek assessment, especially if there is fever, back pain, or blood.",
-    "b": "A urinary infection and an STI can have overlapping symptoms. A clinician can recommend the right urine or STI tests."
+    "a": "An abnormal cervical screening result does not automatically mean cancer. It usually means follow-up is needed.",
+    "b": "Ask the clinician what was found, whether HPV testing or repeat screening is advised, and when the next step should happen."
   },
   {
-    "a": "If you have pelvic pain, unusual discharge, or fever, seek prompt medical care rather than waiting for symptoms to pass.",
-    "b": "Some reproductive or genital infections can worsen without treatment. Explain the timing and symptoms clearly to the clinician."
+    "a": "If you are unsure which sexual-health tests you need, describe the contact honestly to the clinician. They are there to help, not judge.",
+    "b": "You can ask what each test involves, how results are delivered, and what confidentiality protections apply before proceeding."
   },
   {
-    "a": "If you are pregnant and have bleeding, severe pain, fever, or fluid leakage, contact maternity care urgently.",
-    "b": "Follow local emergency guidance and do not rely on online advice to assess pregnancy complications."
+    "a": "You can ask a clinician to explain a genital examination before it begins and to pause at any time.",
+    "b": "You may request a chaperone or support person where available. Your consent to an examination is separate from consent to treatment."
   },
   {
-    "a": "A period that is late can happen for reasons other than pregnancy, including stress, illness, and cycle variation.",
-    "b": "If pregnancy is possible, use a test at the recommended time. Seek clinical advice if missed periods continue or you have concerning symptoms."
+    "a": "If you feel dismissed during a sexual-health appointment, ask for the reasoning and what symptoms should prompt follow-up.",
+    "b": "You can request another clinician or a second opinion if concerns remain. Clear communication is part of good healthcare."
   },
   {
-    "a": "Menstrual products should be changed according to their instructions and your flow. Wash hands before and after handling them.",
-    "b": "If you develop fever, rash, vomiting, dizziness, or feel suddenly very unwell while using a tampon, remove it and seek urgent medical advice."
+    "a": "Do not share prescription medication with a partner, even if their symptoms seem identical to yours.",
+    "b": "The right medicine and dose depend on the diagnosis and individual factors. Encourage them to seek their own assessment."
   },
   {
-    "a": "Menstrual cups and reusable products need careful cleaning and use according to the manufacturer's instructions.",
-    "b": "Stop using a product that causes pain or irritation. If you are unsure whether it is suitable for you, ask a healthcare professional."
+    "a": "If you miss a dose of prescribed sexual-health medication, check the patient leaflet or contact a pharmacist for specific advice.",
+    "b": "Do not double the next dose unless the instructions say to. Correct guidance depends on the medication and timing."
   },
   {
-    "a": "Do not assume irregular bleeding is caused by contraception without checking. New or persistent changes deserve medical advice.",
-    "b": "A clinician can assess pregnancy possibility, infection, medication effects, and other causes. Seek urgent care for heavy bleeding or severe pain."
+    "a": "If a medication causes a possible side effect, contact the prescriber or pharmacist rather than stopping essential treatment abruptly.",
+    "b": "Seek urgent help for severe allergic symptoms, breathing difficulty, or other serious reactions. Keep a note of the medicine and when symptoms began."
   },
   {
-    "a": "If sex causes bleeding and you are postmenopausal, arrange a prompt medical assessment even if the amount is small.",
-    "b": "There are several possible causes, and checking early is important. Do not dismiss it as ordinary irritation."
+    "a": "If you are prescribed treatment for erectile difficulties, discuss heart conditions and all other medicines with the prescriber first.",
+    "b": "Some drugs used for chest pain can interact dangerously with erectile-dysfunction medication. Avoid buying prescription products from unverified sellers."
   },
   {
-    "a": "A genital herpes diagnosis does not mean intimacy is impossible, but it does call for honest discussion and prevention planning.",
-    "b": "Avoid sexual contact during sores or warning symptoms, and ask a clinician about antiviral treatment and ways to reduce transmission."
+    "a": "Do not mix erectile-dysfunction medicines or take more than the prescribed dose to try to improve results.",
+    "b": "If you experience chest pain, fainting, or a prolonged painful erection, seek emergency care. Ask the prescriber before changing your treatment."
   },
   {
-    "a": "HPV is common, and many infections clear without causing problems. Some types can cause genital warts or cancers.",
-    "b": "Vaccination and recommended screening help reduce risk. Ask a clinician which schedule applies to your age and medical history."
+    "a": "If sexual activity brings on chest pain, severe breathlessness, or faintness, stop and seek urgent medical assessment.",
+    "b": "Do not assume it is simply exertion or anxiety. A clinician can assess cardiovascular risk and advise when activity is safe."
   },
   {
     "a": "Permission to save an intimate image does not permit any new activity begins. privacy.",
