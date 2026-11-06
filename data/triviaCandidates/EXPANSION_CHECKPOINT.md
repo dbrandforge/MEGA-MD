@@ -2,9 +2,9 @@
 
 Last verified: 2026-11-06
 Repository: `dbrandforge/MEGA-MD`
-Working branch: `geography-easy-batch-01` (stacked on PR #89's Lifestyle completion)
+Working branch: `history-easy-batch-01` (stacked on PR #90 Geography, which is stacked on PR #89 Lifestyle)
 Previous staged release: PR #88 merged to `main` (commit `5bfa6a15b0dcb822c2aa42760a104d3d85d84c3f`).
-Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current completed block: Geography Easy `ge001`–`ge043`, Normal `gn001`–`gn039`, Hard `gh001`–`gh049`, Expert `gx001`–`gx049`; all four Geography grades are complete. Next active block: History Easy.
+Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current completed block: Geography Easy `ge001`–`ge043`, Normal `gn001`–`gn039`, Hard `gh001`–`gh049`, Expert `gx001`–`gx049`; all four Geography grades are complete. Current active block: History Easy `he001`–`he010`.
 
 ## Locked expansion target
 
@@ -171,7 +171,7 @@ Useful commands:
 
 1. Geography is complete at 50 Easy, 50 Normal, 50 Hard and 50 Expert.
 2. History is next in the selectable-category sequence: Easy 2/50, Normal 5/50, Hard 5/50 and Expert 6/50.
-3. Complete History Easy first (48 additional questions), then Normal, Hard and Expert in order.
+3. Complete History Easy first (38 additional questions), then Normal, Hard and Expert in order.
 4. Fact-check every answer and distractor; rewrite incomplete stems and repair encoding.
 5. Date-anchor or reject volatile/current-affairs and ranking-dependent claims.
 6. Keep unreviewed OpenTriviaQA candidates staged and respect their CC BY-SA 4.0 attribution obligations.
@@ -723,6 +723,11 @@ Forty-nine original, source-linked advanced questions (`gx001`–`gx049`) comple
 ## Geography — category completed
 
 Geography now has **200 approved questions: 50 Easy, 50 Normal, 50 Hard and 50 Expert**. Easy contains 43 new numbered questions plus seven retained questions; Normal contains 39 new numbered questions plus eleven retained questions; Hard contains 49 new numbered questions plus one retained question; Expert contains 49 new numbered questions plus one retained question. All four grade blocks are complete. The staged release gate and unit regression tests now include Geography alongside the previously completed categories.
+
+
+## History Easy — first content batch
+
+Ten original, source-linked questions (`he001`–`he010`) begin History Easy. Topics include Apollo 11, the ancient Olympic Games, George Washington, the Roman Colosseum, the Renaissance, the Titanic, the Berlin Wall, Mahatma Gandhi, the Statue of Liberty and Egyptian hieroglyphs. Sources include NASA, the International Olympic Committee, the White House, UNESCO, the U.S. National Park Service and Encyclopaedia Britannica. History Easy now has 12/50 questions; 38 remain.
 
 
 ## Sparse-array regression correction
