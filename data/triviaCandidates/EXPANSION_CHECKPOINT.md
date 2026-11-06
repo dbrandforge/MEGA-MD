@@ -495,3 +495,8 @@ Ten more original Movies Normal questions (`mn011`–`mn020`) cover Parasite, Th
 ## Movies Normal — third content batch
 
 Ten more original Movies Normal questions (`mn021`–`mn030`) cover The Dark Knight, Gladiator, The Social Network, Breaking Bad, Scandal, Better Call Saul, Mission: Impossible and The Sopranos. The batch balances film direction and casting with television character knowledge. Each item carries a review date and an official AFI, AMC, ABC, Paramount or HBO source. Movies Normal now has 37 approved questions overall (7 existing + 30 new); 13 remain to reach 50.
+
+
+## Movies Normal — fourth content batch
+
+Ten more original Movies Normal questions (`mn031`–`mn040`) cover Barbie, Oppenheimer, the Marvel Cinematic Universe, Avatar and Get Out. The questions test principal cast and director knowledge from major recent releases and franchises. Each item carries a review date and official studio source. Movies Normal now has 47 approved questions overall (7 existing + 40 new); 3 remain to reach 50.
