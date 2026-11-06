@@ -767,7 +767,12 @@ Forty-five original, source-linked questions (`hn001`–`hn045`) complete Histor
 
 ## History Hard — first content batch
 
-Ten original, source-linked questions (`hh001`–`hh010`) begin History Hard. Topics include Salamis, Plassey, Manzikert, the Treaty of Utrecht, King Ezana of Aksum, the Treaty of Nanking, the Congress of Vienna, Kosovo, the 1683 siege of Vienna and Lepanto. Sources include Encyclopaedia Britannica. History Hard now has 15/50 questions; 35 remain.
+Ten original, source-linked questions (`hh001`–`hh010`) begin History Hard. Topics include Salamis, Plassey, Manzikert, the Treaty of Utrecht, King Ezana of Aksum, the Treaty of Nanking, the Congress of Vienna, Kosovo, the 1683 siege of Vienna and Lepanto. Sources include Encyclopaedia Britannica. History Hard now has 25/50 questions; 25 remain.
+
+
+## History Hard — second content batch
+
+Ten additional original, source-linked questions (`hh011`–`hh020`) extend History Hard. Topics include Babur's First Battle of Panipat, the Treaty of Verdun, the Hundred Years' War, Actium, the fall of the Western Roman Empire, Sasanian Ctesiphon, the Treaty of Paris ending the Crimean War, the Nasrid kingdom of Granada, Hadrian's Wall and Trafalgar. Sources include Encyclopaedia Britannica. History Hard now has 25/50 questions; 25 remain.
 
 
 ## Sparse-array regression correction
