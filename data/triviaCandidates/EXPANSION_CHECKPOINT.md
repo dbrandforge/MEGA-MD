@@ -624,7 +624,7 @@ Ten original, source-linked applied questions (`lh011`–`lh020`) extend Lifesty
 
 ## Lifestyle Hard — quality-gate correction
 
-The Trivia regression workflow flagged duplicate-normalized answer options in `lh003`. The distractors were rewritten as distinct descriptive choices in commit `3dd63af9dc5f2959d7af2a8c61ec0ff58832ffe2`. The 20-question Hard bank has since been extended through `lh020`; a fresh post-correction CI result is still required before merge or deployment.
+The Trivia regression workflow flagged duplicate-normalized answer options in `lh003`. The distractors were rewritten as distinct descriptive choices in commit `3dd63af9dc5f2959d7af2a8c61ec0ff58832ffe2`. The completed 48-question numbered Hard block has since been rechecked for unique answer options, valid answer indexes, unique question wording, review dates and source URLs. Correct-answer positions are balanced evenly across the four choices (12 each).
 
 
 ## Lifestyle Hard — grade completed
