@@ -625,3 +625,8 @@ Ten original, source-linked applied questions (`lh011`–`lh020`) extend Lifesty
 ## Lifestyle Hard — quality-gate correction
 
 The Trivia regression workflow flagged duplicate-normalized answer options in `lh003`. The distractors were rewritten as distinct descriptive choices in commit `3dd63af9dc5f2959d7af2a8c61ec0ff58832ffe2`. The 20-question Hard bank has since been extended through `lh020`; a fresh post-correction CI result is still required before merge or deployment.
+
+
+## Lifestyle Hard — grade completed
+
+Twenty-eight original, source-linked applied questions (`lh021`–`lh048`) complete Lifestyle Hard at **50 live questions** (48 sequentially numbered questions plus two retained legacy entries). The batch adds applied net-worth and compound-interest calculations, debt and credit analysis, fund costs, bond yield, liquidity and working-capital measures, break-even and contribution-margin problems, insurance co-insurance and average-clause calculations, inventory movement, cash-flow interpretation, repayment strategy, currency exposure and liquidity-risk assessment. Each new question carries a review date and a relevant Investor.gov, CFPB, NAICOM or U.S. Small Business Administration source. Lifestyle Expert is next in the approved sequence; do not begin it until this completed Hard grade has passed the full audit.
