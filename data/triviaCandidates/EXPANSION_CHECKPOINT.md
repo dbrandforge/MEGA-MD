@@ -525,3 +525,8 @@ Ten more original Movies Hard questions (`mh021`–`mh030`) cover character cast
 ## Movies Hard — fourth content batch
 
 Ten more original Movies Hard questions (`mh031`–`mh040`) add Academy Award animation history, Nigeria’s first eligible International Feature Film Oscar submission, The Milkmaid’s director and lead actress, and Game of Thrones principal cast. Each item carries a review date and official Academy, Voice of Nigeria, African Film Festival or HBO source. Movies Hard now has 45 approved questions overall (5 existing + 40 new); 5 remain to reach 50.
+
+
+## Movies Hard — grade completed
+
+Five final questions (`mh041`–`mh045`) complete Movies Hard at 50 questions (5 existing + 45 new). The grade now includes international cinema, Academy Award history, Nollywood’s Oscar submission history, and specialist series casting. Movies Expert remains at its existing count and is next in sequence.
