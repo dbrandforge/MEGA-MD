@@ -886,6 +886,11 @@ export const NIGERIA_TRIVIA = [
   { id:'mn038', category:'hollywood', difficulty:'normal', question:'Who directed the original 2009 science-fiction film “Avatar”?', options:['James Cameron','Peter Jackson','Ridley Scott','Neill Blomkamp'], answer:0, reviewedAt:'2026-11-06', source:'https://www.20thcenturystudios.com/movies/avatar' },
   { id:'mn039', category:'hollywood', difficulty:'normal', question:'Which actor plays Jake Sully in James Cameron’s “Avatar” films?', options:['Sam Worthington','Stephen Lang','Giovanni Ribisi','Cliff Curtis'], answer:0, reviewedAt:'2026-11-06', source:'https://www.20thcenturystudios.com/movies/avatar' },
   { id:'mn040', category:'hollywood', difficulty:'normal', question:'Which filmmaker wrote and directed the 2017 thriller “Get Out”?', options:['Jordan Peele','Ari Aster','M. Night Shyamalan','James Wan'], answer:0, reviewedAt:'2026-11-06', source:'https://www.universalpictures.com/movies/get-out' }
+,
+
+  { id:'mn041', category:'hollywood', difficulty:'normal', question:'Which actor portrays Dr. Stephen Strange in the Marvel Cinematic Universe?', options:['Benedict Cumberbatch','Tom Hiddleston','Benedict Wong','Mads Mikkelsen'], answer:0, reviewedAt:'2026-11-06', source:'https://www.marvel.com/movies/doctor-strange-in-the-multiverse-of-madness' },
+  { id:'mn042', category:'hollywood', difficulty:'normal', question:'Which actress portrays Natasha Romanoff, also known as Black Widow, in the Marvel Cinematic Universe?', options:['Scarlett Johansson','Florence Pugh','Brie Larson','Elizabeth Olsen'], answer:0, reviewedAt:'2026-11-06', source:'https://www.marvel.com/movies/black-widow' },
+  { id:'mn043', category:'hollywood', difficulty:'normal', question:'Which two filmmakers, collectively known as “The Daniels”, directed “Everything Everywhere All at Once”?', options:['Daniel Kwan and Daniel Scheinert','Daniel Craig and Daniel Radcliffe','Daniel Day-Lewis and Daniel Kaluuya','Daniel Espinosa and Daniel Stamm'], answer:0, reviewedAt:'2026-11-06', source:'https://a24films.com/films/everything-everywhere-all-at-once' }
 
 ];
 
