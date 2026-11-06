@@ -277,16 +277,16 @@ export default {"sexAdvice":[
     "b": "You can set a different boundary now, even if you agreed before. Consent applies to the present situation."
   },
   {
-    "a": "Clothing, flirting, relationship status, and previous sexual activity never establish consent.",
-    "b": "Only a freely given yes to the specific activity counts. If you are unsure, ask and accept the answer."
+    "a": "Use strong, unique passwords and two-factor authentication on accounts that contain private photos or conversations.",
+    "b": "Review active sessions and recovery details. If you suspect someone has access, secure your email and change passwords from a trusted device."
   },
   {
     "a": "If someone seems frightened, frozen, or disconnected, do not treat silence as permission.",
     "b": "Pause and check in calmly. If they cannot clearly choose, end the sexual activity and focus on their wellbeing."
   },
   {
-    "a": "If someone agrees because they fear your anger or retaliation, that is not freely given consent.",
-    "b": "Take responsibility for making no safe. Do not threaten, sulk, punish, or keep asking after a refusal."
+    "a": "Do not give a dating-app match money, banking codes, or identity documents because they claim an emergency or promise romance.",
+    "b": "Pause and verify claims independently. Romance scams often create urgency and emotional pressure before asking for money."
   },
   {
     "a": "A person can agree to one activity and refuse another during the same encounter.",
@@ -317,80 +317,80 @@ export default {"sexAdvice":[
     "b": "Report the content to the platform and seek trusted support. Avoid forwarding the image yourself, even when trying to prove what happened."
   },
   {
-    "a": "Restraints must be quickly releasable during someone withdraws permission. restraints.",
-    "b": "Check circulation and sensation when using any recording or storage plan. restraints."
+    "a": "For a first meeting with someone from an app, choose a public place and arrange your own transport.",
+    "b": "Tell a trusted person where you will be and keep your phone charged. You can leave whenever you feel uncomfortable."
   },
   {
-    "a": "Restraints must be quickly releasable during one person feels pressured. restraints.",
-    "b": "Check circulation and sensation when using a change in privacy expectations. restraints."
+    "a": "You can leave a date at any point, even if the other person paid for dinner or travelled a long way.",
+    "b": "A gift or invitation does not purchase intimacy. Arrange a safe exit and contact someone you trust if you feel threatened."
   },
   {
-    "a": "Restraints must be quickly releasable during someone is impaired or asleep. restraints.",
-    "b": "Check circulation and sensation when using a request to delete shared material. restraints."
+    "a": "Avoid sharing your home address or sensitive personal details with a new match before trust is established.",
+    "b": "Use the app's safety tools and be cautious if someone quickly pressures you to move to private channels."
   },
   {
-    "a": "Restraints must be quickly releasable during the agreed plan no longer feels safe. restraints.",
-    "b": "Check circulation and sensation when using a new partner joining the situation. restraints."
+    "a": "If a partner checks your phone or tracks your location without agreement, treat it as a privacy and safety concern.",
+    "b": "Review account access from a safe device. If changing settings could put you at risk, seek specialist support before acting."
   },
   {
-    "a": "Restraints must be quickly releasable during either person asks to stop. restraints.",
-    "b": "Check circulation and sensation when using content being moved to another service. restraints."
+    "a": "A healthy relationship allows both people to maintain friendships, privacy, and independent decisions.",
+    "b": "Control can be disguised as jealousy or protection. Talk with someone you trust if you feel monitored or isolated."
   },
   {
-    "a": "Aftercare preferences should be discussed before any new activity begins. aftercare.",
-    "b": "A later check-in can help when the exact recipient and platform. aftercare."
+    "a": "If you fear a partner's anger when refusing sex, prioritise your safety rather than trying to persuade them in the moment.",
+    "b": "Speak privately with a trusted person or support organisation and consider a safety plan suited to your circumstances."
   },
   {
-    "a": "Aftercare preferences should be discussed before the activity or partner changes. aftercare.",
-    "b": "A later check-in can help when every new use or audience. aftercare."
+    "a": "Sexual violence is never the survivor's fault. Responsibility belongs to the person who chose to violate consent.",
+    "b": "Listen without blame or interrogation. Ask what support they want and let them decide what happens next."
   },
   {
-    "a": "Aftercare preferences should be discussed before someone withdraws permission. aftercare.",
-    "b": "A later check-in can help when any recording or storage plan. aftercare."
+    "a": "When someone discloses sexual assault, do not demand details or ask why they did not resist or report sooner.",
+    "b": "You can say, 'I believe you. I'm sorry this happened. What would help right now?' Let them set the pace."
   },
   {
-    "a": "Aftercare preferences should be discussed before one person feels pressured. aftercare.",
-    "b": "A later check-in can help when a change in privacy expectations. aftercare."
+    "a": "A survivor may want medical care, emotional support, privacy, or simply company. Ask instead of deciding for them.",
+    "b": "Offer practical choices without pressure. Respect a decision to decline any particular form of help."
   },
   {
-    "a": "Aftercare preferences should be discussed before someone is impaired or asleep. aftercare.",
-    "b": "A later check-in can help when a request to delete shared material. aftercare."
+    "a": "After an assault, medical care can address injuries, pregnancy risk, and possible STI exposure. Some options are time-sensitive.",
+    "b": "A clinician should explain each step and available choices. The survivor should retain as much control as possible."
   },
   {
-    "a": "Aftercare preferences should be discussed before the agreed plan no longer feels safe. aftercare.",
-    "b": "A later check-in can help when a new partner joining the situation. aftercare."
+    "a": "If a survivor wants forensic evidence collected, contact a specialist service as soon as possible and ask about local time limits.",
+    "b": "They can ask what the process involves before agreeing. Even if they have washed or changed, seeking care is still worthwhile."
   },
   {
-    "a": "Aftercare preferences should be discussed before either person asks to stop. aftercare.",
-    "b": "A later check-in can help when content being moved to another service. aftercare."
+    "a": "A person can seek medical care after an assault without deciding immediately whether to report it to police.",
+    "b": "Ask the clinic about confidentiality and local reporting rules. Their options should be explained without pressure."
   },
   {
-    "a": "Use a fresh barrier for oral, genital, or anal contact as relevant. barriers.",
-    "b": "Inspect the barrier before the activity and its risks. barriers."
+    "a": "If someone is in immediate danger, contact local emergency services or move to a safer place if possible.",
+    "b": "If calling is unsafe, reach out to a trusted person in a discreet way. Choose steps that do not increase the danger."
   },
   {
-    "a": "Use a fresh barrier for an unfamiliar symptom appears. barriers.",
-    "b": "Inspect the barrier before an appointment about sexual wellbeing. barriers."
+    "a": "When supporting someone experiencing abuse, do not confront the person harming them without the survivor's agreement.",
+    "b": "An unexpected confrontation can increase risk. Help identify safe contacts and specialist support while respecting their choices."
   },
   {
-    "a": "Use a fresh barrier for a new prescription is started. barriers.",
-    "b": "Inspect the barrier before a possible side effect. barriers."
+    "a": "A sexual boundary can be based on comfort, values, health, or simply not wanting an activity. It needs no defence.",
+    "b": "State it briefly and repeat it if necessary. Someone who respects you should not require a detailed explanation."
   },
   {
-    "a": "Use a fresh barrier for one partner's needs or circumstances change. barriers.",
-    "b": "Inspect the barrier before a change in relationship status. barriers."
+    "a": "If your partner's boundary differs from yours, treat it as a compatibility question, not a challenge to overcome.",
+    "b": "Discuss whether there are mutually comfortable alternatives. If not, accept the difference rather than wearing them down."
   },
   {
-    "a": "Use a fresh barrier for meeting someone new. barriers.",
-    "b": "Inspect the barrier before sharing personal information online. barriers."
+    "a": "Do not use money, gifts, housing, or status to make someone feel they owe you sex.",
+    "b": "Support must not become a debt collected through intimacy. Affection and sexual access cannot be purchased."
   },
   {
-    "a": "Use a fresh barrier for a boundary has already been stated. barriers.",
-    "b": "Inspect the barrier before responding to a disclosure of harm. barriers."
+    "a": "If you are unsure whether a sexual joke or comment is welcome, pause and check instead of escalating it.",
+    "b": "Respect the answer without mocking or testing the boundary. A comfortable conversation leaves room for either person to say no."
   },
   {
-    "a": "Use a fresh barrier for symptoms continue or worsen. barriers.",
-    "b": "Inspect the barrier before returning to an activity after injury. barriers."
+    "a": "If you are supporting a partner through a sexual-health concern, ask what help they want instead of taking over.",
+    "b": "You could help find a clinic, arrange transport, or sit with them during a call if invited. Keep their information private."
   },
   {
     "a": "Ask a qualified clinician about oral, genital, or anal contact as relevant. clinical care.",
