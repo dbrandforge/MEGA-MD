@@ -17,8 +17,8 @@ export default {"sexAdvice":[
     "b": "If pregnancy has not occurred after a period of trying, seek advice based on age and health history. A clinician can guide both partners through evaluation."
   },
   {
-    "a": "If you do not want children, discuss contraception before sex and make sure both partners understand the plan.",
-    "b": "Do not rely on assumptions or promises made in the heat of the moment. Each person has a role in preventing an unintended pregnancy."
+    "a": "If someone freezes, goes quiet, or seems disconnected during intimacy, stop and check in. Silence is not consent.",
+    "b": "A pause is always allowed. Ask a simple question, give them time, and do not resume unless they can freely and clearly say they want to."
   },
   {
     "a": "A decision to be child-free is valid. You do not owe a partner or family an explanation for your reproductive choices.",
@@ -29,20 +29,20 @@ export default {"sexAdvice":[
     "b": "A clinician can explain the procedure and whether reversal is possible; reversal is not guaranteed. Make the decision freely, without partner pressure."
   },
   {
-    "a": "Emergency contraception does not end an established pregnancy. It helps prevent pregnancy after sex when used within the recommended window.",
-    "b": "A pharmacist or clinician can explain the available methods and timing. If your period is late afterward, take a pregnancy test."
+    "a": "Agreeing to kiss does not mean agreeing to every other kind of touch. Ask before moving to a different activity.",
+    "b": "Consent is specific to what is happening now. A partner's earlier yes does not answer a new question for them."
   },
   {
-    "a": "If you are concerned about an unintended pregnancy, seek confidential, qualified healthcare advice about your options and local laws.",
-    "b": "You deserve accurate information without coercion. Ask about timing, medical safety, costs, and emotional support before making a decision."
+    "a": "Anyone can change their mind after saying yes. Stop when they withdraw consent, without arguing or demanding a reason.",
+    "b": "Make it safe to change course. No one should have to manage your disappointment before they can protect their own comfort."
   },
   {
-    "a": "A partner should not control another person's contraception or sabotage it. That behaviour is reproductive coercion.",
-    "b": "If you suspect tampering or pressure, seek confidential support from a clinician or trusted service. Consider a safety plan if raising the issue could put you at risk."
+    "a": "A sleeping or unconscious person cannot give present consent. Wait until they are awake and able to make a clear choice.",
+    "b": "Being partners or having discussed sex earlier does not create permission while someone cannot respond. Prioritise their safety."
   },
   {
-    "a": "Do not pressure a partner to become pregnant, continue a pregnancy, or end a pregnancy. The decision must be free from coercion.",
-    "b": "You can share your feelings honestly, but threats, financial control, or repeated intimidation are not acceptable ways to influence the decision."
+    "a": "If alcohol or drugs have significantly affected someone's awareness or judgment, do not proceed with sex.",
+    "b": "Do not interpret intoxicated enthusiasm as permission. Wait until everyone is alert enough to understand, decide, and communicate."
   },
   {
     "a": "If you and your partner disagree about pregnancy plans, pause sexual activity that could result in pregnancy until you have a clear, mutually understood plan.",
@@ -57,12 +57,12 @@ export default {"sexAdvice":[
     "b": "Use your own comfort and mutual enjoyment as the measure. If online content is shaping expectations in a distressing way, discuss it openly."
   },
   {
-    "a": "Pornography does not teach consent by itself. Real intimacy requires direct communication and respect for boundaries.",
-    "b": "Do not assume a partner wants acts they have seen online. Ask what they are comfortable with and accept a no without debate."
+    "a": "Repeated requests, guilt, threats, or financial pressure can turn an apparent yes into coerced agreement.",
+    "b": "Ask without pressure and accept the first no. A genuine choice must not depend on someone fearing what you will do if they refuse."
   },
   {
-    "a": "If pornography use is affecting your relationship, work, finances, or wellbeing, discuss the impact without insults or shame.",
-    "b": "Agree on specific concerns and boundaries. A qualified therapist can help if the pattern feels compulsive or difficult to change."
+    "a": "Before trying a new activity, discuss what each person wants, what is off-limits, and how either person can stop.",
+    "b": "Cover practical details too: protection, privacy, health concerns, safer words or signals, and what support might be needed afterward."
   },
   {
     "a": "If a partner's sexual preferences differ from yours, neither person should be mocked or forced to participate.",
@@ -73,24 +73,24 @@ export default {"sexAdvice":[
     "b": "Start conservatively, check in often, and agree that consent can be withdrawn. Never use a scene as permission to ignore someone's distress."
   },
   {
-    "a": "A dominant or submissive role does not remove anyone's right to stop. The person with less power in a scene must still have real control over consent.",
-    "b": "Agree on boundaries outside the scene and treat a safeword as immediate instruction. Afterward, check in and discuss anything that did not feel right."
+    "a": "If an activity could make ordinary speech difficult, agree on a clear safeword and a separate pause signal beforehand.",
+    "b": "A safeword is not a substitute for attentiveness. Check in regularly and stop immediately if someone seems distressed."
   },
   {
     "a": "Do not introduce choking or breath restriction as a surprise. These activities can cause serious injury or death, even when they seem controlled.",
     "b": "The safest choice is to avoid pressure on the neck. If someone has been choked and develops breathing, swallowing, voice, or neurological symptoms, seek emergency care."
   },
   {
-    "a": "If a partner is curious about anal sex, discuss it beforehand and proceed only if both people freely want to. Pain is a reason to stop.",
-    "b": "Use plenty of compatible lubricant, go slowly, and use a new condom when switching from anal to vaginal contact. Never force or push through pain."
+    "a": "If speaking is difficult, agree on a simple nonverbal stop signal that both people can recognise.",
+    "b": "Choose something practical and unmistakable before starting. If the signal is used, stop first and clarify only when it is safe."
   },
   {
     "a": "Do not move from anal to vaginal penetration with the same condom or without cleaning first. This can transfer bacteria and increase infection risk.",
     "b": "Change the condom and clean any shared toy or body part before switching areas. Hygiene and clear communication reduce avoidable risks."
   },
   {
-    "a": "If you are unsure whether an intimate activity is medically safe for you, ask a qualified healthcare professional who knows your health history.",
-    "b": "Explain the activity and any relevant conditions or medication. General online guidance cannot replace individual medical advice."
+    "a": "If you cross a boundary, stop and acknowledge it plainly. Do not minimise what happened or blame the person who raised it.",
+    "b": "Listen to what they need, give them space if requested, and show accountability through changed behaviour rather than a quick apology."
   },
   {
     "a": "A respectful partner will accept that intimacy may be postponed because of illness, fatigue, stress, or simply not wanting it.",
@@ -109,8 +109,8 @@ export default {"sexAdvice":[
     "b": "You can write down the concern or show it on your phone if speaking feels difficult. Accurate information is more useful than enduring worry alone."
   },
   {
-    "a": "Keep sexual-health records and test results private, and share them only with people who need the information and have your permission.",
-    "b": "Use secure portals and protect your devices. Do not forward another person's results or disclose their diagnosis without consent."
+    "a": "Receiving an intimate photo does not give you permission to forward, display, or upload it.",
+    "b": "Keep it private and delete it if the sender asks. Never use someone's intimate material to embarrass, threaten, or control them."
   },
   {
     "a": "If a partner asks for time to think about a sexual decision, give them space and do not keep pressing for an answer.",
@@ -133,44 +133,44 @@ export default {"sexAdvice":[
     "b": "For severe pain, heavy bleeding, breathing difficulty, suspected assault, or possible HIV exposure within 72 hours, seek urgent in-person care."
   },
   {
-    "a": "A condom should be replaced between the agreed plan no longer feels safe. condoms.",
-    "b": "Check package integrity before using a new partner joining the situation. condoms."
+    "a": "Before recording intimacy, both people must freely agree to the recording itself and to how it will be stored and accessed.",
+    "b": "Anyone can decline recording without owing an explanation. Sharing a recording later requires separate permission from everyone shown."
   },
   {
-    "a": "A condom should be replaced between either person asks to stop. condoms.",
-    "b": "Check package integrity before using content being moved to another service. condoms."
+    "a": "If someone threatens to publish your intimate images, save messages and other evidence of the threat.",
+    "b": "Do not send more images or money to appease them. Secure your accounts, report the content to the platform, and seek trusted support."
   },
   {
-    "a": "Choose lubricant compatibility based on any new activity begins. lubricants.",
-    "b": "Stop using a product that causes the exact recipient and platform. lubricants."
+    "a": "Use condoms as directed, check the expiry date and packaging, and put one on before genital contact.",
+    "b": "Use a new condom for each act and when switching between anal and vaginal sex. If it breaks or slips, stop and seek timely advice."
   },
   {
-    "a": "Choose lubricant compatibility based on the activity or partner changes. lubricants.",
-    "b": "Stop using a product that causes every new use or audience. lubricants."
+    "a": "Oil-based products can damage latex condoms. Choose a lubricant labelled compatible with the condom material.",
+    "b": "Lubricant can reduce friction and help prevent breakage. Stop using any product that causes burning, rash, or irritation."
   },
   {
-    "a": "Choose lubricant compatibility based on someone withdraws permission. lubricants.",
-    "b": "Stop using a product that causes any recording or storage plan. lubricants."
+    "a": "Choose contraception based on your health, preferences, and how reliably you can use the method.",
+    "b": "A clinician or pharmacist can compare effectiveness, side effects, STI protection, and what to do if a dose is missed."
   },
   {
-    "a": "Choose lubricant compatibility based on one person feels pressured. lubricants.",
-    "b": "Stop using a product that causes a change in privacy expectations. lubricants."
+    "a": "Emergency contraception is time-sensitive after unprotected sex or contraceptive failure. Contact a pharmacy or clinic promptly.",
+    "b": "Available methods have different time windows and suitability. Ask a qualified professional as soon as possible rather than waiting."
   },
   {
-    "a": "Choose lubricant compatibility based on someone is impaired or asleep. lubricants.",
-    "b": "Stop using a product that causes a request to delete shared material. lubricants."
+    "a": "Use a pregnancy test according to its instructions, commonly from the first day of a missed period or the recommended time after sex.",
+    "b": "If the result is negative but your period remains absent, repeat it as advised or speak with a clinician. Severe pain or fainting needs urgent care."
   },
   {
-    "a": "Choose lubricant compatibility based on the agreed plan no longer feels safe. lubricants.",
-    "b": "Stop using a product that causes a new partner joining the situation. lubricants."
+    "a": "STI testing should reflect the type of sexual contact and the body sites exposed. Explain the contact honestly to the clinic.",
+    "b": "Testing too early can miss an infection. Ask about the correct window period and whether repeat testing is recommended."
   },
   {
-    "a": "Choose lubricant compatibility based on either person asks to stop. lubricants.",
-    "b": "Stop using a product that causes content being moved to another service. lubricants."
+    "a": "Many STIs cause no noticeable symptoms. Feeling well does not rule out infection; testing is the way to know.",
+    "b": "If a result is positive, follow treatment advice and ask when partners should be tested and when sexual contact can safely resume."
   },
   {
-    "a": "Contraception decisions should account for any new activity begins. contraception.",
-    "b": "Ask a pharmacist promptly about the exact recipient and platform. contraception."
+    "a": "New sores, unusual discharge, burning, or genital pain should be assessed by a healthcare professional.",
+    "b": "Avoid self-diagnosing or taking leftover antibiotics. The right tests and treatment depend on the cause."
   },
   {
     "a": "Contraception decisions should account for the activity or partner changes. contraception.",
