@@ -505,3 +505,8 @@ Ten more original Movies Normal questions (`mn031`–`mn040`) cover Barbie, Oppe
 ## Movies Normal — grade completed
 
 Three final questions (`mn041`–`mn043`) complete Movies Normal at 50 questions (7 existing + 43 new). The grade now spans film history, contemporary cinema, international film, animation and television series. The next grade in the locked sequence is Movies Hard.
+
+
+## Movies Hard — first content batch
+
+Ten original Movies Hard questions (`mh001`–`mh010`) begin the third difficulty grade. Topics include Park Chan-wook’s Oldboy, Scorsese’s The Departed, the first Academy Award for Best Animated Feature, Spirited Away’s Oscar win, the two actors who played Dumbledore, and key Game of Thrones casting. Each item carries a review date and official BFI, AFI, Academy, Wizarding World or HBO source. Movies Hard now has 15 approved questions overall (5 existing + 10 new); 35 remain to reach 50.
