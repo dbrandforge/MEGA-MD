@@ -4,7 +4,7 @@ Last verified: 2026-11-06
 Repository: `dbrandforge/MEGA-MD`
 Working branch: `geography-easy-batch-01` (stacked on PR #89's Lifestyle completion)
 Previous staged release: PR #88 merged to `main` (commit `5bfa6a15b0dcb822c2aa42760a104d3d85d84c3f`).
-Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current active block: Geography Hard `gh001`–`gh010`; Geography Easy and Normal are complete.
+Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current active block: Geography Hard `gh001`–`gh020`; Geography Easy and Normal are complete.
 
 ## Locked expansion target
 
@@ -682,7 +682,12 @@ Thirty-nine original, source-linked questions (`gn001`–`gn039`) complete Geogr
 
 ## Geography Hard — first content batch
 
-Ten original, source-linked questions (`gh001`–`gh010`) begin Geography Hard. Topics include the Benguela and Humboldt currents, the Volga, Bosporus, Arabian Plate, Afar Triple Junction, Danube Delta, Pacific Ring of Fire, Bab-el-Mandeb and Bass Strait. Sources include Encyclopaedia Britannica, UNESCO and the U.S. Geological Survey. Geography Hard now has 11/50 questions; 39 remain.
+Ten original, source-linked questions (`gh001`–`gh010`) begin Geography Hard. Topics include the Benguela and Humboldt currents, the Volga, Bosporus, Arabian Plate, Afar Triple Junction, Danube Delta, Pacific Ring of Fire, Bab-el-Mandeb and Bass Strait. Sources include Encyclopaedia Britannica, UNESCO and the U.S. Geological Survey. Geography Hard now has 21/50 questions; 29 remain.
+
+
+## Geography Hard — second content batch
+
+Ten additional original, source-linked questions (`gh011`–`gh020`) extend Geography Hard. Topics include the Gulf Stream, Tibetan Plateau, Strait of Hormuz, Mozambique Channel, Caucasus, Aegean Sea, Karakum Desert, Ob River, Lake Superior and Pamir Mountains. Sources include Encyclopaedia Britannica. Geography Hard now has 21/50 questions; 29 remain.
 
 
 ## Sparse-array regression correction
