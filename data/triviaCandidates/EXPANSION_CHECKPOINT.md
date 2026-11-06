@@ -475,3 +475,8 @@ Ten more original Movies Easy questions (`mv021`–`mv030`) extend the subcatego
 ## Movies Easy — fourth content batch
 
 Ten more original Movies Easy questions (`mv031`–`mv040`) add Nollywood, Hollywood, animation, Bollywood and series coverage. Topics include Chinedu Ikedieze, Wolverine, Deadpool, Zootopia, The Lion King, Gully Boy, The Office, Game of Thrones and The Big Bang Theory. Each item carries a review date and official studio, distributor, platform or industry source. Movies Easy now has 46 approved questions overall (6 existing + 40 new); 4 remain to reach 50.
+
+
+## Movies Easy — grade completed
+
+Four final questions (`mv041`–`mv044`) complete Movies Easy at 50 questions (6 existing + 44 new). The grade now spans Nollywood, Hollywood, Bollywood, animation and television series. Movies Normal, Hard and Expert remain at their existing counts and will be filled in order before moving to the next category.
