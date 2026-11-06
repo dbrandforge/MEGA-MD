@@ -420,3 +420,8 @@ Ten additional Football Hard questions (`fh021`–`fh030`) test nuanced interpre
 ## Football Hard — fourth content batch
 
 Ten more original Football Hard questions (`fh031`–`fh040`) cover the 2002, 2006, 1986 and 2014 FIFA World Cups. They test match outcomes, individual scoring records, the 2006 final shoot-out and notable disciplinary history. Each question carries a review date and official FIFA source. Football Hard now has 42 approved questions overall (2 existing + 40 new); 8 remain to reach 50.
+
+
+## Football Hard — grade completed
+
+Eight final questions (`fh041`–`fh048`) complete Football Hard at 50 questions (2 existing + 48 new). The grade now covers advanced match-law interpretation, historic World Cup and AFCON records, Nigerian football milestones, and decisive tournament moments. The next grade in the locked sequence is Football Expert.
