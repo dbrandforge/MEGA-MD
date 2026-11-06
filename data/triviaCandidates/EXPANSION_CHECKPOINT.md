@@ -395,3 +395,8 @@ Ten more original Football Normal questions (`fn021`–`fn030`) deepen the Niger
 ## Football Normal — fourth content batch
 
 Ten more original Football Normal questions (`fn031`–`fn040`) cover African World Cup milestones, Morocco’s 2022 run, Senegal’s first AFCON title and the 2005 UEFA Champions League final. Each question carries a review date and official FIFA, CAF or UEFA source. Football Normal now has 46 approved questions overall (6 existing + 40 new); 4 remain to reach 50.
+
+
+## Football Normal — grade completed
+
+Four final questions (`fn041`–`fn044`) complete Football Normal at 50 questions (6 existing + 44 new). The grade now spans international milestones, African football, major national-team tournaments, and European club competition history. The next grade in the locked sequence is Football Hard.
