@@ -4,7 +4,7 @@ Last verified: 2026-11-06
 Repository: `dbrandforge/MEGA-MD`
 Working branch: `geography-easy-batch-01` (stacked on PR #89's Lifestyle completion)
 Previous staged release: PR #88 merged to `main` (commit `5bfa6a15b0dcb822c2aa42760a104d3d85d84c3f`).
-Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current active block: Geography Easy `ge001`–`ge020`; PR #90 is stacked on PR #89.
+Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current active block: Geography Easy `ge001`–`ge030`; PR #90 is stacked on PR #89.
 
 ## Locked expansion target
 
@@ -169,7 +169,7 @@ Useful commands:
 
 ## Next execution sequence
 
-1. Complete Geography Easy: currently 27/50 (20 new questions added to the seven existing questions; 23 remain).
+1. Complete Geography Easy: currently 37/50 (30 new questions added to the seven existing questions; 13 remain).
 2. Then complete Geography Normal (11/50), Hard (1/50) and Expert (1/50), in that order.
 3. Fact-check every answer and distractor; rewrite incomplete stems and repair encoding.
 4. Date-anchor or reject volatile/current-affairs and ranking-dependent claims.
@@ -648,6 +648,11 @@ Ten original, source-linked questions (`ge001`–`ge010`) begin the Geography Ea
 ## Geography Easy — second content batch
 
 Ten additional original, source-linked questions (`ge011`–`ge020`) extend Geography Easy. Topics include continental size, the Indian Ocean, the Iberian Peninsula, capitals and major rivers, the Giza pyramids, and the Panama Canal. Sources include Encyclopaedia Britannica, UNESCO and the Panama Canal Authority. Geography Easy now has 27/50 questions; 23 remain.
+
+
+## Geography Easy — third content batch
+
+Ten additional original, source-linked questions (`ge021`–`ge030`) extend Geography Easy. Topics include country and city geography across Russia, Vatican City, Ecuador, Kenya, Canada, Brazil, the Mediterranean, Japan, Mexico and Peru. Sources include Encyclopaedia Britannica and UNESCO. Geography Easy now has 37/50 questions; 13 remain.
 
 
 ## Sparse-array regression correction
