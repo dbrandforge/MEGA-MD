@@ -36,6 +36,12 @@ export const MATH_MODES = Object.freeze({
 const mention = jid => '@' + String(jid || '').split('@')[0].split(':')[0];
 export { generateMathQuestion, getMathNegativeQuestionCount };
 
+export function getMathMatchQuestionCount(mode = 'normal') {
+  const difficulty = mode === 'noob' || mode === 'easy' ? 'easy'
+    : mode === 'normal' ? 'normal' : mode === 'hard' ? 'hard' : 'expert';
+  return getTriviaMatchQuestionCount('maths', difficulty);
+}
+
 async function readGame(chatId) {
   const game = await store.getSetting(chatId, STATE_KEY);
   if (!game?.active) return null;
