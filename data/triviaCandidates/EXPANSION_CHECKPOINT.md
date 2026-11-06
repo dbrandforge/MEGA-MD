@@ -4,7 +4,7 @@ Last verified: 2026-11-06
 Repository: `dbrandforge/MEGA-MD`
 Working branch: `geography-easy-batch-01` (stacked on PR #89's Lifestyle completion)
 Previous staged release: PR #88 merged to `main` (commit `5bfa6a15b0dcb822c2aa42760a104d3d85d84c3f`).
-Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current active block: Geography Hard `gh001`–`gh049`; Geography Easy and Normal are complete.
+Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current completed block: Geography Easy `ge001`–`ge043`, Normal `gn001`–`gn039`, Hard `gh001`–`gh049`, Expert `gx001`–`gx049`; all four Geography grades are complete.
 
 ## Locked expansion target
 
@@ -21,7 +21,7 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current verified expansion coverage
 
-The staged release completed Forge, Music, Football and Movies at 50 questions in each difficulty (200 per category). Lifestyle is now complete at Easy 50, Normal 52, Hard 50 and Expert 50 (202 total; the two retained legacy Normal questions and two retained legacy Expert questions are preserved).
+The staged release completed Forge, Music, Football and Movies at 50 questions in each difficulty (200 per category). Lifestyle is complete at Easy 50, Normal 52, Hard 50 and Expert 50 (202 total). Geography is now complete at 50 questions in each difficulty (200 total).
 
 | Selectable pool | Easy | Normal | Hard | Expert | Total |
 |---|---:|---:|---:|---:|---:|
@@ -30,6 +30,7 @@ The staged release completed Forge, Music, Football and Movies at 50 questions i
 | Football | 50 | 50 | 50 | 50 | 200 |
 | Movies | 50 | 50 | 50 | 50 | 200 |
 | Lifestyle | 50 | 52 | 50 | 50 | 202 |
+| Geography | 50 | 50 | 50 | 50 | 200 |
 
 These rows describe the completed expansion pools; category aliases and legacy routing may overlap and must not be summed as unique bank records. Other player-selectable categories remain outside this completed expansion milestone and require a fresh audit before planning their grade sequence.
 
@@ -169,18 +170,19 @@ Useful commands:
 
 ## Next execution sequence
 
-1. Complete Geography Easy: now complete at 50/50 (43 new questions added to the seven existing questions).
-2. Then complete Geography Normal (11/50), Hard (1/50) and Expert (1/50), in that order.
-3. Fact-check every answer and distractor; rewrite incomplete stems and repair encoding.
-4. Date-anchor or reject volatile/current-affairs and ranking-dependent claims.
-5. Keep unreviewed OpenTriviaQA candidates staged and respect their CC BY-SA 4.0 attribution obligations.
-6. Promote only approved questions into the live bank.
-7. Run the live-bank audit and unit/integration tests after each meaningful batch.
-8. Continue the same sequence until each selected category reaches 200 questions, then expand each grade toward 250 (1,000 per category).
+1. Geography is complete at 50 Easy, 50 Normal, 50 Hard and 50 Expert.
+2. History is next in the selectable-category sequence: Easy 2/50, Normal 5/50, Hard 5/50 and Expert 6/50.
+3. Complete History Easy first (48 additional questions), then Normal, Hard and Expert in order.
+4. Fact-check every answer and distractor; rewrite incomplete stems and repair encoding.
+5. Date-anchor or reject volatile/current-affairs and ranking-dependent claims.
+6. Keep unreviewed OpenTriviaQA candidates staged and respect their CC BY-SA 4.0 attribution obligations.
+7. Promote only approved questions into the live bank.
+8. Run the live-bank audit and unit/integration tests after each meaningful batch.
+9. Continue the same sequence until each selected category reaches 200 questions, then expand each grade toward 250 (1,000 per category).
 
 ## Recovery after an app interruption
 
-Resume from this file and PR #89. The GitHub branch contains the committed work; reopening ChatGPT is not required to preserve it. Do not restart the audit from scratch and do not deploy this draft.
+Resume from this file and the stacked PRs #89 (Lifestyle) and #90 (Geography). The GitHub branch contains the committed work; reopening ChatGPT is not required to preserve it. Do not restart the audit from scratch and do not deploy this draft.
 
 
 ## Tenth approved content batch — Forge session
@@ -713,6 +715,15 @@ Ten additional original, source-linked advanced questions (`gx011`–`gx020`) ex
 ## Geography Expert — third content batch
 
 Ten additional original, source-linked advanced questions (`gx021`–`gx030`) extend Geography Expert. Topics include the beta effect and Rossby waves, Ekman transport, the Intertropical Convergence Zone, oxbow lakes, braided streams, knickpoints, perched aquifers, longitudinal river profiles and chemical weathering. Sources include NOAA, USGS and Encyclopaedia Britannica. Geography Expert now has 31/50 questions; 19 remain.
+
+
+## Geography Expert — grade completed
+
+Forty-nine original, source-linked advanced questions (`gx001`–`gx049`) complete Geography Expert at **50/50**, including one retained existing question. The set covers atmospheric and ocean circulation, climate dynamics, tectonic processes, hydrology, river and coastal geomorphology, periglacial environments, aeolian landforms and glacial landscapes. Sources include NOAA, USGS, UNEP, WWF, the U.S. National Park Service, UNESCO and Encyclopaedia Britannica. Across the full 50-question Expert grade, correct-answer positions are balanced: 12 at A, 13 at B, 13 at C and 12 at D.
+
+## Geography — category completed
+
+Geography now has **200 approved questions: 50 Easy, 50 Normal, 50 Hard and 50 Expert**. Easy contains 43 new numbered questions plus seven retained questions; Normal contains 39 new numbered questions plus eleven retained questions; Hard contains 49 new numbered questions plus one retained question; Expert contains 49 new numbered questions plus one retained question. All four grade blocks are complete. The staged release gate and unit regression tests now include Geography alongside the previously completed categories.
 
 
 ## Sparse-array regression correction
