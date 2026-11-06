@@ -360,3 +360,8 @@ Ten original, source-linked Football Easy questions (`ft001`–`ft010`) begin th
 ## Football Easy — second content batch
 
 Ten additional original Football Easy questions (`ft011`–`ft020`) extend the current grade block. Topics cover team player limits, minimum players, match and half-time duration, goal validity, ball in/out of play, kick-off restarts, throw-in awards, goalkeeper handling area and disciplinary cards. Each item carries a review date and an official IFAB Laws of the Game source. Football now has 34 approved questions overall: Easy 24, Normal 6, Hard 2 and Expert 2. The Easy block has 26 questions remaining before Football Normal begins.
+
+
+## Football Easy — third content batch
+
+Ten more original, source-linked Football Easy questions (`ft021`–`ft030`) cover offside involvement, direct and indirect free kicks, corner and goal-kick awards, penalty-kick location, and kick-off positioning and procedure. Each question includes a review date and an official IFAB Laws of the Game source. Football now has 44 approved questions overall: Easy 34, Normal 6, Hard 2 and Expert 2. The Easy block has 16 questions remaining before Football Normal begins.
