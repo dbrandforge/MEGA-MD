@@ -723,9 +723,5 @@ export default {"sexAdvice":[
   {
     "a": "Follow the clinician's advice about repeat testing after a boundary has already been stated. screening follow-up.",
     "b": "Ask what a result means before responding to a disclosure of harm. screening follow-up."
-  },
-  {
-    "a": "Follow the clinician's advice about repeat testing after symptoms continue or worsen. screening follow-up.",
-    "b": "Ask what a result means before returning to an activity after injury. screening follow-up."
   }
 ]};
