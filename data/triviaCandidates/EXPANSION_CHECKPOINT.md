@@ -515,3 +515,8 @@ Ten original Movies Hard questions (`mh001`–`mh010`) begin the third difficult
 ## Movies Hard — second content batch
 
 Ten more original Movies Hard questions (`mh011`–`mh020`) focus on Academy Award history, major directors and international cinema: Moonlight, The Revenant, La La Land, The Shape of Water, The Handmaiden, Everything Everywhere All at Once, Oppenheimer and Anatomy of a Fall. Each question carries a review date and official Academy, BFI or Cannes source. Movies Hard now has 25 approved questions overall (5 existing + 20 new); 25 remain to reach 50.
+
+
+## Movies Hard — third content batch
+
+Ten more original Movies Hard questions (`mh021`–`mh030`) cover character casting, directing and source-film history across Pulp Fiction, Kill Bill, Scarface, There Will Be Blood and The Departed. Each item carries a review date and official AFI source. Movies Hard now has 35 approved questions overall (5 existing + 30 new); 15 remain to reach 50.
