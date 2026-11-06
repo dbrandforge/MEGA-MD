@@ -56,3 +56,10 @@ The third expansion module, `ev_0_2.js`, has now been rewritten with 182 distinc
 `ev_0_3.js` was initially replaced at 182 rows, but CI exposed that the original module inventory was 181 rows. The module has now been restored to 181 rows, and the regression test checks the preserved inventory for all four modules (182, 182, 182, 181). Exact-string uniqueness is a structural check only: `ev_0_3.js` still contains templated, semantically repetitive statements and is not accepted as a substantive editorial rewrite. The remaining twelve expansion modules and specialty banks are not yet rewritten.
 
 The first CI run for this checkpoint failed only on the expansion inventory assertion: 2,909 expansion pairs were observed instead of the expected 2,908 (5,184 total instead of 5,183). The row-count regression has been corrected on the feature branch; a fresh CI result is still required.
+
+
+## Contextual response selection (2026-11-06)
+
+The live chatbot now passes the current message and up to eight recent conversation messages into ChatDual. The selector scores each candidate pair against the current message, gives the current message greater weight than older context, and returns the A or B side with the stronger topical match. If neither side has a meaningful distinction, it uses a tie-break rather than pretending the evidence is decisive. The normal chatbot path uses this reasoned mode; explicit A, B, and both modes remain available to callers.
+
+This is deterministic lexical relevance scoring informed by the existing intent classifier and conversation history. It is not an LLM-based semantic reasoning layer. The content still needs to be authored so the alternatives genuinely differ in angle and remain appropriate to the same situation. The fourth module, `ev_0_3.js`, remains a known content-quality blocker and has not yet been rewritten.
