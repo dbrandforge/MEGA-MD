@@ -1916,16 +1916,6 @@ const CULTURE_ROWS = {
         "Tanzania"
       ],
       "whc"
-    ],
-    [
-      "The UNESCO-listed Asante Traditional Buildings are located in which country?",
-      "Ghana",
-      [
-        "Nigeria",
-        "Benin",
-        "Togo"
-      ],
-      "whc"
     ]
   ]
 }
