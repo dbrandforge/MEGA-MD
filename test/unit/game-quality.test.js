@@ -206,7 +206,7 @@ describe('game quality foundations', () => {
           expect(dividend % divisor).toBe(0);
         }
         if (q.type === 'ratio') {
-          const ratio = q.expression.match(/ratio (\\d+):(\\d+)/);
+          const ratio = q.expression.match(/ratio (\d+):(\d+)/);
           expect(ratio).not.toBeNull();
           expect(Number(ratio[1])).not.toBe(Number(ratio[2]));
         }
