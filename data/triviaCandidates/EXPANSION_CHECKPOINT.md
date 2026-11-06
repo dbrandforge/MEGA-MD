@@ -170,8 +170,8 @@ Useful commands:
 ## Next execution sequence
 
 1. Geography is complete at 50 Easy, 50 Normal, 50 Hard and 50 Expert.
-2. History is next in the selectable-category sequence: Easy 2/50, Normal 15/50, Hard 5/50 and Expert 6/50.
-3. History Easy is complete. Complete History Normal next (35 additional questions), then Hard and Expert in order.
+2. History is next in the selectable-category sequence: Easy 2/50, Normal 50/50, Hard 5/50 and Expert 6/50.
+3. History Easy is complete. History Normal is complete. Complete History Hard next (45 additional questions), then Expert in order.
 4. Fact-check every answer and distractor; rewrite incomplete stems and repair encoding.
 5. Date-anchor or reject volatile/current-affairs and ranking-dependent claims.
 6. Keep unreviewed OpenTriviaQA candidates staged and respect their CC BY-SA 4.0 attribution obligations.
@@ -758,6 +758,11 @@ Ten additional original, source-linked questions (`hn011`–`hn020`) extend Hist
 ## History Normal — third content batch
 
 Ten additional original, source-linked questions (`hn021`–`hn030`) extend History Normal. Topics include Elizabeth I and the Spanish Armada, the Norman Conquest, the Kingdom of Kush, Genghis Khan, Babur and the Mughal Empire, the Revolutions of 1848, Carthage, Cleopatra VII, the American Revolution and Constantine XI. Sources include Encyclopaedia Britannica. History Normal now has 35/50 questions; 15 remain.
+
+
+## History Normal — grade completed
+
+Forty-five original, source-linked questions (`hn001`–`hn045`) complete History Normal at **50/50**, including five retained existing questions. Topics include major political and religious transformations, ancient civilisations, empires and dynasties, wars and treaties, independence movements, and influential historical leaders. Sources include Encyclopaedia Britannica and UNESCO. Correct-answer positions across the full grade are balanced: A 12, B 13, C 13 and D 12. History Hard is next at 5/50; 45 additional questions are needed.
 
 
 ## Sparse-array regression correction
