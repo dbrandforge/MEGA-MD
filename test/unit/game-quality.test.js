@@ -195,6 +195,7 @@ describe('game quality foundations', () => {
 
   it('provides a substantial, unique Nigeria-focused trivia bank with valid choices', () => {
     expect(NIGERIA_TRIVIA.length).toBeGreaterThanOrEqual(95);
+    expect(Object.keys(NIGERIA_TRIVIA)).toHaveLength(NIGERIA_TRIVIA.length); // reject sparse array slots
     expect(new Set(NIGERIA_TRIVIA.map(q => q.id)).size).toBe(NIGERIA_TRIVIA.length);
     expect(TRIVIA_CATEGORIES).toContain('current-affairs');
     expect(getTriviaQuestionCount('all')).toBe(NIGERIA_TRIVIA.length);
