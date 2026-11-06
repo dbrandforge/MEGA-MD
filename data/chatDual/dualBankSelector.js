@@ -41,21 +41,25 @@ function terms(value) {
 }
 
 export function scoreResponseRelevance(input, response, context = []) {
-  const inputTerms = terms([input, ...context].join(' '));
   const responseTerms = new Set(terms(response));
+  const currentTerms = terms(input);
+  const contextTerms = terms(context.join(' '));
   let score = 0;
-  for (const term of inputTerms) {
-    if (responseTerms.has(term)) score += term.length > 6 ? 2 : 1;
+  for (const term of currentTerms) {
+    if (responseTerms.has(term)) score += term.length > 6 ? 3 : 2;
+  }
+  for (const term of contextTerms) {
+    if (responseTerms.has(term) && !currentTerms.includes(term)) score += 0.25;
   }
   return score;
 }
 
-function scorePair(pair, inputTerms) {
+function scorePair(pair, input, context = []) {
   const a = pair?.a ?? pair?.A;
   const b = pair?.b ?? pair?.B;
   if (typeof a !== 'string' || typeof b !== 'string') return null;
-  const scoreA = scoreResponseRelevance(inputTerms.join(' '), a);
-  const scoreB = scoreResponseRelevance(inputTerms.join(' '), b);
+  const scoreA = scoreResponseRelevance(input, a, context);
+  const scoreB = scoreResponseRelevance(input, b, context);
   return { pair, a, b, scoreA, scoreB, score: Math.max(scoreA, scoreB) };
 }
 
@@ -75,12 +79,11 @@ function choosePair(chatId, category, input, previousReply = '', context = [], r
   const key = `${chatId || 'global'}:dual:${category}`;
   const recent = recentDual.get(key) || [];
   const blocked = new Set([previousReply, ...recent].filter(Boolean).map(String));
-  const contextText = [input, ...context.slice(-5)].join(' ');
-  const inputTerms = terms(contextText);
+  const recentContext = context.slice(-8);
   const scored = pool
-    .map(pair => scorePair(pair, inputTerms))
+    .map(pair => scorePair(pair, input, recentContext))
     .filter(item => item && !blocked.has(item.a) && !blocked.has(item.b));
-  const available = scored.length ? scored : pool.map(pair => scorePair(pair, inputTerms)).filter(Boolean);
+  const available = scored.length ? scored : pool.map(pair => scorePair(pair, input, recentContext)).filter(Boolean);
   if (!available.length) return null;
 
   // Prefer responses with real topical overlap; only fall back to a tie-break when the
