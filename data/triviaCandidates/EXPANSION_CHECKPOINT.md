@@ -169,18 +169,18 @@ Useful commands:
 
 ## Next execution sequence
 
-1. Build the first 100-question bank for each selectable category, with 25 verified questions at each difficulty; prioritize categories with the largest deficits.
-2. Fact-check every answer and distractor; rewrite incomplete stems and repair encoding.
-3. Date-anchor or reject volatile/current-affairs and ranking-dependent claims.
-4. Assign difficulty only after editorial review.
-5. Fact-check and grade every first-release question; keep unreviewed OpenTriviaQA candidates staged and respect their CC BY-SA 4.0 attribution obligations.
+1. Run the full live-bank audit now that Lifestyle is complete and use its per-category/per-grade deficits to select the next category in the approved sequence.
+2. Complete that category one grade at a time, reaching 50 approved questions per grade before moving to its next grade.
+3. Fact-check every answer and distractor; rewrite incomplete stems and repair encoding.
+4. Date-anchor or reject volatile/current-affairs and ranking-dependent claims.
+5. Keep unreviewed OpenTriviaQA candidates staged and respect their CC BY-SA 4.0 attribution obligations.
 6. Promote only approved questions into the live bank.
-7. Run the live-bank audit and unit/integration tests.
-8. Once every category meets 100 / 25 and all quality gates pass, merge and deploy the first milestone. Continue expanding toward 1,000 / 250 afterward.
+7. Run the live-bank audit and unit/integration tests after each meaningful batch.
+8. Continue the same sequence until each selected category reaches 200 questions, then expand each grade toward 250 (1,000 per category).
 
 ## Recovery after an app interruption
 
-Resume from this file and PR #87. The GitHub branch contains the committed work; reopening ChatGPT is not required to preserve it. Do not restart the audit from scratch and do not deploy this draft.
+Resume from this file and PR #89. The GitHub branch contains the committed work; reopening ChatGPT is not required to preserve it. Do not restart the audit from scratch and do not deploy this draft.
 
 
 ## Tenth approved content batch — Forge session
