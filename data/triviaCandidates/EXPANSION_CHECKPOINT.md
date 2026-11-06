@@ -520,3 +520,8 @@ Ten more original Movies Hard questions (`mh011`–`mh020`) focus on Academy Awa
 ## Movies Hard — third content batch
 
 Ten more original Movies Hard questions (`mh021`–`mh030`) cover character casting, directing and source-film history across Pulp Fiction, Kill Bill, Scarface, There Will Be Blood and The Departed. Each item carries a review date and official AFI source. Movies Hard now has 35 approved questions overall (5 existing + 30 new); 15 remain to reach 50.
+
+
+## Movies Hard — fourth content batch
+
+Ten more original Movies Hard questions (`mh031`–`mh040`) add Academy Award animation history, Nigeria’s first eligible International Feature Film Oscar submission, The Milkmaid’s director and lead actress, and Game of Thrones principal cast. Each item carries a review date and official Academy, Voice of Nigeria, African Film Festival or HBO source. Movies Hard now has 45 approved questions overall (5 existing + 40 new); 5 remain to reach 50.
