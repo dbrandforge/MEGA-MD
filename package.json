@@ -27,7 +27,7 @@
     "trivia:audit": "node scripts/audit-trivia-bank.js",
     "trivia:candidates:audit": "node scripts/audit-trivia-candidates.js",
     "trivia:audit:release": "npm run trivia:audit:stage",
-    "trivia:audit:stage": "node scripts/audit-trivia-bank.js --require=forge,music,football,movies,lifestyle,geography,entertainment,history,food"
+    "trivia:audit:stage": "node scripts/audit-trivia-bank.js --require=forge,music,football,movies,lifestyle,geography,entertainment,history,food,nigeria"
   },
   "keywords": [
     "whatsapp-bot",
