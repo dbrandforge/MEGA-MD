@@ -1500,7 +1500,7 @@ export const NIGERIA_TRIVIA = [
 
 ];
 
-// Append the separately maintained Entertainment specialist bank.
+// Append specialist banks; film, series and animation questions are selectable together under Movies & Entertainment.
 NIGERIA_TRIVIA.push(...ENTERTAINMENT_TRIVIA);
 NIGERIA_TRIVIA.push(...HISTORY_TRIVIA);
 NIGERIA_TRIVIA.push(...FOOD_TRIVIA);
