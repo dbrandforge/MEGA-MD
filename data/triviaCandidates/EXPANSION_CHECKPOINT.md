@@ -460,3 +460,8 @@ The staged release command now requires all three completed categories: Forge, M
 ## Movies Easy — first content batch
 
 Ten original, source-linked Movies Easy questions (`mv001`–`mv010`) begin the next category after Football. The batch mixes Nollywood, Hollywood, Bollywood, animation and television series while preserving their existing subcategory labels for the shared Movies pool. Topics include King of Boys, Aki na Ukwa, Mr Ibu, Black Panther, Titanic, Toy Story, Frozen, Dangal and Stranger Things. Each question carries a review date and a studio, distributor, platform or reputable media source. Movies Easy now has 16 approved questions overall (6 existing + 10 new); 34 remain to reach 50.
+
+
+## Movies Easy — second content batch
+
+Ten more original Movies Easy questions (`mv011`–`mv020`) extend the mixed-film pool with The Wedding Party, Pirates of the Caribbean, The Matrix, Jaws, Frozen, WALL-E, Dangal, Stranger Things and Squid Game. Subcategory labels remain intact. Every question carries a review date and an official studio, platform, film archive or production source. Movies Easy now has 26 approved questions overall (6 existing + 20 new); 24 remain to reach 50.
