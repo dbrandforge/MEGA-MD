@@ -1,88 +1,88 @@
 /** Expansion volume 0, part 3. Legacy sex-advice inventory; 181 rows. Rewrite pending. */
 export default {"sexAdvice":[
   {
-    "a": "If sex is uncomfortable because of a position or movement, change it or stop. There is no need to endure pain to satisfy a partner.",
-    "b": "Try communicating what feels different and adjusting slowly. If pain continues, pause sexual activity and seek medical advice."
+    "a": "If you are considering a sexual-health supplement or enhancement product, check its ingredients and safety with a clinician or pharmacist first.",
+    "b": "Products marketed online may contain undisclosed drugs or interact with medication. Be wary of guaranteed results and avoid unregulated treatments."
   },
   {
-    "a": "Some people need more time to feel aroused. Rushing or treating arousal as a performance can make intimacy stressful.",
-    "b": "Talk about what helps each of you feel relaxed, and remember that arousal is not a promise to continue. Either person can still change their mind."
+    "a": "Do not use antibiotics or antifungal medicines left over from an earlier illness to treat new genital symptoms.",
+    "b": "The cause may be different, and the wrong treatment can delay care or contribute to resistance. Get an accurate assessment."
   },
   {
-    "a": "An erection is not a reliable measure of attraction, masculinity, or relationship quality.",
-    "b": "Avoid teasing or interrogating your partner. Reduce pressure, communicate kindly, and consider medical advice if erection difficulties persist."
+    "a": "If a product causes burning, swelling, rash, or pain, stop using it and rinse the area gently with water.",
+    "b": "Seek medical advice if symptoms are severe, persist, or involve breathing difficulty or widespread swelling. Keep the product packaging for reference."
   },
   {
-    "a": "If ejaculation happens sooner than someone wants, avoid shame or ridicule. It is a common concern and can be addressed.",
-    "b": "If it causes distress, a healthcare professional can discuss possible behavioural or medical approaches. Both partners can focus on pleasure beyond penetration."
+    "a": "Avoid inserting household objects or products not designed for intimate use. They can cause injury, infection, or become stuck.",
+    "b": "Choose body-safe products from reputable manufacturers, follow cleaning instructions, and stop if anything hurts or causes numbness."
   },
   {
-    "a": "If ejaculation is delayed or does not happen, do not assume your partner is bored or dissatisfied.",
-    "b": "Stress, medication, health conditions, and stimulation can all play a role. Ask what feels good and seek clinical advice if the change is persistent."
+    "a": "Clean sex toys according to the manufacturer's instructions and allow them to dry before storage.",
+    "b": "Use a new condom on shared toys between partners or body areas, and do not share porous items unless they can be safely covered and cleaned."
   },
   {
-    "a": "Sexual desire can change across life stages and relationship circumstances. A difference in desire does not automatically mean rejection.",
-    "b": "Discuss what each person misses and what forms of closeness feel good now. Avoid turning sex into a duty or keeping score."
+    "a": "If a sex toy is shared, discuss cleaning and barrier use before anyone uses it.",
+    "b": "A new condom between users and body sites can reduce transfer of bodily fluids. Follow product-specific hygiene guidance."
   },
   {
-    "a": "After childbirth, recovery and readiness vary. Do not assume a person is ready for sex at a fixed number of weeks.",
-    "b": "Follow the healthcare provider's guidance, especially after complications or surgery. Resume only when the person feels physically and emotionally ready."
+    "a": "Do not use numbing creams to push through pain during sex. Pain can be a warning that something is wrong.",
+    "b": "If discomfort is recurring, seek an assessment rather than masking it. Numbing products can also reduce awareness of injury."
   },
   {
-    "a": "Breastfeeding, hormonal changes, and fatigue can affect desire and vaginal comfort after childbirth.",
-    "b": "Use lubricant if appropriate and seek clinical advice for pain or persistent dryness. Affection does not have to lead to sex."
+    "a": "If you experience sudden severe testicular pain, seek emergency medical care immediately.",
+    "b": "Some causes are time-critical and need urgent assessment. Do not wait to see whether the pain settles."
   },
   {
-    "a": "Menopause can bring changes such as dryness, discomfort, and shifts in desire. These concerns are common and deserve care.",
-    "b": "A clinician can discuss moisturisers, lubricants, and treatment options based on health history. Do not assume discomfort is something you must accept."
+    "a": "Sudden severe pelvic or lower abdominal pain, especially with fainting, fever, or possible pregnancy, needs urgent medical assessment.",
+    "b": "Do not try to diagnose it at home. Seek emergency care if symptoms are intense, worsening, or accompanied by weakness or dizziness."
   },
   {
-    "a": "Pregnancy can change comfort, energy, and sexual desire. Ask a maternity clinician about any medical restrictions or warning signs.",
-    "b": "If the pregnancy is uncomplicated, many people can continue sexual activity if comfortable, but individual advice matters. Stop and seek care for concerning symptoms."
+    "a": "A painful erection lasting four hours or more is a medical emergency. Seek emergency care immediately.",
+    "b": "Do not wait for it to resolve on its own or try unproven home treatments. Prompt treatment can prevent lasting damage."
   },
   {
-    "a": "After a miscarriage or pregnancy loss, people may need different amounts of time before resuming intimacy.",
-    "b": "Let the person who experienced the loss set the pace. A clinician can advise when sex is medically safe and offer support for grief or anxiety."
+    "a": "If you notice a new lump, persistent sore, or change in the genital area, arrange a medical examination.",
+    "b": "Many causes are treatable, but only an assessment can identify what is happening. Avoid squeezing or applying harsh chemicals."
   },
   {
-    "a": "A chronic condition does not remove someone's right to intimacy, pleasure, or boundaries.",
-    "b": "Talk about practical adjustments and ask the healthcare team about relevant precautions. Let the person with the condition lead decisions about their body."
+    "a": "If urination burns or becomes unusually frequent, seek assessment, especially if there is fever, back pain, or blood.",
+    "b": "A urinary infection and an STI can have overlapping symptoms. A clinician can recommend the right urine or STI tests."
   },
   {
-    "a": "Some medicines can affect libido, arousal, erection, or orgasm. Do not stop treatment on your own because of sexual side effects.",
-    "b": "Tell the prescriber what has changed. They may review the dose, timing, or alternatives while weighing the benefits of treatment."
+    "a": "If you have pelvic pain, unusual discharge, or fever, seek prompt medical care rather than waiting for symptoms to pass.",
+    "b": "Some reproductive or genital infections can worsen without treatment. Explain the timing and symptoms clearly to the clinician."
   },
   {
-    "a": "If you have diabetes or another condition affecting sensation or circulation, discuss sexual-health concerns with your clinician.",
-    "b": "Changes in sensation, pain, or function may have treatable causes. Ask directly; sexual health is a legitimate part of routine care."
+    "a": "If you are pregnant and have bleeding, severe pain, fever, or fluid leakage, contact maternity care urgently.",
+    "b": "Follow local emergency guidance and do not rely on online advice to assess pregnancy complications."
   },
   {
-    "a": "If you have a disability, intimacy should be planned around your preferences and access needs rather than assumptions made by others.",
-    "b": "Ask what positioning, communication, equipment, or assistance is useful. Never treat a support person as a substitute for the individual's consent."
+    "a": "A period that is late can happen for reasons other than pregnancy, including stress, illness, and cycle variation.",
+    "b": "If pregnancy is possible, use a test at the recommended time. Seek clinical advice if missed periods continue or you have concerning symptoms."
   },
   {
-    "a": "For a partner with limited speech or movement, agree on an accessible way to communicate yes, no, pause, and stop.",
-    "b": "Check that the signal is reliable and understood by everyone. If the person cannot communicate a free choice, do not proceed."
+    "a": "Menstrual products should be changed according to their instructions and your flow. Wash hands before and after handling them.",
+    "b": "If you develop fever, rash, vomiting, dizziness, or feel suddenly very unwell while using a tampon, remove it and seek urgent medical advice."
   },
   {
-    "a": "A person's gender identity does not tell you which body parts, terms, or sexual activities they are comfortable with.",
-    "b": "Ask respectfully what language they prefer and what boundaries matter. Do not make assumptions based on appearance or identity."
+    "a": "Menstrual cups and reusable products need careful cleaning and use according to the manufacturer's instructions.",
+    "b": "Stop using a product that causes pain or irritation. If you are unsure whether it is suitable for you, ask a healthcare professional."
   },
   {
-    "a": "For trans or non-binary people, dysphoria may affect which kinds of touch feel comfortable. Let them guide the conversation.",
-    "b": "Ask what feels affirming, what words to use, and what to avoid. Preferences can vary by person and can change from day to day."
+    "a": "Do not assume irregular bleeding is caused by contraception without checking. New or persistent changes deserve medical advice.",
+    "b": "A clinician can assess pregnancy possibility, infection, medication effects, and other causes. Seek urgent care for heavy bleeding or severe pain."
   },
   {
-    "a": "Do not assume a person's sexual orientation from their relationship history or current partner.",
-    "b": "Let people describe their own identity if they choose. Respect privacy and do not disclose someone's orientation without permission."
+    "a": "If sex causes bleeding and you are postmenopausal, arrange a prompt medical assessment even if the amount is small.",
+    "b": "There are several possible causes, and checking early is important. Do not dismiss it as ordinary irritation."
   },
   {
-    "a": "If a partner is questioning their sexuality, give them room to explore their thoughts without demanding an immediate label.",
-    "b": "You can discuss what this means for your relationship while respecting their process. Avoid using uncertainty as a reason to shame or control them."
+    "a": "A genital herpes diagnosis does not mean intimacy is impossible, but it does call for honest discussion and prevention planning.",
+    "b": "Avoid sexual contact during sores or warning symptoms, and ask a clinician about antiviral treatment and ways to reduce transmission."
   },
   {
-    "a": "Sexual health information online can be inaccurate or designed to sell products. Check claims against reputable medical sources.",
-    "b": "For personal symptoms, medication questions, or treatment decisions, consult a qualified healthcare professional rather than relying on social media advice."
+    "a": "HPV is common, and many infections clear without causing problems. Some types can cause genital warts or cancers.",
+    "b": "Vaccination and recommended screening help reduce risk. Ask a clinician which schedule applies to your age and medical history."
   },
   {
     "a": "Permission to save an intimate image does not permit any new activity begins. privacy.",
