@@ -12,13 +12,12 @@ const QUESTIONS_PER_MATCH = 10;
 const ANSWER_WINDOW_MS = 20000;
 const DIFFICULTY_SECONDS = { easy: 20, normal: 30, medium: 30, hard: 45, expert: 60 };
 const CATEGORY_ALIASES = {
-  football: ['sports', 'football'], movies: ['nollywood', 'movies', 'film', 'hollywood', 'bollywood', 'animation', 'series'],
-  nollywood: ['nollywood'], hollywood: ['hollywood'], bollywood: ['bollywood'], animation: ['animation'], series: ['series'],
+  football: ['sports', 'football'], movies: ['nollywood', 'movies', 'film', 'hollywood', 'bollywood', 'animation', 'series', 'entertainment'],
   lifestyle: ['everyday', 'lifestyle'], technology: ['tech', 'technology'],
   nigeria: ['nigeria'], music: ['music'], geography: ['geography'],
   history: ['history'], culture: ['culture'], food: ['food'], business: ['business'],
   science: ['science'], gaming: ['gaming'], literature: ['literature'],
-  'current-affairs': ['current-affairs'], forge: ['forge'], entertainment: ['entertainment'], forge: ['forge']
+  'current-affairs': ['current-affairs'], forge: ['forge']
 };
 const DIFFICULTIES = ['easy', 'normal', 'hard', 'expert'];
 const MATCH_EXPIRY_MS = 45 * 60 * 1000;
@@ -389,11 +388,7 @@ export default {
         '*CATEGORIES*',
         '🎵 Music: .trivia music',
         '⚽ Football: .trivia football',
-        '🎬 Movies: .trivia movies',
-        '🎥 Nollywood: .trivia nollywood',
-        '🎞️ Hollywood: .trivia hollywood',
-        '🇮🇳 Bollywood: .trivia bollywood',
-        '🧩 Animation: .trivia animation · 📺 Series: .trivia series',
+        '🎬 Movies & Entertainment: .trivia movies',
         '🌿 Lifestyle: .trivia lifestyle',
         '🌍 Geography: .trivia geography · 📜 History: .trivia history',
         '🎭 Culture: .trivia culture · 🍲 Food: .trivia food',
