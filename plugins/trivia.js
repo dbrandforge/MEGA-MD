@@ -55,6 +55,8 @@ export { NIGERIA_TRIVIA, TRIVIA_CATEGORIES };
 
 const TRIVIA_COMMAND_ALIASES = Object.freeze({
   all: 'mixed', sports: 'football', film: 'movies',
+  nollywood: 'movies', hollywood: 'movies', bollywood: 'movies',
+  animation: 'movies', series: 'movies', entertainment: 'movies',
   everyday: 'lifestyle', tech: 'technology'
 });
 
