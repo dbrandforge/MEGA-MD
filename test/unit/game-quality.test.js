@@ -6,7 +6,7 @@ import { WORDS, QUESTIONS_PER_ROUND, canEndHangman } from '../../plugins/hangman
 import { FALLBACK } from '../../data/wyrPairs.js';
 import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
 import { getLagosWeekKey } from '../../plugins/rank.js';
-import { MATH_MODES, generateMathQuestion } from '../../plugins/math.js';
+import { MATH_MODES, generateMathQuestion, getMathMatchQuestionCount } from '../../plugins/math.js';
 import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES, getTriviaQuestionCount, getAvailableTriviaQuestions, shouldEndTriviaForNoParticipation, secondsForQuestion, normalizeTriviaCategory, getTriviaMatchQuestionCount } from '../../plugins/trivia.js';
 
 describe('game quality foundations', () => {
@@ -270,6 +270,8 @@ describe('game quality foundations', () => {
     expect(MATH_MODES.extreme.time).toBe(60_000);
     expect(MATH_MODES.impossible.time).toBe(60_000);
     expect(MATH_MODES.impossible2.time).toBe(60_000);
+    expect(['noob', 'easy', 'normal', 'hard', 'extreme', 'impossible', 'impossible2'].map(getMathMatchQuestionCount))
+      .toEqual([15, 15, 13, 10, 8, 8, 8]);
   });
 
   it('preserves the selected question grade timer on every Trivia round', () => {
