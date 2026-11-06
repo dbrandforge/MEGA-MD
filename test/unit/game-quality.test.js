@@ -183,6 +183,7 @@ describe('game quality foundations', () => {
         const q = generateMathQuestion(mode);
         expect(q.mode).toBe(mode);
         expect(Number.isInteger(Number(q.answer))).toBe(true);
+        expect(Number(q.answer)).toBeGreaterThanOrEqual(0);
         expect(q.expression.trim().length).toBeGreaterThan(3);
         expect(typeof q.type).toBe('string');
         observedTypes[mode].add(q.type);
@@ -211,6 +212,7 @@ describe('game quality foundations', () => {
         const negative = generateMathQuestion(mode, { includeNegative: true });
         expect(negative.hasNegative).toBe(true);
         expect(Number.isInteger(Number(negative.answer))).toBe(true);
+        expect(Number(negative.answer)).toBeGreaterThan(0);
       }
     }
   });
