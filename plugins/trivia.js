@@ -18,7 +18,7 @@ const CATEGORY_ALIASES = {
   nigeria: ['nigeria'], music: ['music'], geography: ['geography'],
   history: ['history'], culture: ['culture'], food: ['food'], business: ['business'],
   science: ['science'], gaming: ['gaming'], literature: ['literature'],
-  'current-affairs': ['current-affairs'], forge: ['forge'], forge: ['forge']
+  'current-affairs': ['current-affairs'], forge: ['forge'], entertainment: ['entertainment'], forge: ['forge']
 };
 const DIFFICULTIES = ['easy', 'normal', 'hard', 'expert'];
 const MATCH_EXPIRY_MS = 45 * 60 * 1000;
