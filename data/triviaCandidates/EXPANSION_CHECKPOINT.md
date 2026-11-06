@@ -700,6 +700,11 @@ Ten additional original, source-linked questions (`gh021`–`gh030`) extend Geog
 Forty-nine original, source-linked questions (`gh001`–`gh049`) complete Geography Hard at **50/50**, including one retained existing question. The questions cover ocean currents, tectonic plates and subduction, ocean trenches, mountain systems, inland seas, river basins and deltas, straits, deserts, islands, and regional physical geography. Sources include Encyclopaedia Britannica, UNESCO, WWF and the U.S. Geological Survey. Across the full 50-question grade, correct-answer positions are balanced: 12 at A, 13 at B, 13 at C and 12 at D. Geography Expert is next at 1/50; 49 additional questions are needed.
 
 
+## Geography Expert — first content batch
+
+Ten original, source-linked advanced questions (`gx001`–`gx010`) begin Geography Expert. Topics include Hadley circulation, Coriolis deflection, thermohaline circulation, geostrophic balance, El Niño, post-glacial isostatic rebound, karst processes, drainage divides, transform plate boundaries and rain shadows. Sources include NOAA, USGS, the U.S. National Park Service and Encyclopaedia Britannica. Geography Expert now has 11/50 questions; 39 remain.
+
+
 ## Sparse-array regression correction
 
 The previous bank contained one accidental empty array slot caused by a doubled comma immediately before `le011`. The array length therefore exceeded the number of playable questions by one, causing regression checks comparing bank length with available-question count to fail (1,081 versus 1,080). The extra comma has been removed. A dedicated unit assertion now verifies that every array index is populated, preventing sparse slots from silently reducing the playable question pool. The staged release gate now requires Lifestyle alongside Forge, Music, Football and Movies, so all five completed categories must have 50 questions at every grade.
