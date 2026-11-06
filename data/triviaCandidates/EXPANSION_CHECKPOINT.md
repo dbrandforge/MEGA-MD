@@ -455,3 +455,8 @@ Eight final questions (`fe041`–`fe048`) complete Football Expert at 50 questio
 ## Football category release gate
 
 The staged release command now requires all three completed categories: Forge, Music and Football. The strict `npm run trivia:audit` remains unchanged and continues to report every incomplete category/grade pool. The staged command is `npm run trivia:audit:release` and now enforces 50 questions in each of the four difficulty levels for Football as well as the two previously completed categories.
+
+
+## Movies Easy — first content batch
+
+Ten original, source-linked Movies Easy questions (`mv001`–`mv010`) begin the next category after Football. The batch mixes Nollywood, Hollywood, Bollywood, animation and television series while preserving their existing subcategory labels for the shared Movies pool. Topics include King of Boys, Aki na Ukwa, Mr Ibu, Black Panther, Titanic, Toy Story, Frozen, Dangal and Stranger Things. Each question carries a review date and a studio, distributor, platform or reputable media source. Movies Easy now has 16 approved questions overall (6 existing + 10 new); 34 remain to reach 50.
