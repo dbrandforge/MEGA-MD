@@ -1,4 +1,4 @@
-/** Expansion volume 0, part 3. Distinct sex-advice content; 182 rows. */
+/** Expansion volume 0, part 3. Legacy sex-advice inventory; 181 rows. Rewrite pending. */
 export default {"sexAdvice":[
   {
     "a": "A clear yes is required before any new activity begins. consent.",
