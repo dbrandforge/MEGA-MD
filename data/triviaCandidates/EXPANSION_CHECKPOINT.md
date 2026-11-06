@@ -565,3 +565,8 @@ Five final questions (`me041`–`me045`) complete Movies Expert at 50 questions 
 ## Movies category release gate
 
 The staged release command now requires all four completed categories: Forge, Music, Football and Movies. It enforces 50 questions in each of the four difficulty levels for every completed category. The strict full-bank audit remains unchanged and continues to report categories still deferred for later expansion.
+
+
+## Lifestyle Easy — first content batch
+
+Ten original Lifestyle Easy questions (`ls001`–`ls010`) begin the next category after Movies. The batch focuses on practical Nigerian everyday knowledge: banking abbreviations, NAFDAC and FRSC, electricity regulation, the national emergency number, QR codes, payslip terminology and VAT. Each question carries a review date and an official Nigerian regulator, government or standards source. Lifestyle Easy now has 15 approved questions overall (5 existing + 10 new); 35 remain to reach 50.
