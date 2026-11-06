@@ -191,6 +191,8 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                 chatId,
                 previousReply: previousBotReply,
                 intent: classifyIntent(cleanForHistory),
+                context: history.slice(-8).map(item => item.text),
+                responseMode: 'reasoned',
             });
             if (dual) {
                 response = dual;
