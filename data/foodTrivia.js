@@ -163,8 +163,6 @@ const HARD = [
 ["Which food preservation method combines salt, drying and smoke in some traditional fish products?","Curing and smoking","Proofing and blanching","Emulsifying and whipping","Gelatinising and steaming","https://www.fao.org/fishery/en"],
 ["Which factor most directly determines how quickly microorganisms can grow in stored cooked food?","Temperature, moisture availability and acidity","Plate colour only","Food shape only","Serving spoon material only","https://www.who.int/news-room/fact-sheets/detail/food-safety"],
 ["What does FIFO mean in professional kitchen stock rotation?","First in, first out","Fresh ingredients, fresh oil","Food inspection for odour","Freeze immediately for order","https://www.fao.org/"],
-["Why is a calibrated food thermometer preferable to judging meat doneness by colour alone?","It measures internal temperature more reliably","It measures the food's salt content","It identifies every allergen","It removes bacteria from the surface","https://www.who.int/news-room/fact-sheets/detail/food-safety"],
-["Which allergen is particularly relevant when preparing Nigerian groundnut soup for guests?","Peanut","Rice","Cassava","Tomato","https://www.who.int/news-room/fact-sheets/detail/food-safety"]
 ];
 const EXPERT = [
 ["Which cyanide-related measure is commonly used to assess the safety of processed cassava products?","Residual total cyanide content","Total starch gelatinisation temperature only","Protein-to-fat ratio","Vitamin C concentration","https://www.fao.org/4/x5032e/x5032e00.htm"],
@@ -216,11 +214,6 @@ const EXPERT = [
 ["What is the purpose of a validated thermal process in commercial low-acid food canning?","To achieve a defined reduction of relevant heat-resistant microorganisms and spores","To make the food taste sweeter","To remove all fat","To increase water activity","https://www.fda.gov/food"],
 ["Which Nigerian food system demonstrates a combination of fermentation, drying and reconstitution before serving?","Lafun from cassava","Fresh garden-egg salad","Plain boiled rice","Freshly cut watermelon","https://www.fao.org/4/x5032e/x5032e00.htm"],
 ["Which regional Nigerian food tradition features tuwo shinkafa, miyan kuka and other cereal-based staples?","Northern Nigerian culinary traditions","Coastal Niger Delta cuisine exclusively","Southwestern Yoruba cuisine exclusively","Cross River seafood cuisine exclusively","https://www.britannica.com/place/Nigeria"],
-["Which pair best illustrates the use of fermented seed condiments in different Nigerian culinary traditions?","Iru from locust bean and ogiri from other fermented seeds","Garri and eba","Dodo and boli","Masa and tuwo","https://www.fao.org/"],
-["Which culinary distinction is most accurate for ogiri and iru?","They are different fermented condiments with different traditional raw materials","They are both names for unfermented palm oil","They are varieties of rice","They are both dairy products","https://www.fao.org/"],
-["Which traditional dish combines shredded cassava, fermented oil-bean seed and seasonings?","Abacha na ugba","Miyan kuka","Gbegiri and ewedu","Masa with kunu","https://www.britannica.com/plant/cassava"],
-["Which food product is made from the edible cotyledons of the African oil bean after fermentation?","Ugba","Garri","Ogi","Kuli-kuli","https://www.britannica.com/plant/oil-bean"],
-["Which traditional food processing issue makes accurate identification of local plant species important?","Closely named plants may differ in edible parts, composition and safety","All plants have identical nutrient profiles","Local names always correspond to one global species","Botanical identification affects only food colour","https://www.fao.org/"]
 ];
 
 export const FOOD_TRIVIA = [
