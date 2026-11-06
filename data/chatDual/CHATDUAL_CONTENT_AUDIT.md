@@ -96,3 +96,8 @@ A dedicated regression check locks the module at 181 rows, verifies 362 distinct
 ### Ninth module checkpoint (2026-11-06)
 
 `ev_2_0.js` has been substantively rewritten while preserving its verified 182-row relationship inventory. All 182 A statements and all 182 B statements are unique, with 364 distinct statements overall. The shortest A statement is 90 characters and the shortest B statement is 100 characters. The rewrite covers recurring conflict, communication, family and social boundaries, finances, parenting, health, intimacy, privacy, autonomy, coercive-control awareness, repair, and separation. A dedicated regression test checks the exact row count, uniqueness across both sides, and a minimum response length of 60 characters. Nine expansion modules have now been rewritten; seven expansion modules and the specialty banks remain outstanding. The complete bank is not release-ready.
+
+
+### Tenth module checkpoint (2026-11-06)
+
+`ev_2_1.js` has been substantively rewritten while preserving its verified 182-row relationship inventory. All 182 A statements and all 182 B statements are unique, with 364 distinct statements overall. The shortest A statement is 93 characters and the shortest B statement is 82 characters. The rewrite covers early dating pace, exclusivity, digital privacy, jealousy, family and parenting, finances, work-life balance, health, caregiving, boundaries, trust repair, and separation. A dedicated regression test checks the exact row count, uniqueness across both sides, and a minimum response length of 60 characters. Ten expansion modules have now been rewritten; six expansion modules and the specialty banks remain outstanding. The complete bank is not release-ready.
