@@ -600,3 +600,8 @@ Ten original Lifestyle Normal questions (`ln001`–`ln010`) begin the second dif
 ## Lifestyle Normal — second content batch
 
 Ten more original Lifestyle Normal questions (`ln011`–`ln020`) cover overdrafts, credit-card grace periods, loan amortization, balloon payments, prepayment penalties, direct debits, standing orders, chargebacks, credit utilisation and guarantor obligations. Each item carries a review date and an official consumer-finance, payment-network or Central Bank source. Lifestyle Normal now has 22 approved questions overall (2 existing + 20 new); 28 remain to reach 50.
+
+
+## Lifestyle Normal — third content batch
+
+Ten more original Lifestyle Normal questions (`ln021`–`ln030`) introduce investment and insurance concepts: dividends, capital gains, bonds, mutual funds, ETFs, equity, insurance claims and beneficiaries, mortgage escrow, and asset allocation. Each item carries a review date and an official Investor.gov, NAICOM or consumer-finance source. Lifestyle Normal now has 32 approved questions overall (2 existing + 30 new); 18 remain to reach 50.
