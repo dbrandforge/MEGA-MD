@@ -40,22 +40,22 @@ function terms(value) {
     .filter(word => word.length > 2 && !STOP_WORDS.has(word));
 }
 
-function relevance(inputTerms, response) {
+export function scoreResponseRelevance(input, response, context = []) {
+  const inputTerms = terms([input, ...context].join(' '));
   const responseTerms = new Set(terms(response));
   let score = 0;
   for (const term of inputTerms) {
     if (responseTerms.has(term)) score += term.length > 6 ? 2 : 1;
   }
-  const phrase = String(response || '').toLowerCase();
-  return score + (phrase.length > 0 ? 0.01 : 0);
+  return score;
 }
 
 function scorePair(pair, inputTerms) {
   const a = pair?.a ?? pair?.A;
   const b = pair?.b ?? pair?.B;
   if (typeof a !== 'string' || typeof b !== 'string') return null;
-  const scoreA = relevance(inputTerms, a);
-  const scoreB = relevance(inputTerms, b);
+  const scoreA = scoreResponseRelevance(inputTerms.join(' '), a);
+  const scoreB = scoreResponseRelevance(inputTerms.join(' '), b);
   return { pair, a, b, scoreA, scoreB, score: Math.max(scoreA, scoreB) };
 }
 
