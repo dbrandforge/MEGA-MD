@@ -555,3 +555,8 @@ Ten more original Movies Expert questions (`me021`–`me030`) focus on Cannes Pa
 ## Movies Expert — fourth content batch
 
 Ten more original Movies Expert questions (`me031`–`me040`) focus on international-feature Oscar history and filmmakers from Iran, Germany and South Africa. The batch covers The Salesman, A Separation, The Lives of Others, Tsotsi and The Sea Inside, plus key director and Cannes acting-award details. Each question carries a review date and official Academy, BFI or Festival de Cannes source. Movies Expert now has 45 approved questions overall (5 existing + 40 new); 5 remain to reach 50.
+
+
+## Movies Expert — grade completed
+
+Five final questions (`me041`–`me045`) complete Movies Expert at 50 questions (5 existing + 45 new). The grade closes with the 2025 Academy Awards and Cannes Palme d’Or. Movies now has **200 approved questions: 50 Easy, 50 Normal, 50 Hard and 50 Expert**.
