@@ -559,14 +559,7 @@ export const NIGERIA_TRIVIA = [
   { id:'mx183', category:'music', difficulty:'expert', question:'Which Queen promotional film director shot the “Bohemian Rhapsody” video at Elstree Studios?', options:['Bruce Gowers','Russell Mulcahy','David Mallet','Bob Smeaton'], answer:0, reviewedAt:'2026-11-05', source:'https://www.queenonline.com/news/watch-queen-the-greatest-bohemian-rhapsody-making-history-episode-6' },
   { id:'mx184', category:'music', difficulty:'expert', question:'What was the reported production cost of Queen’s “Bohemian Rhapsody” promotional video?', options:['£4,500','£45,000','£1,500','£25,000'], answer:0, reviewedAt:'2026-11-05', source:'https://www.queenonline.com/news/watch-queen-the-greatest-bohemian-rhapsody-making-history-episode-6' },
   { id:'mx185', category:'music', difficulty:'expert', question:'Which Queen member wrote the complex rock opera “Bohemian Rhapsody”?', options:['Freddie Mercury','Brian May','Roger Taylor','John Deacon'], answer:0, reviewedAt:'2026-11-05', source:'https://www.queenonline.com/news/original-bohemian-rhapsody-test-pressing-to-be-auctioned-for-the-brit-trust' },
-  { id:'mx186', category:'music', difficulty:'expert', question:'What is the approximate running time of Queen’s “Bohemian Rhapsody,” the six-minute rock opera?', options:['About six minutes','About three minutes','About nine minutes','About twelve minutes'], answer:0, reviewedAt:'2026-11-05', source:'https://www.queenonline.com/news/watch-queen-the-greatest-live-bohemian-rhapsody-episode-37' }
-];
-
-export const TRIVIA_CATEGORIES = [
-  'mixed','music','football','movies','lifestyle','geography','history','culture','food',
-  'technology','business','science','gaming','literature','nigeria','nollywood','hollywood','bollywood','animation','series',
-  'current-affairs','forge'
-
+  { id:'mx186', category:'music', difficulty:'expert', question:'What is the approximate running time of Queen’s “Bohemian Rhapsody,” the six-minute rock opera?', options:['About six minutes','About three minutes','About nine minutes','About twelve minutes'], answer:0, reviewedAt:'2026-11-05', source:'https://www.queenonline.com/news/watch-queen-the-greatest-live-bohemian-rhapsody-episode-37' },
   { id:'ft001', category:'sports', difficulty:'easy', question:'According to the Laws of the Game, what is the permitted circumference of a standard football at the start of a match?', options:['68–70 cm','60–62 cm','72–74 cm','75–77 cm'], answer:0, reviewedAt:'2026-11-06', source:'https://www.theifab.com/laws/latest/the-ball/' },
   { id:'ft002', category:'sports', difficulty:'easy', question:'What is the permitted weight range of a standard football at the start of a match?', options:['410–450 g','350–390 g','460–500 g','500–540 g'], answer:0, reviewedAt:'2026-11-06', source:'https://www.theifab.com/laws/latest/the-ball/' },
   { id:'ft003', category:'sports', difficulty:'easy', question:'How far is the penalty mark from the midpoint between the goalposts?', options:['11 metres','9 metres','12 metres','16.5 metres'], answer:0, reviewedAt:'2026-11-06', source:'https://www.theifab.com/laws/latest/the-field-of-play/' },
@@ -577,5 +570,12 @@ export const TRIVIA_CATEGORIES = [
   { id:'ft008', category:'sports', difficulty:'easy', question:'Which restart allows a player to receive the ball without being penalised for offside?', options:['A throw-in','A direct free kick','A kick-off','A dropped ball'], answer:0, reviewedAt:'2026-11-06', source:'https://www.theifab.com/laws/latest/offside/' },
   { id:'ft009', category:'sports', difficulty:'easy', question:'How many assistant referees may be appointed to help the referee in a standard match?', options:['Two','One','Three','Four'], answer:0, reviewedAt:'2026-11-06', source:'https://www.theifab.com/laws/latest/the-other-match-officials/' },
   { id:'ft010', category:'sports', difficulty:'easy', question:'Under the Laws of the Game, which match official has the final authority to enforce the rules during a match?', options:['The referee','The fourth official','The captain of the home team','The video assistant referee'], answer:0, reviewedAt:'2026-11-06', source:'https://www.theifab.com/laws/latest/the-referee/' }
+
+];
+
+export const TRIVIA_CATEGORIES = [
+  'mixed','music','football','movies','lifestyle','geography','history','culture','food',
+  'technology','business','science','gaming','literature','nigeria','nollywood','hollywood','bollywood','animation','series',
+  'current-affairs','forge'
 
 ];
