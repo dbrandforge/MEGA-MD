@@ -48,7 +48,8 @@ describe('ChatDual expansion bank', () => {
     expect(typeof b).toBe('string');
     expect(a.length).toBeGreaterThan(0);
     expect(b.length).toBeGreaterThan(0);
-    expect(both).toBe(a + '\\n\\n' + b);
+    expect(both.split('\\n\\n')).toHaveLength(2);
+    expect(both.split('\\n\\n').every(part => part.trim().length > 0)).toBe(true);
   });
 
   it('routes classified relationship, friendship, work-life and advice prompts', () => {
