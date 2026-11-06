@@ -375,3 +375,8 @@ Ten additional original Football Easy questions (`ft031`–`ft040`) cover the fi
 ## Football Easy — grade completed
 
 Six final questions (`ft041`–`ft046`) complete the Easy grade at 50 questions. The earlier `ft011` wording was also refined to avoid duplicating an existing Nigeria football question; it now tests recognition of the halfway line. Final Football coverage is Easy 50, Normal 6, Hard 2 and Expert 2 (60 approved Football questions total). The next step in the locked sequence is Football Normal, building from 6 to 50 before moving to Hard.
+
+
+## Football Normal — first content batch
+
+Ten original, source-linked Football Normal questions (`fn001`–`fn010`) begin the second difficulty grade. Coverage includes FIFA World Cup records, AFCON history, UEFA club honours, African World Cup milestones, the 2010 final, the inaugural Women’s World Cup and current IFAB time-wasting procedures. Each item carries a review date and an official FIFA, CAF, UEFA or IFAB source. Football Normal now has 16 approved questions overall (6 existing + 10 new); 34 remain to reach 50.
