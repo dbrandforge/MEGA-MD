@@ -430,3 +430,8 @@ Eight final questions (`fh041`–`fh048`) complete Football Hard at 50 questions
 ## Football Expert — first content batch
 
 Ten original Football Expert questions (`fe001`–`fe010`) begin the fourth difficulty grade. They focus on decisive World Cup final scorers, Golden Boot records and landmark individual performances from 1954 through 2014, plus the fastest goal in tournament history. Each question carries a review date and official FIFA source. Football Expert now has 12 approved questions overall (2 existing + 10 new); 38 remain to reach 50.
+
+
+## Football Expert — second content batch
+
+Ten more Football Expert questions (`fe011`–`fe020`) cover the early CAF Champions League, Enyimba’s consecutive continental titles and coaches, Abedi Pelé and George Weah’s award history, plus the official CAF Appeal Board ruling on the 2025 AFCON final. The latter is deliberately phrased around the final legal result, not the original on-field score. Each question carries a review date and official CAF source. Football Expert now has 22 approved questions overall (2 existing + 20 new); 28 remain to reach 50.
