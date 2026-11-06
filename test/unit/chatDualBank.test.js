@@ -4,7 +4,7 @@ import {
   dualBankExpansionComplete,
 } from '../../data/chatDual/chatDual_expansion_index.js';
 import { classifyIntent } from '../../data/chatbotResponseLibrary.js';
-import { pickDualReply, getDualBankStats } from '../../data/chatDual/dualBankSelector.js';
+import { pickDualReply, getDualBankStats, scoreResponseRelevance } from '../../data/chatDual/dualBankSelector.js';
 import firstSexAdviceModule from '../../data/chatDual/ev_0_0.js';
 import secondSexAdviceModule from '../../data/chatDual/ev_0_1.js';
 import thirdSexAdviceModule from '../../data/chatDual/ev_0_2.js';
@@ -35,6 +35,15 @@ describe('ChatDual expansion bank', () => {
       expect(new Set(rows.map(row => row.b)).size).toBe(expectedRows[index]);
       expect(rows.every(row => typeof row.a === 'string' && typeof row.b === 'string')).toBe(true);
     });
+  });
+
+  it('scores the response that shares the user's actual topic more highly', () => {
+    const prompt = 'My partner and I need to discuss consent and boundaries before intimacy';
+    const relevant = 'Talk openly about consent and boundaries before intimacy begins.';
+    const unrelated = 'A healthy budget starts with tracking monthly expenses.';
+    expect(scoreResponseRelevance(prompt, relevant)).toBeGreaterThan(
+      scoreResponseRelevance(prompt, unrelated)
+    );
   });
 
   it('can return response A, response B, or both complementary sides', () => {
