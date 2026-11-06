@@ -421,20 +421,20 @@ export default {"sexAdvice":[
     "b": "Lubricant may help with dryness, but persistent pain deserves clinical advice. Affection does not have to lead to sex."
   },
   {
-    "a": "Menopause can bring dryness, discomfort, and changes in desire. These concerns are common and deserve care.",
-    "b": "A clinician can discuss moisturisers, lubricants, and treatment options based on health history. You do not have to accept ongoing pain."
+    "a": "Before using a sexual-health supplement or enhancement product, check its ingredients and safety with a clinician or pharmacist.",
+    "b": "Online products may contain undisclosed drugs or interact with medicines. Be wary of guaranteed results and avoid unregulated treatments."
   },
   {
-    "a": "Pregnancy can change comfort, energy, and desire. Ask a maternity clinician about any restrictions relevant to your pregnancy.",
-    "b": "If the pregnancy is uncomplicated, many people can continue sex if comfortable, but individual advice matters. Seek care for concerning symptoms."
+    "a": "Do not use leftover antibiotics or antifungal medicine to treat new genital symptoms.",
+    "b": "The cause may be different, and the wrong treatment can delay care. Get an accurate assessment before using medication."
   },
   {
     "a": "After miscarriage or pregnancy loss, people may need different amounts of time before resuming intimacy.",
     "b": "Let the person who experienced the loss set the pace. A clinician can advise when sex is medically safe and offer support for grief or anxiety."
   },
   {
-    "a": "A chronic condition does not remove someone's right to intimacy, pleasure, and boundaries.",
-    "b": "Discuss practical adjustments and ask the healthcare team about relevant precautions. Let the person with the condition lead decisions about their body."
+    "a": "If an intimate product causes burning, swelling, rash, or pain, stop using it and rinse gently with water.",
+    "b": "Seek medical advice if symptoms are severe or persist. Get emergency help for breathing difficulty or widespread allergic symptoms."
   },
   {
     "a": "Some medicines affect libido, arousal, erection, or orgasm. Do not stop treatment on your own because of sexual side effects.",
@@ -445,16 +445,16 @@ export default {"sexAdvice":[
     "b": "Changes in sensation, pain, or function may have treatable causes. Sexual health is a legitimate part of routine healthcare."
   },
   {
-    "a": "Intimacy for a person with a disability should be planned around their preferences and access needs, not other people's assumptions.",
-    "b": "Ask what positioning, communication, equipment, or assistance is useful. A support person cannot substitute for the individual's consent."
+    "a": "Avoid inserting household objects or products not designed for intimate use. They can cause injury or become stuck.",
+    "b": "Choose body-safe products from reputable makers, follow cleaning instructions, and stop if anything hurts or causes numbness."
   },
   {
     "a": "For a partner with limited speech or movement, agree on an accessible way to communicate yes, no, pause, and stop.",
     "b": "Check that the signal is reliable and understood. If the person cannot communicate a free choice, do not proceed."
   },
   {
-    "a": "A person's gender identity does not tell you which body parts, terms, or kinds of touch they are comfortable with.",
-    "b": "Ask respectfully what language they prefer and what boundaries matter. Do not make assumptions based on appearance or identity."
+    "a": "Clean sex toys according to the manufacturer's instructions and allow them to dry before storage.",
+    "b": "Use a new condom on shared toys between partners or body areas, and do not share porous items unless they can be safely covered and cleaned."
   },
   {
     "a": "Dysphoria may affect which kinds of touch feel comfortable for a trans or non-binary person. Let them guide the conversation.",
@@ -473,68 +473,68 @@ export default {"sexAdvice":[
     "b": "For symptoms, medication questions, or treatment decisions, consult a qualified healthcare professional rather than relying on social media."
   },
   {
-    "a": "Define expectations explicitly before symptoms continue or worsen. relationship agreements.",
-    "b": "Revisit exclusivity agreements when returning to an activity after injury. relationship agreements."
+    "a": "If a sex toy is shared, discuss cleaning and barrier use before anyone uses it.",
+    "b": "Changing the condom between users and body sites can reduce transfer of bodily fluids. Follow the product's hygiene guidance."
   },
   {
-    "a": "Keep control of your own accounts when oral, genital, or anal contact as relevant. digital safety.",
-    "b": "Treat threats to publish intimate material as the activity and its risks. digital safety."
+    "a": "Do not use numbing creams to push through pain during sex. Pain can be a warning of injury or another problem.",
+    "b": "If discomfort recurs, seek assessment rather than masking it. Numbing products can reduce awareness of damage."
   },
   {
-    "a": "Keep control of your own accounts when an unfamiliar symptom appears. digital safety.",
-    "b": "Treat threats to publish intimate material as an appointment about sexual wellbeing. digital safety."
+    "a": "Sudden severe testicular pain needs emergency medical assessment immediately.",
+    "b": "Some causes are time-critical. Do not wait to see whether the pain settles on its own."
   },
   {
-    "a": "Keep control of your own accounts when a new prescription is started. digital safety.",
-    "b": "Treat threats to publish intimate material as a possible side effect. digital safety."
+    "a": "Sudden severe pelvic or lower abdominal pain, especially with fainting, fever, or possible pregnancy, needs urgent care.",
+    "b": "Do not try to diagnose it at home. Seek emergency help if symptoms are intense, worsening, or accompanied by dizziness."
   },
   {
-    "a": "Keep control of your own accounts when one partner's needs or circumstances change. digital safety.",
-    "b": "Treat threats to publish intimate material as a change in relationship status. digital safety."
+    "a": "An erection that is painful and lasts four hours or longer is a medical emergency.",
+    "b": "Seek emergency care immediately. Do not wait or try unproven home treatments; prompt treatment can prevent lasting damage."
   },
   {
-    "a": "Keep control of your own accounts when meeting someone new. digital safety.",
-    "b": "Treat threats to publish intimate material as sharing personal information online. digital safety."
+    "a": "A new lump, persistent sore, or unexplained change in the genital area should be examined by a clinician.",
+    "b": "There are several possible causes, many of them treatable. Avoid squeezing the area or applying harsh chemicals."
   },
   {
-    "a": "Keep control of your own accounts when a boundary has already been stated. digital safety.",
-    "b": "Treat threats to publish intimate material as responding to a disclosure of harm. digital safety."
+    "a": "Burning or frequent urination should be assessed, especially with fever, back pain, or blood in the urine.",
+    "b": "A urinary infection and an STI can have overlapping symptoms. A clinician can recommend the right tests."
   },
   {
-    "a": "Keep control of your own accounts when symptoms continue or worsen. digital safety.",
-    "b": "Treat threats to publish intimate material as returning to an activity after injury. digital safety."
+    "a": "Pelvic pain, unusual discharge, or fever can indicate an infection that needs prompt medical care.",
+    "b": "Explain when symptoms began and any relevant exposure. Do not wait if pain is severe or you feel very unwell."
   },
   {
-    "a": "Seek trusted support when someone uses money to oral, genital, or anal contact as relevant. coercion.",
-    "b": "A freely chosen decision cannot be made under the activity and its risks. coercion."
+    "a": "During pregnancy, bleeding, severe pain, fever, or fluid leakage should be discussed urgently with maternity care.",
+    "b": "Follow local emergency guidance. Online advice cannot safely assess a possible pregnancy complication."
   },
   {
-    "a": "Seek trusted support when someone uses money to an unfamiliar symptom appears. coercion.",
-    "b": "A freely chosen decision cannot be made under an appointment about sexual wellbeing. coercion."
+    "a": "A late period can result from stress, illness, or cycle variation as well as pregnancy.",
+    "b": "If pregnancy is possible, test at the recommended time. Seek clinical advice if missed periods continue or symptoms concern you."
   },
   {
-    "a": "Seek trusted support when someone uses money to a new prescription is started. coercion.",
-    "b": "A freely chosen decision cannot be made under a possible side effect. coercion."
+    "a": "Change menstrual products according to their instructions and your flow, and wash your hands before and after handling them.",
+    "b": "If you develop sudden fever, rash, vomiting, dizziness, or feel very unwell while using a tampon, remove it and seek urgent advice."
   },
   {
-    "a": "Seek trusted support when someone uses money to one partner's needs or circumstances change. coercion.",
-    "b": "A freely chosen decision cannot be made under a change in relationship status. coercion."
+    "a": "Reusable menstrual products need careful cleaning and use according to the manufacturer's instructions.",
+    "b": "Stop using a product that causes pain or irritation. Ask a healthcare professional if you are unsure whether it is suitable."
   },
   {
-    "a": "Seek trusted support when someone uses money to meeting someone new. coercion.",
-    "b": "A freely chosen decision cannot be made under sharing personal information online. coercion."
+    "a": "Do not assume new or irregular bleeding is caused by contraception without checking, especially if it persists.",
+    "b": "A clinician can assess pregnancy possibility, infection, medication effects, and other causes. Heavy bleeding or severe pain needs urgent care."
   },
   {
-    "a": "Seek trusted support when someone uses money to a boundary has already been stated. coercion.",
-    "b": "A freely chosen decision cannot be made under responding to a disclosure of harm. coercion."
+    "a": "Bleeding after sex following menopause should be assessed promptly, even when the amount is small.",
+    "b": "There are several possible causes, and early assessment matters. Do not dismiss it as ordinary irritation."
   },
   {
-    "a": "Seek trusted support when someone uses money to symptoms continue or worsen. coercion.",
-    "b": "A freely chosen decision cannot be made under returning to an activity after injury. coercion."
+    "a": "Genital herpes does not make intimacy impossible, but it calls for honest discussion and prevention planning.",
+    "b": "Avoid sexual contact during sores or warning symptoms. Ask a clinician about antiviral treatment and ways to reduce transmission."
   },
   {
-    "a": "Stop an activity when pain begins during oral, genital, or anal contact as relevant. pain.",
-    "b": "Seek assessment for persistent discomfort after the activity and its risks. pain."
+    "a": "HPV is common, and many infections clear without causing problems. Some types can cause genital warts or cancers.",
+    "b": "Vaccination and recommended screening reduce risk. Ask a clinician which schedule applies to your age and medical history."
   },
   {
     "a": "Stop an activity when pain begins during an unfamiliar symptom appears. pain.",
