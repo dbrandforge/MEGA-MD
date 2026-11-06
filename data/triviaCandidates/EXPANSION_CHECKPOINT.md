@@ -365,3 +365,8 @@ Ten additional original Football Easy questions (`ft011`–`ft020`) extend the c
 ## Football Easy — third content batch
 
 Ten more original, source-linked Football Easy questions (`ft021`–`ft030`) cover offside involvement, direct and indirect free kicks, corner and goal-kick awards, penalty-kick location, and kick-off positioning and procedure. Each question includes a review date and an official IFAB Laws of the Game source. Football now has 44 approved questions overall: Easy 34, Normal 6, Hard 2 and Expert 2. The Easy block has 16 questions remaining before Football Normal begins.
+
+
+## Football Easy — fourth content batch
+
+Ten additional original Football Easy questions (`ft031`–`ft040`) cover the field shape and dimensions, centre-circle and corner-arc measurements, goal-area and penalty-area depth, corner-flag height and direct scoring from a goal kick. Each item carries a review date and official IFAB Laws of the Game source. Football now has 54 approved questions overall: Easy 44, Normal 6, Hard 2 and Expert 2. The Easy block has 6 questions remaining before Football Normal begins.
