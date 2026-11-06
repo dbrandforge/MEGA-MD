@@ -30,7 +30,7 @@ describe('Maths Arena question quality', () => {
   it('mixes square-root and cube-root questions without fractional answers', () => {
     const rootSymbols = new Set();
     for (let i = 0; i < 1600; i++) {
-      const question = generateMathQuestion('hard');
+      const question = generateMathQuestion('extreme');
       if (question.type !== 'roots') continue;
       if (question.expression.startsWith('√')) rootSymbols.add('square');
       if (question.expression.startsWith('∛')) rootSymbols.add('cube');
