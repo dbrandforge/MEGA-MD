@@ -832,6 +832,12 @@ export const NIGERIA_TRIVIA = [
   { id:'mv038', category:'series', difficulty:'easy', question:'Which actress portrays Daenerys Targaryen in “Game of Thrones”?', options:['Emilia Clarke','Sophie Turner','Lena Headey','Maisie Williams'], answer:0, reviewedAt:'2026-11-06', source:'https://www.hbomax.com/show/4f6b4985-2dc9-4ab6-ac79-d60f0860b0ac/cast-and-crew' },
   { id:'mv039', category:'series', difficulty:'easy', question:'What is the name of the fictional continent where most of “Game of Thrones” takes place?', options:['Westeros','Essos','Sothoryos','Ulthos'], answer:0, reviewedAt:'2026-11-06', source:'https://www.hbomax.com/show/4f6b4985-2dc9-4ab6-ac79-d60f0860b0ac' },
   { id:'mv040', category:'series', difficulty:'easy', question:'Which actor plays Sheldon Cooper in “The Big Bang Theory”?', options:['Jim Parsons','Johnny Galecki','Simon Helberg','Kunal Nayyar'], answer:0, reviewedAt:'2026-11-06', source:'https://www.televisionacademy.com/bios/jim-parsons' }
+,
+
+  { id:'mv041', category:'hollywood', difficulty:'easy', question:'Which actor made his debut as James Bond in the 2006 film “Casino Royale”?', options:['Daniel Craig','Pierce Brosnan','Sean Connery','Roger Moore'], answer:0, reviewedAt:'2026-11-06', source:'https://www.007.com/film/casino-royale/' },
+  { id:'mv042', category:'hollywood', difficulty:'easy', question:'Which actor won an Academy Award for portraying the Joker in the 2019 film “Joker”?', options:['Joaquin Phoenix','Heath Ledger','Jared Leto','Jack Nicholson'], answer:0, reviewedAt:'2026-11-06', source:'https://www.warnerbros.com/movies/joker' },
+  { id:'mv043', category:'animation', difficulty:'easy', question:'Which actress provides the voice of Dory in “Finding Nemo”?', options:['Ellen DeGeneres','Amy Poehler','Tina Fey','Kristen Bell'], answer:0, reviewedAt:'2026-11-06', source:'https://movies.disney.com/finding-nemo' },
+  { id:'mv044', category:'series', difficulty:'easy', question:'Which actor plays regional manager Michael Scott in the US version of “The Office”?', options:['Steve Carell','Rainn Wilson','John Krasinski','Ed Helms'], answer:0, reviewedAt:'2026-11-06', source:'https://www.peacocktv.com/stream-tv/the-office' }
 
 ];
 
