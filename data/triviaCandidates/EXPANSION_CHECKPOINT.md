@@ -450,3 +450,8 @@ Ten more Football Expert questions (`fe031`–`fe040`) cover the 2025/26 CAF Cha
 ## Football Expert — grade completed
 
 Eight final questions (`fe041`–`fe048`) complete Football Expert at 50 questions (2 existing + 48 new). The grade closes with specialist AFCON history: the inaugural 1957 final, Ethiopia’s 1962 title, and Morocco’s unusual 1976 final-round format. Football now has 200 approved questions: 50 each across Easy, Normal, Hard and Expert. The next step is to audit the complete category and prepare its release gate.
+
+
+## Football category release gate
+
+The staged release command now requires all three completed categories: Forge, Music and Football. The strict `npm run trivia:audit` remains unchanged and continues to report every incomplete category/grade pool. The staged command is `npm run trivia:audit:release` and now enforces 50 questions in each of the four difficulty levels for Football as well as the two previously completed categories.
