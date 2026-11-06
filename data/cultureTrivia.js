@@ -4,6 +4,7 @@ const CULTURE_SOURCES = {
   "nigeria": "https://ich.unesco.org/en/state/nigeria-NG?info=elements-on-the-lists",
   "whc": "https://whc.unesco.org/en/list/",
   "met": "https://www.metmuseum.org/toah/",
+  "bm": "https://www.britishmuseum.org/collection",
   "vam": "https://www.vam.ac.uk/collections",
   "si": "https://africa.si.edu/",
   "unesco": "https://www.unesco.org/en/culture"
