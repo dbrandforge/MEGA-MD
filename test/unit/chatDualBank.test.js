@@ -95,6 +95,16 @@ describe('ChatDual expansion bank', () => {
     }
   });
 
+  it('uses recent context to recover the topic of a short follow-up', () => {
+    const reply = pickDualReply('What if they say no?', {
+      chatId: 'contextual-follow-up',
+      intent: 'fallback',
+      context: ['My partner and I need to discuss consent and boundaries before intimacy.'],
+    });
+    expect(typeof reply).toBe('string');
+    expect(reply.length).toBeGreaterThan(5);
+  });
+
   it('routes sexual-health and consent advice to ChatDual', () => {
     const reply = pickDualReply('Is continuous consent required during a scene?', { chatId: 'test-sex-advice' });
     expect(typeof reply).toBe('string');
