@@ -994,6 +994,13 @@ export const NIGERIA_TRIVIA = [
   { id:'me038', category:'movies', difficulty:'expert', question:'Which actor plays the title character in Gavin Hood’s “Tsotsi”?', options:['Presley Chweneyagae','Terry Pheto','Mothusi Magano','Rapulana Seiphemo'], answer:0, reviewedAt:'2026-11-06', source:'https://www.bfi.org.uk/lists/10-great-african-films' },
   { id:'me039', category:'movies', difficulty:'expert', question:'Who directed the Iranian film “The Salesman” (“Forushande”), which won the 2017 foreign-language Oscar?', options:['Asghar Farhadi','Majid Majidi','Jafar Panahi','Abbas Kiarostami'], answer:0, reviewedAt:'2026-11-06', source:'https://www.festival-cannes.com/en/2016/forushande-the-family-thriller-by-asghar-farhadi/' },
   { id:'me040', category:'movies', difficulty:'expert', question:'Which actor won the Best Actor award at Cannes in 2016 for his performance in “The Salesman”?', options:['Shahab Hosseini','Taraneh Alidoosti','Babak Karimi','Farid Sajjadihosseini'], answer:0, reviewedAt:'2026-11-06', source:'https://www.festival-cannes.com/en/2016/meeting-the-team-of-forushande-the-salesman-by-asghar-farhadi/' }
+,
+
+  { id:'me041', category:'movies', difficulty:'expert', question:'Which film won Best Picture at the 2025 Academy Awards?', options:['Anora','The Brutalist','Conclave','The Substance'], answer:0, reviewedAt:'2026-11-06', source:'https://www.oscars.org/oscars/ceremonies/2025' },
+  { id:'me042', category:'movies', difficulty:'expert', question:'Who won the Academy Award for Best Director at the 2025 ceremony for “Anora”?', options:['Sean Baker','Brady Corbet','Jacques Audiard','James Mangold'], answer:0, reviewedAt:'2026-11-06', source:'https://www.oscars.org/oscars/ceremonies/2025' },
+  { id:'me043', category:'movies', difficulty:'expert', question:'Which actress won the Academy Award for Best Actress at the 2025 ceremony for “Anora”?', options:['Mikey Madison','Demi Moore','Fernanda Torres','Cynthia Erivo'], answer:0, reviewedAt:'2026-11-06', source:'https://www.oscars.org/oscars/ceremonies/2025' },
+  { id:'me044', category:'movies', difficulty:'expert', question:'Which film won the Palme d’Or at the 2025 Cannes Film Festival?', options:['It Was Just an Accident','Sentimental Value','The Secret Agent','Sirāt'], answer:0, reviewedAt:'2026-11-06', source:'https://www.festival-cannes.com/en/press/press-releases/the-78th-festival-de-cannes-winners-list/' },
+  { id:'me045', category:'movies', difficulty:'expert', question:'Which Iranian filmmaker directed “It Was Just an Accident”, winner of the 2025 Palme d’Or?', options:['Jafar Panahi','Asghar Farhadi','Abbas Kiarostami','Mohsen Makhmalbaf'], answer:0, reviewedAt:'2026-11-06', source:'https://www.festival-cannes.com/en/f/un-simple-accident/' }
 
 ];
 
