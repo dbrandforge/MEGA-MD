@@ -2,6 +2,7 @@ import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
 import isAdmin from '../lib/isAdmin.js';
+import { TRIVIA_DIFFICULTY_SECONDS } from './trivia.js';
 
 const STATE_KEY = 'mathGame';
 const RECORD_KEY = 'mathRecords';
@@ -24,13 +25,13 @@ async function withChatLock(chatId, task) {
 }
 
 export const MATH_MODES = {
-  noob: { min: -9, max: 9, operators: ['+', '-'], time: 20000 },
-  easy: { min: -20, max: 20, operators: ['+', '-', '*'], time: 25000 },
-  normal: { min: -60, max: 60, operators: ['+', '-', '*', '/'], time: 30000 },
-  hard: { min: -150, max: 150, operators: ['+', '-', '*', '/'], time: 35000 },
-  extreme: { min: -500, max: 500, operators: ['+', '-', '*', '/'], time: 40000 },
-  impossible: { min: -2000, max: 2000, operators: ['+', '-', '*', '/'], time: 45000 },
-  impossible2: { min: -10000, max: 10000, operators: ['+', '-', '*', '/'], time: 50000 }
+  noob: { min: -9, max: 9, operators: ['+', '-'], time: TRIVIA_DIFFICULTY_SECONDS.easy * 1000 },
+  easy: { min: -20, max: 20, operators: ['+', '-', '*'], time: TRIVIA_DIFFICULTY_SECONDS.easy * 1000 },
+  normal: { min: -60, max: 60, operators: ['+', '-', '*', '/'], time: TRIVIA_DIFFICULTY_SECONDS.normal * 1000 },
+  hard: { min: -150, max: 150, operators: ['+', '-', '*', '/'], time: TRIVIA_DIFFICULTY_SECONDS.hard * 1000 },
+  extreme: { min: -500, max: 500, operators: ['+', '-', '*', '/'], time: TRIVIA_DIFFICULTY_SECONDS.expert * 1000 },
+  impossible: { min: -2000, max: 2000, operators: ['+', '-', '*', '/'], time: TRIVIA_DIFFICULTY_SECONDS.expert * 1000 },
+  impossible2: { min: -10000, max: 10000, operators: ['+', '-', '*', '/'], time: TRIVIA_DIFFICULTY_SECONDS.expert * 1000 }
 };
 
 const pick = values => values[Math.floor(Math.random() * values.length)];
