@@ -415,3 +415,8 @@ Ten more original Football Hard questions (`fh011`–`fh020`) focus on Nigeria�
 ## Football Hard — third content batch
 
 Ten additional Football Hard questions (`fh021`–`fh030`) test nuanced interpretations of offside, goalkeeper back-pass restrictions, denying an obvious goal-scoring opportunity, stopping promising attacks and penalty shoot-out procedures. Every question carries a review date and an official IFAB Laws of the Game source. Football Hard now has 32 approved questions overall (2 existing + 30 new); 18 remain to reach 50.
+
+
+## Football Hard — fourth content batch
+
+Ten more original Football Hard questions (`fh031`–`fh040`) cover the 2002, 2006, 1986 and 2014 FIFA World Cups. They test match outcomes, individual scoring records, the 2006 final shoot-out and notable disciplinary history. Each question carries a review date and official FIFA source. Football Hard now has 42 approved questions overall (2 existing + 40 new); 8 remain to reach 50.
