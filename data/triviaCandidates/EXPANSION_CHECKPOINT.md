@@ -2,9 +2,9 @@
 
 Last verified: 2026-11-06
 Repository: `dbrandforge/MEGA-MD`
-Working branch: `geography-easy-batch-01` (stacked on PR #89's Lifestyle completion)
+Working branch: `history-easy-batch-01` (stacked on PR #90 Geography, which is stacked on PR #89 Lifestyle)
 Previous staged release: PR #88 merged to `main` (commit `5bfa6a15b0dcb822c2aa42760a104d3d85d84c3f`).
-Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current completed block: Geography Easy `ge001`–`ge043`, Normal `gn001`–`gn039`, Hard `gh001`–`gh049`, Expert `gx001`–`gx049`; all four Geography grades are complete. Next active block: History Easy.
+Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current completed block: Geography Easy `ge001`–`ge043`, Normal `gn001`–`gn039`, Hard `gh001`–`gh049`, Expert `gx001`–`gx049`; all four Geography grades are complete. Current active block: History Easy `he001`–`he030`.
 
 ## Locked expansion target
 
@@ -170,8 +170,8 @@ Useful commands:
 ## Next execution sequence
 
 1. Geography is complete at 50 Easy, 50 Normal, 50 Hard and 50 Expert.
-2. History is next in the selectable-category sequence: Easy 2/50, Normal 5/50, Hard 5/50 and Expert 6/50.
-3. Complete History Easy first (48 additional questions), then Normal, Hard and Expert in order.
+2. History is next in the selectable-category sequence: Easy 2/50, Normal 50/50, Hard 15/50 and Expert 6/50.
+3. History Easy is complete. History Normal is complete. Complete History Hard next (35 additional questions), then Expert in order.
 4. Fact-check every answer and distractor; rewrite incomplete stems and repair encoding.
 5. Date-anchor or reject volatile/current-affairs and ranking-dependent claims.
 6. Keep unreviewed OpenTriviaQA candidates staged and respect their CC BY-SA 4.0 attribution obligations.
@@ -723,6 +723,61 @@ Forty-nine original, source-linked advanced questions (`gx001`–`gx049`) comple
 ## Geography — category completed
 
 Geography now has **200 approved questions: 50 Easy, 50 Normal, 50 Hard and 50 Expert**. Easy contains 43 new numbered questions plus seven retained questions; Normal contains 39 new numbered questions plus eleven retained questions; Hard contains 49 new numbered questions plus one retained question; Expert contains 49 new numbered questions plus one retained question. All four grade blocks are complete. The staged release gate and unit regression tests now include Geography alongside the previously completed categories.
+
+
+## History Easy — first content batch
+
+Ten original, source-linked questions (`he001`–`he010`) begin History Easy. Topics include Apollo 11, the ancient Olympic Games, George Washington, the Roman Colosseum, the Renaissance, the Titanic, the Berlin Wall, Mahatma Gandhi, the Statue of Liberty and Egyptian hieroglyphs. Sources include NASA, the International Olympic Committee, the White House, UNESCO, the U.S. National Park Service and Encyclopaedia Britannica. History Easy now has 32/50 questions; 18 remain.
+
+
+## History Easy — second content batch
+
+Ten additional original, source-linked questions (`he011`–`he020`) extend History Easy. Topics include the First and Second World Wars, Magna Carta, the French Revolution, Johannes Gutenberg, Qin Shi Huang, Pompeii, Columbus's 1492 voyage, the Byzantine Empire and the U.S. Declaration of Independence. Sources include Encyclopaedia Britannica, UNESCO and the U.S. National Archives. History Easy now has 22/50 questions; 28 remain.
+
+
+## History Easy — third content batch
+
+Ten additional original, source-linked questions (`he021`–`he030`) extend History Easy. Topics include Ghanaian independence, Nelson Mandela and South Africa's 1994 election, the first modern Olympics, the Russian Revolution, the American Civil War, Indian independence, Roald Amundsen, the Aztec capital Tenochtitlan, Augustus and Amelia Earhart. Sources include Encyclopaedia Britannica and the International Olympic Committee. History Easy now has 32/50 questions; 18 remain.
+
+
+## History Easy — grade completed
+
+Forty-eight original, source-linked questions (`he001`–`he048`) complete History Easy at **50/50**, including two retained existing questions. Topics range across ancient and classical civilisations, major political revolutions, independence movements, wars, treaties, scientific and exploration milestones, and twentieth-century world events. Sources include NASA, the International Olympic Committee, the White House, UNESCO, the U.S. National Archives, the U.S. National Park Service, the Nobel Prize organisation and Encyclopaedia Britannica. Correct-answer positions across the full grade are balanced at A 12, B 13, C 13 and D 12. History Normal is next at 5/50; 45 additional questions are needed.
+
+
+## History Normal — first content batch
+
+Ten original, source-linked questions (`hn001`–`hn010`) begin History Normal. Topics include the fall of Constantinople, Vladimir Lenin, Shah Jahan and the Taj Mahal, Sumerian cuneiform, the Aztec capital, the February Revolution, the Storming of the Bastille, King John and Magna Carta, the Yuan dynasty, and the Achaemenid Persian Empire. Sources include Encyclopaedia Britannica. History Normal now has 35/50 questions; 15 remain.
+
+
+## History Normal — second content batch
+
+Ten additional original, source-linked questions (`hn011`–`hn020`) extend History Normal. Topics include the Battle of Waterloo, Sundiata Keita and the Mali Empire, Abbasid Baghdad, Assyrian Nineveh, the Indian Rebellion of 1857, Great Zimbabwe, the Qing dynasty and Opium War, Kwame Nkrumah, Charlemagne and Toussaint Louverture. Sources include Encyclopaedia Britannica and UNESCO. History Normal now has 25/50 questions; 25 remain.
+
+
+## History Normal — third content batch
+
+Ten additional original, source-linked questions (`hn021`–`hn030`) extend History Normal. Topics include Elizabeth I and the Spanish Armada, the Norman Conquest, the Kingdom of Kush, Genghis Khan, Babur and the Mughal Empire, the Revolutions of 1848, Carthage, Cleopatra VII, the American Revolution and Constantine XI. Sources include Encyclopaedia Britannica. History Normal now has 35/50 questions; 15 remain.
+
+
+## History Normal — grade completed
+
+Forty-five original, source-linked questions (`hn001`–`hn045`) complete History Normal at **50/50**, including five retained existing questions. Topics include major political and religious transformations, ancient civilisations, empires and dynasties, wars and treaties, independence movements, and influential historical leaders. Sources include Encyclopaedia Britannica and UNESCO. Correct-answer positions across the full grade are balanced: A 12, B 13, C 13 and D 12. History Hard is next at 5/50; 45 additional questions are needed.
+
+
+## History Hard — first content batch
+
+Ten original, source-linked questions (`hh001`–`hh010`) begin History Hard. Topics include Salamis, Plassey, Manzikert, the Treaty of Utrecht, King Ezana of Aksum, the Treaty of Nanking, the Congress of Vienna, Kosovo, the 1683 siege of Vienna and Lepanto. Sources include Encyclopaedia Britannica. History Hard now has 35/50 questions; 15 remain.
+
+
+## History Hard — second content batch
+
+Ten additional original, source-linked questions (`hh011`–`hh020`) extend History Hard. Topics include Babur's First Battle of Panipat, the Treaty of Verdun, the Hundred Years' War, Actium, the fall of the Western Roman Empire, Sasanian Ctesiphon, the Treaty of Paris ending the Crimean War, the Nasrid kingdom of Granada, Hadrian's Wall and Trafalgar. Sources include Encyclopaedia Britannica. History Hard now has 25/50 questions; 25 remain.
+
+
+## History Hard — third content batch
+
+Ten additional original, source-linked questions (`hh021`–`hh030`) extend History Hard. Topics include Cannae, the Treaty of Ghent, the Romanov dynasty, Poltava, Mohács, the Boxer Rebellion, the Treaty of Portsmouth, Yarmouk, the 1783 Treaty of Paris and the Congress of Berlin. Sources include Encyclopaedia Britannica. History Hard now has 35/50 questions; 15 remain.
 
 
 ## Sparse-array regression correction
