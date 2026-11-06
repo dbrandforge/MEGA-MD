@@ -186,7 +186,7 @@ describe('game quality foundations', () => {
         expect(q.expression.trim().length).toBeGreaterThan(3);
         expect(typeof q.type).toBe('string');
         observedTypes[mode].add(q.type);
-        expect(q.hasNegative).toBe(/(^|[^\\w])-\\d/.test(q.expression));
+        expect(q.hasNegative).toBe(/(^|[^\w])-\d/.test(q.expression));
       }
       expect(observedTypes[mode].size).toBeGreaterThanOrEqual(1);
     }
