@@ -341,8 +341,8 @@ export default {"sexAdvice":[
     "b": "Speak privately with a trusted person or support organisation and consider a safety plan suited to your circumstances."
   },
   {
-    "a": "Sexual violence is never the survivor's fault. Responsibility belongs to the person who chose to violate consent.",
-    "b": "Listen without blame or interrogation. Ask what support they want and let them decide what happens next."
+    "a": "If pain begins during sex, stop or change the activity. You do not need to tolerate pain to satisfy someone.",
+    "b": "If discomfort keeps returning, arrange a clinical assessment. There may be treatable causes, and pushing through can worsen injury."
   },
   {
     "a": "When someone discloses sexual assault, do not demand details or ask why they did not resist or report sooner.",
@@ -393,84 +393,84 @@ export default {"sexAdvice":[
     "b": "You could help find a clinic, arrange transport, or sit with them during a call if invited. Keep their information private."
   },
   {
-    "a": "Ask a qualified clinician about oral, genital, or anal contact as relevant. clinical care.",
-    "b": "Prepare a timeline before discussing the activity and its risks. clinical care."
+    "a": "Some people need more time to feel aroused. Rushing can make intimacy stressful and uncomfortable.",
+    "b": "Talk about what helps both of you relax. Arousal is not a promise to continue, and either person can still change their mind."
   },
   {
-    "a": "Ask a qualified clinician about an unfamiliar symptom appears. clinical care.",
-    "b": "Prepare a timeline before discussing an appointment about sexual wellbeing. clinical care."
+    "a": "An erection is not a reliable measure of attraction or masculinity. It can vary with stress, health, and circumstances.",
+    "b": "Avoid teasing or making it a test. If erection difficulties persist, a clinician can check for medical or medication-related causes."
   },
   {
-    "a": "Ask a qualified clinician about a new prescription is started. clinical care.",
-    "b": "Prepare a timeline before discussing a possible side effect. clinical care."
+    "a": "If ejaculation happens sooner than someone wants, avoid shame or ridicule. It is a common concern.",
+    "b": "If it causes distress, a healthcare professional can discuss possible approaches. Pleasure does not have to depend on penetration or timing."
   },
   {
-    "a": "Ask a qualified clinician about one partner's needs or circumstances change. clinical care.",
-    "b": "Prepare a timeline before discussing a change in relationship status. clinical care."
+    "a": "If ejaculation is delayed or does not happen, do not assume your partner is bored or dissatisfied.",
+    "b": "Medication, stress, health conditions, and stimulation can all play a role. Ask what feels good and seek advice if the change persists."
   },
   {
-    "a": "Ask a qualified clinician about meeting someone new. clinical care.",
-    "b": "Prepare a timeline before discussing sharing personal information online. clinical care."
+    "a": "Sexual desire can change across life stages and relationship circumstances. A difference in desire is not automatically rejection.",
+    "b": "Discuss what each person misses and what closeness feels good now. Avoid turning sex into a duty or keeping score."
   },
   {
-    "a": "Ask a qualified clinician about a boundary has already been stated. clinical care.",
-    "b": "Prepare a timeline before discussing responding to a disclosure of harm. clinical care."
+    "a": "After childbirth, recovery and readiness vary. Do not assume someone is ready for sex at a fixed time.",
+    "b": "Follow the maternity provider's advice, especially after complications or surgery. Resume only when the person feels physically and emotionally ready."
   },
   {
-    "a": "Ask a qualified clinician about symptoms continue or worsen. clinical care.",
-    "b": "Prepare a timeline before discussing returning to an activity after injury. clinical care."
+    "a": "Breastfeeding, hormonal changes, and fatigue can affect desire and vaginal comfort after childbirth.",
+    "b": "Lubricant may help with dryness, but persistent pain deserves clinical advice. Affection does not have to lead to sex."
   },
   {
-    "a": "Check possible interactions before combining oral, genital, or anal contact as relevant. medication.",
-    "b": "Do not stop prescribed treatment without discussing the activity and its risks. medication."
+    "a": "Menopause can bring dryness, discomfort, and changes in desire. These concerns are common and deserve care.",
+    "b": "A clinician can discuss moisturisers, lubricants, and treatment options based on health history. You do not have to accept ongoing pain."
   },
   {
-    "a": "Check possible interactions before combining an unfamiliar symptom appears. medication.",
-    "b": "Do not stop prescribed treatment without discussing an appointment about sexual wellbeing. medication."
+    "a": "Pregnancy can change comfort, energy, and desire. Ask a maternity clinician about any restrictions relevant to your pregnancy.",
+    "b": "If the pregnancy is uncomplicated, many people can continue sex if comfortable, but individual advice matters. Seek care for concerning symptoms."
   },
   {
-    "a": "Check possible interactions before combining a new prescription is started. medication.",
-    "b": "Do not stop prescribed treatment without discussing a possible side effect. medication."
+    "a": "After miscarriage or pregnancy loss, people may need different amounts of time before resuming intimacy.",
+    "b": "Let the person who experienced the loss set the pace. A clinician can advise when sex is medically safe and offer support for grief or anxiety."
   },
   {
-    "a": "Check possible interactions before combining one partner's needs or circumstances change. medication.",
-    "b": "Do not stop prescribed treatment without discussing a change in relationship status. medication."
+    "a": "A chronic condition does not remove someone's right to intimacy, pleasure, and boundaries.",
+    "b": "Discuss practical adjustments and ask the healthcare team about relevant precautions. Let the person with the condition lead decisions about their body."
   },
   {
-    "a": "Check possible interactions before combining meeting someone new. medication.",
-    "b": "Do not stop prescribed treatment without discussing sharing personal information online. medication."
+    "a": "Some medicines affect libido, arousal, erection, or orgasm. Do not stop treatment on your own because of sexual side effects.",
+    "b": "Tell the prescriber what has changed. They may review the dose, timing, or alternatives while weighing the benefits of treatment."
   },
   {
-    "a": "Check possible interactions before combining a boundary has already been stated. medication.",
-    "b": "Do not stop prescribed treatment without discussing responding to a disclosure of harm. medication."
+    "a": "If diabetes or another condition affects sensation or circulation, discuss sexual-health concerns with your clinician.",
+    "b": "Changes in sensation, pain, or function may have treatable causes. Sexual health is a legitimate part of routine healthcare."
   },
   {
-    "a": "Check possible interactions before combining symptoms continue or worsen. medication.",
-    "b": "Do not stop prescribed treatment without discussing returning to an activity after injury. medication."
+    "a": "Intimacy for a person with a disability should be planned around their preferences and access needs, not other people's assumptions.",
+    "b": "Ask what positioning, communication, equipment, or assistance is useful. A support person cannot substitute for the individual's consent."
   },
   {
-    "a": "Define expectations explicitly before oral, genital, or anal contact as relevant. relationship agreements.",
-    "b": "Revisit exclusivity agreements when the activity and its risks. relationship agreements."
+    "a": "For a partner with limited speech or movement, agree on an accessible way to communicate yes, no, pause, and stop.",
+    "b": "Check that the signal is reliable and understood. If the person cannot communicate a free choice, do not proceed."
   },
   {
-    "a": "Define expectations explicitly before an unfamiliar symptom appears. relationship agreements.",
-    "b": "Revisit exclusivity agreements when an appointment about sexual wellbeing. relationship agreements."
+    "a": "A person's gender identity does not tell you which body parts, terms, or kinds of touch they are comfortable with.",
+    "b": "Ask respectfully what language they prefer and what boundaries matter. Do not make assumptions based on appearance or identity."
   },
   {
-    "a": "Define expectations explicitly before a new prescription is started. relationship agreements.",
-    "b": "Revisit exclusivity agreements when a possible side effect. relationship agreements."
+    "a": "Dysphoria may affect which kinds of touch feel comfortable for a trans or non-binary person. Let them guide the conversation.",
+    "b": "Ask what feels affirming and what language to use. Preferences vary by person and may change over time."
   },
   {
-    "a": "Define expectations explicitly before one partner's needs or circumstances change. relationship agreements.",
-    "b": "Revisit exclusivity agreements when a change in relationship status. relationship agreements."
+    "a": "Do not assume someone's sexual orientation from their relationship history or current partner.",
+    "b": "Let people describe their own identity if they choose. Do not disclose another person's orientation without permission."
   },
   {
-    "a": "Define expectations explicitly before meeting someone new. relationship agreements.",
-    "b": "Revisit exclusivity agreements when sharing personal information online. relationship agreements."
+    "a": "If a partner is questioning their sexuality, give them room to explore without demanding an immediate label.",
+    "b": "You can discuss what it means for the relationship while respecting their process. Do not use uncertainty to shame or control them."
   },
   {
-    "a": "Define expectations explicitly before a boundary has already been stated. relationship agreements.",
-    "b": "Revisit exclusivity agreements when responding to a disclosure of harm. relationship agreements."
+    "a": "Sexual-health information online can be inaccurate or designed to sell products. Check claims against reputable medical sources.",
+    "b": "For symptoms, medication questions, or treatment decisions, consult a qualified healthcare professional rather than relying on social media."
   },
   {
     "a": "Define expectations explicitly before symptoms continue or worsen. relationship agreements.",
