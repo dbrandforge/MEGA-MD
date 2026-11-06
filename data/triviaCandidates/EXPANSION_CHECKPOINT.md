@@ -610,3 +610,8 @@ Ten more original Lifestyle Normal questions (`ln021`–`ln030`) introduce inves
 ## Lifestyle Normal — grade completed
 
 Twenty original, source-linked questions (`ln031`–`ln050`) complete Lifestyle Normal at **50/50**. The batch covers net income, opportunity cost, budget surplus, variable expenses, purchasing power, capital loss, diversification, time horizon, risk tolerance, fund expense ratios, liquidity, early-withdrawal terms, APR, secured-loan collateral, debt consolidation, irregular-income budgeting, emergency reserves, real versus nominal returns, highest-interest debt repayment and full-term loan-cost comparison. Sources include the Consumer Financial Protection Bureau and Investor.gov. Lifestyle now has 50 approved Normal questions; Lifestyle Hard is next in the locked sequence.
+
+
+## Lifestyle Hard — first content batch
+
+Ten original, source-linked applied questions (`lh001`–`lh010`) begin Lifestyle Hard. The batch tests debt-to-income and credit-utilisation calculations, effective annual rates, approximate real returns, bond-price sensitivity to interest rates, portfolio rebalancing, systematic risk, duration, cash-flow timing and reducing-balance loan amortisation. Sources include the Consumer Financial Protection Bureau and Investor.gov. Lifestyle Hard now has 10/50 approved questions; 40 remain.
