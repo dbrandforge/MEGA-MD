@@ -170,8 +170,8 @@ Useful commands:
 ## Next execution sequence
 
 1. Geography is complete at 50 Easy, 50 Normal, 50 Hard and 50 Expert.
-2. History is next in the selectable-category sequence: Easy 2/50, Normal 50/50, Hard 5/50 and Expert 6/50.
-3. History Easy is complete. History Normal is complete. Complete History Hard next (45 additional questions), then Expert in order.
+2. History is next in the selectable-category sequence: Easy 2/50, Normal 50/50, Hard 15/50 and Expert 6/50.
+3. History Easy is complete. History Normal is complete. Complete History Hard next (35 additional questions), then Expert in order.
 4. Fact-check every answer and distractor; rewrite incomplete stems and repair encoding.
 5. Date-anchor or reject volatile/current-affairs and ranking-dependent claims.
 6. Keep unreviewed OpenTriviaQA candidates staged and respect their CC BY-SA 4.0 attribution obligations.
@@ -763,6 +763,11 @@ Ten additional original, source-linked questions (`hn021`–`hn030`) extend Hist
 ## History Normal — grade completed
 
 Forty-five original, source-linked questions (`hn001`–`hn045`) complete History Normal at **50/50**, including five retained existing questions. Topics include major political and religious transformations, ancient civilisations, empires and dynasties, wars and treaties, independence movements, and influential historical leaders. Sources include Encyclopaedia Britannica and UNESCO. Correct-answer positions across the full grade are balanced: A 12, B 13, C 13 and D 12. History Hard is next at 5/50; 45 additional questions are needed.
+
+
+## History Hard — first content batch
+
+Ten original, source-linked questions (`hh001`–`hh010`) begin History Hard. Topics include Salamis, Plassey, Manzikert, the Treaty of Utrecht, King Ezana of Aksum, the Treaty of Nanking, the Congress of Vienna, Kosovo, the 1683 siege of Vienna and Lepanto. Sources include Encyclopaedia Britannica. History Hard now has 15/50 questions; 35 remain.
 
 
 ## Sparse-array regression correction
