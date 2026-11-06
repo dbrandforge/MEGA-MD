@@ -405,3 +405,8 @@ Four final questions (`fn041`–`fn044`) complete Football Normal at 50 question
 ## Football Hard — first content batch
 
 Ten original Football Hard questions (`fh001`–`fh010`) begin the third difficulty grade. Topics include World Cup final milestones, Brazil’s 1970 record, Denmark’s 1992 EURO run, Greece’s 2004 title, Abedi Pelé’s European Cup final appearance, the 2005 Champions League shoot-out and Nigeria’s 1996 Olympic final. Each item carries a review date and official FIFA, UEFA or Olympics/FIFA source. Football Hard now has 12 approved questions overall (2 existing + 10 new); 38 remain to reach 50.
+
+
+## Football Hard — second content batch
+
+Ten more original Football Hard questions (`fh011`–`fh020`) focus on Nigeria’s 1994 World Cup exit, Roberto Baggio’s decisive performance, Rashidi Yekini’s continental award, AFCON scoring records, Algeria’s 1990 title, and Nigeria’s historic 1996 Olympic gold. Each question carries a review date and official FIFA or CAF source. Football Hard now has 22 approved questions overall (2 existing + 20 new); 28 remain to reach 50.
