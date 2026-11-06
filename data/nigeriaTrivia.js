@@ -1341,7 +1341,7 @@ export const NIGERIA_TRIVIA = [
   { id:'gh046', category:'geography', difficulty:'hard', question:"The historic Silk Road city of Bukhara is located in which country?", options:["Kazakhstan","Tajikistan","Uzbekistan","Turkmenistan"], answer:2, reviewedAt:'2026-11-06', source:"https://www.britannica.com/place/Bukhara" },
   { id:'gh047', category:'geography', difficulty:'hard', question:"Which sea separates the Arabian Peninsula from northeastern Africa?", options:["Arabian Sea","Mediterranean Sea","Black Sea","Red Sea"], answer:3, reviewedAt:'2026-11-06', source:"https://www.britannica.com/place/Red-Sea" },
   { id:'gh048', category:'geography', difficulty:'hard', question:"Which large island in Southeast Asia is shared by Indonesia, Malaysia and Brunei?", options:["Borneo","Sumatra","Java","Sulawesi"], answer:0, reviewedAt:'2026-11-06', source:"https://www.britannica.com/place/Borneo-island" },
-  { id:'gh049', category:'geography', difficulty:'hard', question:"Which river flows through Laos, Cambodia and Vietnam before reaching the South China Sea?", options:["Salween","Irrawaddy","Mekong","Red River"], answer:2, reviewedAt:'2026-11-06', source:"https://www.britannica.com/place/Mekong-River" }
+  { id:'gh049', category:'geography', difficulty:'hard', question:"Which river flows through Laos, Cambodia and Vietnam before reaching the South China Sea?", options:["Salween","Irrawaddy","Red River","Mekong"], answer:3, reviewedAt:'2026-11-06', source:"https://www.britannica.com/place/Mekong-River" }
 ];
 
 export const TRIVIA_CATEGORIES = [
