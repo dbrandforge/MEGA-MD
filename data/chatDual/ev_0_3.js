@@ -425,8 +425,8 @@ export default {"sexAdvice":[
     "b": "Online products may contain undisclosed drugs or interact with medicines. Be wary of guaranteed results and avoid unregulated treatments."
   },
   {
-    "a": "Do not use leftover antibiotics or antifungal medicine to treat new genital symptoms.",
-    "b": "The cause may be different, and the wrong treatment can delay care. Get an accurate assessment before using medication."
+    "a": "Chlamydia and gonorrhoea can be present without symptoms. Testing matters after a possible exposure even when you feel well.",
+    "b": "A clinic can advise which body sites need testing and when. If diagnosed, follow treatment advice and ensure partners are assessed as recommended."
   },
   {
     "a": "After miscarriage or pregnancy loss, people may need different amounts of time before resuming intimacy.",
@@ -509,8 +509,8 @@ export default {"sexAdvice":[
     "b": "Follow local emergency guidance. Online advice cannot safely assess a possible pregnancy complication."
   },
   {
-    "a": "A late period can result from stress, illness, or cycle variation as well as pregnancy.",
-    "b": "If pregnancy is possible, test at the recommended time. Seek clinical advice if missed periods continue or symptoms concern you."
+    "a": "Syphilis symptoms can be subtle or mistaken for other conditions. Testing is needed to identify the infection.",
+    "b": "If you notice an unexplained sore, rash, or other change after possible exposure, seek clinical assessment rather than waiting."
   },
   {
     "a": "Change menstrual products according to their instructions and your flow, and wash your hands before and after handling them.",
@@ -537,80 +537,80 @@ export default {"sexAdvice":[
     "b": "Vaccination and recommended screening reduce risk. Ask a clinician which schedule applies to your age and medical history."
   },
   {
-    "a": "Stop an activity when pain begins during an unfamiliar symptom appears. pain.",
-    "b": "Seek assessment for persistent discomfort after an appointment about sexual wellbeing. pain."
+    "a": "HIV cannot be diagnosed by appearance or symptoms alone. A test is needed to know your status.",
+    "b": "Ask a clinic about the appropriate test and window period. If exposure may have occurred within 72 hours, seek urgent PEP advice."
   },
   {
-    "a": "Stop an activity when pain begins during a new prescription is started. pain.",
-    "b": "Seek assessment for persistent discomfort after a possible side effect. pain."
+    "a": "Effective HIV treatment can help people live long, healthy lives. Sustained undetectable viral load prevents sexual transmission.",
+    "b": "Use accurate information instead of stigma. A person living with HIV deserves privacy, respect, and ongoing care."
   },
   {
-    "a": "Stop an activity when pain begins during one partner's needs or circumstances change. pain.",
-    "b": "Seek assessment for persistent discomfort after a change in relationship status. pain."
+    "a": "If a partner tells you they are living with HIV, do not share that information without their permission.",
+    "b": "Ask what support they want and learn from reliable medical sources. Their status is private health information, not gossip."
   },
   {
-    "a": "Stop an activity when pain begins during meeting someone new. pain.",
-    "b": "Seek assessment for persistent discomfort after sharing personal information online. pain."
+    "a": "If you are worried about possible HIV exposure, seek care promptly even if you feel completely well.",
+    "b": "A clinician can assess the exposure, explain PEP timing, and arrange testing. Early advice gives you more options."
   },
   {
-    "a": "Stop an activity when pain begins during a boundary has already been stated. pain.",
-    "b": "Seek assessment for persistent discomfort after responding to a disclosure of harm. pain."
+    "a": "PrEP requires appropriate HIV testing and ongoing clinical follow-up. Do not start or stop it based only on online advice.",
+    "b": "A provider can explain the regimen, monitoring, and what to do about missed doses. PrEP is part of a wider prevention plan."
   },
   {
-    "a": "Stop an activity when pain begins during symptoms continue or worsen. pain.",
-    "b": "Seek assessment for persistent discomfort after returning to an activity after injury. pain."
+    "a": "PEP is a time-sensitive course of medication after possible HIV exposure. It should be started as soon as possible and within 72 hours.",
+    "b": "Contact an emergency department or sexual-health service immediately. Follow-up testing and clinical review are also important."
   },
   {
-    "a": "Ask a health professional whether vaccination can prevent oral, genital, or anal contact as relevant. vaccination.",
-    "b": "Review vaccination history when discussing the activity and its risks. vaccination."
+    "a": "Hepatitis B can be transmitted sexually, and vaccination is an effective prevention measure for people who are not immune.",
+    "b": "Ask a healthcare professional whether you need vaccination or testing, particularly if a partner has hepatitis B."
   },
   {
-    "a": "Ask a health professional whether vaccination can prevent an unfamiliar symptom appears. vaccination.",
-    "b": "Review vaccination history when discussing an appointment about sexual wellbeing. vaccination."
+    "a": "Some HPV types can cause cancers, while others cause genital warts. Vaccination reduces risk from important types.",
+    "b": "Follow screening guidance for your age and location even if vaccinated. A clinician can explain which tests are recommended."
   },
   {
-    "a": "Ask a health professional whether vaccination can prevent a new prescription is started. vaccination.",
-    "b": "Review vaccination history when discussing a possible side effect. vaccination."
+    "a": "If you have a cervix, attend recommended cervical screening even when you feel healthy and have no symptoms.",
+    "b": "Screening intervals vary by age and location. Ask when you are due and what follow-up an abnormal result requires."
   },
   {
-    "a": "Ask a health professional whether vaccination can prevent one partner's needs or circumstances change. vaccination.",
-    "b": "Review vaccination history when discussing a change in relationship status. vaccination."
+    "a": "An abnormal cervical screening result does not automatically mean cancer. It usually means further assessment is needed.",
+    "b": "Ask what was found, whether HPV testing or repeat screening is advised, and when the next step should happen."
   },
   {
-    "a": "Ask a health professional whether vaccination can prevent meeting someone new. vaccination.",
-    "b": "Review vaccination history when discussing sharing personal information online. vaccination."
+    "a": "If you are unsure which sexual-health tests you need, describe the contact honestly to the clinician.",
+    "b": "Ask what each test involves, when results will arrive, and what confidentiality protections apply. Their role is to help, not judge."
   },
   {
-    "a": "Ask a health professional whether vaccination can prevent a boundary has already been stated. vaccination.",
-    "b": "Review vaccination history when discussing responding to a disclosure of harm. vaccination."
+    "a": "You can ask a clinician to explain a genital examination before it begins and to pause at any time.",
+    "b": "You may request a chaperone or support person where available. Consent to an examination is separate from consent to treatment."
   },
   {
-    "a": "Ask a health professional whether vaccination can prevent symptoms continue or worsen. vaccination.",
-    "b": "Review vaccination history when discussing returning to an activity after injury. vaccination."
+    "a": "If you feel dismissed during a sexual-health appointment, ask what the clinician thinks is happening and what follow-up is needed.",
+    "b": "You can request another clinician or a second opinion if concerns remain. Clear communication is part of good healthcare."
   },
   {
-    "a": "Avoid relying on consent when a person is oral, genital, or anal contact as relevant. alcohol.",
-    "b": "Arrange transport before consuming the activity and its risks. alcohol."
+    "a": "Do not share prescription medication with a partner, even if their symptoms seem identical to yours.",
+    "b": "The correct medicine and dose depend on the diagnosis and individual factors. Encourage them to seek their own assessment."
   },
   {
-    "a": "Avoid relying on consent when a person is an unfamiliar symptom appears. alcohol.",
-    "b": "Arrange transport before consuming an appointment about sexual wellbeing. alcohol."
+    "a": "If you miss a dose of prescribed medication, check the patient leaflet or contact a pharmacist for specific advice.",
+    "b": "Do not double the next dose unless the instructions say to. Guidance depends on the medicine and timing."
   },
   {
-    "a": "Avoid relying on consent when a person is a new prescription is started. alcohol.",
-    "b": "Arrange transport before consuming a possible side effect. alcohol."
+    "a": "If a medication may be causing side effects, contact the prescriber or pharmacist rather than abruptly stopping essential treatment.",
+    "b": "Seek urgent help for severe allergic symptoms or breathing difficulty. Note the medicine and when the reaction began."
   },
   {
-    "a": "Avoid relying on consent when a person is one partner's needs or circumstances change. alcohol.",
-    "b": "Arrange transport before consuming a change in relationship status. alcohol."
+    "a": "Before using erectile-dysfunction medication, discuss heart conditions and all other medicines with the prescriber.",
+    "b": "Some chest-pain medicines can interact dangerously with these drugs. Avoid prescription products from unverified sellers."
   },
   {
-    "a": "Avoid relying on consent when a person is meeting someone new. alcohol.",
-    "b": "Arrange transport before consuming sharing personal information online. alcohol."
+    "a": "Do not combine erectile-dysfunction medicines or exceed the prescribed dose to try to improve results.",
+    "b": "Seek emergency care for chest pain, fainting, or a prolonged painful erection. Ask the prescriber before changing treatment."
   },
   {
-    "a": "Avoid relying on consent when a person is a boundary has already been stated. alcohol.",
-    "b": "Arrange transport before consuming responding to a disclosure of harm. alcohol."
+    "a": "If sexual activity brings on chest pain, severe breathlessness, or faintness, stop and seek urgent medical assessment.",
+    "b": "Do not assume it is simply exertion or anxiety. A clinician can assess cardiovascular risk and advise when activity is safe."
   },
   {
     "a": "Avoid relying on consent when a person is symptoms continue or worsen. alcohol.",
