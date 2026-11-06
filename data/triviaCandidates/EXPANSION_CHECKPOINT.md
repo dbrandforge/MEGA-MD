@@ -370,3 +370,8 @@ Ten more original, source-linked Football Easy questions (`ft021`–`ft030`) cov
 ## Football Easy — fourth content batch
 
 Ten additional original Football Easy questions (`ft031`–`ft040`) cover the field shape and dimensions, centre-circle and corner-arc measurements, goal-area and penalty-area depth, corner-flag height and direct scoring from a goal kick. Each item carries a review date and official IFAB Laws of the Game source. Football now has 54 approved questions overall: Easy 44, Normal 6, Hard 2 and Expert 2. The Easy block has 6 questions remaining before Football Normal begins.
+
+
+## Football Easy — grade completed
+
+Six final questions (`ft041`–`ft046`) complete the Easy grade at 50 questions. The earlier `ft011` wording was also refined to avoid duplicating an existing Nigeria football question; it now tests recognition of the halfway line. Final Football coverage is Easy 50, Normal 6, Hard 2 and Expert 2 (60 approved Football questions total). The next step in the locked sequence is Football Normal, building from 6 to 50 before moving to Hard.
