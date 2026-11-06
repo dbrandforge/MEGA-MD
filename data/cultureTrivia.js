@@ -7,7 +7,8 @@ const CULTURE_SOURCES = {
   "bm": "https://www.britishmuseum.org/collection",
   "vam": "https://www.vam.ac.uk/collections",
   "si": "https://africa.si.edu/",
-  "unesco": "https://www.unesco.org/en/culture"
+  "unesco": "https://www.unesco.org/en/culture",
+  "oaxaca": "https://www.oaxaca.gob.mx/"
 };
 const CULTURE_ROWS = {
   "easy": [
@@ -1136,12 +1137,12 @@ const CULTURE_ROWS = {
       "ich"
     ],
     [
-      "Tbourida is a Moroccan equestrian performance involving coordinated displays by mounted riders; what are the riders commonly called?",
-      "Tbourida teams or sorbas",
+      "Tbourida is a Moroccan equestrian performance that recreates what historical event?",
+      "A coordinated cavalry charge",
       [
-        "Griots",
-        "Muezzins",
-        "Maalems"
+        "A camel caravan crossing",
+        "A harvest procession",
+        "A royal wedding parade"
       ],
       "ich"
     ],
@@ -1423,7 +1424,7 @@ const CULTURE_ROWS = {
         "Jalisco",
         "Chiapas"
       ],
-      "unesco"
+      "oaxaca"
     ]
   ],
   "expert": [
