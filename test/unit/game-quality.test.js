@@ -6,7 +6,7 @@ import { WORDS, QUESTIONS_PER_ROUND, canEndHangman } from '../../plugins/hangman
 import { FALLBACK } from '../../data/wyrPairs.js';
 import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
 import { getLagosWeekKey } from '../../plugins/rank.js';
-import { MATH_MODES, generateMathQuestion, getMathMatchQuestionCount } from '../../plugins/math.js';
+import { MATH_MODES, generateMathQuestion, getMathNegativeQuestionCount, getMathMatchQuestionCount } from '../../plugins/math.js';
 import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES, getTriviaQuestionCount, getAvailableTriviaQuestions, shouldEndTriviaForNoParticipation, secondsForQuestion, normalizeTriviaCategory, getTriviaMatchQuestionCount } from '../../plugins/trivia.js';
 
 describe('game quality foundations', () => {
