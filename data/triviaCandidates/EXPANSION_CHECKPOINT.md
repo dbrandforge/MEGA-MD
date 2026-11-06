@@ -4,7 +4,7 @@ Last verified: 2026-11-06
 Repository: `dbrandforge/MEGA-MD`
 Working branch: `lifestyle-expert-batch-01`
 Previous staged release: PR #88 merged to `main` (commit `5bfa6a15b0dcb822c2aa42760a104d3d85d84c3f`).
-Current batches: Lifestyle Expert `le001`–`le020`; PR #89 contains both batches and is awaiting review/merge.
+Current batches: Lifestyle Expert `le001`–`le048`; PR #89 contains the complete 48-question numbered block plus two retained legacy records and is awaiting fresh CI/review.
 
 ## Locked expansion target
 
@@ -21,7 +21,7 @@ Do not count raw candidate inventory as playable coverage. Do not assign difficu
 
 ## Current verified expansion coverage
 
-The staged release completed Forge, Music, Football and Movies at 50 questions in each difficulty (200 per category). Lifestyle has Easy 50, Normal 50, Hard 50, and Expert now 22 (two retained legacy records plus twenty new numbered records).
+The staged release completed Forge, Music, Football and Movies at 50 questions in each difficulty (200 per category). Lifestyle is now complete at Easy 50, Normal 50, Hard 50 and Expert 50 (two retained legacy records plus 48 numbered questions).
 
 | Selectable pool | Easy | Normal | Hard | Expert | Total |
 |---|---:|---:|---:|---:|---:|
@@ -29,7 +29,7 @@ The staged release completed Forge, Music, Football and Movies at 50 questions i
 | Music | 50 | 50 | 50 | 50 | 200 |
 | Football | 50 | 50 | 50 | 50 | 200 |
 | Movies | 50 | 50 | 50 | 50 | 200 |
-| Lifestyle | 50 | 50 | 50 | 22 | 172 |
+| Lifestyle | 50 | 50 | 50 | 50 | 200 |
 
 These rows describe the completed expansion pools; category aliases and legacy routing may overlap and must not be summed as unique bank records. Other player-selectable categories remain outside this completed expansion milestone and require a fresh audit before planning their grade sequence.
 
@@ -626,9 +626,28 @@ The completed 48-question numbered Hard block (lh001–lh048) has been checked f
 
 ## Lifestyle Expert — first content batch
 
-Ten original, source-linked applied questions (`le001`–`le010`) begin Lifestyle Expert. Topics include compound-growth estimation, bond duration, property-insurance coinsurance, negative amortisation, inflation-adjusted return, working-capital cycle, liquidity ratio, fund overlap, quarterly compounding and non-cash depreciation. Each record carries a review date and a relevant Investor.gov, NAIC, CFPB or U.S. Small Business Administration source. Lifestyle Expert now has 22 live questions including two retained legacy records; 28 remain to reach 50. Both batches must pass the bank-wide audit and code review before release.
+Ten original, source-linked applied questions (`le001`–`le010`) begin Lifestyle Expert. Topics include compound-growth estimation, bond duration, property-insurance coinsurance, negative amortisation, inflation-adjusted return, working-capital cycle, liquidity ratio, fund overlap, quarterly compounding and non-cash depreciation. Each record carries a review date and a relevant Investor.gov, NAIC, CFPB or U.S. Small Business Administration source.
 
 
 ## Lifestyle Expert — second content batch
 
-Ten additional original, source-linked applied questions (`le011`–`le020`) extend Lifestyle Expert to 22/50 (including two retained legacy records). Topics: break-even volume, debt-to-income ratio, APR versus interest rate, accrual revenue recognition, portfolio rebalancing, contribution margin ratio, debt ratio, loan amortisation, credit-sale cash-flow timing and principal prepayment. Sources include the U.S. Small Business Administration, Consumer Financial Protection Bureau, IRS and Investor.gov. Each record includes a review date and source URL. A structural validation pass confirms 20 unique numbered IDs and stems, 20 source URLs, four distinct options per question, valid answer indexes, and an even 5/5/5/5 answer-position distribution. The second batch requires full bank-wide audit and CI verification before release; 28 questions remain to reach 50.
+Ten additional original, source-linked applied questions (`le011`–`le020`) extend the numbered Lifestyle Expert block. Topics include break-even volume, debt-to-income ratio, APR versus interest rate, accrual revenue recognition, portfolio rebalancing, contribution margin ratio, debt ratio, loan amortisation, credit-sale cash-flow timing and principal prepayment. Sources include the U.S. Small Business Administration, Consumer Financial Protection Bureau, IRS and Investor.gov.
+
+
+## Lifestyle Expert — grade completed
+
+Twenty-eight original, source-linked applied questions (`le021`–`le048`) complete Lifestyle Expert at **50/50**, counting two retained legacy records. The set covers liquidity and working-capital analysis, bond pricing and yield, receivables and inventory days, insurance deductibles, fund expenses, variable-rate exposure, weighted portfolio returns, break-even volume, effective and annualized returns, cash-flow adjustments, operating margin, credit terms, foreign-exchange effects, accounting-equation changes, origination fees, net present value, gross margin, portfolio rebalancing and leverage. Every numbered question has four distinct options, a valid answer index, a review date and a source URL. Across `le001`–`le048`, correct-answer positions are evenly distributed: 12 each at A, B, C and D.
+
+
+## Sparse-array regression correction
+
+The previous bank contained one accidental empty array slot caused by a doubled comma immediately before `le011`. The array length therefore exceeded the number of playable questions by one, causing regression checks comparing bank length with available-question count to fail (1,081 versus 1,080). The extra comma has been removed. A dedicated unit assertion now verifies that every array index is populated, preventing sparse slots from silently reducing the playable question pool. The staged release gate now requires Lifestyle alongside Forge, Music, Football and Movies, so all five completed categories must have 50 questions at every grade.
+
+
+## Automated validation
+
+- Before the final Lifestyle Expert completion, candidate-quality and Forge Guard integration checks passed; the Trivia regression suite exposed the sparse-array defect described above.
+- The sparse-array defect, incorrect origination-fee answer placement and near-duplicate annualized-return stem have been corrected in the current branch.
+- Fresh regression, candidate-quality, staged bank-coverage and integration checks must pass on the latest PR head before merge or deployment.
+- No candidate records were promoted into the live bank.
+- No merge or deployment has been performed.
