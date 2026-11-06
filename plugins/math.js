@@ -2,10 +2,10 @@ import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
 import isAdmin from '../lib/isAdmin.js';
+import { TRIVIA_DIFFICULTY_SECONDS, getTriviaMatchQuestionCount } from './trivia.js';
 
 const STATE_KEY = 'mathGame';
 const RECORD_KEY = 'mathRecords';
-const QUESTIONS_PER_MATCH = 10;
 const MATCH_EXPIRY_MS = 45 * 60 * 1000;
 const timers = new Map();
 const chatLocks = new Map();
@@ -24,18 +24,24 @@ async function withChatLock(chatId, task) {
 }
 
 export const MATH_MODES = {
-  noob: { min: -9, max: 9, operators: ['+', '-'], time: 20000 },
-  easy: { min: -20, max: 20, operators: ['+', '-', '*'], time: 25000 },
-  normal: { min: -60, max: 60, operators: ['+', '-', '*', '/'], time: 30000 },
-  hard: { min: -150, max: 150, operators: ['+', '-', '*', '/'], time: 35000 },
-  extreme: { min: -500, max: 500, operators: ['+', '-', '*', '/'], time: 40000 },
-  impossible: { min: -2000, max: 2000, operators: ['+', '-', '*', '/'], time: 45000 },
-  impossible2: { min: -10000, max: 10000, operators: ['+', '-', '*', '/'], time: 50000 }
+  noob: { min: -9, max: 9, operators: ['+', '-'], time: TRIVIA_DIFFICULTY_SECONDS.easy * 1000 },
+  easy: { min: -20, max: 20, operators: ['+', '-', '*'], time: TRIVIA_DIFFICULTY_SECONDS.easy * 1000 },
+  normal: { min: -60, max: 60, operators: ['+', '-', '*', '/'], time: TRIVIA_DIFFICULTY_SECONDS.normal * 1000 },
+  hard: { min: -150, max: 150, operators: ['+', '-', '*', '/'], time: TRIVIA_DIFFICULTY_SECONDS.hard * 1000 },
+  extreme: { min: -500, max: 500, operators: ['+', '-', '*', '/'], time: TRIVIA_DIFFICULTY_SECONDS.expert * 1000 },
+  impossible: { min: -2000, max: 2000, operators: ['+', '-', '*', '/'], time: TRIVIA_DIFFICULTY_SECONDS.expert * 1000 },
+  impossible2: { min: -10000, max: 10000, operators: ['+', '-', '*', '/'], time: TRIVIA_DIFFICULTY_SECONDS.expert * 1000 }
 };
 
 const pick = values => values[Math.floor(Math.random() * values.length)];
 const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const mention = jid => '@' + String(jid || '').split('@')[0].split(':')[0];
+
+export function getMathMatchQuestionCount(mode = 'normal') {
+  const difficulty = mode === 'noob' || mode === 'easy' ? 'easy'
+    : mode === 'normal' ? 'normal' : mode === 'hard' ? 'hard' : 'expert';
+  return getTriviaMatchQuestionCount('maths', difficulty);
+}
 
 export function generateMathQuestion(mode = 'normal') {
   const settings = MATH_MODES[mode] || MATH_MODES.normal;
@@ -265,13 +271,14 @@ export default {
     if (!Object.hasOwn(MATH_MODES, mode)) {
       return sock.sendMessage(chatId, { text: `🧮 *MATHS ARENA DIFFICULTIES*\n\n${Object.keys(MATH_MODES).join(' · ')}\n\nExample: ${config.prefix}math normal\n10 questions · first correct answer wins each round · speed bonus · group leaderboard.`, ...channelInfo }, { quoted: message });
     }
+    const totalRounds = getMathMatchQuestionCount(mode);
     game = {
-      active: true, mode, round: 0, totalRounds: QUESTIONS_PER_MATCH,
+      active: true, mode, round: 0, totalRounds,
       scores: {}, attemptedBy: {}, participants: {}, startedBy: senderId,
       startedAt: Date.now(), matchExpiresAt: Date.now() + MATCH_EXPIRY_MS
     };
     await saveGame(chatId, game);
-    await sock.sendMessage(chatId, { text: `🎮 *MATHS ARENA MATCH STARTED*\n\nDifficulty: *${mode.toUpperCase()}*\nQuestions: *${QUESTIONS_PER_MATCH}*\nPlayers: everyone in this group can join.\n\nFirst correct answer wins each round. Reply directly to each question.\n🏆 ${config.prefix}math score · ${config.prefix}math status · ${config.prefix}math stop`, ...channelInfo }, { quoted: message });
+    await sock.sendMessage(chatId, { text: `🎮 *MATHS ARENA MATCH STARTED*\n\nDifficulty: *${mode.toUpperCase()}*\nQuestions: *${totalRounds}*\nPlayers: everyone in this group can join.\n\nFirst correct answer wins each round. Reply directly to each question.\n🏆 ${config.prefix}math score · ${config.prefix}math status · ${config.prefix}math stop`, ...channelInfo }, { quoted: message });
     await postNextQuestion(sock, chatId, game);
   }
 };

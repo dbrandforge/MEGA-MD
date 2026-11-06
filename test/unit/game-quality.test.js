@@ -6,8 +6,8 @@ import { WORDS, QUESTIONS_PER_ROUND, canEndHangman } from '../../plugins/hangman
 import { FALLBACK } from '../../data/wyrPairs.js';
 import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
 import { getLagosWeekKey } from '../../plugins/rank.js';
-import { MATH_MODES, generateMathQuestion } from '../../plugins/math.js';
-import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES, getTriviaQuestionCount, getAvailableTriviaQuestions, shouldEndTriviaForNoParticipation, secondsForQuestion, normalizeTriviaCategory } from '../../plugins/trivia.js';
+import { MATH_MODES, generateMathQuestion, getMathMatchQuestionCount } from '../../plugins/math.js';
+import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES, getTriviaQuestionCount, getAvailableTriviaQuestions, shouldEndTriviaForNoParticipation, secondsForQuestion, normalizeTriviaCategory, getTriviaMatchQuestionCount } from '../../plugins/trivia.js';
 
 describe('game quality foundations', () => {
 
@@ -59,8 +59,8 @@ describe('game quality foundations', () => {
     expect(report.categories.music.meetsTarget).toBe(true);
     expect(report.categories.football.meetsTarget).toBe(true);
     expect(report.categories.movies.meetsTarget).toBe(true);
-    for (const category of ['nollywood', 'hollywood', 'bollywood', 'animation', 'series']) {
-      expect(report.categories[category].meetsTarget).toBe(true);
+    for (const category of ['nollywood', 'hollywood', 'bollywood', 'animation', 'series', 'entertainment']) {
+      expect(report.categories).not.toHaveProperty(category);
     }
     expect(report.categories).not.toHaveProperty('general');
     expect(report.categories).not.toHaveProperty('sports');
@@ -210,7 +210,7 @@ describe('game quality foundations', () => {
     expect(getTriviaQuestionCount('music', 'normal')).toBeGreaterThanOrEqual(50);
     expect(getTriviaQuestionCount('music', 'hard')).toBeGreaterThanOrEqual(50);
     expect(getTriviaQuestionCount('music', 'expert')).toBeGreaterThanOrEqual(50);
-    expect(getTriviaQuestionCount('nigeria')).toBe(71);
+    expect(getTriviaQuestionCount('nigeria')).toBeGreaterThanOrEqual(200);
     expect(getTriviaQuestionCount('current-affairs', 'hard')).toBe(1);
     expect(getTriviaQuestionCount('football', 'hard')).toBeGreaterThan(0);
     expect(getTriviaQuestionCount('football', 'expert')).toBeGreaterThan(0);
@@ -231,8 +231,7 @@ describe('game quality foundations', () => {
     const advertised = [
       'music', 'football', 'movies', 'lifestyle', 'geography', 'history',
       'culture', 'food', 'technology', 'business', 'science', 'gaming',
-      'literature', 'nigeria', 'nollywood', 'hollywood', 'bollywood',
-      'animation', 'series', 'current-affairs', 'forge'
+      'literature', 'nigeria', 'current-affairs', 'forge'
     ];
     for (const category of advertised) {
       expect(getTriviaQuestionCount(category), category).toBeGreaterThan(0);
@@ -254,6 +253,26 @@ describe('game quality foundations', () => {
     expect(getAvailableTriviaQuestions('mixed', 'expert').every(q => ['expert'].includes(q.difficulty))).toBe(true);
   });
 
+
+  it('uses difficulty-specific match lengths for mixed and single-category Trivia', () => {
+    expect(['easy', 'normal', 'hard', 'expert'].map(level => getTriviaMatchQuestionCount('mixed', level)))
+      .toEqual([20, 15, 12, 10]);
+    for (const category of TRIVIA_CATEGORIES.filter(value => value !== 'mixed')) {
+      expect(['easy', 'normal', 'hard', 'expert'].map(level => getTriviaMatchQuestionCount(category, level)))
+        .toEqual([15, 13, 10, 8]);
+    }
+  });
+
+  it('shares Trivia difficulty timers with the corresponding Maths modes', () => {
+    expect(MATH_MODES.easy.time).toBe(20_000);
+    expect(MATH_MODES.normal.time).toBe(30_000);
+    expect(MATH_MODES.hard.time).toBe(45_000);
+    expect(MATH_MODES.extreme.time).toBe(60_000);
+    expect(MATH_MODES.impossible.time).toBe(60_000);
+    expect(MATH_MODES.impossible2.time).toBe(60_000);
+    expect(['noob', 'easy', 'normal', 'hard', 'extreme', 'impossible', 'impossible2'].map(getMathMatchQuestionCount))
+      .toEqual([15, 15, 13, 10, 8, 8, 8]);
+  });
 
   it('preserves the selected question grade timer on every Trivia round', () => {
     expect(secondsForQuestion({ difficulty: 'easy' })).toBe(20);

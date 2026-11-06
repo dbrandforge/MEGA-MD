@@ -10,15 +10,16 @@ const LEGACY_IMPORTED_KEY = 'triviaLegacyImportedV2';
 const RECORD_KEY = 'triviaRecords';
 const QUESTIONS_PER_MATCH = 10;
 const ANSWER_WINDOW_MS = 20000;
-const DIFFICULTY_SECONDS = { easy: 20, normal: 30, medium: 30, hard: 45, expert: 60 };
+export const TRIVIA_DIFFICULTY_SECONDS = Object.freeze({ easy: 20, normal: 30, medium: 30, hard: 45, expert: 60 });
+const MIXED_QUESTION_COUNTS = Object.freeze({ easy: 20, normal: 15, hard: 12, expert: 10 });
+const CATEGORY_QUESTION_COUNTS = Object.freeze({ easy: 15, normal: 13, hard: 10, expert: 8 });
 const CATEGORY_ALIASES = {
-  football: ['sports', 'football'], movies: ['nollywood', 'movies', 'film', 'hollywood', 'bollywood', 'animation', 'series'],
-  nollywood: ['nollywood'], hollywood: ['hollywood'], bollywood: ['bollywood'], animation: ['animation'], series: ['series'],
+  football: ['sports', 'football'], movies: ['nollywood', 'movies', 'film', 'hollywood', 'bollywood', 'animation', 'series', 'entertainment'],
   lifestyle: ['everyday', 'lifestyle'], technology: ['tech', 'technology'],
   nigeria: ['nigeria'], music: ['music'], geography: ['geography'],
   history: ['history'], culture: ['culture'], food: ['food'], business: ['business'],
   science: ['science'], gaming: ['gaming'], literature: ['literature'],
-  'current-affairs': ['current-affairs'], forge: ['forge'], forge: ['forge']
+  'current-affairs': ['current-affairs'], forge: ['forge']
 };
 const DIFFICULTIES = ['easy', 'normal', 'hard', 'expert'];
 const MATCH_EXPIRY_MS = 45 * 60 * 1000;
@@ -54,6 +55,8 @@ export { NIGERIA_TRIVIA, TRIVIA_CATEGORIES };
 
 const TRIVIA_COMMAND_ALIASES = Object.freeze({
   all: 'mixed', sports: 'football', film: 'movies',
+  nollywood: 'movies', hollywood: 'movies', bollywood: 'movies',
+  animation: 'movies', series: 'movies', entertainment: 'movies',
   everyday: 'lifestyle', tech: 'technology'
 });
 
@@ -77,8 +80,8 @@ function questionMatchesDifficulty(question, difficulty = null) {
 }
 export function secondsForQuestion(question, selectedDifficulty) {
   const selected = normalizeDifficulty(selectedDifficulty);
-  const grade = DIFFICULTY_SECONDS[selected] ? selected : normalizeDifficulty(question.difficulty);
-  return DIFFICULTY_SECONDS[grade] || 30;
+  const grade = TRIVIA_DIFFICULTY_SECONDS[selected] ? selected : normalizeDifficulty(question.difficulty);
+  return TRIVIA_DIFFICULTY_SECONDS[grade] || 30;
 }
 export function getAvailableTriviaQuestions(category = 'mixed', difficulty = null, usedIds = []) {
   const used = new Set(usedIds);
@@ -87,6 +90,12 @@ export function getAvailableTriviaQuestions(category = 'mixed', difficulty = nul
 }
 export function getTriviaQuestionCount(category = 'mixed', difficulty = null) {
   return getAvailableTriviaQuestions(category, difficulty).length;
+}
+export function getTriviaMatchQuestionCount(category = 'mixed', difficulty = null) {
+  const grade = normalizeDifficulty(difficulty);
+  if (!grade) return QUESTIONS_PER_MATCH;
+  const counts = category === 'mixed' ? MIXED_QUESTION_COUNTS : CATEGORY_QUESTION_COUNTS;
+  return counts[grade] || QUESTIONS_PER_MATCH;
 }
 
 async function importLegacyGame(chatId) {
@@ -389,11 +398,7 @@ export default {
         '*CATEGORIES*',
         '🎵 Music: .trivia music',
         '⚽ Football: .trivia football',
-        '🎬 Movies: .trivia movies',
-        '🎥 Nollywood: .trivia nollywood',
-        '🎞️ Hollywood: .trivia hollywood',
-        '🇮🇳 Bollywood: .trivia bollywood',
-        '🧩 Animation: .trivia animation · 📺 Series: .trivia series',
+        '🎬 Movies & Entertainment: .trivia movies',
         '🌿 Lifestyle: .trivia lifestyle',
         '🌍 Geography: .trivia geography · 📜 History: .trivia history',
         '🎭 Culture: .trivia culture · 🍲 Food: .trivia food',
@@ -458,7 +463,7 @@ export default {
       text: `⚠️ No questions are currently available for *${category} / ${difficulty || 'mixed'}*. Choose another category or grade. Questions will never be recycled within a match.`,
       ...channelInfo
     }, { quoted: message });
-    const totalRounds = Math.min(QUESTIONS_PER_MATCH, availableQuestions);
+    const totalRounds = Math.min(getTriviaMatchQuestionCount(category, difficulty), availableQuestions);
     game = {
       active: true, category, difficulty, round: 0, totalRounds,
       scores: {}, answers: {}, participants: {}, usedQuestions: [],
