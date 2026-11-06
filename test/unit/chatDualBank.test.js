@@ -59,7 +59,7 @@ describe('ChatDual expansion bank', () => {
     expect(legacyFragments.some(fragment => content.includes(fragment))).toBe(false);
   });
 
-  it('scores the response that shares the user's actual topic more highly', () => {
+  it("scores the response that shares the user's actual topic more highly", () => {
     const prompt = 'My partner and I need to discuss consent and boundaries before intimacy';
     const relevant = 'Talk openly about consent and boundaries before intimacy begins.';
     const unrelated = 'A healthy budget starts with tracking monthly expenses.';
