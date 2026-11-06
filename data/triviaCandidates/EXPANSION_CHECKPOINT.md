@@ -580,3 +580,8 @@ Ten more original Lifestyle Easy questions (`ls011`–`ls020`) cover digital sec
 ## Lifestyle Easy — third content batch
 
 Ten more original Lifestyle Easy questions (`ls021`–`ls030`) cover bank statements, invoices and receipts, debit versus credit cards, insurance premiums and deductibles, inflation, and rental terminology. Sources include the Central Bank of Nigeria, consumer-finance guidance, insurance regulators and government reference material. Source URLs for OTP, SIM and QR definitions in the first two batches were also tightened to direct reference pages. Lifestyle Easy now has 35 approved questions overall (5 existing + 30 new); 15 remain to reach 50.
+
+
+## Lifestyle Easy — fourth content batch
+
+Ten more original Lifestyle Easy questions (`ls031`–`ls040`) cover consumer refunds and exchanges, warranties, subscriptions and auto-renewal, multi-factor authentication, phishing, Airplane Mode, power banks and password managers. Each item carries a review date and an official government, consumer-protection, standards or cybersecurity source. Lifestyle Easy now has 45 approved questions overall (5 existing + 40 new); 5 remain to reach 50.
