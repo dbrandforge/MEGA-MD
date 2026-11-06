@@ -435,3 +435,8 @@ Ten original Football Expert questions (`fe001`–`fe010`) begin the fourth diff
 ## Football Expert — second content batch
 
 Ten more Football Expert questions (`fe011`–`fe020`) cover the early CAF Champions League, Enyimba’s consecutive continental titles and coaches, Abedi Pelé and George Weah’s award history, plus the official CAF Appeal Board ruling on the 2025 AFCON final. The latter is deliberately phrased around the final legal result, not the original on-field score. Each question carries a review date and official CAF source. Football Expert now has 22 approved questions overall (2 existing + 20 new); 28 remain to reach 50.
+
+
+## Football Expert — third content batch
+
+Ten more Football Expert questions (`fe021`–`fe030`) cover CAF Champions League records and UEFA all-time player, coach and club milestones, including Al Ahly’s 12 continental titles, Cristiano Ronaldo’s UCL records, Carlo Ancelotti’s coaching record, Seedorf’s three-club achievement and Francisco Gento’s eight finals. The 2025 AFCON title question is explicitly time-qualified because Senegal’s CAS appeal remains pending as of the review date. Each new question carries a review date and official CAF or UEFA source. Football Expert now has 32 approved questions overall (2 existing + 30 new); 18 remain to reach 50.
