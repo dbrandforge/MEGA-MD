@@ -480,3 +480,8 @@ Ten more original Movies Easy questions (`mv031`–`mv040`) add Nollywood, Holly
 ## Movies Easy — grade completed
 
 Four final questions (`mv041`–`mv044`) complete Movies Easy at 50 questions (6 existing + 44 new). The grade now spans Nollywood, Hollywood, Bollywood, animation and television series. Movies Normal, Hard and Expert remain at their existing counts and will be filled in order before moving to the next category.
+
+
+## Movies Normal — first content batch
+
+Ten original Movies Normal questions (`mn001`–`mn010`) begin the second difficulty grade. The batch covers The Dark Knight, Inception, The Hunger Games, The Lord of the Rings, Shrek, Cars, Spirited Away, Dangal and Sherlock. Each item carries a review date and an official studio, film archive, production or platform source. Movies Normal now has 17 approved questions overall (7 existing + 10 new); 33 remain to reach 50.
