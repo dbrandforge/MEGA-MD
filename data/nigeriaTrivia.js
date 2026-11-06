@@ -1,5 +1,6 @@
 import { ENTERTAINMENT_TRIVIA } from './entertainmentTrivia.js';
 import { HISTORY_TRIVIA } from './historyTrivia.js';
+import { FOOD_TRIVIA } from './foodTrivia.js';
 
 // Curated Nigeria-focused trivia. Keep answers factual, unambiguous and periodically reviewed.
 // "current" here means locally relatable culture and everyday knowledge; volatile office-holder/news
@@ -1501,6 +1502,7 @@ export const NIGERIA_TRIVIA = [
 // Append the separately maintained Entertainment specialist bank.
 NIGERIA_TRIVIA.push(...ENTERTAINMENT_TRIVIA);
 NIGERIA_TRIVIA.push(...HISTORY_TRIVIA);
+NIGERIA_TRIVIA.push(...FOOD_TRIVIA);
 
 export const TRIVIA_CATEGORIES = [
   'mixed','music','football','movies','lifestyle','geography','history','culture','food',
