@@ -4,7 +4,7 @@ Last verified: 2026-11-06
 Repository: `dbrandforge/MEGA-MD`
 Working branch: `geography-easy-batch-01` (stacked on PR #89's Lifestyle completion)
 Previous staged release: PR #88 merged to `main` (commit `5bfa6a15b0dcb822c2aa42760a104d3d85d84c3f`).
-Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current active block: Geography Hard is next; Geography Normal `gn001`–`gn039` is complete.
+Current completed block: Lifestyle Expert `le001`–`le048` (50 total with two retained legacy records), PR #89. Current active block: Geography Hard `gh001`–`gh010`; Geography Easy and Normal are complete.
 
 ## Locked expansion target
 
@@ -677,7 +677,12 @@ Ten additional original, source-linked questions (`gn021`–`gn030`) extend Geog
 
 ## Geography Normal — grade completed
 
-Thirty-nine original, source-linked questions (`gn001`–`gn039`) complete Geography Normal at **50/50**, including eleven retained existing questions. Topics span major rivers, canals, mountain ranges, deserts, straits, islands, coastlines, inland seas, historic cities and regional geography. Sources include Encyclopaedia Britannica and UNESCO. Across the 39 numbered Normal questions, correct-answer positions are balanced at A 1, B 13, C 13 and D 12; including the eleven retained existing answers, the full grade totals A 12, B 13, C 13 and D 12. Geography Hard is next at 1/50, with 49 additional questions needed.
+Thirty-nine original, source-linked questions (`gn001`–`gn039`) complete Geography Normal at **50/50**, including eleven retained existing questions. Topics span major rivers, canals, mountain ranges, deserts, straits, islands, coastlines, inland seas, historic cities and regional geography. Sources include Encyclopaedia Britannica and UNESCO. Across the 39 numbered Normal questions, correct-answer positions are balanced at A 1, B 13, C 13 and D 12; including the eleven retained existing answers, the full grade totals A 12, B 13, C 13 and D 12. Geography Hard now has 11/50 questions (one retained existing question plus ten new); 39 remain.
+
+
+## Geography Hard — first content batch
+
+Ten original, source-linked questions (`gh001`–`gh010`) begin Geography Hard. Topics include the Benguela and Humboldt currents, the Volga, Bosporus, Arabian Plate, Afar Triple Junction, Danube Delta, Pacific Ring of Fire, Bab-el-Mandeb and Bass Strait. Sources include Encyclopaedia Britannica, UNESCO and the U.S. Geological Survey. Geography Hard now has 11/50 questions; 39 remain.
 
 
 ## Sparse-array regression correction
