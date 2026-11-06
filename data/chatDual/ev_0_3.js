@@ -1,88 +1,88 @@
 /** Expansion volume 0, part 3. Legacy sex-advice inventory; 181 rows. Rewrite pending. */
 export default {"sexAdvice":[
   {
-    "a": "If someone goes quiet or freezes during intimacy, stop and check in. Silence is not a yes. Give them room to answer without pressure.",
-    "b": "You do not need to wait for a safeword or a dramatic reaction. A pause, a change in expression, or uncertainty is enough reason to stop and ask what they need."
+    "a": "If you notice sores, unusual discharge, burning, or a new rash, pause sexual contact and arrange a clinical assessment.",
+    "b": "Avoid guessing the cause or using leftover antibiotics. A clinician can examine the symptoms and recommend the right tests and treatment."
   },
   {
-    "a": "Consent to kissing does not automatically include touching or sex. Ask before moving beyond what was agreed.",
-    "b": "Think of consent as specific, not transferable. Enjoying one kind of affection does not tell you whether someone wants the next step."
+    "a": "After a possible HIV exposure, seek urgent medical advice about PEP. It must be started as soon as possible and no later than 72 hours after exposure.",
+    "b": "Do not wait for symptoms or a test result before asking about PEP. A clinic can assess the exposure and explain whether treatment is indicated."
   },
   {
-    "a": "A person can change their mind at any point. If they say stop, stop immediately without arguing or asking them to justify it.",
-    "b": "A yes is not a permanent contract. Make it easy for your partner to pause or withdraw, and do not punish them emotionally for doing so."
+    "a": "PrEP can substantially reduce the risk of acquiring HIV when taken as prescribed, but it does not prevent other STIs.",
+    "b": "Ask a qualified provider whether PrEP fits your circumstances, what testing is required, and which dosing schedule is appropriate."
   },
   {
-    "a": "If someone is asleep or unconscious, they cannot give present consent. Wait until they are awake, alert, and able to choose freely.",
-    "b": "Prior conversations or a relationship do not create permission while someone is asleep. Keep them safe and discuss boundaries when both are fully conscious."
+    "a": "Vaccines can prevent some infections relevant to sexual health, including HPV and hepatitis B. Ask a healthcare professional which vaccines you need.",
+    "b": "Vaccination works best as prevention before exposure. Check your records and discuss catch-up doses with a clinician if you are unsure."
   },
   {
-    "a": "Alcohol or drugs can affect someone's ability to consent. If either person is significantly impaired, postpone sexual activity.",
-    "b": "When judgment or communication is affected, do not try to interpret enthusiasm as permission. Choose a safer time when everyone can make a clear decision."
+    "a": "If you have a new sexual partner, agree on protection and testing before sex rather than relying on assumptions about either person's history.",
+    "b": "Make the conversation mutual and matter-of-fact. You can both share recent test dates, discuss exclusivity, and decide what precautions feel right."
   },
   {
-    "a": "Pressure can make agreement feel compulsory. If your partner says yes only after repeated asking, guilt, threats, or bargaining, step back.",
-    "b": "A freely given yes should not have to be extracted. Ask once, accept the answer, and make clear that no will not cost them affection, money, housing, or safety."
+    "a": "Being in a committed relationship does not remove the need to discuss STI testing, contraception, or changing boundaries.",
+    "b": "Trust is strengthened by clear agreements. Talk about what exclusivity means to each of you and revisit the agreement if circumstances change."
   },
   {
-    "a": "Before trying something new, talk about what interests each of you, what is off-limits, and how either person can pause.",
-    "b": "A useful conversation covers practical details too: protection, privacy, comfort, safer words or signals, and what you will do if someone wants to stop."
+    "a": "If you and your partner have different levels of desire, neither person is automatically at fault. Talk about the difference without pressure.",
+    "b": "Look for patterns such as stress, medication, pain, sleep, or relationship tension. A couples therapist or clinician may help if the issue is persistent."
   },
   {
-    "a": "A safeword is useful in activities where ordinary words may be unclear. Agree on a simple stop word and a separate pause signal beforehand.",
-    "b": "Do not rely on a safeword alone. Check in, watch for distress, and agree that any person can stop the activity for any reason."
+    "a": "A low sex drive can have many causes, including stress, depression, hormonal changes, illness, and medication effects.",
+    "b": "If the change concerns you, discuss it with a healthcare professional. Do not stop prescribed medication or buy hormones without medical advice."
   },
   {
-    "a": "If speaking may be difficult, agree on a clear nonverbal signal before starting. Make sure both people can use it easily.",
-    "b": "Choose a signal that is unmistakable, such as dropping an object or tapping a partner, and agree that it means stop immediately."
+    "a": "An erection that does not happen every time is common and does not mean someone is unattracted to their partner.",
+    "b": "Reduce performance pressure and focus on comfort and communication. If the problem is persistent or sudden, a clinician can check for underlying causes."
   },
   {
-    "a": "If a boundary is crossed, stop the activity and acknowledge what happened. Do not minimise it or blame the person who raised it.",
-    "b": "Ask what they need now, listen without defensiveness, and respect any request for space. Rebuilding trust requires changed behaviour, not just an apology."
+    "a": "Difficulty reaching orgasm is not proof that a partner has failed. Bodies respond differently, and pressure often makes pleasure harder.",
+    "b": "Talk about what feels comfortable and enjoyable without treating orgasm as a required outcome. A clinician can help if the change is new or distressing."
   },
   {
-    "a": "Never share an intimate photo or video without the creator's explicit permission. Consent to receive it is not consent to forward it.",
-    "b": "Keep intimate material private. Do not show it to friends, upload it, use it as leverage, or keep copies after the person asks you to delete them."
+    "a": "Vaginal dryness can happen for several reasons, including hormonal changes, stress, breastfeeding, or some medicines. Lubricant may help with friction.",
+    "b": "If dryness is persistent, painful, or accompanied by bleeding or irritation, seek clinical advice rather than assuming it is normal for you."
   },
   {
-    "a": "Before making an intimate recording, discuss whether both people genuinely want it and agree on storage, access, and deletion.",
-    "b": "Either person can decline recording without affecting the relationship. If you do record, protect devices and accounts and never share the file without separate permission."
+    "a": "Bleeding after sex should not be ignored, especially if it happens repeatedly, is heavy, or comes with pain.",
+    "b": "Arrange a medical assessment to identify the cause. Seek urgent care for heavy bleeding, severe pain, dizziness, or fainting."
   },
   {
-    "a": "If someone threatens to publish intimate images, preserve evidence of the threat and seek help from a trusted person or relevant support service.",
-    "b": "Do not negotiate by sending more images or money. Secure your accounts, document what happened, and consider reporting the threat to the platform and local authorities."
+    "a": "If you suspect a yeast infection or another genital infection, get an accurate diagnosis before choosing treatment.",
+    "b": "Symptoms can overlap across different conditions. A pharmacist or clinician can advise whether testing or a prescription is needed."
   },
   {
-    "a": "A condom should be put on before genital contact and used according to its instructions. Use a new one for each act and when switching between anal and vaginal sex.",
-    "b": "Check the expiry date and packaging, pinch the tip, and use compatible lubricant. If it breaks or slips, stop and discuss emergency contraception or STI advice promptly."
+    "a": "Do not douche or use perfumed products inside the vagina. They can irritate tissue and disrupt its normal balance.",
+    "b": "Wash the external genital area gently with water or a mild unscented cleanser. Persistent odour, itching, or discharge warrants medical advice."
   },
   {
-    "a": "Oil-based products can weaken latex condoms. Choose a water-based or silicone-based lubricant when using latex.",
-    "b": "Lubricant can reduce friction and lower the chance of condom breakage. Check the product label and stop if it causes irritation."
+    "a": "Genital hygiene does not require harsh scrubbing, scented washes, or antiseptics. Gentle external washing is usually enough.",
+    "b": "If irritation develops, stop the new product and seek advice if symptoms persist. The vagina is self-cleaning; internal washing is unnecessary."
   },
   {
-    "a": "Contraception choices depend on health, preferences, access, and how reliably a method is used. A qualified clinician or pharmacist can help compare options.",
-    "b": "No method suits everyone. Discuss effectiveness, side effects, STI protection, and what to do if a dose is missed before settling on a plan."
+    "a": "If a condom breaks or slips, stop and discuss the next steps promptly, including emergency contraception and STI assessment where relevant.",
+    "b": "Do not assume the risk is zero because it happened briefly. A pharmacist or clinic can help you assess timing and available options."
   },
   {
-    "a": "Emergency contraception is time-sensitive. Contact a pharmacist or clinic as soon as possible after unprotected sex or contraceptive failure.",
-    "b": "Different emergency options have different time windows and suitability. A healthcare professional can help you choose promptly; do not wait for a pregnancy test first."
+    "a": "Withdrawal is less reliable than many contraceptive methods and offers no protection against STIs.",
+    "b": "If avoiding pregnancy is important, consider a method with a lower typical-use failure rate and discuss options with a qualified provider."
   },
   {
-    "a": "A pregnancy test is most reliable when used according to its instructions, often from the first day of a missed period or at the recommended interval after sex.",
-    "b": "If the result is negative but your period still does not come, repeat the test after a few days or speak with a clinician. Seek urgent care for severe pain or fainting."
+    "a": "Cycle tracking can help someone understand their menstrual pattern, but it is not a guarantee against pregnancy.",
+    "b": "Ovulation timing can shift, and sperm can survive for several days. If pregnancy prevention is essential, discuss a more reliable contraceptive method."
   },
   {
-    "a": "STI testing should reflect the type of contact and the body sites exposed. Tell the clinic what happened so they can recommend appropriate tests.",
-    "b": "A test taken too soon may miss an infection. Ask the clinic about the right testing window and whether follow-up testing is needed."
+    "a": "A missed contraceptive pill can change protection depending on the pill type and how many doses were missed. Check the leaflet or ask a pharmacist promptly.",
+    "b": "Use the product-specific missed-pill instructions rather than doubling doses by guesswork. You may need backup contraception or emergency contraception."
   },
   {
-    "a": "Many STIs cause no obvious symptoms, so feeling well does not prove there is no infection. Testing is the reliable way to know.",
-    "b": "If you or a partner tests positive, follow clinical advice, complete treatment where prescribed, and ask when it is safe to resume sex."
+    "a": "If you are considering stopping contraception, plan for what will replace it if you do not want to become pregnant.",
+    "b": "Fertility can return quickly after some methods are stopped. A clinician or pharmacist can explain the transition and any expected changes."
   },
   {
-    "a": "Pain during sex is a reason to pause, not something you must tolerate. Stop, communicate, and consider what might be causing it.",
-    "b": "Persistent or recurring pain deserves medical assessment. A clinician can check for infection, irritation, pelvic-floor issues, hormonal factors, or other causes."
+    "a": "Sexual health appointments are routine healthcare. You can ask about confidentiality, tests, and what information will be shared before the consultation.",
+    "b": "Write down your questions and symptoms beforehand. You deserve respectful care, and you can ask the clinician to explain each step."
   },
   {
     "a": "Permission to save an intimate image does not permit any new activity begins. privacy.",
