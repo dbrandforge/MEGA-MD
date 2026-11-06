@@ -445,3 +445,8 @@ Ten more Football Expert questions (`fe021`–`fe030`) cover CAF Champions Leagu
 ## Football Expert — fourth content batch
 
 Ten more Football Expert questions (`fe031`–`fe040`) cover the 2025/26 CAF Champions League and UEFA Champions League finals: Mamelodi Sundowns’ second continental title, AS FAR, the aggregate result, Teboho Mokoena and Ronwen Williams; then PSG’s title defence against Arsenal, the shoot-out, Kai Havertz and Vitinha’s Player of the Match award. Each item carries a review date and official CAF or UEFA source. Football Expert now has 42 approved questions overall (2 existing + 40 new); 8 remain to reach 50.
+
+
+## Football Expert — grade completed
+
+Eight final questions (`fe041`–`fe048`) complete Football Expert at 50 questions (2 existing + 48 new). The grade closes with specialist AFCON history: the inaugural 1957 final, Ethiopia’s 1962 title, and Morocco’s unusual 1976 final-round format. Football now has 200 approved questions: 50 each across Easy, Normal, Hard and Expert. The next step is to audit the complete category and prepare its release gate.
