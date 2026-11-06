@@ -545,3 +545,8 @@ Ten more original Movies Expert questions (`me011`–`me020`) cover French New W
 ## Movies subcategory metadata correction
 
 International productions are tagged as the generic `movies` subcategory rather than `hollywood` or `bollywood`: Parasite, Crouching Tiger, Hidden Dragon, Oldboy, The Handmaiden, Anatomy of a Fall, Slumdog Millionaire, The 400 Blows, Pather Panchali, Seven Samurai and Breathless. This preserves the aggregate Movies pool while keeping individual regional subcategory modes semantically accurate.
+
+
+## Movies Expert — third content batch
+
+Ten more original Movies Expert questions (`me021`–`me030`) focus on Cannes Palme d’Or history from 1980 through 2016, including Pulp Fiction, Taste of Cherry, Kagemusha, Dancer in the Dark, Uncle Boonmee, The Tree of Life, Amour, Winter Sleep, Dheepan and I, Daniel Blake. Each item carries a review date and official Festival de Cannes source. Movies Expert now has 35 approved questions overall (5 existing + 30 new); 15 remain to reach 50.
