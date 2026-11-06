@@ -103,7 +103,7 @@ export const TECHNOLOGY_TRIVIA = [
     reviewedAt: '2026-11-06',
     source: 'https://www.cisa.gov/secure-our-world/use-strong-passwords'
   },
-  { id: 'tx011', category: 'tech', difficulty: 'easy', question: "What does CPU stand for?", options: ["Central Processing Unit","Computer Power Utility","Core Program Upload","Central Peripheral Unit"], answer: 0, reviewedAt: '2026-11-06', source: 'https://www.britannica.com/technology/central-processing-unit' },
+  { id: 'tx011', category: 'tech', difficulty: 'easy', question: "Which part of a computer carries out program instructions?", options: ["Central Processing Unit","Computer Power Utility","Core Program Upload","Central Peripheral Unit"], answer: 0, reviewedAt: '2026-11-06', source: 'https://www.britannica.com/technology/central-processing-unit' },
   { id: 'tx012', category: 'tech', difficulty: 'easy', question: "Which component temporarily stores data that a computer is actively using?", options: ["Hard disk","RAM","Power supply","Monitor"], answer: 1, reviewedAt: '2026-11-06', source: 'https://www.britannica.com/technology/RAM-computing' },
   { id: 'tx013', category: 'tech', difficulty: 'easy', question: "What is the main role of a computer keyboard?", options: ["Display images","Print documents","Enter text and commands","Connect to Wi-Fi"], answer: 2, reviewedAt: '2026-11-06', source: 'https://www.britannica.com/technology/computer-keyboard' },
   { id: 'tx014', category: 'tech', difficulty: 'easy', question: "Which device produces a paper copy of a digital document?", options: ["Scanner","Router","Microphone","Printer"], answer: 3, reviewedAt: '2026-11-06', source: 'https://www.britannica.com/technology/printer' },
