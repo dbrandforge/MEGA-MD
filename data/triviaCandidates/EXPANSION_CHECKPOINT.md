@@ -510,3 +510,8 @@ Three final questions (`mn041`–`mn043`) complete Movies Normal at 50 questions
 ## Movies Hard — first content batch
 
 Ten original Movies Hard questions (`mh001`–`mh010`) begin the third difficulty grade. Topics include Park Chan-wook’s Oldboy, Scorsese’s The Departed, the first Academy Award for Best Animated Feature, Spirited Away’s Oscar win, the two actors who played Dumbledore, and key Game of Thrones casting. Each item carries a review date and official BFI, AFI, Academy, Wizarding World or HBO source. Movies Hard now has 15 approved questions overall (5 existing + 10 new); 35 remain to reach 50.
+
+
+## Movies Hard — second content batch
+
+Ten more original Movies Hard questions (`mh011`–`mh020`) focus on Academy Award history, major directors and international cinema: Moonlight, The Revenant, La La Land, The Shape of Water, The Handmaiden, Everything Everywhere All at Once, Oppenheimer and Anatomy of a Fall. Each question carries a review date and official Academy, BFI or Cannes source. Movies Hard now has 25 approved questions overall (5 existing + 20 new); 25 remain to reach 50.
