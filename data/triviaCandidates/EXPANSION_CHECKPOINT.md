@@ -702,7 +702,12 @@ Forty-nine original, source-linked questions (`gh001`–`gh049`) complete Geogra
 
 ## Geography Expert — first content batch
 
-Ten original, source-linked advanced questions (`gx001`–`gx010`) begin Geography Expert. Topics include Hadley circulation, Coriolis deflection, thermohaline circulation, geostrophic balance, El Niño, post-glacial isostatic rebound, karst processes, drainage divides, transform plate boundaries and rain shadows. Sources include NOAA, USGS, the U.S. National Park Service and Encyclopaedia Britannica. Geography Expert now has 11/50 questions; 39 remain.
+Ten original, source-linked advanced questions (`gx001`–`gx010`) begin Geography Expert. Topics include Hadley circulation, Coriolis deflection, thermohaline circulation, geostrophic balance, El Niño, post-glacial isostatic rebound, karst processes, drainage divides, transform plate boundaries and rain shadows. Sources include NOAA, USGS, the U.S. National Park Service and Encyclopaedia Britannica. Geography Expert now has 21/50 questions; 29 remain.
+
+
+## Geography Expert — second content batch
+
+Ten additional original, source-linked advanced questions (`gx011`–`gx020`) extend Geography Expert. Topics include coastal upwelling and Ekman transport, thermoclines, isohyets, hypsometric curves, monsoon circulation, aridity indices, western boundary currents, periglacial processes, river base level and the Mercator projection. Sources include NOAA, UNEP and Encyclopaedia Britannica. Geography Expert now has 21/50 questions; 29 remain.
 
 
 ## Sparse-array regression correction
