@@ -1,8 +1,8 @@
 /** Expansion volume 0, part 3. Legacy sex-advice inventory; 181 rows. Rewrite pending. */
 export default {"sexAdvice":[
   {
-    "a": "If you are recovering from genital surgery or another procedure, follow your surgeon's instructions about when sexual activity can resume.",
-    "b": "Healing time varies by procedure and person. Ask about warning signs, wound care, and whether any activities should be avoided during recovery."
+    "a": "If you are supporting a partner through a sexual-health concern, ask what kind of help they want instead of taking over the decision.",
+    "b": "Offer to help find a clinic, arrange transport, or sit with them during a call if they want. Respect their privacy and let them remain in control of their care."
   },
   {
     "a": "After an injury, do not resume sexual activity until pain and healing have been assessed when the injury is significant or symptoms persist.",
