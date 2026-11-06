@@ -2,11 +2,10 @@ import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
 import isAdmin from '../lib/isAdmin.js';
-import { TRIVIA_DIFFICULTY_SECONDS } from './trivia.js';
+import { TRIVIA_DIFFICULTY_SECONDS, getTriviaMatchQuestionCount } from './trivia.js';
 
 const STATE_KEY = 'mathGame';
 const RECORD_KEY = 'mathRecords';
-const QUESTIONS_PER_MATCH = 10;
 const MATCH_EXPIRY_MS = 45 * 60 * 1000;
 const timers = new Map();
 const chatLocks = new Map();
@@ -37,6 +36,12 @@ export const MATH_MODES = {
 const pick = values => values[Math.floor(Math.random() * values.length)];
 const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const mention = jid => '@' + String(jid || '').split('@')[0].split(':')[0];
+
+export function getMathMatchQuestionCount(mode = 'normal') {
+  const difficulty = mode === 'noob' || mode === 'easy' ? 'easy'
+    : mode === 'normal' ? 'normal' : mode === 'hard' ? 'hard' : 'expert';
+  return getTriviaMatchQuestionCount('maths', difficulty);
+}
 
 export function generateMathQuestion(mode = 'normal') {
   const settings = MATH_MODES[mode] || MATH_MODES.normal;
@@ -266,13 +271,14 @@ export default {
     if (!Object.hasOwn(MATH_MODES, mode)) {
       return sock.sendMessage(chatId, { text: `🧮 *MATHS ARENA DIFFICULTIES*\n\n${Object.keys(MATH_MODES).join(' · ')}\n\nExample: ${config.prefix}math normal\n10 questions · first correct answer wins each round · speed bonus · group leaderboard.`, ...channelInfo }, { quoted: message });
     }
+    const totalRounds = getMathMatchQuestionCount(mode);
     game = {
-      active: true, mode, round: 0, totalRounds: QUESTIONS_PER_MATCH,
+      active: true, mode, round: 0, totalRounds,
       scores: {}, attemptedBy: {}, participants: {}, startedBy: senderId,
       startedAt: Date.now(), matchExpiresAt: Date.now() + MATCH_EXPIRY_MS
     };
     await saveGame(chatId, game);
-    await sock.sendMessage(chatId, { text: `🎮 *MATHS ARENA MATCH STARTED*\n\nDifficulty: *${mode.toUpperCase()}*\nQuestions: *${QUESTIONS_PER_MATCH}*\nPlayers: everyone in this group can join.\n\nFirst correct answer wins each round. Reply directly to each question.\n🏆 ${config.prefix}math score · ${config.prefix}math status · ${config.prefix}math stop`, ...channelInfo }, { quoted: message });
+    await sock.sendMessage(chatId, { text: `🎮 *MATHS ARENA MATCH STARTED*\n\nDifficulty: *${mode.toUpperCase()}*\nQuestions: *${totalRounds}*\nPlayers: everyone in this group can join.\n\nFirst correct answer wins each round. Reply directly to each question.\n🏆 ${config.prefix}math score · ${config.prefix}math status · ${config.prefix}math stop`, ...channelInfo }, { quoted: message });
     await postNextQuestion(sock, chatId, game);
   }
 };
