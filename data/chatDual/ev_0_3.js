@@ -1,88 +1,88 @@
 /** Expansion volume 0, part 3. Legacy sex-advice inventory; 181 rows. Rewrite pending. */
 export default {"sexAdvice":[
   {
-    "a": "A clear yes is required before any new activity begins. consent.",
-    "b": "Pause when the answer is uncertain about the exact recipient and platform. consent."
+    "a": "If someone goes quiet or freezes during intimacy, stop and check in. Silence is not a yes. Give them room to answer without pressure.",
+    "b": "You do not need to wait for a safeword or a dramatic reaction. A pause, a change in expression, or uncertainty is enough reason to stop and ask what they need."
   },
   {
-    "a": "A clear yes is required before the activity or partner changes. consent.",
-    "b": "Pause when the answer is uncertain about every new use or audience. consent."
+    "a": "Consent to kissing does not automatically include touching or sex. Ask before moving beyond what was agreed.",
+    "b": "Think of consent as specific, not transferable. Enjoying one kind of affection does not tell you whether someone wants the next step."
   },
   {
-    "a": "A clear yes is required before someone withdraws permission. consent.",
-    "b": "Pause when the answer is uncertain about any recording or storage plan. consent."
+    "a": "A person can change their mind at any point. If they say stop, stop immediately without arguing or asking them to justify it.",
+    "b": "A yes is not a permanent contract. Make it easy for your partner to pause or withdraw, and do not punish them emotionally for doing so."
   },
   {
-    "a": "A clear yes is required before one person feels pressured. consent.",
-    "b": "Pause when the answer is uncertain about a change in privacy expectations. consent."
+    "a": "If someone is asleep or unconscious, they cannot give present consent. Wait until they are awake, alert, and able to choose freely.",
+    "b": "Prior conversations or a relationship do not create permission while someone is asleep. Keep them safe and discuss boundaries when both are fully conscious."
   },
   {
-    "a": "A clear yes is required before someone is impaired or asleep. consent.",
-    "b": "Pause when the answer is uncertain about a request to delete shared material. consent."
+    "a": "Alcohol or drugs can affect someone's ability to consent. If either person is significantly impaired, postpone sexual activity.",
+    "b": "When judgment or communication is affected, do not try to interpret enthusiasm as permission. Choose a safer time when everyone can make a clear decision."
   },
   {
-    "a": "A clear yes is required before the agreed plan no longer feels safe. consent.",
-    "b": "Pause when the answer is uncertain about a new partner joining the situation. consent."
+    "a": "Pressure can make agreement feel compulsory. If your partner says yes only after repeated asking, guilt, threats, or bargaining, step back.",
+    "b": "A freely given yes should not have to be extracted. Ask once, accept the answer, and make clear that no will not cost them affection, money, housing, or safety."
   },
   {
-    "a": "A clear yes is required before either person asks to stop. consent.",
-    "b": "Pause when the answer is uncertain about content being moved to another service. consent."
+    "a": "Before trying something new, talk about what interests each of you, what is off-limits, and how either person can pause.",
+    "b": "A useful conversation covers practical details too: protection, privacy, comfort, safer words or signals, and what you will do if someone wants to stop."
   },
   {
-    "a": "A stated limit must be respected when any new activity begins. boundaries.",
-    "b": "Revisit the agreement if circumstances change around the exact recipient and platform. boundaries."
+    "a": "A safeword is useful in activities where ordinary words may be unclear. Agree on a simple stop word and a separate pause signal beforehand.",
+    "b": "Do not rely on a safeword alone. Check in, watch for distress, and agree that any person can stop the activity for any reason."
   },
   {
-    "a": "A stated limit must be respected when the activity or partner changes. boundaries.",
-    "b": "Revisit the agreement if circumstances change around every new use or audience. boundaries."
+    "a": "If speaking may be difficult, agree on a clear nonverbal signal before starting. Make sure both people can use it easily.",
+    "b": "Choose a signal that is unmistakable, such as dropping an object or tapping a partner, and agree that it means stop immediately."
   },
   {
-    "a": "A stated limit must be respected when someone withdraws permission. boundaries.",
-    "b": "Revisit the agreement if circumstances change around any recording or storage plan. boundaries."
+    "a": "If a boundary is crossed, stop the activity and acknowledge what happened. Do not minimise it or blame the person who raised it.",
+    "b": "Ask what they need now, listen without defensiveness, and respect any request for space. Rebuilding trust requires changed behaviour, not just an apology."
   },
   {
-    "a": "A stated limit must be respected when one person feels pressured. boundaries.",
-    "b": "Revisit the agreement if circumstances change around a change in privacy expectations. boundaries."
+    "a": "Never share an intimate photo or video without the creator's explicit permission. Consent to receive it is not consent to forward it.",
+    "b": "Keep intimate material private. Do not show it to friends, upload it, use it as leverage, or keep copies after the person asks you to delete them."
   },
   {
-    "a": "A stated limit must be respected when someone is impaired or asleep. boundaries.",
-    "b": "Revisit the agreement if circumstances change around a request to delete shared material. boundaries."
+    "a": "Before making an intimate recording, discuss whether both people genuinely want it and agree on storage, access, and deletion.",
+    "b": "Either person can decline recording without affecting the relationship. If you do record, protect devices and accounts and never share the file without separate permission."
   },
   {
-    "a": "A stated limit must be respected when the agreed plan no longer feels safe. boundaries.",
-    "b": "Revisit the agreement if circumstances change around a new partner joining the situation. boundaries."
+    "a": "If someone threatens to publish intimate images, preserve evidence of the threat and seek help from a trusted person or relevant support service.",
+    "b": "Do not negotiate by sending more images or money. Secure your accounts, document what happened, and consider reporting the threat to the platform and local authorities."
   },
   {
-    "a": "A stated limit must be respected when either person asks to stop. boundaries.",
-    "b": "Revisit the agreement if circumstances change around content being moved to another service. boundaries."
+    "a": "A condom should be put on before genital contact and used according to its instructions. Use a new one for each act and when switching between anal and vaginal sex.",
+    "b": "Check the expiry date and packaging, pinch the tip, and use compatible lubricant. If it breaks or slips, stop and discuss emergency contraception or STI advice promptly."
   },
   {
-    "a": "A safeword should be agreed before any new activity begins. safewords.",
-    "b": "Use a nonverbal stop cue when discussing the exact recipient and platform. safewords."
+    "a": "Oil-based products can weaken latex condoms. Choose a water-based or silicone-based lubricant when using latex.",
+    "b": "Lubricant can reduce friction and lower the chance of condom breakage. Check the product label and stop if it causes irritation."
   },
   {
-    "a": "A safeword should be agreed before the activity or partner changes. safewords.",
-    "b": "Use a nonverbal stop cue when discussing every new use or audience. safewords."
+    "a": "Contraception choices depend on health, preferences, access, and how reliably a method is used. A qualified clinician or pharmacist can help compare options.",
+    "b": "No method suits everyone. Discuss effectiveness, side effects, STI protection, and what to do if a dose is missed before settling on a plan."
   },
   {
-    "a": "A safeword should be agreed before someone withdraws permission. safewords.",
-    "b": "Use a nonverbal stop cue when discussing any recording or storage plan. safewords."
+    "a": "Emergency contraception is time-sensitive. Contact a pharmacist or clinic as soon as possible after unprotected sex or contraceptive failure.",
+    "b": "Different emergency options have different time windows and suitability. A healthcare professional can help you choose promptly; do not wait for a pregnancy test first."
   },
   {
-    "a": "A safeword should be agreed before one person feels pressured. safewords.",
-    "b": "Use a nonverbal stop cue when discussing a change in privacy expectations. safewords."
+    "a": "A pregnancy test is most reliable when used according to its instructions, often from the first day of a missed period or at the recommended interval after sex.",
+    "b": "If the result is negative but your period still does not come, repeat the test after a few days or speak with a clinician. Seek urgent care for severe pain or fainting."
   },
   {
-    "a": "A safeword should be agreed before someone is impaired or asleep. safewords.",
-    "b": "Use a nonverbal stop cue when discussing a request to delete shared material. safewords."
+    "a": "STI testing should reflect the type of contact and the body sites exposed. Tell the clinic what happened so they can recommend appropriate tests.",
+    "b": "A test taken too soon may miss an infection. Ask the clinic about the right testing window and whether follow-up testing is needed."
   },
   {
-    "a": "A safeword should be agreed before the agreed plan no longer feels safe. safewords.",
-    "b": "Use a nonverbal stop cue when discussing a new partner joining the situation. safewords."
+    "a": "Many STIs cause no obvious symptoms, so feeling well does not prove there is no infection. Testing is the reliable way to know.",
+    "b": "If you or a partner tests positive, follow clinical advice, complete treatment where prescribed, and ask when it is safe to resume sex."
   },
   {
-    "a": "A safeword should be agreed before either person asks to stop. safewords.",
-    "b": "Use a nonverbal stop cue when discussing content being moved to another service. safewords."
+    "a": "Pain during sex is a reason to pause, not something you must tolerate. Stop, communicate, and consider what might be causing it.",
+    "b": "Persistent or recurring pain deserves medical assessment. A clinician can check for infection, irritation, pelvic-floor issues, hormonal factors, or other causes."
   },
   {
     "a": "Permission to save an intimate image does not permit any new activity begins. privacy.",
