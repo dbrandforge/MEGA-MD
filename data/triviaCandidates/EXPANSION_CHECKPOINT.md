@@ -350,3 +350,288 @@ Forty-eight new source-linked Music Hard questions (mx091–mx138) completed the
 ## Seventeenth approved content batch — Music Expert completion
 
 Forty-eight new expert-level Music questions (mx139–mx186) completed the Expert grade on 2026-11-05. The material covers Miles Davis’s “Kind of Blue,” Pink Floyd’s “The Dark Side of the Moon,” Stravinsky’s “The Rite of Spring,” John Coltrane’s “A Love Supreme,” and Queen’s “A Night at the Opera” / “Bohemian Rhapsody,” with artist, studio, Recording Academy, Library of Congress, and specialist discography references. A duplicate-concept review replaced a repeated Queen production fact with the single’s B-side detail. The Music category now has **200 questions: 50 Easy, 50 Normal, 50 Hard, 50 Expert**. The regression suite now asserts minimum coverage of 50 for every Music difficulty. A final bank check reports 200 unique IDs and 200 unique normalized question stems. The latest CI run for the final Expert/test commit is queued; verify it before marking this batch fully validated. Next step is a full Music editorial/source audit, then update PR #87 and run the release consolidation and deployment gate. Do not merge/deploy until all required release checks pass.
+
+
+## Football Easy — first content batch
+
+Ten original, source-linked Football Easy questions (`ft001`–`ft010`) begin the next category in the approved sequence. Topics cover official ball specifications, goal and penalty-area measurements, throw-in and corner-kick scoring rules, offside exceptions, assistant referees and referee authority. Sources are the International Football Association Board (IFAB) Laws of the Game. Football now has 24 approved questions overall: Easy 14, Normal 6, Hard 2 and Expert 2. The Easy block has 36 questions remaining before Football Normal begins. All ten additions carry a review date and official IFAB source URL.
+
+
+## Football Easy — second content batch
+
+Ten additional original Football Easy questions (`ft011`–`ft020`) extend the current grade block. Topics cover team player limits, minimum players, match and half-time duration, goal validity, ball in/out of play, kick-off restarts, throw-in awards, goalkeeper handling area and disciplinary cards. Each item carries a review date and an official IFAB Laws of the Game source. Football now has 34 approved questions overall: Easy 24, Normal 6, Hard 2 and Expert 2. The Easy block has 26 questions remaining before Football Normal begins.
+
+
+## Football Easy — third content batch
+
+Ten more original, source-linked Football Easy questions (`ft021`–`ft030`) cover offside involvement, direct and indirect free kicks, corner and goal-kick awards, penalty-kick location, and kick-off positioning and procedure. Each question includes a review date and an official IFAB Laws of the Game source. Football now has 44 approved questions overall: Easy 34, Normal 6, Hard 2 and Expert 2. The Easy block has 16 questions remaining before Football Normal begins.
+
+
+## Football Easy — fourth content batch
+
+Ten additional original Football Easy questions (`ft031`–`ft040`) cover the field shape and dimensions, centre-circle and corner-arc measurements, goal-area and penalty-area depth, corner-flag height and direct scoring from a goal kick. Each item carries a review date and official IFAB Laws of the Game source. Football now has 54 approved questions overall: Easy 44, Normal 6, Hard 2 and Expert 2. The Easy block has 6 questions remaining before Football Normal begins.
+
+
+## Football Easy — grade completed
+
+Six final questions (`ft041`–`ft046`) complete the Easy grade at 50 questions. The earlier `ft011` wording was also refined to avoid duplicating an existing Nigeria football question; it now tests recognition of the halfway line. Final Football coverage is Easy 50, Normal 6, Hard 2 and Expert 2 (60 approved Football questions total). The next step in the locked sequence is Football Normal, building from 6 to 50 before moving to Hard.
+
+
+## Football Normal — first content batch
+
+Ten original, source-linked Football Normal questions (`fn001`–`fn010`) begin the second difficulty grade. Coverage includes FIFA World Cup records, AFCON history, UEFA club honours, African World Cup milestones, the 2010 final, the inaugural Women’s World Cup and current IFAB time-wasting procedures. Each item carries a review date and an official FIFA, CAF, UEFA or IFAB source. Football Normal now has 16 approved questions overall (6 existing + 10 new); 34 remain to reach 50.
+
+
+## Football Normal — second content batch
+
+Ten more original Football Normal questions (`fn011`–`fn020`) add Nigerian AFCON history, the 2014 FIFA World Cup, UEFA EURO 2016 and Arsenal’s unbeaten 2003–04 Premier League campaign. Sources are official CAF, FIFA, UEFA and Premier League publications. Football Normal now has 26 approved questions overall (6 existing + 20 new); 24 remain to reach 50.
+
+
+## Football Normal — third content batch
+
+Ten more original Football Normal questions (`fn021`–`fn030`) deepen the Nigerian football history component: Nigeria’s first AFCON title, the 1994 final and Emmanuel Amunike’s brace, the Super Eagles’ first World Cup goal and debut win, Stephen Keshi’s 2013 AFCON title, and the 2023 AFCON final and awards. Each entry carries a review date and official CAF or FIFA source. Football Normal now has 36 approved questions overall (6 existing + 30 new); 14 remain to reach 50.
+
+
+## Football Normal — fourth content batch
+
+Ten more original Football Normal questions (`fn031`–`fn040`) cover African World Cup milestones, Morocco’s 2022 run, Senegal’s first AFCON title and the 2005 UEFA Champions League final. Each question carries a review date and official FIFA, CAF or UEFA source. Football Normal now has 46 approved questions overall (6 existing + 40 new); 4 remain to reach 50.
+
+
+## Football Normal — grade completed
+
+Four final questions (`fn041`–`fn044`) complete Football Normal at 50 questions (6 existing + 44 new). The grade now spans international milestones, African football, major national-team tournaments, and European club competition history. The next grade in the locked sequence is Football Hard.
+
+
+## Football Hard — first content batch
+
+Ten original Football Hard questions (`fh001`–`fh010`) begin the third difficulty grade. Topics include World Cup final milestones, Brazil’s 1970 record, Denmark’s 1992 EURO run, Greece’s 2004 title, Abedi Pelé’s European Cup final appearance, the 2005 Champions League shoot-out and Nigeria’s 1996 Olympic final. Each item carries a review date and official FIFA, UEFA or Olympics/FIFA source. Football Hard now has 12 approved questions overall (2 existing + 10 new); 38 remain to reach 50.
+
+
+## Football Hard — second content batch
+
+Ten more original Football Hard questions (`fh011`–`fh020`) focus on Nigeria’s 1994 World Cup exit, Roberto Baggio’s decisive performance, Rashidi Yekini’s continental award, AFCON scoring records, Algeria’s 1990 title, and Nigeria’s historic 1996 Olympic gold. Each question carries a review date and official FIFA or CAF source. Football Hard now has 22 approved questions overall (2 existing + 20 new); 28 remain to reach 50.
+
+
+## Football Hard — third content batch
+
+Ten additional Football Hard questions (`fh021`–`fh030`) test nuanced interpretations of offside, goalkeeper back-pass restrictions, denying an obvious goal-scoring opportunity, stopping promising attacks and penalty shoot-out procedures. Every question carries a review date and an official IFAB Laws of the Game source. Football Hard now has 32 approved questions overall (2 existing + 30 new); 18 remain to reach 50.
+
+
+## Football Hard — fourth content batch
+
+Ten more original Football Hard questions (`fh031`–`fh040`) cover the 2002, 2006, 1986 and 2014 FIFA World Cups. They test match outcomes, individual scoring records, the 2006 final shoot-out and notable disciplinary history. Each question carries a review date and official FIFA source. Football Hard now has 42 approved questions overall (2 existing + 40 new); 8 remain to reach 50.
+
+
+## Football Hard — grade completed
+
+Eight final questions (`fh041`–`fh048`) complete Football Hard at 50 questions (2 existing + 48 new). The grade now covers advanced match-law interpretation, historic World Cup and AFCON records, Nigerian football milestones, and decisive tournament moments. The next grade in the locked sequence is Football Expert.
+
+
+## Football Expert — first content batch
+
+Ten original Football Expert questions (`fe001`–`fe010`) begin the fourth difficulty grade. They focus on decisive World Cup final scorers, Golden Boot records and landmark individual performances from 1954 through 2014, plus the fastest goal in tournament history. Each question carries a review date and official FIFA source. Football Expert now has 12 approved questions overall (2 existing + 10 new); 38 remain to reach 50.
+
+
+## Football Expert — second content batch
+
+Ten more Football Expert questions (`fe011`–`fe020`) cover the early CAF Champions League, Enyimba’s consecutive continental titles and coaches, Abedi Pelé and George Weah’s award history, plus the official CAF Appeal Board ruling on the 2025 AFCON final. The latter is deliberately phrased around the final legal result, not the original on-field score. Each question carries a review date and official CAF source. Football Expert now has 22 approved questions overall (2 existing + 20 new); 28 remain to reach 50.
+
+
+## Football Expert — third content batch
+
+Ten more Football Expert questions (`fe021`–`fe030`) cover CAF Champions League records and UEFA all-time player, coach and club milestones, including Al Ahly’s 12 continental titles, Cristiano Ronaldo’s UCL records, Carlo Ancelotti’s coaching record, Seedorf’s three-club achievement and Francisco Gento’s eight finals. The 2025 AFCON title question is explicitly time-qualified because Senegal’s CAS appeal remains pending as of the review date. Each new question carries a review date and official CAF or UEFA source. Football Expert now has 32 approved questions overall (2 existing + 30 new); 18 remain to reach 50.
+
+
+## Football Expert — fourth content batch
+
+Ten more Football Expert questions (`fe031`–`fe040`) cover the 2025/26 CAF Champions League and UEFA Champions League finals: Mamelodi Sundowns’ second continental title, AS FAR, the aggregate result, Teboho Mokoena and Ronwen Williams; then PSG’s title defence against Arsenal, the shoot-out, Kai Havertz and Vitinha’s Player of the Match award. Each item carries a review date and official CAF or UEFA source. Football Expert now has 42 approved questions overall (2 existing + 40 new); 8 remain to reach 50.
+
+
+## Football Expert — grade completed
+
+Eight final questions (`fe041`–`fe048`) complete Football Expert at 50 questions (2 existing + 48 new). The grade closes with specialist AFCON history: the inaugural 1957 final, Ethiopia’s 1962 title, and Morocco’s unusual 1976 final-round format. Football now has 200 approved questions: 50 each across Easy, Normal, Hard and Expert. The next step is to audit the complete category and prepare its release gate.
+
+
+## Football category release gate
+
+The staged release command now requires all three completed categories: Forge, Music and Football. The strict `npm run trivia:audit` remains unchanged and continues to report every incomplete category/grade pool. The staged command is `npm run trivia:audit:release` and now enforces 50 questions in each of the four difficulty levels for Football as well as the two previously completed categories.
+
+
+## Movies Easy — first content batch
+
+Ten original, source-linked Movies Easy questions (`mv001`–`mv010`) begin the next category after Football. The batch mixes Nollywood, Hollywood, Bollywood, animation and television series while preserving their existing subcategory labels for the shared Movies pool. Topics include King of Boys, Aki na Ukwa, Mr Ibu, Black Panther, Titanic, Toy Story, Frozen, Dangal and Stranger Things. Each question carries a review date and a studio, distributor, platform or reputable media source. Movies Easy now has 16 approved questions overall (6 existing + 10 new); 34 remain to reach 50.
+
+
+## Movies Easy — second content batch
+
+Ten more original Movies Easy questions (`mv011`–`mv020`) extend the mixed-film pool with The Wedding Party, Pirates of the Caribbean, The Matrix, Jaws, Frozen, WALL-E, Dangal, Stranger Things and Squid Game. Subcategory labels remain intact. Every question carries a review date and an official studio, platform, film archive or production source. Movies Easy now has 26 approved questions overall (6 existing + 20 new); 24 remain to reach 50.
+
+
+## Movies Easy — third content batch
+
+Ten more original Movies Easy questions (`mv021`–`mv030`) extend the subcategory mix across Hollywood, animation, Bollywood, series and Nollywood. Topics include Wonder Woman, Thor, Finding Nemo, Moana, DDLJ, 3 Idiots, Wednesday, Nevermore Academy, Squid Game and The Wedding Party. Each item carries a review date and official studio, distributor, production or platform source. Movies Easy now has 36 approved questions overall (6 existing + 30 new); 14 remain to reach 50.
+
+
+## Movies Easy — fourth content batch
+
+Ten more original Movies Easy questions (`mv031`–`mv040`) add Nollywood, Hollywood, animation, Bollywood and series coverage. Topics include Chinedu Ikedieze, Wolverine, Deadpool, Zootopia, The Lion King, Gully Boy, The Office, Game of Thrones and The Big Bang Theory. Each item carries a review date and official studio, distributor, platform or industry source. Movies Easy now has 46 approved questions overall (6 existing + 40 new); 4 remain to reach 50.
+
+
+## Movies Easy — grade completed
+
+Four final questions (`mv041`–`mv044`) complete Movies Easy at 50 questions (6 existing + 44 new). The grade now spans Nollywood, Hollywood, Bollywood, animation and television series. Movies Normal, Hard and Expert remain at their existing counts and will be filled in order before moving to the next category.
+
+
+## Movies Normal — first content batch
+
+Ten original Movies Normal questions (`mn001`–`mn010`) begin the second difficulty grade. The batch covers The Dark Knight, Inception, The Hunger Games, The Lord of the Rings, Shrek, Cars, Spirited Away, Dangal and Sherlock. Each item carries a review date and an official studio, film archive, production or platform source. Movies Normal now has 17 approved questions overall (7 existing + 10 new); 33 remain to reach 50.
+
+
+## Movies Normal — second content batch
+
+Ten more original Movies Normal questions (`mn011`–`mn020`) cover Parasite, The Godfather, Jurassic Park, Mission: Impossible, The Silence of the Lambs, Crouching Tiger, Hidden Dragon and Sherlock. Each item carries a review date and official Academy, AFI, Paramount, Sony Pictures Classics or platform source. Movies Normal now has 27 approved questions overall (7 existing + 20 new); 23 remain to reach 50.
+
+
+## Movies Normal — third content batch
+
+Ten more original Movies Normal questions (`mn021`–`mn030`) cover The Dark Knight, Gladiator, The Social Network, Breaking Bad, Scandal, Better Call Saul, Mission: Impossible and The Sopranos. The batch balances film direction and casting with television character knowledge. Each item carries a review date and an official AFI, AMC, ABC, Paramount or HBO source. Movies Normal now has 37 approved questions overall (7 existing + 30 new); 13 remain to reach 50.
+
+
+## Movies Normal — fourth content batch
+
+Ten more original Movies Normal questions (`mn031`–`mn040`) cover Barbie, Oppenheimer, the Marvel Cinematic Universe, Avatar and Get Out. The questions test principal cast and director knowledge from major recent releases and franchises. Each item carries a review date and official studio source. Movies Normal now has 47 approved questions overall (7 existing + 40 new); 3 remain to reach 50.
+
+
+## Movies Normal — grade completed
+
+Three final questions (`mn041`–`mn043`) complete Movies Normal at 50 questions (7 existing + 43 new). The grade now spans film history, contemporary cinema, international film, animation and television series. The next grade in the locked sequence is Movies Hard.
+
+
+## Movies Hard — first content batch
+
+Ten original Movies Hard questions (`mh001`–`mh010`) begin the third difficulty grade. Topics include Park Chan-wook’s Oldboy, Scorsese’s The Departed, the first Academy Award for Best Animated Feature, Spirited Away’s Oscar win, the two actors who played Dumbledore, and key Game of Thrones casting. Each item carries a review date and official BFI, AFI, Academy, Wizarding World or HBO source. Movies Hard now has 15 approved questions overall (5 existing + 10 new); 35 remain to reach 50.
+
+
+## Movies Hard — second content batch
+
+Ten more original Movies Hard questions (`mh011`–`mh020`) focus on Academy Award history, major directors and international cinema: Moonlight, The Revenant, La La Land, The Shape of Water, The Handmaiden, Everything Everywhere All at Once, Oppenheimer and Anatomy of a Fall. Each question carries a review date and official Academy, BFI or Cannes source. Movies Hard now has 25 approved questions overall (5 existing + 20 new); 25 remain to reach 50.
+
+
+## Movies Hard — third content batch
+
+Ten more original Movies Hard questions (`mh021`–`mh030`) cover character casting, directing and source-film history across Pulp Fiction, Kill Bill, Scarface, There Will Be Blood and The Departed. Each item carries a review date and official AFI source. Movies Hard now has 35 approved questions overall (5 existing + 30 new); 15 remain to reach 50.
+
+
+## Movies Hard — fourth content batch
+
+Ten more original Movies Hard questions (`mh031`–`mh040`) add Academy Award animation history, Nigeria’s first eligible International Feature Film Oscar submission, The Milkmaid’s director and lead actress, and Game of Thrones principal cast. Each item carries a review date and official Academy, Voice of Nigeria, African Film Festival or HBO source. Movies Hard now has 45 approved questions overall (5 existing + 40 new); 5 remain to reach 50.
+
+
+## Movies Hard — grade completed
+
+Five final questions (`mh041`–`mh045`) complete Movies Hard at 50 questions (5 existing + 45 new). The grade now includes international cinema, Academy Award history, Nollywood’s Oscar submission history, and specialist series casting. Movies Expert remains at its existing count and is next in sequence.
+
+
+## Movies Expert — first content batch
+
+Ten original Movies Expert questions (`me001`–`me010`) begin the fourth difficulty grade. The batch spans foundational Nollywood history, Living in Bondage, Lagaan, Slumdog Millionaire’s Oscar history, Seven Samurai, The Nightmare Before Christmas, Beauty and the Beast’s Best Picture nomination, and the creators of The Wire and The Sopranos. Each question carries a review date and an official production, studio, Academy, platform or reputable media source. Movies Expert now has 15 approved questions overall (5 existing + 10 new); 35 remain to reach 50.
+
+
+## Movies Expert — second content batch
+
+Ten more original Movies Expert questions (`me011`–`me020`) cover French New Wave cinema, the inaugural Academy Awards, Peter Finch’s posthumous Oscar, Satyajit Ray’s Apu Trilogy, and Akira Kurosawa’s Seven Samurai. Each item carries a review date and official BFI, Academy or Criterion source. Movies Expert now has 25 approved questions overall (5 existing + 20 new); 25 remain to reach 50.
+
+
+## Movies subcategory metadata correction
+
+International productions are tagged as the generic `movies` subcategory rather than `hollywood` or `bollywood`: Parasite, Crouching Tiger, Hidden Dragon, Oldboy, The Handmaiden, Anatomy of a Fall, Slumdog Millionaire, The 400 Blows, Pather Panchali, Seven Samurai and Breathless. This preserves the aggregate Movies pool while keeping individual regional subcategory modes semantically accurate.
+
+
+## Movies Expert — third content batch
+
+Ten more original Movies Expert questions (`me021`–`me030`) focus on Cannes Palme d’Or history from 1980 through 2016, including Pulp Fiction, Taste of Cherry, Kagemusha, Dancer in the Dark, Uncle Boonmee, The Tree of Life, Amour, Winter Sleep, Dheepan and I, Daniel Blake. Each item carries a review date and official Festival de Cannes source. Movies Expert now has 35 approved questions overall (5 existing + 30 new); 15 remain to reach 50.
+
+
+## Movies Expert — fourth content batch
+
+Ten more original Movies Expert questions (`me031`–`me040`) focus on international-feature Oscar history and filmmakers from Iran, Germany and South Africa. The batch covers The Salesman, A Separation, The Lives of Others, Tsotsi and The Sea Inside, plus key director and Cannes acting-award details. Each question carries a review date and official Academy, BFI or Festival de Cannes source. Movies Expert now has 45 approved questions overall (5 existing + 40 new); 5 remain to reach 50.
+
+
+## Movies Expert — grade completed
+
+Five final questions (`me041`–`me045`) complete Movies Expert at 50 questions (5 existing + 45 new). The grade closes with the 2025 Academy Awards and Cannes Palme d’Or. Movies now has **200 approved questions: 50 Easy, 50 Normal, 50 Hard and 50 Expert**.
+
+
+## Movies category release gate
+
+The staged release command now requires all four completed categories: Forge, Music, Football and Movies. It enforces 50 questions in each of the four difficulty levels for every completed category. The strict full-bank audit remains unchanged and continues to report categories still deferred for later expansion.
+
+
+## Lifestyle Easy — first content batch
+
+Ten original Lifestyle Easy questions (`ls001`–`ls010`) begin the next category after Movies. The batch focuses on practical Nigerian everyday knowledge: banking abbreviations, NAFDAC and FRSC, electricity regulation, the national emergency number, QR codes, payslip terminology and VAT. Each question carries a review date and an official Nigerian regulator, government or standards source. Lifestyle Easy now has 15 approved questions overall (5 existing + 10 new); 35 remain to reach 50.
+
+
+## Lifestyle Easy — second content batch
+
+Ten more original Lifestyle Easy questions (`ls011`–`ls020`) cover digital security, mobile and navigation technology, document formats, budgeting, emergency savings, recycling, basic first aid, smoke alarms and temperature measurement. Each item carries a review date and an official regulator, government, standards, consumer-finance or safety source. Lifestyle Easy now has 25 approved questions overall (5 existing + 20 new); 25 remain to reach 50.
+
+
+## Lifestyle Easy — third content batch
+
+Ten more original Lifestyle Easy questions (`ls021`–`ls030`) cover bank statements, invoices and receipts, debit versus credit cards, insurance premiums and deductibles, inflation, and rental terminology. Sources include the Central Bank of Nigeria, consumer-finance guidance, insurance regulators and government reference material. Source URLs for OTP, SIM and QR definitions in the first two batches were also tightened to direct reference pages. Lifestyle Easy now has 35 approved questions overall (5 existing + 30 new); 15 remain to reach 50.
+
+
+## Lifestyle Easy — fourth content batch
+
+Ten more original Lifestyle Easy questions (`ls031`–`ls040`) cover consumer refunds and exchanges, warranties, subscriptions and auto-renewal, multi-factor authentication, phishing, Airplane Mode, power banks and password managers. Each item carries a review date and an official government, consumer-protection, standards or cybersecurity source. Lifestyle Easy now has 45 approved questions overall (5 existing + 40 new); 5 remain to reach 50.
+
+
+## Lifestyle Easy — grade completed
+
+Five final questions (`ls041`–`ls045`) complete Lifestyle Easy at 50 questions (5 existing + 45 new). The grade now includes Nigerian consumer and public-service knowledge, digital safety, financial literacy, household safety, food handling and environmental basics. Lifestyle Normal is next in the approved sequence.
+
+
+## Lifestyle Normal — first content batch
+
+Ten original Lifestyle Normal questions (`ln001`–`ln010`) begin the second difficulty grade. The batch develops practical financial literacy through compound interest, APR, credit scores, net worth, liquidity, collateral, loan principal, debt-to-income ratios and fixed versus adjustable interest rates. Each item carries a review date and an official investor-education or consumer-finance source. Lifestyle Normal now has 12 approved questions overall (2 existing + 10 new); 38 remain to reach 50.
+
+
+## Lifestyle Normal — second content batch
+
+Ten more original Lifestyle Normal questions (`ln011`–`ln020`) cover overdrafts, credit-card grace periods, loan amortization, balloon payments, prepayment penalties, direct debits, standing orders, chargebacks, credit utilisation and guarantor obligations. Each item carries a review date and an official consumer-finance, payment-network or Central Bank source. Lifestyle Normal now has 22 approved questions overall (2 existing + 20 new); 28 remain to reach 50.
+
+
+## Lifestyle Normal — third content batch
+
+Ten more original Lifestyle Normal questions (`ln021`–`ln030`) introduce investment and insurance concepts: dividends, capital gains, bonds, mutual funds, ETFs, equity, insurance claims and beneficiaries, mortgage escrow, and asset allocation. Each item carries a review date and an official Investor.gov, NAICOM or consumer-finance source. Lifestyle Normal now has 32 approved questions overall (2 existing + 30 new); 18 remain to reach 50.
+
+
+## Lifestyle Normal — grade completed
+
+Twenty original, source-linked questions (`ln031`–`ln050`) complete Lifestyle Normal at **50/50**. The batch covers net income, opportunity cost, budget surplus, variable expenses, purchasing power, capital loss, diversification, time horizon, risk tolerance, fund expense ratios, liquidity, early-withdrawal terms, APR, secured-loan collateral, debt consolidation, irregular-income budgeting, emergency reserves, real versus nominal returns, highest-interest debt repayment and full-term loan-cost comparison. Sources include the Consumer Financial Protection Bureau and Investor.gov. Lifestyle now has 50 approved Normal questions; Lifestyle Hard is next in the locked sequence.
+
+
+## Lifestyle Hard — first content batch
+
+Ten original, source-linked applied questions (`lh001`–`lh010`) begin Lifestyle Hard. The batch tests debt-to-income and credit-utilisation calculations, effective annual rates, approximate real returns, bond-price sensitivity to interest rates, portfolio rebalancing, systematic risk, duration, cash-flow timing and reducing-balance loan amortisation. Sources include the Consumer Financial Protection Bureau and Investor.gov. Lifestyle Hard now has 10/50 approved questions; 40 remain.
+
+
+## Lifestyle Hard — second content batch
+
+Ten original, source-linked applied questions (`lh011`–`lh020`) extend Lifestyle Hard. The batch covers weighted portfolio returns, simple-interest calculations, insurance deductibles and premiums, policy exclusions, variable-rate exposure, bond yields, break-even analysis, gross profit margin and the distinction between accounting profit and cash flow. Sources include Investor.gov, the Consumer Financial Protection Bureau, Nigeria’s NAICOM glossary and the U.S. Small Business Administration. Lifestyle Hard now has 20 newly numbered questions plus two existing entries; 30 more are needed to reach 50.
+
+
+## Lifestyle Hard — quality-gate correction
+
+The Trivia regression workflow flagged duplicate-normalized answer options in `lh003`. The distractors were rewritten as distinct descriptive choices in commit `3dd63af9dc5f2959d7af2a8c61ec0ff58832ffe2`. The completed 48-question numbered Hard block has since been rechecked for unique answer options, valid answer indexes, unique question wording, review dates and source URLs. Correct-answer positions are balanced evenly across the four choices (12 each).
+
+
+## Lifestyle Hard — grade completed
+
+Twenty-eight original, source-linked applied questions (`lh021`–`lh048`) complete Lifestyle Hard at **50 live questions** (48 sequentially numbered questions plus two retained legacy entries). The batch adds applied net-worth and compound-interest calculations, debt and credit analysis, fund costs, bond yield, liquidity and working-capital measures, break-even and contribution-margin problems, insurance co-insurance and average-clause calculations, inventory movement, cash-flow interpretation, repayment strategy, currency exposure and liquidity-risk assessment. Each new question carries a review date and a relevant Investor.gov, CFPB, NAICOM or U.S. Small Business Administration source. Lifestyle Expert is next in the approved sequence; do not begin it until this completed Hard grade has passed the full audit.
+
+
+## Lifestyle Hard — final content and static audit refinement
+
+The completed 48-question numbered Hard block (lh001–lh048) has been checked for distinct answer positions, with 12 correct answers at each option index. The 28-question final batch’s source links were reviewed and corrected where needed: SBA finance references now use a live business-finance page, the medical coinsurance example links to HealthCare.gov, and the property coinsurance-clause calculation links to the NAIC glossary. All 50 live Lifestyle Hard questions (including two retained legacy records) remain within the existing category and difficulty routing. The final bank-wide and CI release checks must be confirmed against the latest branch head before merge/deployment.
