@@ -37,6 +37,28 @@ describe('ChatDual expansion bank', () => {
     });
   });
 
+  it('keeps the fourth sex-advice module substantive and free of legacy templates', () => {
+    const rows = fourthSexAdviceModule.sexAdvice;
+    expect(rows).toHaveLength(181);
+    expect(new Set(rows.map(row => row.a)).size).toBe(181);
+    expect(new Set(rows.map(row => row.b)).size).toBe(181);
+    expect(new Set(rows.flatMap(row => [row.a, row.b])).size).toBe(362);
+    expect(rows.every(row => row.a.length >= 60 && row.b.length >= 60)).toBe(true);
+    const legacyFragments = [
+      'exact recipient and platform',
+      'every new use or audience',
+      'activity or partner changes',
+      'an unfamiliar symptom appears',
+      'the activity and its risks',
+      'a new prescription is started',
+      'a boundary has already been stated',
+      'someone withdraws permission',
+      'either person asks to stop',
+    ];
+    const content = rows.map(row => `${row.a} ${row.b}`).join(' ').toLowerCase();
+    expect(legacyFragments.some(fragment => content.includes(fragment))).toBe(false);
+  });
+
   it('scores the response that shares the user's actual topic more highly', () => {
     const prompt = 'My partner and I need to discuss consent and boundaries before intimacy';
     const relevant = 'Talk openly about consent and boundaries before intimacy begins.';
