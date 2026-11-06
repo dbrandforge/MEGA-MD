@@ -410,3 +410,8 @@ Ten original Football Hard questions (`fh001`–`fh010`) begin the third difficu
 ## Football Hard — second content batch
 
 Ten more original Football Hard questions (`fh011`–`fh020`) focus on Nigeria’s 1994 World Cup exit, Roberto Baggio’s decisive performance, Rashidi Yekini’s continental award, AFCON scoring records, Algeria’s 1990 title, and Nigeria’s historic 1996 Olympic gold. Each question carries a review date and official FIFA or CAF source. Football Hard now has 22 approved questions overall (2 existing + 20 new); 28 remain to reach 50.
+
+
+## Football Hard — third content batch
+
+Ten additional Football Hard questions (`fh021`–`fh030`) test nuanced interpretations of offside, goalkeeper back-pass restrictions, denying an obvious goal-scoring opportunity, stopping promising attacks and penalty shoot-out procedures. Every question carries a review date and an official IFAB Laws of the Game source. Football Hard now has 32 approved questions overall (2 existing + 30 new); 18 remain to reach 50.
