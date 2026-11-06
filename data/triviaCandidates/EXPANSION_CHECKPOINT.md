@@ -560,3 +560,8 @@ Ten more original Movies Expert questions (`me031`–`me040`) focus on internati
 ## Movies Expert — grade completed
 
 Five final questions (`me041`–`me045`) complete Movies Expert at 50 questions (5 existing + 45 new). The grade closes with the 2025 Academy Awards and Cannes Palme d’Or. Movies now has **200 approved questions: 50 Easy, 50 Normal, 50 Hard and 50 Expert**.
+
+
+## Movies category release gate
+
+The staged release command now requires all four completed categories: Forge, Music, Football and Movies. It enforces 50 questions in each of the four difficulty levels for every completed category. The strict full-bank audit remains unchanged and continues to report categories still deferred for later expansion.
