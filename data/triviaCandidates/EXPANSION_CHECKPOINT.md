@@ -630,3 +630,8 @@ The Trivia regression workflow flagged duplicate-normalized answer options in `l
 ## Lifestyle Hard — grade completed
 
 Twenty-eight original, source-linked applied questions (`lh021`–`lh048`) complete Lifestyle Hard at **50 live questions** (48 sequentially numbered questions plus two retained legacy entries). The batch adds applied net-worth and compound-interest calculations, debt and credit analysis, fund costs, bond yield, liquidity and working-capital measures, break-even and contribution-margin problems, insurance co-insurance and average-clause calculations, inventory movement, cash-flow interpretation, repayment strategy, currency exposure and liquidity-risk assessment. Each new question carries a review date and a relevant Investor.gov, CFPB, NAICOM or U.S. Small Business Administration source. Lifestyle Expert is next in the approved sequence; do not begin it until this completed Hard grade has passed the full audit.
+
+
+## Lifestyle Hard — final content and static audit refinement
+
+The completed 48-question numbered Hard block (lh001–lh048) has been checked for distinct answer positions, with 12 correct answers at each option index. The 28-question final batch’s source links were reviewed and corrected where needed: SBA finance references now use a live business-finance page, the medical coinsurance example links to HealthCare.gov, and the property coinsurance-clause calculation links to the NAIC glossary. All 50 live Lifestyle Hard questions (including two retained legacy records) remain within the existing category and difficulty routing. The final bank-wide and CI release checks must be confirmed against the latest branch head before merge/deployment.
