@@ -595,3 +595,8 @@ Five final questions (`ls041`–`ls045`) complete Lifestyle Easy at 50 questions
 ## Lifestyle Normal — first content batch
 
 Ten original Lifestyle Normal questions (`ln001`–`ln010`) begin the second difficulty grade. The batch develops practical financial literacy through compound interest, APR, credit scores, net worth, liquidity, collateral, loan principal, debt-to-income ratios and fixed versus adjustable interest rates. Each item carries a review date and an official investor-education or consumer-finance source. Lifestyle Normal now has 12 approved questions overall (2 existing + 10 new); 38 remain to reach 50.
+
+
+## Lifestyle Normal — second content batch
+
+Ten more original Lifestyle Normal questions (`ln011`–`ln020`) cover overdrafts, credit-card grace periods, loan amortization, balloon payments, prepayment penalties, direct debits, standing orders, chargebacks, credit utilisation and guarantor obligations. Each item carries a review date and an official consumer-finance, payment-network or Central Bank source. Lifestyle Normal now has 22 approved questions overall (2 existing + 20 new); 28 remain to reach 50.
