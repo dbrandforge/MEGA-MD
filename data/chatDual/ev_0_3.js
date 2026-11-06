@@ -1,88 +1,88 @@
 /** Expansion volume 0, part 3. Legacy sex-advice inventory; 181 rows. Rewrite pending. */
 export default {"sexAdvice":[
   {
-    "a": "If an intimate image is shared without permission, save evidence such as messages, usernames, dates, and links before reporting it.",
-    "b": "Ask the platform to remove the content and seek support from a trusted person or specialist service. Avoid resharing the image as proof."
+    "a": "If sex is uncomfortable because of a position or movement, change it or stop. There is no need to endure pain to satisfy a partner.",
+    "b": "Try communicating what feels different and adjusting slowly. If pain continues, pause sexual activity and seek medical advice."
   },
   {
-    "a": "Use strong, unique passwords and two-factor authentication on accounts that contain private photos or conversations.",
-    "b": "Review logged-in devices and recovery details regularly. If you suspect access, change passwords from a trusted device and secure your email account too."
+    "a": "Some people need more time to feel aroused. Rushing or treating arousal as a performance can make intimacy stressful.",
+    "b": "Talk about what helps each of you feel relaxed, and remember that arousal is not a promise to continue. Either person can still change their mind."
   },
   {
-    "a": "Do not give a dating-app match money, banking codes, or identity documents because they claim an emergency or promise romance.",
-    "b": "Pause before sending anything and verify claims independently. Romance scams often build urgency and emotional pressure before asking for money."
+    "a": "An erection is not a reliable measure of attraction, masculinity, or relationship quality.",
+    "b": "Avoid teasing or interrogating your partner. Reduce pressure, communicate kindly, and consider medical advice if erection difficulties persist."
   },
   {
-    "a": "If you meet someone from an app, choose a public place, arrange your own transport, and tell a trusted person your plan.",
-    "b": "Keep your phone charged and retain the option to leave. You do not owe a date further time or intimacy if you feel uncomfortable."
+    "a": "If ejaculation happens sooner than someone wants, avoid shame or ridicule. It is a common concern and can be addressed.",
+    "b": "If it causes distress, a healthcare professional can discuss possible behavioural or medical approaches. Both partners can focus on pleasure beyond penetration."
   },
   {
-    "a": "You can leave a date at any point, even if the other person paid or travelled a long distance.",
-    "b": "A meal, gift, or invitation does not purchase access to your body. Arrange a safe exit and contact someone you trust if you feel threatened."
+    "a": "If ejaculation is delayed or does not happen, do not assume your partner is bored or dissatisfied.",
+    "b": "Stress, medication, health conditions, and stimulation can all play a role. Ask what feels good and seek clinical advice if the change is persistent."
   },
   {
-    "a": "For a first meeting, avoid sharing your home address or sensitive personal details before trust has been established.",
-    "b": "Use the app's safety tools and keep early communication on-platform where possible. Be cautious if someone pushes quickly to move to private channels."
+    "a": "Sexual desire can change across life stages and relationship circumstances. A difference in desire does not automatically mean rejection.",
+    "b": "Discuss what each person misses and what forms of closeness feel good now. Avoid turning sex into a duty or keeping score."
   },
   {
-    "a": "If a partner tracks your location or checks your phone without agreement, treat it as a privacy and safety concern.",
-    "b": "Review location sharing and account access from a safe device. If you fear retaliation, seek specialist support before making changes that could alert them."
+    "a": "After childbirth, recovery and readiness vary. Do not assume a person is ready for sex at a fixed number of weeks.",
+    "b": "Follow the healthcare provider's guidance, especially after complications or surgery. Resume only when the person feels physically and emotionally ready."
   },
   {
-    "a": "A healthy relationship allows both people to maintain friendships, privacy, and independent decisions.",
-    "b": "Control disguised as jealousy or protection can become isolating. Talk with someone you trust if you feel monitored or cut off."
+    "a": "Breastfeeding, hormonal changes, and fatigue can affect desire and vaginal comfort after childbirth.",
+    "b": "Use lubricant if appropriate and seek clinical advice for pain or persistent dryness. Affection does not have to lead to sex."
   },
   {
-    "a": "If you are afraid to refuse sex because of a partner's anger, prioritise your immediate safety rather than trying to persuade them.",
-    "b": "Consider speaking privately with a trusted person or a local support organisation and make a safety plan that fits your circumstances."
+    "a": "Menopause can bring changes such as dryness, discomfort, and shifts in desire. These concerns are common and deserve care.",
+    "b": "A clinician can discuss moisturisers, lubricants, and treatment options based on health history. Do not assume discomfort is something you must accept."
   },
   {
-    "a": "Sexual violence is never the survivor's fault. Responsibility belongs to the person who chose to violate consent.",
-    "b": "Listen without interrogation or blame. Ask what support they want, believe their account, and let them make decisions about next steps."
+    "a": "Pregnancy can change comfort, energy, and sexual desire. Ask a maternity clinician about any medical restrictions or warning signs.",
+    "b": "If the pregnancy is uncomplicated, many people can continue sexual activity if comfortable, but individual advice matters. Stop and seek care for concerning symptoms."
   },
   {
-    "a": "If someone discloses sexual assault, do not demand details or ask why they did not resist or report sooner.",
-    "b": "You can say, 'I'm sorry this happened. I believe you. What would help right now?' Let them control the pace of the conversation."
+    "a": "After a miscarriage or pregnancy loss, people may need different amounts of time before resuming intimacy.",
+    "b": "Let the person who experienced the loss set the pace. A clinician can advise when sex is medically safe and offer support for grief or anxiety."
   },
   {
-    "a": "A survivor may want medical care, emotional support, privacy, or simply someone to stay nearby. Ask rather than deciding for them.",
-    "b": "Offer choices without pressure and respect a decision to decline. Practical support can include transport, contacting a trusted person, or finding a clinic."
+    "a": "A chronic condition does not remove someone's right to intimacy, pleasure, or boundaries.",
+    "b": "Talk about practical adjustments and ask the healthcare team about relevant precautions. Let the person with the condition lead decisions about their body."
   },
   {
-    "a": "After an assault, urgent medical care can address injuries, pregnancy risk, and possible STI exposure. Time-sensitive options may be available.",
-    "b": "A healthcare professional can explain care and evidence-collection choices. The survivor should be told what each step involves and retain as much control as possible."
+    "a": "Some medicines can affect libido, arousal, erection, or orgasm. Do not stop treatment on your own because of sexual side effects.",
+    "b": "Tell the prescriber what has changed. They may review the dose, timing, or alternatives while weighing the benefits of treatment."
   },
   {
-    "a": "If a survivor wants forensic evidence collected, seek a specialist service as soon as possible and ask about local time limits.",
-    "b": "They can ask about the process before agreeing. If they have already washed or changed clothes, they should still seek care; help is not automatically unavailable."
+    "a": "If you have diabetes or another condition affecting sensation or circulation, discuss sexual-health concerns with your clinician.",
+    "b": "Changes in sensation, pain, or function may have treatable causes. Ask directly; sexual health is a legitimate part of routine care."
   },
   {
-    "a": "A survivor does not have to decide immediately whether to report an assault to police in order to seek medical attention.",
-    "b": "Ask the clinic about confidentiality and reporting rules in your location. Their choices should be explained clearly, without threats or pressure."
+    "a": "If you have a disability, intimacy should be planned around your preferences and access needs rather than assumptions made by others.",
+    "b": "Ask what positioning, communication, equipment, or assistance is useful. Never treat a support person as a substitute for the individual's consent."
   },
   {
-    "a": "If a person is in immediate danger, contact local emergency services or move to a safer place if possible.",
-    "b": "If calling is unsafe, consider a trusted person or a discreet way to request help. Follow a safety plan that does not increase the danger."
+    "a": "For a partner with limited speech or movement, agree on an accessible way to communicate yes, no, pause, and stop.",
+    "b": "Check that the signal is reliable and understood by everyone. If the person cannot communicate a free choice, do not proceed."
   },
   {
-    "a": "When supporting someone who has experienced abuse, avoid confronting the person harming them without the survivor's agreement.",
-    "b": "An unexpected confrontation can increase risk. Help them identify safe contacts and specialist support while respecting their choices."
+    "a": "A person's gender identity does not tell you which body parts, terms, or sexual activities they are comfortable with.",
+    "b": "Ask respectfully what language they prefer and what boundaries matter. Do not make assumptions based on appearance or identity."
   },
   {
-    "a": "A sexual boundary can be based on comfort, values, health, or simply not wanting an activity. It does not need a defence.",
-    "b": "You can state it briefly and repeat it if needed. Someone who cares about you should not require a detailed explanation before respecting it."
+    "a": "For trans or non-binary people, dysphoria may affect which kinds of touch feel comfortable. Let them guide the conversation.",
+    "b": "Ask what feels affirming, what words to use, and what to avoid. Preferences can vary by person and can change from day to day."
   },
   {
-    "a": "If your partner's boundary differs from yours, treat it as information about compatibility rather than a challenge to overcome.",
-    "b": "Discuss whether there are mutually comfortable options. If not, accept the difference instead of trying to wear them down."
+    "a": "Do not assume a person's sexual orientation from their relationship history or current partner.",
+    "b": "Let people describe their own identity if they choose. Respect privacy and do not disclose someone's orientation without permission."
   },
   {
-    "a": "Do not use gifts, financial support, housing, or status to make someone feel they owe you sex.",
-    "b": "Material support must not become a debt collected through intimacy. Make expectations clear and accept that affection cannot be purchased."
+    "a": "If a partner is questioning their sexuality, give them room to explore their thoughts without demanding an immediate label.",
+    "b": "You can discuss what this means for your relationship while respecting their process. Avoid using uncertainty as a reason to shame or control them."
   },
   {
-    "a": "If you are unsure whether a sexual joke or comment is welcome, stop and check rather than escalating it.",
-    "b": "A comfortable conversation should allow either person to say that a topic is not welcome. Respect the answer without mocking or testing the boundary."
+    "a": "Sexual health information online can be inaccurate or designed to sell products. Check claims against reputable medical sources.",
+    "b": "For personal symptoms, medication questions, or treatment decisions, consult a qualified healthcare professional rather than relying on social media advice."
   },
   {
     "a": "Permission to save an intimate image does not permit any new activity begins. privacy.",
