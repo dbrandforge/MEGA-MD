@@ -615,3 +615,8 @@ Twenty original, source-linked questions (`ln031`–`ln050`) complete Lifestyle 
 ## Lifestyle Hard — first content batch
 
 Ten original, source-linked applied questions (`lh001`–`lh010`) begin Lifestyle Hard. The batch tests debt-to-income and credit-utilisation calculations, effective annual rates, approximate real returns, bond-price sensitivity to interest rates, portfolio rebalancing, systematic risk, duration, cash-flow timing and reducing-balance loan amortisation. Sources include the Consumer Financial Protection Bureau and Investor.gov. Lifestyle Hard now has 10/50 approved questions; 40 remain.
+
+
+## Lifestyle Hard — second content batch
+
+Ten original, source-linked applied questions (`lh011`–`lh020`) extend Lifestyle Hard. The batch covers weighted portfolio returns, simple-interest calculations, insurance deductibles and premiums, policy exclusions, variable-rate exposure, bond yields, break-even analysis, gross profit margin and the distinction between accounting profit and cash flow. Sources include Investor.gov, the Consumer Financial Protection Bureau, Nigeria’s NAICOM glossary and the U.S. Small Business Administration. Lifestyle Hard now has 20 newly numbered questions plus two existing entries; 30 more are needed to reach 50.
