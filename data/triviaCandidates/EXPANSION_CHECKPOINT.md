@@ -500,3 +500,8 @@ Ten more original Movies Normal questions (`mn021`–`mn030`) cover The Dark Kni
 ## Movies Normal — fourth content batch
 
 Ten more original Movies Normal questions (`mn031`–`mn040`) cover Barbie, Oppenheimer, the Marvel Cinematic Universe, Avatar and Get Out. The questions test principal cast and director knowledge from major recent releases and franchises. Each item carries a review date and official studio source. Movies Normal now has 47 approved questions overall (7 existing + 40 new); 3 remain to reach 50.
+
+
+## Movies Normal — grade completed
+
+Three final questions (`mn041`–`mn043`) complete Movies Normal at 50 questions (7 existing + 43 new). The grade now spans film history, contemporary cinema, international film, animation and television series. The next grade in the locked sequence is Movies Hard.
