@@ -540,3 +540,8 @@ Ten original Movies Expert questions (`me001`–`me010`) begin the fourth diffic
 ## Movies Expert — second content batch
 
 Ten more original Movies Expert questions (`me011`–`me020`) cover French New Wave cinema, the inaugural Academy Awards, Peter Finch’s posthumous Oscar, Satyajit Ray’s Apu Trilogy, and Akira Kurosawa’s Seven Samurai. Each item carries a review date and official BFI, Academy or Criterion source. Movies Expert now has 25 approved questions overall (5 existing + 20 new); 25 remain to reach 50.
+
+
+## Movies subcategory metadata correction
+
+International productions are tagged as the generic `movies` subcategory rather than `hollywood` or `bollywood`: Parasite, Crouching Tiger, Hidden Dragon, Oldboy, The Handmaiden, Anatomy of a Fall, Slumdog Millionaire, The 400 Blows, Pather Panchali, Seven Samurai and Breathless. This preserves the aggregate Movies pool while keeping individual regional subcategory modes semantically accurate.
