@@ -932,8 +932,1002 @@ const CULTURE_ROWS = {
       ],
       "ich"
     ]
+  ],
+  "hard": [
+    [
+      "In which year was Nigeria’s Ijele masquerade inscribed on UNESCO’s Representative List of Intangible Cultural Heritage?",
+      "2009",
+      [
+        "2003",
+        "2013",
+        "2019"
+      ],
+      "nigeria"
+    ],
+    [
+      "The Gelede tradition is practised by Yoruba-Nago communities across Benin, Nigeria and which other country?",
+      "Togo",
+      [
+        "Ghana",
+        "Niger",
+        "Cameroon"
+      ],
+      "ich"
+    ],
+    [
+      "Kwagh-Hir, a Tiv theatrical performance tradition, was inscribed by UNESCO in which year?",
+      "2019",
+      [
+        "2008",
+        "2014",
+        "2024"
+      ],
+      "nigeria"
+    ],
+    [
+      "In which year was the Argungu international fishing and cultural festival inscribed on UNESCO’s Intangible Cultural Heritage list?",
+      "2016",
+      [
+        "2009",
+        "2012",
+        "2021"
+      ],
+      "nigeria"
+    ],
+    [
+      "The Sango Festival of Oyo was added to UNESCO’s Representative List in which year?",
+      "2023",
+      [
+        "2016",
+        "2019",
+        "2024"
+      ],
+      "nigeria"
+    ],
+    [
+      "Durbar in Kano was inscribed on UNESCO’s Representative List of Intangible Cultural Heritage in which year?",
+      "2024",
+      [
+        "2018",
+        "2020",
+        "2022"
+      ],
+      "nigeria"
+    ],
+    [
+      "Nigeria’s inscription for midwifery knowledge, skills and practices was part of a multinational UNESCO entry in which year?",
+      "2023",
+      [
+        "2015",
+        "2019",
+        "2024"
+      ],
+      "nigeria"
+    ],
+    [
+      "Traditional craftsmanship of Kente was inscribed by UNESCO for which country in 2024?",
+      "Ghana",
+      [
+        "Nigeria",
+        "Côte d’Ivoire",
+        "Togo"
+      ],
+      "ich"
+    ],
+    [
+      "The Manden Charter, an oral tradition associated with the founding of the Mali Empire, is linked to which present-day country?",
+      "Mali",
+      [
+        "Guinea-Bissau",
+        "Niger",
+        "Burkina Faso"
+      ],
+      "ich"
+    ],
+    [
+      "Gule Wamkulu is a masked dance tradition of the Chewa people in Malawi and which two neighbouring countries?",
+      "Mozambique and Zambia",
+      [
+        "Kenya and Tanzania",
+        "Ghana and Togo",
+        "Benin and Nigeria"
+      ],
+      "ich"
+    ],
+    [
+      "Vimbuza is a healing dance tradition associated with the Tumbuka people, especially in which country?",
+      "Malawi",
+      [
+        "Botswana",
+        "Senegal",
+        "Ethiopia"
+      ],
+      "ich"
+    ],
+    [
+      "Chopi Timbila is a musical tradition built around orchestras of wooden xylophones in which country?",
+      "Mozambique",
+      [
+        "Angola",
+        "Gabon",
+        "Rwanda"
+      ],
+      "ich"
+    ],
+    [
+      "Zaouli, known for its distinctive mask and dance, is associated with the Guro communities of which country?",
+      "Côte d’Ivoire",
+      [
+        "Ghana",
+        "Guinea",
+        "Cameroon"
+      ],
+      "ich"
+    ],
+    [
+      "The Sosso-Bala, a sacred balafon tradition, is associated with which country?",
+      "Guinea",
+      [
+        "Mali",
+        "Benin",
+        "Niger"
+      ],
+      "ich"
+    ],
+    [
+      "Tango was jointly inscribed on UNESCO’s Intangible Cultural Heritage list by Argentina and which country?",
+      "Uruguay",
+      [
+        "Chile",
+        "Paraguay",
+        "Bolivia"
+      ],
+      "ich"
+    ],
+    [
+      "Samba de Roda, a circle-based music and dance tradition, originated in which Brazilian region?",
+      "The Recôncavo of Bahia",
+      [
+        "The Amazon basin",
+        "The Pantanal",
+        "The southern pampas"
+      ],
+      "ich"
+    ],
+    [
+      "Rumba, recognised by UNESCO as an expression of Cuban identity, is associated with which country?",
+      "Cuba",
+      [
+        "Puerto Rico",
+        "Dominican Republic",
+        "Jamaica"
+      ],
+      "ich"
+    ],
+    [
+      "The Cocolo dance drama tradition is associated with Afro-descendant communities in which country?",
+      "Dominican Republic",
+      [
+        "Haiti",
+        "Cuba",
+        "Trinidad and Tobago"
+      ],
+      "ich"
+    ],
+    [
+      "The ritual ceremony of the Voladores, involving performers descending from a pole, is associated with which country?",
+      "Mexico",
+      [
+        "Peru",
+        "Guatemala",
+        "Ecuador"
+      ],
+      "ich"
+    ],
+    [
+      "Dabkeh, a traditional group dance, is inscribed for which territory?",
+      "Palestine",
+      [
+        "Jordan",
+        "Lebanon",
+        "Cyprus"
+      ],
+      "ich"
+    ],
+    [
+      "Tbourida is a Moroccan equestrian performance involving coordinated displays by mounted riders; what are the riders commonly called?",
+      "Tbourida teams or sorbas",
+      [
+        "Griots",
+        "Muezzins",
+        "Maalems"
+      ],
+      "ich"
+    ],
+    [
+      "Hiragasy is a popular performing art combining music, dance and oratory in which country?",
+      "Madagascar",
+      [
+        "Mauritius",
+        "Seychelles",
+        "Comoros"
+      ],
+      "ich"
+    ],
+    [
+      "Moutya, a dance and music tradition shaped by the history of enslaved people, is associated with which country?",
+      "Seychelles",
+      [
+        "Mauritius",
+        "Maldives",
+        "Sri Lanka"
+      ],
+      "ich"
+    ],
+    [
+      "Furyu-odori refers to a group of ritual folk dances inscribed by which country?",
+      "Japan",
+      [
+        "China",
+        "Republic of Korea",
+        "Mongolia"
+      ],
+      "ich"
+    ],
+    [
+      "Khaen music of the Lao people is built around which instrument?",
+      "A free-reed mouth organ",
+      [
+        "A double-headed frame drum",
+        "A bowed spike fiddle",
+        "A long-necked lute"
+      ],
+      "ich"
+    ],
+    [
+      "Nora is a traditional dance-drama form associated with southern which country?",
+      "Thailand",
+      [
+        "Vietnam",
+        "Cambodia",
+        "Myanmar"
+      ],
+      "ich"
+    ],
+    [
+      "Tibetan opera is commonly known by what name in its own tradition?",
+      "Lhamo",
+      [
+        "Kabuki",
+        "Pansori",
+        "Wayang"
+      ],
+      "ich"
+    ],
+    [
+      "Katta Ashula is a traditional large-scale vocal genre associated with which country?",
+      "Uzbekistan",
+      [
+        "Armenia",
+        "Georgia",
+        "Azerbaijan"
+      ],
+      "ich"
+    ],
+    [
+      "Duduk and its music, a UNESCO-recognised tradition, is associated with which country?",
+      "Armenia",
+      [
+        "Türkiye",
+        "Greece",
+        "Bulgaria"
+      ],
+      "ich"
+    ],
+    [
+      "Silbo Gomero is a whistled language developed on which Spanish island?",
+      "La Gomera",
+      [
+        "Mallorca",
+        "Tenerife",
+        "Lanzarote"
+      ],
+      "ich"
+    ],
+    [
+      "Mangal Shobhajatra is a festive procession marking the Bengali New Year in which country?",
+      "Bangladesh",
+      [
+        "Nepal",
+        "Bhutan",
+        "Sri Lanka"
+      ],
+      "ich"
+    ],
+    [
+      "Palov culture and tradition, centred on a rice dish and its social practices, is recognised for which country?",
+      "Uzbekistan",
+      [
+        "Kazakhstan",
+        "Kyrgyzstan",
+        "Tajikistan"
+      ],
+      "ich"
+    ],
+    [
+      "Junkanoo is a street parade tradition recognised as part of the cultural heritage of which country?",
+      "The Bahamas",
+      [
+        "Barbados",
+        "Belize",
+        "Guyana"
+      ],
+      "ich"
+    ],
+    [
+      "The Kumbh Mela pilgrimage rotates among sacred sites in which country?",
+      "India",
+      [
+        "Nepal",
+        "Bhutan",
+        "Sri Lanka"
+      ],
+      "ich"
+    ],
+    [
+      "Kankurang is an initiatory rite and masquerade tradition of Manding communities in Senegal and which country?",
+      "The Gambia",
+      [
+        "Guinea",
+        "Mali",
+        "Liberia"
+      ],
+      "ich"
+    ],
+    [
+      "Namsadang Nori is a traditional itinerant performance art from which country?",
+      "Republic of Korea",
+      [
+        "Japan",
+        "China",
+        "Vietnam"
+      ],
+      "ich"
+    ],
+    [
+      "Ramman, a religious festival and ritual theatre tradition, is practised in which Indian region?",
+      "Garhwal Himalayas",
+      [
+        "Thar Desert",
+        "Konkan Coast",
+        "Deccan Plateau"
+      ],
+      "ich"
+    ],
+    [
+      "Dainichido Bugaku is a traditional ritual dance tradition associated with which country?",
+      "Japan",
+      [
+        "Republic of Korea",
+        "China",
+        "Thailand"
+      ],
+      "ich"
+    ],
+    [
+      "Noh theatre is especially known for the use of what on selected performers?",
+      "Carved masks",
+      [
+        "Full-body puppets",
+        "Painted paper fans only",
+        "Metal helmets"
+      ],
+      "ich"
+    ],
+    [
+      "Kabuki theatre is widely recognised for stylised acting, elaborate costumes and what distinctive visual feature?",
+      "Kumadori makeup",
+      [
+        "Shadow puppets",
+        "Marionette strings",
+        "Unmasked choral chanting"
+      ],
+      "ich"
+    ],
+    [
+      "Wayang kulit performances traditionally project the silhouettes of puppets onto what?",
+      "A screen",
+      [
+        "A painted floor",
+        "A water surface",
+        "A mirrored wall"
+      ],
+      "ich"
+    ],
+    [
+      "Sbek Thom is a Khmer tradition of large shadow puppets made from what material?",
+      "Leather",
+      [
+        "Bamboo paper",
+        "Silk",
+        "Bronze"
+      ],
+      "ich"
+    ],
+    [
+      "Karagöz is a traditional shadow-puppet theatre associated with which country?",
+      "Türkiye",
+      [
+        "Greece",
+        "Egypt",
+        "Iran"
+      ],
+      "ich"
+    ],
+    [
+      "The traditional song-and-poetry genre pasillo is recognised as cultural heritage in which country?",
+      "Ecuador",
+      [
+        "Paraguay",
+        "Uruguay",
+        "Colombia"
+      ],
+      "ich"
+    ],
+    [
+      "Guarania, a musical genre created in the twentieth century, is associated with which country?",
+      "Paraguay",
+      [
+        "Peru",
+        "Bolivia",
+        "Chile"
+      ],
+      "ich"
+    ],
+    [
+      "The traditional music practice called Rebetiko is especially associated with urban communities in which country?",
+      "Greece",
+      [
+        "Portugal",
+        "Croatia",
+        "Romania"
+      ],
+      "ich"
+    ],
+    [
+      "The art of the Duduk is associated with an instrument made primarily from which tree’s wood?",
+      "Apricot",
+      [
+        "Olive",
+        "Cedar",
+        "Oak"
+      ],
+      "ich"
+    ],
+    [
+      "The traditional art of Tbourida recreates the coordinated charge of mounted riders using which equipment?",
+      "Horses and rifles",
+      [
+        "Camels and bows",
+        "Oxen and spears",
+        "Donkeys and shields"
+      ],
+      "ich"
+    ],
+    [
+      "The Guelaguetza cultural celebration is strongly associated with which Mexican state?",
+      "Oaxaca",
+      [
+        "Yucatán",
+        "Jalisco",
+        "Chiapas"
+      ],
+      "unesco"
+    ]
+  ],
+  "expert": [
+    [
+      "Who developed the N’Ko writing system in 1949 to write Manding languages?",
+      "Solomana Kanté",
+      [
+        "Amadou Hampâté Bâ",
+        "Cheikh Anta Diop",
+        "Seydou Badian"
+      ],
+      "unesco"
+    ],
+    [
+      "The modern Korean alphabet Hangul was promulgated in 1446 under which monarch?",
+      "King Sejong",
+      [
+        "King Taejo",
+        "King Yeongjo",
+        "King Gojong"
+      ],
+      "ich"
+    ],
+    [
+      "Tifinagh is a writing system used for which language family?",
+      "Amazigh languages",
+      [
+        "Bantu languages",
+        "Dravidian languages",
+        "Slavic languages"
+      ],
+      "unesco"
+    ],
+    [
+      "In African-language writing, the term Ajami commonly refers to the adaptation of which script?",
+      "Arabic script",
+      [
+        "Latin script",
+        "Greek script",
+        "Cyrillic script"
+      ],
+      "unesco"
+    ],
+    [
+      "Nüshu, a syllabic writing system historically used by women, developed in which Chinese county?",
+      "Jiangyong",
+      [
+        "Dunhuang",
+        "Lijiang",
+        "Kaifeng"
+      ],
+      "unesco"
+    ],
+    [
+      "The ancient Maya writing system is best classified as which type?",
+      "Logosyllabic",
+      [
+        "Alphabetic",
+        "Abjad",
+        "Purely pictographic"
+      ],
+      "met"
+    ],
+    [
+      "Cuneiform writing first developed in which ancient region?",
+      "Sumer in Mesopotamia",
+      [
+        "The Indus Valley",
+        "The Nile Delta",
+        "The Aegean islands"
+      ],
+      "met"
+    ],
+    [
+      "The Phoenician writing system was an important influence on the development of which later alphabet?",
+      "Greek",
+      [
+        "Devanagari",
+        "Hangul",
+        "Ethiopic"
+      ],
+      "met"
+    ],
+    [
+      "Which script is used to write Amharic and several other languages of Ethiopia?",
+      "Ethiopic script",
+      [
+        "Tifinagh",
+        "N’Ko",
+        "Tibetan script"
+      ],
+      "unesco"
+    ],
+    [
+      "Modern Japanese writing combines kanji with which two kana syllabaries?",
+      "Hiragana and katakana",
+      [
+        "Hangul and hanja",
+        "Pinyin and zhuyin",
+        "Hanzi and bopomofo"
+      ],
+      "unesco"
+    ],
+    [
+      "Which Japanese theatre scholar and performer systematised important Noh performance principles in the fifteenth century?",
+      "Zeami Motokiyo",
+      [
+        "Izumo no Okuni",
+        "Chikamatsu Monzaemon",
+        "Matsuo Bashō"
+      ],
+      "ich"
+    ],
+    [
+      "The early Kabuki performer traditionally credited with founding the form began performing in Kyoto around which year?",
+      "1603",
+      [
+        "1492",
+        "1707",
+        "1868"
+      ],
+      "ich"
+    ],
+    [
+      "In traditional Bunraku, how many puppeteers typically manipulate one principal puppet?",
+      "Three",
+      [
+        "One",
+        "Two",
+        "Five"
+      ],
+      "ich"
+    ],
+    [
+      "A traditional Pansori performance centres on a singer accompanied by which instrument?",
+      "A barrel drum",
+      [
+        "A zither",
+        "A bamboo flute",
+        "A bowed lute"
+      ],
+      "ich"
+    ],
+    [
+      "Gagaku is the traditional court music of which country?",
+      "Japan",
+      [
+        "China",
+        "Republic of Korea",
+        "Vietnam"
+      ],
+      "ich"
+    ],
+    [
+      "Kumiodori is a classical dance-drama tradition that developed in which Japanese island group?",
+      "The Ryukyu Islands",
+      [
+        "The Ogasawara Islands",
+        "The Kuril Islands",
+        "The Izu Islands"
+      ],
+      "ich"
+    ],
+    [
+      "The term Lhamo refers to which Tibetan performing-art tradition?",
+      "Tibetan opera",
+      [
+        "Shadow puppetry",
+        "Court poetry",
+        "Ritual wrestling"
+      ],
+      "ich"
+    ],
+    [
+      "In Wayang kulit, the puppets are traditionally crafted from which material?",
+      "Leather",
+      [
+        "Porcelain",
+        "Bronze",
+        "Woven reeds"
+      ],
+      "ich"
+    ],
+    [
+      "Sbek Thom differs from many small puppet forms because its figures are generally what?",
+      "Large and non-articulated",
+      [
+        "Tiny and fully mechanical",
+        "Made of glass",
+        "Carried as hand puppets"
+      ],
+      "ich"
+    ],
+    [
+      "Karagöz shadow theatre traditionally uses translucent puppets made from treated what?",
+      "Leather",
+      [
+        "Silk",
+        "Ceramic",
+        "Bamboo"
+      ],
+      "ich"
+    ],
+    [
+      "Katta Ashula is traditionally performed by several singers without which accompaniment?",
+      "Instrumental accompaniment",
+      [
+        "A chorus",
+        "Poetic text",
+        "Melodic vocal lines"
+      ],
+      "ich"
+    ],
+    [
+      "The khaen, central to Lao musical culture, produces sound through which mechanism?",
+      "Free reeds",
+      [
+        "A stretched skin membrane",
+        "A struck bronze plate",
+        "A vibrating horsehair bow"
+      ],
+      "ich"
+    ],
+    [
+      "Khoomei is a form of overtone or throat singing associated especially with which country?",
+      "Mongolia",
+      [
+        "Nepal",
+        "Bhutan",
+        "Cambodia"
+      ],
+      "ich"
+    ],
+    [
+      "Urtiin Duu, or long song, is a traditional musical form shared by Mongolia and which neighbouring country?",
+      "China",
+      [
+        "Japan",
+        "Russia only",
+        "Kazakhstan"
+      ],
+      "ich"
+    ],
+    [
+      "Radif is the repertory framework of which classical music tradition?",
+      "Persian classical music",
+      [
+        "Andalusian flamenco",
+        "Japanese gagaku",
+        "Cuban rumba"
+      ],
+      "ich"
+    ],
+    [
+      "The sacred Sosso-Bala balafon is traditionally kept in which Guinean village?",
+      "Niagassola",
+      [
+        "Kankan",
+        "Kindia",
+        "Labé"
+      ],
+      "ich"
+    ],
+    [
+      "Chopi Timbila orchestras are centred on ensembles of which instrument?",
+      "Xylophones",
+      [
+        "Lutes",
+        "Bagpipes",
+        "Frame drums"
+      ],
+      "ich"
+    ],
+    [
+      "Gule Wamkulu is associated with the initiation and ritual life of which southern African people?",
+      "Chewa",
+      [
+        "Zulu",
+        "Herero",
+        "San"
+      ],
+      "ich"
+    ],
+    [
+      "Vimbuza healing dance is associated especially with which people of Malawi?",
+      "Tumbuka",
+      [
+        "Shona",
+        "Akan",
+        "Wolof"
+      ],
+      "ich"
+    ],
+    [
+      "Kankurang is linked to initiation practices among which broad West African cultural community?",
+      "Manding",
+      [
+        "Yoruba",
+        "Akan",
+        "Ewe"
+      ],
+      "ich"
+    ],
+    [
+      "Gelede performances are traditionally associated with the social and spiritual roles of which communities?",
+      "Yoruba-Nago",
+      [
+        "Maasai",
+        "Tuareg",
+        "Afar"
+      ],
+      "ich"
+    ],
+    [
+      "The Manden Charter is traditionally linked to the founding era of which medieval West African empire?",
+      "The Mali Empire",
+      [
+        "The Songhai Empire",
+        "The Ghana Empire",
+        "The Kanem-Bornu Empire"
+      ],
+      "ich"
+    ],
+    [
+      "In Yoruba Ifa divination, the corpus is organised around a set of signs commonly called what?",
+      "Odù",
+      [
+        "Nsibidi",
+        "Adinkra",
+        "Tifinagh"
+      ],
+      "nigeria"
+    ],
+    [
+      "Aso-oke is traditionally produced by weaving narrow strips that are later joined; which craft process is central?",
+      "Strip weaving",
+      [
+        "Wax casting",
+        "Stone inlay",
+        "Glass blowing"
+      ],
+      "nigeria"
+    ],
+    [
+      "Adire textiles are traditionally patterned through resist techniques often using which dye?",
+      "Indigo",
+      [
+        "Saffron",
+        "Cochineal",
+        "Madder only"
+      ],
+      "nigeria"
+    ],
+    [
+      "Bògòlanfini patterns are traditionally developed using fermented mud applied to cotton cloth in which country?",
+      "Mali",
+      [
+        "Niger",
+        "Chad",
+        "Senegal"
+      ],
+      "ich"
+    ],
+    [
+      "In ikat, the pattern is created by selectively binding and dyeing what before weaving?",
+      "Yarns",
+      [
+        "Finished garments",
+        "Wooden printing blocks",
+        "Metal threads after weaving"
+      ],
+      "vam"
+    ],
+    [
+      "Kintsugi traditionally uses urushi lacquer and metallic powder to emphasise what?",
+      "The repaired seams of broken ceramics",
+      [
+        "The glaze on unbroken porcelain",
+        "The carved base of wooden bowls",
+        "The painted surface of silk screens"
+      ],
+      "met"
+    ],
+    [
+      "Pysanka decoration uses wax-resist techniques on which object?",
+      "An eggshell",
+      [
+        "A clay roof tile",
+        "A wooden mask",
+        "A glass vessel"
+      ],
+      "ich"
+    ],
+    [
+      "Pattachitra is a painting tradition strongly associated with which Indian state and its temple culture?",
+      "Odisha",
+      [
+        "Punjab",
+        "Haryana",
+        "Himachal Pradesh"
+      ],
+      "met"
+    ],
+    [
+      "Madhubani painting is rooted in the Mithila region, which spans parts of India and which neighbouring country?",
+      "Nepal",
+      [
+        "Bhutan",
+        "Bangladesh",
+        "Myanmar"
+      ],
+      "met"
+    ],
+    [
+      "Warli paintings traditionally use white pigment against an earthy background, often depicting figures with what basic geometric forms?",
+      "Circles and triangles",
+      [
+        "Spirals and hexagons",
+        "Squares and cubes",
+        "Stars and crescents"
+      ],
+      "met"
+    ],
+    [
+      "The Benin court plaques commonly called the Benin Bronzes were traditionally produced using which metalworking method?",
+      "Lost-wax casting",
+      [
+        " repoussé hammering",
+        "Cloisonné enamelling",
+        "Sand casting only"
+      ],
+      "bm"
+    ],
+    [
+      "The naturalistic heads produced in the ancient city of Ife are associated with which present-day Nigerian state?",
+      "Osun",
+      [
+        "Edo",
+        "Anambra",
+        "Katsina"
+      ],
+      "bm"
+    ],
+    [
+      "The monumental stone walls of Great Zimbabwe were constructed primarily without what?",
+      "Mortar",
+      [
+        "Granite",
+        "Labour",
+        "Stone blocks"
+      ],
+      "whc"
+    ],
+    [
+      "The famous rock-hewn churches of Lalibela are located in which country?",
+      "Ethiopia",
+      [
+        "Eritrea",
+        "Sudan",
+        "Kenya"
+      ],
+      "whc"
+    ],
+    [
+      "The Great Mosque of Djenné is a major example of which broad architectural tradition?",
+      "Sudano-Sahelian earthen architecture",
+      [
+        "Gothic stone architecture",
+        "Mughal marble architecture",
+        "Baroque brick architecture"
+      ],
+      "whc"
+    ],
+    [
+      "The historic manuscript collections of Timbuktu are especially associated with scholarship in which broad intellectual tradition?",
+      "Islamic learning in West Africa",
+      [
+        "Mesoamerican astronomy",
+        "Byzantine naval engineering",
+        "Japanese tea ceremony"
+      ],
+      "whc"
+    ],
+    [
+      "The ancient stone stelae of Aksum are found in which country?",
+      "Ethiopia",
+      [
+        "Ghana",
+        "Mali",
+        "Tanzania"
+      ],
+      "whc"
+    ],
+    [
+      "The UNESCO-listed Asante Traditional Buildings are located in which country?",
+      "Ghana",
+      [
+        "Nigeria",
+        "Benin",
+        "Togo"
+      ],
+      "whc"
+    ]
   ]
-};
+}
 const makePositions = counts => {
   const positions = [];
   for (let round = 0; round < Math.max(...counts); round++) {
@@ -956,5 +1950,7 @@ const makeLevel = (rows, difficulty, start, counts) => {
 };
 export const CULTURE_TRIVIA = [
   ...makeLevel(CULTURE_ROWS.easy, 'easy', 1, [10, 12, 12, 12]),
-  ...makeLevel(CULTURE_ROWS.normal, 'normal', 47, [10, 12, 12, 12])
+  ...makeLevel(CULTURE_ROWS.normal, 'normal', 47, [10, 12, 12, 12]),
+  ...makeLevel(CULTURE_ROWS.hard, 'hard', 93, [10, 13, 13, 13]),
+  ...makeLevel(CULTURE_ROWS.expert, 'expert', 142, [10, 13, 13, 13])
 ];
