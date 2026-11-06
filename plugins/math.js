@@ -251,8 +251,12 @@ export default {
     }
     const totalRounds = getMathMatchQuestionCount(mode);
     const negativeQuestionCount = getMathNegativeQuestionCount(mode, totalRounds);
-    const negativeRounds = Array.from({ length: totalRounds }, (_, index) => index + 1)
-      .sort(() => Math.random() - 0.5).slice(0, negativeQuestionCount).sort((a, b) => a - b);
+    const roundOrder = Array.from({ length: totalRounds }, (_, index) => index + 1);
+    for (let i = roundOrder.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [roundOrder[i], roundOrder[j]] = [roundOrder[j], roundOrder[i]];
+    }
+    const negativeRounds = roundOrder.slice(0, negativeQuestionCount).sort((a, b) => a - b);
     game = {
       active: true, mode, round: 0, totalRounds, negativeRounds,
       scores: {}, attemptedBy: {}, participants: {}, startedBy: senderId,

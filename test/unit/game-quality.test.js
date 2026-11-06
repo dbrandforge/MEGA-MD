@@ -192,6 +192,7 @@ describe('game quality foundations', () => {
       expect(observedTypes[mode].size).toBeGreaterThanOrEqual(1);
     }
     expect([...observedTypes.noob]).toEqual(expect.arrayContaining(['addition', 'subtraction']));
+    expect([...observedTypes.easy]).toEqual(expect.arrayContaining(['addition', 'subtraction', 'multiplication', 'division', 'missing']));
     expect([...observedTypes.normal]).toEqual(expect.arrayContaining(['percent', 'fraction', 'order']));
     expect([...observedTypes.hard]).toEqual(expect.arrayContaining(['algebra', 'sequence', 'ratio']));
     expect([...observedTypes.impossible]).toEqual(expect.arrayContaining(['quadratic', 'logs']));
