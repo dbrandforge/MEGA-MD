@@ -1,58 +1,45 @@
 # Forge Guard Trivia Expansion — Continuity Checkpoint
 
-Last verified: 2026-11-05
+Last verified: 2026-11-06
 Repository: `dbrandforge/MEGA-MD`
-Working branch: `forge/trivia-expansion-quality-gates`
-Draft pull request: https://github.com/dbrandforge/MEGA-MD/pull/87
+Working branch: `lifestyle-expert-batch-01`
+Previous staged release: PR #88 merged to `main` (commit `5bfa6a15b0dcb822c2aa42760a104d3d85d84c3f`).
+Current batches: Lifestyle Expert `le001`–`le048`; PR #89 contains the complete 48-question numbered block plus two retained legacy records and is awaiting fresh CI/review.
 
 ## Locked expansion target
 
-**Initial release milestone:** every selectable Trivia category must have at least **200 approved, unique playable questions**, distributed evenly:
+**First-cycle grade target:** 50 approved, unique playable questions in each of four difficulty levels for each category, completed sequentially by grade before moving to the next category.
 
 - Easy: 50
 - Normal: 50
 - Hard: 50
 - Expert: 50
 
-The long-term target remains **1,000 per category / 250 per difficulty**. Expand in subsequent quality-gated batches; this first milestone does not replace the long-term ambition.
+The long-term target remains **1,000 per category / 250 per difficulty**. Expand in subsequent quality-gated batches; the first-cycle target does not replace the long-term ambition.
 
-Do not count raw candidate inventory as playable coverage. Do not assign difficulty or promote records automatically. Preserve the existing non-Trivia games and all current gameplay behavior unless separately authorized.
+Do not count raw candidate inventory as playable coverage. Do not assign difficulty or promote records automatically. Preserve existing non-Trivia games and all current gameplay behavior unless separately authorized.
 
-## Current live-bank baseline
+## Current verified expansion coverage
 
-- 388 questions in `data/nigeriaTrivia.js`
-- 388 unique IDs
-- 83 category/difficulty combinations below the 50-question first-cycle grade target across the 21 player-selectable pools
-- The Naira-symbol validation false positive was fixed with a symbol-preserving option normalizer and a regression test.
-- Current coverage is still far below target. The live-bank audit is intentionally non-blocking in the candidate workflow so the baseline remains visible.
+The staged release completed Forge, Music, Football and Movies at 50 questions in each difficulty (200 per category). Lifestyle is now complete at Easy 50, Normal 52, Hard 50 and Expert 50 (202 total; the two retained legacy Normal questions and two retained legacy Expert questions are preserved).
 
-Selected live pool counts (categories overlap through aliases and the Nigeria subset; do not sum these rows):
-
-| Selectable pool | Live questions | Easy | Normal | Hard | Expert |
+| Selectable pool | Easy | Normal | Hard | Expert | Total |
 |---|---:|---:|---:|---:|---:|
-| Music | 34 | 24 | 6 | 2 | 2 |
-| Football | 14 | 4 | 6 | 2 | 2 |
-| Movies aggregate | 23 | 6 | 7 | 5 | 5 |
-| Lifestyle | 11 | 5 | 2 | 2 | 2 |
-| Geography | 20 | 7 | 11 | 1 | 1 |
-| History | 18 | 2 | 5 | 5 | 6 |
-| Culture | 10 | 4 | 4 | 1 | 1 |
-| Food | 9 | 4 | 3 | 1 | 1 |
-| Technology | 6 | 2 | 2 | 1 | 1 |
-| Business | 8 | 1 | 4 | 2 | 1 |
-| Science | 12 | 3 | 3 | 3 | 3 |
-| Gaming | 8 | 2 | 2 | 2 | 2 |
-| Literature | 8 | 2 | 2 | 2 | 2 |
-| Nigeria | 71 | 28 | 35 | 4 | 4 |
-| Nollywood | 6 | 2 | 2 | 1 | 1 |
-| Hollywood | 4 | 1 | 1 | 1 | 1 |
-| Bollywood | 4 | 1 | 1 | 1 | 1 |
-| Animation | 4 | 1 | 1 | 1 | 1 |
-| Series | 4 | 1 | 1 | 1 | 1 |
-| Current Affairs | 7 | 3 | 2 | 1 | 1 |
-| Forge | 200 | 50 | 50 | 50 | 50 |
+| Forge | 50 | 50 | 50 | 50 | 200 |
+| Music | 50 | 50 | 50 | 50 | 200 |
+| Football | 50 | 50 | 50 | 50 | 200 |
+| Movies | 50 | 50 | 50 | 50 | 200 |
+| Lifestyle | 50 | 52 | 50 | 50 | 202 |
 
-The audit scope is aligned to the 21 actual player-facing category choices in the Trivia menu. Hidden legacy aliases (sports, everyday, tech) and the unadvertised empty general mode are not separate coverage targets. The Forge pool is a dedicated cross-disciplinary session for branding, creative direction, design, marketing, content strategy and entrepreneurship. Its Easy grade is now complete at 50 questions; Normal, Hard and Expert each have one question and remain to be expanded. The command aliases still route sports to Football, everyday to Lifestyle, and tech to Technology; general is rejected.
+These rows describe the completed expansion pools; category aliases and legacy routing may overlap and must not be summed as unique bank records. Other player-selectable categories remain outside this completed expansion milestone and require a fresh audit before planning their grade sequence.
+
+## Current Lifestyle Expert batch
+
+Ten original, source-linked Expert questions (`le001`–`le010`) have been added on this branch. Topics: Rule of 72; bond duration and interest-rate sensitivity; property-insurance coinsurance; negative amortisation; exact real return; cash conversion cycle; quick ratio; ETF holdings overlap; quarterly compounding; and depreciation in the indirect cash-flow method.
+
+All twenty numbered records include `reviewedAt: '2026-11-06'` and source URLs. Both batches have been checked for unique IDs and question stems, four distinct options, valid answer indexes, and source/review-date fields. Correct-answer positions are balanced across all twenty numbered records: five each at A, B, C and D. Full bank-wide and regression checks remain required. Do not mark the grade complete or add it to the release gate until it reaches 50 and passes the full audit.
+
+Lifestyle Expert coverage is now **22/50**, with **28 remaining**.
 
 ## First approved content batch
 
@@ -182,18 +169,18 @@ Useful commands:
 
 ## Next execution sequence
 
-1. Build the first 100-question bank for each selectable category, with 25 verified questions at each difficulty; prioritize categories with the largest deficits.
-2. Fact-check every answer and distractor; rewrite incomplete stems and repair encoding.
-3. Date-anchor or reject volatile/current-affairs and ranking-dependent claims.
-4. Assign difficulty only after editorial review.
-5. Fact-check and grade every first-release question; keep unreviewed OpenTriviaQA candidates staged and respect their CC BY-SA 4.0 attribution obligations.
+1. The latest full live-bank audit identifies Geography as the next selectable category in sequence: Easy 7/50, Normal 11/50, Hard 1/50, Expert 1/50.
+2. Complete Geography Easy first (43 additional questions to reach 50), then Normal, Hard and Expert in order.
+3. Fact-check every answer and distractor; rewrite incomplete stems and repair encoding.
+4. Date-anchor or reject volatile/current-affairs and ranking-dependent claims.
+5. Keep unreviewed OpenTriviaQA candidates staged and respect their CC BY-SA 4.0 attribution obligations.
 6. Promote only approved questions into the live bank.
-7. Run the live-bank audit and unit/integration tests.
-8. Once every category meets 100 / 25 and all quality gates pass, merge and deploy the first milestone. Continue expanding toward 1,000 / 250 afterward.
+7. Run the live-bank audit and unit/integration tests after each meaningful batch.
+8. Continue the same sequence until each selected category reaches 200 questions, then expand each grade toward 250 (1,000 per category).
 
 ## Recovery after an app interruption
 
-Resume from this file and PR #87. The GitHub branch contains the committed work; reopening ChatGPT is not required to preserve it. Do not restart the audit from scratch and do not deploy this draft.
+Resume from this file and PR #89. The GitHub branch contains the committed work; reopening ChatGPT is not required to preserve it. Do not restart the audit from scratch and do not deploy this draft.
 
 
 ## Tenth approved content batch — Forge session
@@ -635,3 +622,43 @@ Twenty-eight original, source-linked applied questions (`lh021`–`lh048`) compl
 ## Lifestyle Hard — final content and static audit refinement
 
 The completed 48-question numbered Hard block (lh001–lh048) has been checked for distinct answer positions, with 12 correct answers at each option index. The 28-question final batch’s source links were reviewed and corrected where needed: SBA finance references now use a live business-finance page, the medical coinsurance example links to HealthCare.gov, and the property coinsurance-clause calculation links to the NAIC glossary. All 50 live Lifestyle Hard questions (including two retained legacy records) remain within the existing category and difficulty routing. The final bank-wide and CI release checks must be confirmed against the latest branch head before merge/deployment.
+
+
+## Lifestyle Expert — first content batch
+
+Ten original, source-linked applied questions (`le001`–`le010`) begin Lifestyle Expert. Topics include compound-growth estimation, bond duration, property-insurance coinsurance, negative amortisation, inflation-adjusted return, working-capital cycle, liquidity ratio, fund overlap, quarterly compounding and non-cash depreciation. Each record carries a review date and a relevant Investor.gov, NAIC, CFPB or U.S. Small Business Administration source.
+
+
+## Lifestyle Expert — second content batch
+
+Ten additional original, source-linked applied questions (`le011`–`le020`) extend the numbered Lifestyle Expert block. Topics include break-even volume, debt-to-income ratio, APR versus interest rate, accrual revenue recognition, portfolio rebalancing, contribution margin ratio, debt ratio, loan amortisation, credit-sale cash-flow timing and principal prepayment. Sources include the U.S. Small Business Administration, Consumer Financial Protection Bureau, IRS and Investor.gov.
+
+
+## Lifestyle Expert — grade completed
+
+Twenty-eight original, source-linked applied questions (`le021`–`le048`) complete Lifestyle Expert at **50/50**, counting two retained legacy records. The set covers liquidity and working-capital analysis, bond pricing and yield, receivables and inventory days, insurance deductibles, fund expenses, variable-rate exposure, weighted portfolio returns, break-even volume, effective and annualized returns, cash-flow adjustments, operating margin, credit terms, foreign-exchange effects, accounting-equation changes, origination fees, net present value, gross margin, portfolio rebalancing and leverage. Every numbered question has four distinct options, a valid answer index, a review date and a source URL. Across `le001`–`le048`, correct-answer positions are evenly distributed: 12 each at A, B, C and D.
+
+
+## Sparse-array regression correction
+
+The previous bank contained one accidental empty array slot caused by a doubled comma immediately before `le011`. The array length therefore exceeded the number of playable questions by one, causing regression checks comparing bank length with available-question count to fail (1,081 versus 1,080). The extra comma has been removed. A dedicated unit assertion now verifies that every array index is populated, preventing sparse slots from silently reducing the playable question pool. The staged release gate now requires Lifestyle alongside Forge, Music, Football and Movies, so all five completed categories must have 50 questions at every grade.
+
+
+## Automated validation
+
+- Before the final Lifestyle Expert completion, candidate-quality and Forge Guard integration checks passed; the Trivia regression suite exposed the sparse-array defect described above.
+- The sparse-array defect, incorrect origination-fee answer placement and near-duplicate annualized-return stem have been corrected in the current branch.
+- Latest PR head checks all passed: Forge Bot unit tests, Trivia regression and staged bank-coverage gate, Forge Guard integration tests, and Trivia candidate-quality gate.
+- Live bank: 1,108 questions / 1,108 unique IDs; no bank quality errors. The staged release gate passed for Forge, Music, Football, Movies and Lifestyle. Sixty-four other category/grade combinations remain below 50.
+- Lifestyle audit result: 202 total (Easy 50, Normal 52, Hard 50, Expert 50).
+- No candidate records were promoted into the live bank.
+- No merge or deployment has been performed.
+
+
+## Geography first-cycle expansion completed — 2026-11-06
+
+- Geography now has 200 live questions: Easy 50, Normal 50, Hard 50 and Expert 50.
+- Added 43 Easy, 39 Normal, 49 Hard and 49 Expert questions; existing approved questions were preserved.
+- New records carry stable IDs, four answer options, answer indexes, review dates and reference metadata.
+- The staged release gate now requires Geography alongside Forge, Music, Football, Movies and Lifestyle.
+- Full CI, bank audit, regression and candidate-quality checks must pass on the latest PR head before merge. No Render environment, WhatsApp session, pairing code or non-Trivia gameplay behavior is to be changed.
