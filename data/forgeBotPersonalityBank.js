@@ -396,13 +396,13 @@ export function pickPersonalityReply(text, options = {}) {
 
   const lastBot = [...(history || [])].reverse().find(item => item.name === 'Forge Bot')?.text || '';
   if (/\b(?:how are you|how are you doing|how far|how body|what'?s up|how is your day)\b/i.test(lastBot)
-      && /^(?:i'?m good|i am good|good|fine|i'?m fine|i am fine|doing well|i'?m okay|i am okay|all good)[.!\\s]*$/i.test(norm)) {
+      && /^(?:i'?m good|i am good|good|fine|i'?m fine|i am fine|doing well|i'?m okay|i am okay|all good)[.!\s]*$/i.test(norm)) {
     category = 'wellbeingAcknowledgement';
   } else if (/\b(?:could there be|is there|what happened|tell me|give me the backstory|what'?s going on|what is going on)\b/i.test(lastBot)
-      && /^(?:yes|yeah|yep|there is|there'?s|i think so|a little|kind of|sort of)[.!\\s]*$/i.test(norm)) {
+      && /^(?:yes|yeah|yep|there is|there'?s|i think so|a little|kind of|sort of)[.!\s]*$/i.test(norm)) {
     category = 'affirmativeFollowup';
   } else if (/\b(?:what happened|tell me|give me the backstory|what'?s going on|what is going on|what'?s the gist)\b/i.test(lastBot)
-      && /^(?:nothing|nothing for you|never mind|nevermind|forget it|leave it|not telling|it's nothing|it is nothing)[.!\\s]*$/i.test(norm)) {
+      && /^(?:nothing|nothing for you|never mind|nevermind|forget it|leave it|not telling|it's nothing|it is nothing)[.!\s]*$/i.test(norm)) {
     category = 'decline';
   }
 
