@@ -245,7 +245,7 @@ export function pickSubstantiveReply(text = '', context = []) {
   if (!input) return null;
 
   // Narrow, verified answers for common identity/current-affairs questions.
-  if (/\b(tatiana mana(o|n)o(i|a)s)\b/i.test(input)) {
+  if (/\b(tatiana\s+manaois)\b/i.test(input)) {
     if (/\b(song|love song|romantic|recommend|recommendation)\b/i.test(input)) {
       return "Yes — Tatiana Manaois is a singer-songwriter. For a romantic track, try *Helplessly*; *Loved Like This* is another good option. 🎶";
     }
