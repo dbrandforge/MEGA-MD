@@ -360,11 +360,11 @@ describe('Answer-first chatbot routing', () => {
 
   it('does not let Nigerian-culture or entertainment prompt banks answer factual questions', () => {
     expect(pickLibraryReply('Who is the best music Afro pop artist?')).toBeNull();
-    expect(pickLibraryReply(\"What's the name of the first lady of Nigeria\")).toBeNull();
+    expect(pickLibraryReply("What's the name of the first lady of Nigeria")).toBeNull();
   });
 
   it('routes First Lady questions to current live knowledge', () => {
-    expect(isTimeSensitiveQuestion(\"What's the name of the first lady of Nigeria\")).toBe(true);
+    expect(isTimeSensitiveQuestion("What's the name of the first lady of Nigeria")).toBe(true);
   });
 
   it('routes a meaningful statement as an answer to the bot\'s recent question', () => {
