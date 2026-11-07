@@ -1,5 +1,5 @@
 import store from '../lib/lightweight_store.js';
-import { PRIMARY_FEATURE_GROUP, registerFeatureGroup, isFeatureGroup } from '../lib/featureGroups.js';
+import { PRIMARY_FEATURE_GROUP, registerFeatureGroup, isFeatureGroup, loadFeatureGroups } from '../lib/featureGroups.js';
 import { trackGroup, startSchedulerEngine } from './schedule.js';
 import { loadUserGroupData, saveUserGroupData } from './chatbot.js';
 import {
@@ -37,6 +37,7 @@ export default {
     }
 
     if (action === 'status') {
+      await loadFeatureGroups();
       const profile = await store.getSetting(chatId, 'forgeGuardGroupProfile');
       const isRegistered = isFeatureGroup(chatId);
       return sock.sendMessage(chatId, {
