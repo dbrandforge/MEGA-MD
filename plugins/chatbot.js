@@ -10,7 +10,7 @@ import { printLog } from '../lib/print.js';
 import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
 import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
 import { isExplicitlyAddressedInGroup } from '../lib/chatbotAccess.js';
-import { askFastAI, sanitizeAIResponse, shouldUseAutomaticAI } from '../lib/aiService.js';
+import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI } from '../lib/aiService.js';
 
 const CHATBOT_AI_ENABLED = process.env.CHATBOT_AI_ENABLED === 'true';
 
@@ -224,7 +224,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             // AI enhancement is opt-in at deployment level and only runs after
             // direct addressing/DM permission checks. One 1.2s attempt maximum;
             // the local response remains available whenever the provider fails.
-            if (CHATBOT_AI_ENABLED && shouldUseAutomaticAI(cleanForHistory, intent)) {
+            if (CHATBOT_AI_ENABLED && shouldUseAutomaticAI(cleanForHistory, intent, history.slice(0, -1).slice(-8))) {
                 try {
                     // The current user message has already been appended to history;
                     // send only the preceding turns as context to avoid duplicating it.
@@ -237,7 +237,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                 }
             }
         }
-        console.info(`[Chatbot] Reply (intent: ${classifyIntent(cleanForHistory)}, identity: ${identity?.role || 'standard'}, gender: ${registeredGender || 'unregistered'}).`);
+        // Enforce clean output for every chatbot source: AI, curated banks and identity replies.\n        response = sanitizeChatbotReply(response);\n        console.info(`[Chatbot] Reply (intent: ${classifyIntent(cleanForHistory)}, identity: ${identity?.role || 'standard'}, gender: ${registeredGender || 'unregistered'}).`);
 
         printLog('info', `[Chatbot DM] Attempting reply via destinationType=${chatId.endsWith('@lid') ? 'LID' : 'PN_or_group'}`);
         const sentMessage = await sock.sendMessage(chatId, { text: response }, { quoted: message });
