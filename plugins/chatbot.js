@@ -119,8 +119,9 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
     if (!data.chatbot) data.chatbot = {};
     if (!data.chatbotDM) data.chatbotDM = {};
     const identity = resolveIdentity(senderId);
-    const activeThread = isGroup ? await store.getSetting(chatId, 'chatbotActiveThread').catch(() => null) : null;
-    const isThreadFollowup = !!(activeThread?.senderId === senderId && activeThread.expiresAt > Date.now());
+    const activeThreads = isGroup ? await store.getSetting(chatId, 'chatbotActiveThreads').catch(() => ({})) : {};
+    const activeThread = activeThreads?.[senderId];
+    const isThreadFollowup = !!(activeThread?.expiresAt > Date.now());
     const forceReply = options.forceReply === true;
     if (isGroup) {
         const TARGET = '120363405434471171@g.us';
@@ -214,10 +215,18 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
         await saveChatHistory(chatId, history);
         if (isGroup) {
-            await store.saveSetting(chatId, 'chatbotActiveThread', {
-                senderId,
-                expiresAt: Date.now() + 5 * 60 * 1000
-            });
+            const now = Date.now();
+            const threads = await store.getSetting(chatId, 'chatbotActiveThreads').catch(() => ({})) || {};
+            const active = Object.fromEntries(
+                Object.entries(threads).filter(([, thread]) => thread?.expiresAt > now)
+            );
+            active[senderId] = { expiresAt: now + 5 * 60 * 1000 };
+            const entries = Object.entries(active);
+            if (entries.length > 50) {
+                entries.sort((a, b) => (b[1].expiresAt || 0) - (a[1].expiresAt || 0));
+                for (const [jid] of entries.slice(50)) delete active[jid];
+            }
+            await store.saveSetting(chatId, 'chatbotActiveThreads', active);
         }
 
     } catch (e) {
