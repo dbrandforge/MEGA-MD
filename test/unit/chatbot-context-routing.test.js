@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getIdentityGreeting } from '../../lib/identity.js';
 import { isExplicitlyAddressedInGroup } from '../../lib/chatbotAccess.js';
 import { sanitizeAIResponse } from '../../plugins/ai-gpt.js';
-import { shouldUseAutomaticAI } from '../../lib/aiService.js';
+import { shouldUseAutomaticAI, buildConversationPrompt } from '../../lib/aiService.js';
 import { classifyIntent, pickSubstantiveReply, pickLibraryReply, getQuestionFallback } from '../../data/chatbotResponseLibrary.js';
 import { pickDualReply } from '../../data/chatDual/dualBankSelector.js';
 import { pickPersonalityReply, classifyPersonalityCategory } from '../../data/forgeBotPersonalityBank.js';
@@ -91,11 +91,27 @@ describe('GPT legacy identity sanitization', () => {
 
 
 describe('Automatic AI opt-in routing', () => {
-  it('limits automatic AI to substantive advice intents or full fallback questions', () => {
+  it('routes meaningful conversation and short questions to contextual AI while retaining instant one-word banter', () => {
     expect(shouldUseAutomaticAI('Can two people love each other?', 'relationships')).toBe(true);
     expect(shouldUseAutomaticAI('What makes someone genuinely interesting to talk to?', 'fallback')).toBe(true);
-    expect(shouldUseAutomaticAI('Hello bot', 'greeting')).toBe(false);
-    expect(shouldUseAutomaticAI('What?', 'fallback')).toBe(false);
+    expect(shouldUseAutomaticAI('I repair systems', 'fallback')).toBe(true);
+    expect(shouldUseAutomaticAI('O ti ya werey', 'pidgin')).toBe(true);
+    expect(shouldUseAutomaticAI('Why?', 'followup')).toBe(true);
+    expect(shouldUseAutomaticAI('Werey', 'savage')).toBe(false);
+    expect(shouldUseAutomaticAI('😂', 'reaction')).toBe(false);
+    expect(shouldUseAutomaticAI('   ', 'fallback')).toBe(false);
+  });
+
+  it('builds a contextual Forge Guard prompt with recent speaker-labelled turns and personality rules', () => {
+    const prompt = buildConversationPrompt('I repair systems', [
+      { name: 'Forge dcreative', text: 'What can I do to make money?' },
+      { name: 'Forge Bot', text: 'Tell me your skills and I can narrow it down.' }
+    ]);
+    expect(prompt).toContain('Forge dcreative: What can I do to make money?');
+    expect(prompt).toContain('Forge Bot: Tell me your skills');
+    expect(prompt).toContain('A skill or profession is not a sexual innuendo');
+    expect(prompt).toContain('Nigerian English, Nigerian Pidgin');
+    expect(prompt).toContain('CURRENT MESSAGE:\\nI repair systems');
   });
 });
 
