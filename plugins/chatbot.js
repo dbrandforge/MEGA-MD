@@ -10,6 +10,16 @@ import { printLog } from '../lib/print.js';
 import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
 import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
 import { isExplicitlyAddressedInGroup } from '../lib/chatbotAccess.js';
+import { askFastAI, sanitizeAIResponse } from '../lib/aiService.js';
+
+const CHATBOT_AI_ENABLED = process.env.CHATBOT_AI_ENABLED === 'true';
+const AI_INTENTS = new Set(['advice', 'workLife', 'relationships', 'boundaries', 'friendship', 'empathy', 'wellbeing', 'financialNeed']);
+
+export function shouldUseAutomaticAI(text, intent) {
+    if (AI_INTENTS.has(intent)) return true;
+    const words = String(text || '').trim().split(/\\s+/).filter(Boolean);
+    return intent === 'fallback' && words.length >= 6 && /[?]/.test(String(text || ''));
+}
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -212,6 +222,16 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             // It must never override teasing, substantive questions, or contextual follow-ups.
             if (identity && ['greeting', 'wellbeing', 'thanks', 'agreement'].includes(intent) && Math.random() < 0.12) {
                 response = getIdentityAcknowledgement(identity) + response;
+            }
+            // AI enhancement is opt-in at deployment level and only runs after
+            // direct addressing/DM permission checks. One 1.2s attempt maximum;
+            // the local response remains available whenever the provider fails.
+            if (CHATBOT_AI_ENABLED && shouldUseAutomaticAI(cleanForHistory, intent)) {
+                try {
+                    response = sanitizeAIResponse(await askFastAI(cleanForHistory, { timeoutMs: 1200 }), cleanForHistory);
+                } catch {
+                    // Keep the already-selected local response; never block on retries.
+                }
             }
         }
         console.info(`[Chatbot] Reply (intent: ${classifyIntent(cleanForHistory)}, identity: ${identity?.role || 'standard'}, gender: ${registeredGender || 'unregistered'}).`);
