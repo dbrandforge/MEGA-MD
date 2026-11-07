@@ -285,7 +285,7 @@ export default {
             }
             if (action === 'on' || action === 'off') {
                 data.chatbot[chatId] = action === 'on';
-                await saveUserGroupData(data);
+                if (!await saveUserGroupData(data)) return sock.sendMessage(chatId, { text: '❌ Could not save the group chatbot setting.' }, { quoted: message });
                 return sock.sendMessage(chatId, { text: action === 'on' ? '✅ Group chatbot is ON. Tag me or reply to my message.' : '⏸️ Group chatbot is OFF.' }, { quoted: message });
             }
             if (action === 'status') {
@@ -302,7 +302,7 @@ export default {
                 // This is a global inbound-DM switch, controlled by the bot owner.
                 // Do not key it by the owner senderId: incoming messages arrive under each external sender's JID.
                 data.chatbotDMEnabled = action === 'on';
-                await saveUserGroupData(data);
+                if (!await saveUserGroupData(data)) return sock.sendMessage(chatId, { text: '❌ Could not save the universal DM chatbot setting.' }, { quoted: message });
                 return sock.sendMessage(chatId, { text: action === 'on' ? '✅ Incoming DM chatbot is ON. I can now reply to private messages from other users.' : '⏸️ Incoming DM chatbot is OFF.' }, { quoted: message });
             }
             if (action === 'status') {
