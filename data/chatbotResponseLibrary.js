@@ -245,8 +245,12 @@ export function pickSubstantiveReply(text = '', context = []) {
   const marketingContext = /\b(digital marketer|digital marketing|attract customers|marketing service)\b/i.test(recentContext);
   if (!input) return null;
 
-  // Copyright-safe handling must win over entertainment/personality banks.
-  if (/\b(lyrics|lyric)\b/i.test(input) && /\b(song|track|music|davido|artist|singer|by)\b/i.test(input)) {
+  // Copyright-safe handling must win over entertainment/personality banks,
+  // including short follow-ups such as "just give me the lyrics".
+  const asksForLyrics = /\b(lyrics|lyric)\b/i.test(input)
+    && (/\b(song|track|music|davido|artist|singer|by)\b/i.test(input)
+      || /\b(lyrics|lyric)\b/i.test(recentContext));
+  if (asksForLyrics) {
     return "I can't provide the full copyrighted lyrics, but I can summarise the song, explain its meaning, or discuss a short excerpt you share. 🎵";
   }
 
