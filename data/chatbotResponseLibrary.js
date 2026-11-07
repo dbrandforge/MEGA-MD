@@ -241,34 +241,34 @@ export const intentRules = [
 export function pickSubstantiveReply(text = '', context = []) {
   const input = String(text || '').trim();
   const recentContext = (Array.isArray(context) ? context : []).join(' ');
-  const marketingContext = /\\b(digital marketer|digital marketing|attract customers|marketing service)\\b/i.test(recentContext);
+  const marketingContext = /\b(digital marketer|digital marketing|attract customers|marketing service)\b/i.test(recentContext);
   if (!input) return null;
 
   // Narrow, verified answers for common identity/current-affairs questions.
-  if (/\\b(tatiana mana(o|n)o(i|a)s)\\b/i.test(input)) {
-    if (/\\b(song|love song|romantic|recommend|recommendation)\\b/i.test(input)) {
+  if (/\b(tatiana mana(o|n)o(i|a)s)\b/i.test(input)) {
+    if (/\b(song|love song|romantic|recommend|recommendation)\b/i.test(input)) {
       return "Yes — Tatiana Manaois is a singer-songwriter. For a romantic track, try *Helplessly*; *Loved Like This* is another good option. 🎶";
     }
     return "Yes. Tatiana Manaois is an independent singer-songwriter known for melodic pop and acoustic-influenced songs. One of her well-known tracks is *Helplessly*. 🎶";
   }
 
-  if (/\\b(current|incumbent|present) president of nigeria\\b/i.test(input)) {
+  if (/\b(current|incumbent|present) president of nigeria\b/i.test(input)) {
     return "As of November 2026, Nigeria's President is *Bola Ahmed Tinubu*. Muhammadu Buhari was his predecessor. 🇳🇬";
   }
 
-  if (marketingContext && /\\b(content|contents|post|posts|create|creating|what should i share)\\b/i.test(input)) {
+  if (marketingContext && /\b(content|contents|post|posts|create|creating|what should i share)\b/i.test(input)) {
     return "For your digital marketing work, create five repeatable content types: educational posts that solve one customer problem, short how-to videos, case studies showing a result, client testimonials or proof, and offer-focused posts explaining who you help and how to buy. For the next week, publish 2 educational posts, 2 short videos, 1 case study, 1 proof post and 1 direct offer. Keep each post aimed at one target customer and track enquiries and qualified leads—not likes alone.";
   }
 
-  if (/\\b(digital marketer|digital marketing)\\b/i.test(input) &&
-      /\\b(attract|customers|clients|content|contents|what should i post|what can i post)\\b/i.test(input)) {
-    if (/\\b(content|contents|post|create|creating)\\b/i.test(input)) {
+  if (/\b(digital marketer|digital marketing)\b/i.test(input) &&
+      /\b(attract|customers|clients|content|contents|what should i post|what can i post)\b/i.test(input)) {
+    if (/\b(content|contents|post|create|creating)\b/i.test(input)) {
       return "Start with five content types: (1) educational posts that solve one customer problem, (2) short how-to videos, (3) case studies showing a result, (4) client testimonials and proof, and (5) offer-focused posts explaining who you help and how to buy. Use one clear audience and one service as your focus. For the next 7 days, publish 2 educational posts, 2 short videos, 1 case study, 1 proof/testimonial post and 1 direct offer. Track enquiries, saves and qualified leads—not likes alone.";
     }
     return "Choose one audience and one clear service first. Show proof of your work, explain the problem you solve, publish useful content consistently, engage with people who fit your target market, and make the next step obvious with a clear offer or call to action. Start conversations with potential customers instead of relying on posts alone.";
   }
 
-  if (/\\b(what can i do to make money|how can i make money|how do i make money|how can i earn money|how do i earn money|how to make money|ways to make money)\\b/i.test(input)) {
+  if (/\b(what can i do to make money|how can i make money|how do i make money|how can i earn money|how do i earn money|how to make money|ways to make money)\b/i.test(input)) {
     return "Start with something people already pay for, not just a vague business idea. You could sell a service you can deliver now—design, writing, editing, tutoring, repairs, admin support or social media help; resell a product with proven demand; take paid shifts or commission-based sales; or teach a skill. Pick one offer, define who needs it and the result you will deliver, set a clear price, then speak to 10 likely customers before spending heavily. Avoid opportunities that demand upfront fees or your bank details or OTP. Tell me your skills, available hours and starting budget, and I can help narrow this to realistic options. 💡";
   }
 
