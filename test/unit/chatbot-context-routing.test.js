@@ -187,6 +187,8 @@ describe('Forge Guard clean output and refined AI routing', () => {
     expect(sanitizeChatbotReply('The answer is 28. #Maths #ForgeGuard')).toBe('The answer is 28.');
     expect(sanitizeChatbotReply('Good one 😂\n#banter')).toBe('Good one 😂');
     expect(sanitizeChatbotReply('A clean reply.')).toBe('A clean reply.');
+    expect(sanitizeChatbotReply('Helpful answer. (© dbrandforge\\_bot)')).toBe('Helpful answer.');
+    expect(sanitizeChatbotReply('Helpful answer. © dbrandforge_bot')).toBe('Helpful answer.');
   });
 
   it('routes information requests and personal skill statements to contextual AI', () => {
