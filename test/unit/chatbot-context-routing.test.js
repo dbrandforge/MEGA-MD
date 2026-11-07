@@ -151,7 +151,7 @@ describe('Substantive chatbot question routing', () => {
   it('still carries context for explicit follow-up wording', () => {
     expect(pickDualReply('Why?', {
       intent: 'followup',
-      context: ['Love is care plus consistency, not only butterflies.']
+      context: ['The relationship needs consistency and mutual respect.']
     })).toBeTruthy();
   });
 
