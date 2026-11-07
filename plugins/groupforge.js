@@ -3,105 +3,151 @@ import { PRIMARY_FEATURE_GROUP, registerFeatureGroup, isFeatureGroup, loadFeatur
 import { trackGroup, startSchedulerEngine } from './schedule.js';
 import { loadUserGroupData } from './chatbot.js';
 import {
+  MATURED_MIND_EXCLUSIVE_MAPS,
+  GENERAL_GROUP_MAPS,
+  GENERAL_GROUP_SETTINGS,
+  MATURED_MIND_EXCLUSIVE_FEATURES,
+  GENERAL_GROUP_FEATURES,
   copyGroupUserData,
   copyGroupSettings,
   copyAntispamGroupConfig
 } from '../lib/groupFeatureProfile.js';
 
 const PROFILE_NAME = 'matured-minded';
-const ENABLED_FEATURES = [
-  'Three-message welcome pack and introduction tracking',
-  'Member departure and return messages',
-  'Group chatbot',
-  'Anti-link protection',
-  'Anti-spam protection',
-  'Anonymous Night',
-  'Game commands enabled; Mature Minded day-lock schedule retained',
-  'Daily group lock/unlock and activity announcements',
-  'Scheduled group maintenance'
-];
+
+function enabledFeatureLines(featureSets = {}) {
+  return [
+    ...(featureSets.maturedMinded ? MATURED_MIND_EXCLUSIVE_FEATURES : []),
+    ...(featureSets.general ? GENERAL_GROUP_FEATURES : [])
+  ];
+}
+
+function profileStatusText(profile, registered) {
+  const sets = profile?.featureSets || { maturedMinded: registered, general: false };
+  return [
+    '🛠️ *FORGE GUARD GROUP PROFILE*',
+    '',
+    `Registration: ${registered ? '🟢 ACTIVE' : '🔴 NOT REGISTERED'}`,
+    `Profile: ${profile?.name || 'Not applied'}`,
+    `Matured Minded-exclusive package: ${sets.maturedMinded ? '🟢 ON' : '🔴 OFF'}`,
+    `General group package: ${sets.general ? '🟢 ON' : '🔴 OFF'}`,
+    `Source: ${profile?.source || '—'}`,
+    `Last applied: ${profile?.appliedAt ? new Date(profile.appliedAt).toLocaleString('en-GB', { timeZone: 'Africa/Lagos' }) : '—'}`,
+    '',
+    '*Matured Minded-exclusive features*',
+    ...(MATURED_MIND_EXCLUSIVE_FEATURES.map(item => `• ${item}`)),
+    '',
+    '*General Forge Guard features*',
+    ...(GENERAL_GROUP_FEATURES.map(item => `• ${item}`)),
+  ].join('\n');
+}
 
 export default {
   command: 'groupforge',
   aliases: ['groupregister', 'groupsetup', 'forgegroup'],
   category: 'owner',
-  description: 'Register this group with the Mature Minded Forge Guard feature profile.',
-  usage: '.groupforge setup | .groupforge status',
+  description: 'Apply the Matured Minded-exclusive and/or general Forge Guard group feature package.',
+  usage: '.groupforge setup [all|matured|general] | .groupforge status',
   groupOnly: true,
   strictOwnerOnly: true,
   async handler(sock, message, args, context) {
     const chatId = context.chatId || message.key.remoteJid;
     const action = String(args?.[0] || 'setup').toLowerCase();
+    const requestedSet = String(args?.[1] || 'all').toLowerCase();
     if (!chatId?.endsWith('@g.us')) {
-      return sock.sendMessage(chatId, { text: 'Run this command inside the group you want to register.' }, { quoted: message });
+      return sock.sendMessage(chatId, { text: 'Run this command inside the group you want to configure.' }, { quoted: message });
     }
 
     if (action === 'status') {
       await loadFeatureGroups();
       const profile = await store.getSetting(chatId, 'forgeGuardGroupProfile');
-      const isRegistered = isFeatureGroup(chatId);
       return sock.sendMessage(chatId, {
-        text: `🛠️ *FORGE GUARD GROUP PROFILE*\n\nRegistration: ${isRegistered ? '🟢 ACTIVE' : '🔴 NOT REGISTERED'}\nProfile: ${profile?.name || 'Not applied'}\nSource: ${profile?.source || '—'}\nLast applied: ${profile?.appliedAt ? new Date(profile.appliedAt).toLocaleString('en-GB', { timeZone: 'Africa/Lagos' }) : '—'}`
+        text: profileStatusText(profile, isFeatureGroup(chatId))
       }, { quoted: message });
     }
 
-    if (!['setup', 'apply', 'on'].includes(action)) {
+    if (!['setup', 'apply', 'on'].includes(action) || !['all', 'matured', 'general'].includes(requestedSet)) {
       return sock.sendMessage(chatId, {
-        text: 'Usage: .groupforge setup | .groupforge status'
+        text: 'Usage: .groupforge setup [all|matured|general] | .groupforge status\n\n• all — both packages\n• matured — Matured Minded-exclusive lifecycle features\n• general — general Forge Guard group features'
       }, { quoted: message });
     }
 
     if (chatId === PRIMARY_FEATURE_GROUP) {
-      return sock.sendMessage(chatId, { text: 'Mature Minded is the source profile group; its configuration does not need to be cloned into itself.' }, { quoted: message });
+      return sock.sendMessage(chatId, { text: 'Matured Minded is the source group. Its feature packages are already configured here.' }, { quoted: message });
     }
 
+    const applyMatured = requestedSet === 'all' || requestedSet === 'matured';
+    const applyGeneral = requestedSet === 'all' || requestedSet === 'general';
+
     try {
-      const [userData, sourceSettings, antispam] = await Promise.all([
+      const [userData, sourceSettings, antispam, existingProfile] = await Promise.all([
         loadUserGroupData(),
         store.getAllSettings(PRIMARY_FEATURE_GROUP),
-        store.getSetting('global', 'antispam')
+        store.getSetting('global', 'antispam'),
+        store.getSetting(chatId, 'forgeGuardGroupProfile')
       ]);
 
-      const nextUserData = copyGroupUserData(userData, PRIMARY_FEATURE_GROUP, chatId);
-      const nextAntispam = copyAntispamGroupConfig(antispam || {}, PRIMARY_FEATURE_GROUP, chatId);
-      const nextGroupSettings = copyGroupSettings(sourceSettings || {});
-
-      if (!await store.saveSettingVerified('global', 'userGroupData', nextUserData)) {
-        throw new Error('Could not save the group feature switches.');
-      }
-      if (!await store.saveSettingVerified('global', 'antispam', nextAntispam)) {
-        throw new Error('Could not save the AntiSpam group profile.');
-      }
-
-      for (const [key, value] of Object.entries(nextGroupSettings)) {
-        if (!await store.saveSettingVerified(chatId, key, value)) {
-          throw new Error(`Could not save group setting: ${key}`);
+      if (applyMatured) {
+        const nextUserData = copyGroupUserData(userData, PRIMARY_FEATURE_GROUP, chatId, MATURED_MIND_EXCLUSIVE_MAPS);
+        if (!await store.saveSettingVerified('global', 'userGroupData', nextUserData)) {
+          throw new Error('Could not save the Matured Minded-exclusive welcome/lifecycle settings.');
         }
       }
 
-      await registerFeatureGroup(chatId);
-      if (!await trackGroup(chatId)) {
-        throw new Error('Group feature profile was saved, but scheduler registration could not be verified.');
+      if (applyGeneral) {
+        const nextUserData = copyGroupUserData(userData, PRIMARY_FEATURE_GROUP, chatId, GENERAL_GROUP_MAPS);
+        if (!await store.saveSettingVerified('global', 'userGroupData', nextUserData)) {
+          throw new Error('Could not save the general group feature switches.');
+        }
+
+        const nextAntispam = copyAntispamGroupConfig(antispam || {}, PRIMARY_FEATURE_GROUP, chatId);
+        if (!await store.saveSettingVerified('global', 'antispam', nextAntispam)) {
+          throw new Error('Could not save the AntiSpam group profile.');
+        }
+
+        const nextGroupSettings = copyGroupSettings(sourceSettings || {}, GENERAL_GROUP_SETTINGS);
+        for (const [key, value] of Object.entries(nextGroupSettings)) {
+          if (!await store.saveSettingVerified(chatId, key, value)) {
+            throw new Error(`Could not save general group setting: ${key}`);
+          }
+        }
       }
-      startSchedulerEngine(sock);
+
+      const featureSets = {
+        maturedMinded: applyMatured || existingProfile?.featureSets?.maturedMinded === true || isFeatureGroup(chatId),
+        general: applyGeneral || existingProfile?.featureSets?.general === true
+      };
+
+      if (applyMatured) {
+        await registerFeatureGroup(chatId);
+        if (!await trackGroup(chatId)) {
+          throw new Error('Matured Minded-exclusive features were saved, but scheduler registration could not be verified.');
+        }
+        startSchedulerEngine(sock);
+      }
 
       const profile = {
         name: PROFILE_NAME,
         source: PRIMARY_FEATURE_GROUP,
         appliedAt: Date.now(),
-        features: ENABLED_FEATURES
+        featureSets,
+        features: enabledFeatureLines(featureSets)
       };
       if (!await store.saveSettingVerified(chatId, 'forgeGuardGroupProfile', profile)) {
         throw new Error('Features were applied, but profile metadata could not be saved. Run .groupforge setup again to verify.');
       }
 
+      const sections = [];
+      if (applyMatured) sections.push(`*Matured Minded-exclusive package*\n${MATURED_MIND_EXCLUSIVE_FEATURES.map(item => `• ${item}`).join('\n')}`);
+      if (applyGeneral) sections.push(`*General Forge Guard package*\n${GENERAL_GROUP_FEATURES.map(item => `• ${item}`).join('\n')}`);
+
       return sock.sendMessage(chatId, {
-        text: `✅ *FORGE GUARD GROUP SETUP COMPLETE*\n\nThis group is now registered with the Mature Minded feature profile.\n\n*Enabled/configured:*\n${ENABLED_FEATURES.map(item => `• ${item}`).join('\n')}\n\n*Copied safely from Mature Minded:* welcome/chatbot settings, moderation switches, Anonymous Night and game-lock configuration.\n\nLive game sessions, scores, member histories, pending introductions, conversation memory and lock timers were not copied.\n\nThe bot still needs WhatsApp admin rights for actions such as locking the group or removing members.`
+        text: `✅ *GROUP FEATURE SETUP COMPLETE*\n\n${sections.join('\n\n')}\n\nOnly the selected package(s) were applied. Existing settings in the other package were left untouched.\n\nLive game sessions, scores, member histories, pending introductions, conversation memory and lock timers were not copied.\n\nThe bot still needs WhatsApp admin rights for actions such as locking the group or removing members.`
       }, { quoted: message });
     } catch (error) {
       console.error('[GROUPFORGE] Profile setup failed:', error);
       return sock.sendMessage(chatId, {
-        text: `⚠️ *GROUP SETUP INCOMPLETE*\n\n${error.message}\n\nNo live game history or member records were copied. You can safely run *.groupforge setup* again to complete the configuration.`
+        text: `⚠️ *GROUP SETUP INCOMPLETE*\n\n${error.message}\n\nNo live game history or member records were copied. You can safely rerun the selected *.groupforge setup* command to complete the configuration.`
       }, { quoted: message });
     }
   }
