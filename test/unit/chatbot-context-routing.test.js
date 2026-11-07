@@ -139,7 +139,7 @@ describe('Substantive chatbot question routing', () => {
     const question = 'What can I do to make money?';
     expect(classifyIntent(question)).toBe('financialNeed');
     expect(pickSubstantiveReply(question)).toMatch(/sell a service|commission-based sales|10 likely customers/i);
-    expect(pickLibraryReply('I need money urgently')).toMatch(/amount|deadline|paid task|short-term gig/i);
+    expect(pickLibraryReply('I need money urgently')).toMatch(/practical|how much|realistic|raise it/i);
   });
 
   it('does not let old topic context hijack a fresh slang or banter message', () => {
