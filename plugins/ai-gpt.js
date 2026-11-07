@@ -8,9 +8,21 @@ const AI_APIS = [
     (q) => `https://mistral.gtech-apiz.workers.dev/?apikey=Suhail&text=${encodeURIComponent(q)}`
 ];
 
+export function sanitizeAIResponse(response, query = '') {
+    const text = String(response || '');
+    // Preserve an explicitly requested factual discussion of Qasim, but never
+    // let the upstream model address unrelated users by the previous repo author's name.
+    if (/\\bqasim\\b/i.test(String(query || ''))) return text;
+    return text
+        .replace(/(?:^|[.!?]\\s*)Qasim(?:\\s+Ali)?\\s*,\\s*/gi, '')
+        .replace(/,\\s*Qasim(?:\\s+Ali)?(?=[.!?]|$)/gi, '')
+        .replace(/\\bQasim Ali\\b/gi, 'the previous repository author')
+        .replace(/\\bQasim\\b/gi, 'the previous repository author');
+}
+
 const askAI = async (query) => {
-    // Prepend context so the AI knows the current year
-    const contextualQuery = `Current year is ${CURRENT_YEAR}. Answer with up-to-date information. Question: ${query}`;
+    // Pin the bot's current identity and prevent upstream identity carry-over.
+    const contextualQuery = `Current year is ${CURRENT_YEAR}. You are Forge Guard, operated by The BrandForge. The user is not the previous repository author. Never call the user Qasim or Qasim Ali, never sign replies with that name, and do not invent a name for the user. Do not add a personal-name sign-off. Answer the actual question directly. Question: ${query}`;
 
     for (const apiUrl of AI_APIS) {
         try {
@@ -44,7 +56,7 @@ export default {
 
         try {
             await sock.sendMessage(chatId, { react: { text: '🤖', key: message.key } });
-            const answer = await askAI(query);
+            const answer = sanitizeAIResponse(await askAI(query), query);
             await sock.sendMessage(chatId, { text: answer }, { quoted: message });
         } catch (error) {
             console.error('AI Command Error:', error.message);
