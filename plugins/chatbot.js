@@ -140,7 +140,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             await saveUserGroupData(data);
         }
         if (data.chatbot[chatId] !== true) return;
-    } else if (!getDMChatbotPermission(data, senderId, chatId, identity)) {
+    } else if (!getDMChatbotPermission(data, senderId, chatId)) {
         return;
     }
 
