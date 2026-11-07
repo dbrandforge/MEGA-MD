@@ -268,6 +268,18 @@ export function pickSubstantiveReply(text = '', context = []) {
     return "Choose one audience and one clear service first. Show proof of your work, explain the problem you solve, publish useful content consistently, engage with people who fit your target market, and make the next step obvious with a clear offer or call to action. Start conversations with potential customers instead of relying on posts alone.";
   }
 
+  if (/\b(can|could|do)\b.*\b(two people|people|couple|partners)\b.*\b(love|care about each other)\b.*\b(incompatible|not compatible|compatibility)\b/i.test(input)
+      || /\b(can|could)\b.*\b(love each other)\b.*\b(incompatible|not compatible)\b/i.test(input)
+      || /\b(can|could)\b.*\b(love)\b.*\b(incompatible|not compatible)\b/i.test(input)) {
+    return "Yes. Two people can genuinely love each other and still be incompatible. Love is about care and attachment; compatibility is about whether their values, needs, communication styles, life goals and ways of handling conflict can work together. They may care deeply and still struggle to build a healthy life together. The useful question is not only whether love exists, but whether the relationship allows both people to feel respected, secure and able to be themselves. ❤️";
+  }
+
+  if (/\bhow (can|do) i fall in love\b/i.test(input)
+      || /\bhow to fall in love\b/i.test(input)
+      || /\bhow can someone fall in love\b/i.test(input)) {
+    return "You cannot force yourself to fall in love, but you can make room for it. Spend time with people you genuinely enjoy, stay curious about who they are, share honest experiences, and let trust and affection develop gradually. Pay attention to consistency, respect, emotional safety and shared values—not just chemistry or the idea of being in love. And do not rush yourself; a real connection should be mutual. ❤️";
+  }
+
   if (/\b(what can i do to make money|how can i make money|how do i make money|how can i earn money|how do i earn money|how to make money|ways to make money)\b/i.test(input)) {
     return "Start with something people already pay for, not just a vague business idea. You could sell a service you can deliver now—design, writing, editing, tutoring, repairs, admin support or social media help; resell a product with proven demand; take paid shifts or commission-based sales; or teach a skill. Pick one offer, define who needs it and the result you will deliver, set a clear price, then speak to 10 likely customers before spending heavily. Avoid opportunities that demand upfront fees or your bank details or OTP. Tell me your skills, available hours and starting budget, and I can help narrow this to realistic options. 💡";
   }
