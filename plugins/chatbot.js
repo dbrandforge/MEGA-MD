@@ -230,43 +230,51 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             // This prevents a new definition or financial question inheriting an old topic.
             const libraryReply = pickLibraryReply(cleanForHistory, previousBotReply);
             // ChatDual handles relevant advice-shaped/contextual intents; personality bank remains the fallback.
-            const dualResponse = substantiveReply || libraryReply || pickDualReply(cleanForHistory, {
+            const priorTurns = history.slice(0, -1).slice(-8);
+            const needsKnowledgeAnswer = !substantiveReply && !libraryReply
+                && shouldUseAutomaticAI(cleanForHistory, intent, priorTurns);
+
+            // A genuine question must never fall through to a random personality
+            // or dual-bank line. Those banks are reserved for social conversation.
+            const dualResponse = substantiveReply || libraryReply || (needsKnowledgeAnswer ? null : pickDualReply(cleanForHistory, {
                 chatId,
                 previousReply: previousBotReply,
                 intent,
                 context: history.slice(-8).map(item => item.text),
                 responseMode: 'reasoned'
-            });
-            response = dualResponse || pickPersonalityReply(cleanForHistory, {
+            }));
+            response = dualResponse || (needsKnowledgeAnswer ? null : pickPersonalityReply(cleanForHistory, {
                 chatId,
                 previousReply: previousBotReply,
                 gender: registeredGender,
                 history
-            });
-            if (!substantiveReply && !libraryReply && intent === 'fallback') response = getQuestionFallback(cleanForHistory) || response;
+            }));
+
+            if (needsKnowledgeAnswer) {
+                if (CHATBOT_AI_ENABLED) {
+                    const aiStartedAt = Date.now();
+                    try {
+                        response = sanitizeAIResponse(await askFastAI(cleanForHistory, {
+                            timeoutMs: 3500,
+                            history: priorTurns
+                        }), cleanForHistory);
+                        console.info(`[Chatbot AI] outcome=success latency_ms=${Date.now() - aiStartedAt}`);
+                    } catch (error) {
+                        response = getQuestionFallback(cleanForHistory)
+                            || "I couldn't produce a reliable answer to that just now. Please try again shortly.";
+                        const reason = String(error?.code || error?.message || 'unknown').slice(0, 100).replaceAll(String.fromCharCode(10), ' ').replaceAll(String.fromCharCode(13), ' ');
+                        console.warn(`[Chatbot AI] outcome=unavailable latency_ms=${Date.now() - aiStartedAt} reason=${reason}`);
+                    }
+                } else {
+                    response = getQuestionFallback(cleanForHistory)
+                        || "I can't provide a reliable answer to that question right now.";
+                }
+            }
+
             // Identity acknowledgement is limited to neutral social exchanges.
             // It must never override teasing, substantive questions, or contextual follow-ups.
-            if (identity && ['greeting', 'wellbeing', 'thanks', 'agreement'].includes(intent) && Math.random() < 0.12) {
+            if (identity && !needsKnowledgeAnswer && ['greeting', 'wellbeing', 'thanks', 'agreement'].includes(intent) && Math.random() < 0.12) {
                 response = getIdentityAcknowledgement(identity) + response;
-            }
-            // AI enhancement is opt-in at deployment level and only runs after
-            // direct addressing/DM permission checks. One 3.5s attempt maximum;
-            // the local response remains available whenever the provider fails.
-            if (CHATBOT_AI_ENABLED && !substantiveReply && shouldUseAutomaticAI(cleanForHistory, intent, history.slice(0, -1).slice(-8))) {
-                const aiStartedAt = Date.now();
-                try {
-                    // The current user message has already been appended to history;
-                    // send only the preceding turns as context to avoid duplicating it.
-                    response = sanitizeAIResponse(await askFastAI(cleanForHistory, {
-                        timeoutMs: 3500,
-                        history: history.slice(0, -1).slice(-8)
-                    }), cleanForHistory);
-                    console.info(`[Chatbot AI] outcome=success latency_ms=${Date.now() - aiStartedAt}`);
-                } catch (error) {
-                    // Keep the already-selected local response; never block on retries.
-                    const reason = String(error?.code || error?.message || 'unknown').slice(0, 80).replaceAll(String.fromCharCode(10), ' ').replaceAll(String.fromCharCode(13), ' ');
-                    console.warn(`[Chatbot AI] outcome=fallback latency_ms=${Date.now() - aiStartedAt} reason=${reason}`);
-                }
             }
             }
         }

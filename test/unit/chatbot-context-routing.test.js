@@ -350,3 +350,18 @@ describe('Forge Guard transcript regression coverage', () => {
     expect(summary).toContain('summary service did not respond');
   });
 });
+
+
+describe('Answer-first chatbot routing', () => {
+  it('does not classify broad factual and subject questions as personality-only exchanges', () => {
+    for (const question of [
+      'Who is Davido?',
+      'Who is the best football player?',
+      'What is marketing?',
+      'How do I tell someone loves me?',
+      'How do I feel I am in love?'
+    ]) {
+      expect(shouldUseAutomaticAI(question, classifyIntent(question))).toBe(true);
+    }
+  });
+});
