@@ -200,8 +200,10 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                 gender: registeredGender,
                 history
             });
-            // Keep recognition warm but occasional during ordinary conversation.
-            if (identity && Math.random() < (identity.role === 'creator' ? 0.22 : 0.14)) {
+            // Identity acknowledgement is limited to neutral social exchanges.
+            // It must never override teasing, substantive questions, or contextual follow-ups.
+            const intent = classifyIntent(cleanForHistory);
+            if (identity && ['greeting', 'wellbeing', 'thanks', 'agreement'].includes(intent) && Math.random() < 0.12) {
                 response = getIdentityAcknowledgement(identity) + response;
             }
         }
