@@ -1,5 +1,6 @@
 import store from '../lib/lightweight_store.js';
 import fs from 'fs';
+import { shouldBlockCaller, getAnticallOverride } from '../lib/anticallAccess.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -7,26 +8,6 @@ const MYSQL_URL = process.env.MYSQL_URL;
 const SQLITE_URL = process.env.DB_URL;
 const HAS_DB = !!(MONGO_URL || POSTGRES_URL || MYSQL_URL || SQLITE_URL);
 const ANTICALL_PATH = './data/anticall.json';
-
-function cleanPhone(value) {
-  return String(value || '').split('@')[0].split(':')[0].replace(/\D/g, '');
-}
-
-export function getAnticallOverride(state = {}, caller) {
-  const users = state.users && typeof state.users === 'object' ? state.users : {};
-  const number = cleanPhone(caller);
-  if (!number) return undefined;
-  for (const [key, enabled] of Object.entries(users)) {
-    if (typeof enabled !== 'boolean') continue;
-    if (key === caller || cleanPhone(key) === number) return enabled;
-  }
-  return undefined;
-}
-
-export function shouldBlockCaller(state = {}, caller) {
-  const personal = getAnticallOverride(state, caller);
-  return typeof personal === 'boolean' ? personal : state.enabled === true;
-}
 
 async function readState() {
   try {
