@@ -15,6 +15,15 @@ export default {
       .filter(plugin => plugin && plugin.command !== 'games')
       .filter(plugin => !commandHandler.disabledCommands.has(String(plugin.command).toLowerCase()));
 
+    // Hot Seat is a game command intentionally stored in the admin category.
+    const extraGameCommands = ['hotseat'];
+    for (const name of extraGameCommands) {
+      const plugin = commandHandler.commands.get(name);
+      if (plugin && !commandHandler.disabledCommands.has(name) && !registered.some(item => item.command === plugin.command)) {
+        registered.push(plugin);
+      }
+    }
+
     // The existing .game command is currently failing during image retrieval.
     // Include it in the unavailable section even if it is registered outside the games category.
     const gameCommand = commandHandler.commands.get('game')
