@@ -113,12 +113,15 @@ async function showTyping(sock, chatId) {
 }
 
 // Live replies are selected locally from the curated personality bank.
-export async function handleChatbotResponse(sock, chatId, message, userMessage, senderId) {
+export async function handleChatbotResponse(sock, chatId, message, userMessage, senderId, options = {}) {
     const data = await loadUserGroupData();
     const isGroup = chatId.endsWith('@g.us');
     if (!data.chatbot) data.chatbot = {};
     if (!data.chatbotDM) data.chatbotDM = {};
     const identity = resolveIdentity(senderId);
+    const activeThread = isGroup ? await store.getSetting(chatId, 'chatbotActiveThread').catch(() => null) : null;
+    const isThreadFollowup = !!(activeThread?.senderId === senderId && activeThread.expiresAt > Date.now());
+    const forceReply = options.forceReply === true;
     if (isGroup) {
         const TARGET = '120363405434471171@g.us';
         if (chatId === TARGET && data.chatbot[chatId] === undefined) {
@@ -174,11 +177,12 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         }
 
         // In personal DMs, an enabled session responds naturally without requiring a mention or quoted reply.
-        if (isGroup && !isMention && !isReply) return;
+        if (isGroup && !isMention && !isReply && !forceReply && !isThreadFollowup) return;
         if (!cleanForHistory) return;
 
         const identityReply = getIdentityReply(cleanForHistory, undefined, identity);
-        const identityGreeting = getIdentityGreeting(cleanForHistory, identity);
+        // Creator/Queen arrival greetings are for a fresh direct call, not every follow-up turn.
+        const identityGreeting = isThreadFollowup ? null : getIdentityGreeting(cleanForHistory, identity);
 
         await showTyping(sock, chatId);
 
@@ -209,6 +213,12 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         history.push({ name: 'Forge Bot', text: response.slice(0, 500), at: Date.now() });
         if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
         await saveChatHistory(chatId, history);
+        if (isGroup) {
+            await store.saveSetting(chatId, 'chatbotActiveThread', {
+                senderId,
+                expiresAt: Date.now() + 5 * 60 * 1000
+            });
+        }
 
     } catch (e) {
         printLog('error', `[Chatbot DM] Reply failed: ${String(e?.message || e).slice(0, 400)}`);
