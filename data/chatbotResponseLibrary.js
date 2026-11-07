@@ -259,8 +259,8 @@ export function pickSubstantiveReply(text = '') {
 
 export function getQuestionFallback(text = '') {
   const input = String(text || '').trim();
-  const words = input.split(/\\s+/).filter(Boolean);
-  if (words.length < 5 || !/\\?\\s*$/.test(input)) return null;
+  const words = input.split(/\s+/).filter(Boolean);
+  if (words.length < 5 || !/\?\s*$/.test(input)) return null;
   return "I want to give you an answer that actually addresses the question, not throw a random line at you. I don't have a reliable answer ready for this one yet. Try narrowing down the part you want to understand, and I'll follow that angle.";
 }
 
