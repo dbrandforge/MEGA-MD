@@ -91,7 +91,7 @@ function choosePair(chatId, category, input, previousReply = '', context = [], r
   const bestScore = Math.max(...available.map(item => item.score));
   // Unmatched casual Pidgin should fall through to the personality bank, not a random advice pair.
   // Specialist banks retain their established fallback selection for short substantive prompts.
-  if (bestScore <= 0 && category === 'conversational') return null;
+  if (bestScore <= 0 && category === 'conversational' && terms(input).length <= 2) return null;
   const shortlist = available.filter(item => item.score === bestScore);
   const selected = shortlist[Math.floor(Math.random() * shortlist.length)];
   const text = pickSide(selected, responseMode);
