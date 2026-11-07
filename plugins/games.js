@@ -41,7 +41,7 @@ export default {
     const lines = [
       '🎮 *FORGE GUARD — GAMES ARCADE*',
       '',
-      'Games currently registered and enabled:',
+      'Registered game commands (availability can depend on your group packages, manual locks and scheduled days):',
       '',
       ...available.map((plugin, index) => {
         const description = plugin.description ? ` — ${plugin.description}` : '';
