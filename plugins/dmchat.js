@@ -92,7 +92,7 @@ export default {
 
     if (action !== 'status') {
       data.chatbotDM[targetJid] = action === 'on';
-      await saveUserGroupData(data);
+      if (!await saveUserGroupData(data)) return sock.sendMessage(chatId, { text: '❌ Could not save the individual DM chatbot setting.' }, { quoted: message });
     }
 
     const override = findOverride(data, targetJid);
