@@ -265,7 +265,7 @@ export function pickSubstantiveReply(text = '', context = []) {
     if (/\b(content|contents|post|create|creating)\b/i.test(input)) {
       return "Start with five content types: (1) educational posts that solve one customer problem, (2) short how-to videos, (3) case studies showing a result, (4) client testimonials and proof, and (5) offer-focused posts explaining who you help and how to buy. Use one clear audience and one service as your focus. For the next 7 days, publish 2 educational posts, 2 short videos, 1 case study, 1 proof/testimonial post and 1 direct offer. Track enquiries, saves and qualified leads—not likes alone.";
     }
-    return "Choose one audience and one clear service first. Show proof of your work, explain the problem you solve, publish useful content consistently, engage with people who fit your target market, and make the next step obvious with a clear offer or call to action. Start conversations with potential customers instead of relying on posts alone.";
+    return "Choose one audience and one clear service first. Show proof of your work, explain the problem you solve, publish useful content consistently, engage with people who fit your target market, and make the next step obvious with a clear offer or call to action. Start conversations with potential customers instead of relying on posts alone, and measure qualified leads rather than likes.";
   }
 
   if (/\b(can|could|do)\b.*\b(two people|people|couple|partners)\b.*\b(love|care about each other)\b.*\b(incompatible|not compatible|compatibility)\b/i.test(input)
