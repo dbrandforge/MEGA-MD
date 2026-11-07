@@ -39,7 +39,7 @@ function profileStatusText(profile, registered) {
     ...(MATURED_MIND_EXCLUSIVE_FEATURES.map(item => `• ${item}`)),
     '',
     '*General Forge Guard features*',
-    ...(GENERAL_GROUP_FEATURES.map(item => `• ${item}`),
+    ...(GENERAL_GROUP_FEATURES.map(item => `• ${item}`)),
   ].join('\n');
 }
 
