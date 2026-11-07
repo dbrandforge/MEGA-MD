@@ -37,19 +37,23 @@ export async function loadUserGroupData() {
     if (!data || typeof data !== 'object') data = { chatbot: {} };
     if (!data.chatbot || typeof data.chatbot !== 'object') data.chatbot = {};
     if (!data.chatbotDM || typeof data.chatbotDM !== 'object') data.chatbotDM = {};
-    if (migrateDMChatbotDefault(data)) await saveUserGroupData(data);
+    if (migrateDMChatbotDefault(data) && !await saveUserGroupData(data)) {\n        console.warn('[Chatbot] Could not persist the new DM-default-off migration.');\n    }
     return data;
 }
 
 export async function saveUserGroupData(data) {
     try {
-        if (HAS_DB) await store.saveSetting('global', 'userGroupData', data);
-        else {
-            const dir = path.dirname(USER_GROUP_DATA);
-            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-            fs.writeFileSync(USER_GROUP_DATA, JSON.stringify(data, null, 2));
+        if (HAS_DB) {
+            return await store.saveSettingVerified('global', 'userGroupData', data);
         }
-    } catch {}
+        const dir = path.dirname(USER_GROUP_DATA);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(USER_GROUP_DATA, JSON.stringify(data, null, 2));
+        return true;
+    } catch (error) {
+        console.error('[Chatbot] Could not save user/group settings:', error.message);
+        return false;
+    }
 }
 
 async function loadChatHistory(chatId) {
