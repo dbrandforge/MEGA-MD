@@ -95,4 +95,23 @@ describe('General-purpose relevance guard', () => {
       'Photosynthesis is the process plants use to convert light energy into chemical energy.'
     )).toBe(true);
   });
+
+  it('accepts named-entity answers to person and ranking questions without literal subject overlap', () => {
+    expect(isUsefulAutomaticAnswer(
+      'Who is the GOAT in football?',
+      'Lionel Messi is widely regarded as one of football\\'s greatest players.'
+    )).toBe(true);
+    expect(isUsefulAutomaticAnswer(
+      'Who is the best music Afro pop artist?',
+      'Wizkid is one of Afropop\\'s most influential artists.'
+    )).toBe(true);
+  });
+
+  it('accepts a named answer when it is grounded in retrieved live evidence', () => {
+    expect(isUsefulAutomaticAnswer(
+      \"What's the name of the first lady of Nigeria\",
+      'Senator Oluremi Tinubu is the First Lady of Nigeria.',
+      'LIVE WEB SEARCH EVIDENCE: State House leadership page lists Sen. Oluremi Tinubu as First Lady, Federal Republic of Nigeria.'
+    )).toBe(true);
+  });
 });
