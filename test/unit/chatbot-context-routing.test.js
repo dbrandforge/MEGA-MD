@@ -147,6 +147,8 @@ describe('Substantive chatbot question routing', () => {
       intent: 'pidgin',
       context: ['What can I do to make money?', 'How can I fall in love?']
     })).toBeNull();
+    expect(classifyPersonalityCategory('Omo aaale')).toBe('pidgin');
+    expect(pickPersonalityReply('Omo aaale', { chatId: 'test-group' })).toBeTruthy();
   });
 
   it('still carries context for explicit follow-up wording', () => {
