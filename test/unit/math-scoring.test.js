@@ -25,8 +25,6 @@ describe('Maths Arena speed scoring', () => {
     expect(calculateMathScore(10000, 1000, 20000).points).toBe(10);
     expect(calculateMathScore(10000, 1000, 0).points).toBe(15);
   });
-});
-
   it('records multiple correct players and preserves the fastest player as round winner', () => {
     const game = { questionTime: 10000, roundStartedAt: 1000, scores: {}, correctAnswers: [] };
     const first = recordCorrectMathAnswer(game, 'first@s.whatsapp.net', 1000);
@@ -52,3 +50,5 @@ describe('Maths Arena speed scoring', () => {
     expect(game.correctAnswers).toHaveLength(1);
     expect(game.scores['player@s.whatsapp.net']).toBe(15);
   });
+
+});
