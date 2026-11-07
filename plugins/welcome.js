@@ -1,8 +1,8 @@
 import { handleWelcome } from '../lib/welcome.js';
 import { handleNewMember } from './sincity-welcome.js';
 import { dailyActivities } from '../data/dailyActivities.js';
+import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 
-const TARGET_GROUP = '120363405434471171@g.us';
 
 function getLagosDay() {
     const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -38,7 +38,7 @@ export default {
         }
 
         if (userId) {
-            if (chatId !== TARGET_GROUP) {
+            if (!await hasMaturedMindedFeatures(chatId)) {
                 return sock.sendMessage(chatId, {
                     text: 'Full welcome pack is for Mature minded only.',
                     ...channelInfo
