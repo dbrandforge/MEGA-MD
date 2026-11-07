@@ -99,11 +99,11 @@ describe('General-purpose relevance guard', () => {
   it('accepts named-entity answers to person and ranking questions without literal subject overlap', () => {
     expect(isUsefulAutomaticAnswer(
       'Who is the GOAT in football?',
-      'Lionel Messi is widely regarded as one of football\\'s greatest players.'
+      'Lionel Messi is widely regarded as one of football\'s greatest players.'
     )).toBe(true);
     expect(isUsefulAutomaticAnswer(
       'Who is the best music Afro pop artist?',
-      'Wizkid is one of Afropop\\'s most influential artists.'
+      'Wizkid is one of Afropop\'s most influential artists.'
     )).toBe(true);
   });
 
