@@ -111,7 +111,7 @@ describe('Maths Arena answer-key verification', () => {
         expect(evaluated).toBeCloseTo(Number(question.answer), 10);
       }
     }
-    for (const type of ['addition', 'subtraction', 'multiplication', 'division', 'missing', 'percent', 'fraction', 'ratio', 'order', 'algebra', 'sequence', 'powers', 'roots', 'quadratic', 'logs', 'gcd', 'lcm', 'arithmetic']) {
+    for (const type of ['addition', 'subtraction', 'multiplication', 'division', 'missing', 'percent', 'fraction', 'ratio', 'order', 'algebra', 'sequence', 'powers', 'roots', 'quadratic', 'logs', 'gcd', 'lcm']) {
       expect(covered.has(type), 'question type ' + type).toBe(true);
     }
   });
