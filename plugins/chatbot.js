@@ -236,7 +236,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                     console.info(`[Chatbot AI] outcome=success latency_ms=${Date.now() - aiStartedAt}`);
                 } catch (error) {
                     // Keep the already-selected local response; never block on retries.
-                    const reason = String(error?.code || error?.message || 'unknown').slice(0, 80).replace(/[\\r\\n]/g, ' ');
+                    const reason = String(error?.code || error?.message || 'unknown').slice(0, 80).replaceAll(String.fromCharCode(10), ' ').replaceAll(String.fromCharCode(13), ' ');
                     console.warn(`[Chatbot AI] outcome=fallback latency_ms=${Date.now() - aiStartedAt} reason=${reason}`);
                 }
             }
