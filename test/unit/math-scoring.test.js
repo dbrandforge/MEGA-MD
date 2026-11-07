@@ -44,7 +44,7 @@ describe('Maths Arena speed scoring', () => {
   });
 
   it('prevents the same player from receiving multiple correct-answer awards in one round', () => {
-    const game = { questionTime: 10000, roundStartedAt: 0, scores: {}, correctAnswers: [] };
+    const game = { questionTime: 10000, roundStartedAt: 1000, scores: {}, correctAnswers: [] };
     recordCorrectMathAnswer(game, 'player@s.whatsapp.net', 1000);
     expect(recordCorrectMathAnswer(game, 'player@s.whatsapp.net', 2000)).toMatchObject({ accepted: false });
     expect(game.correctAnswers).toHaveLength(1);
