@@ -12,12 +12,12 @@ export function sanitizeAIResponse(response, query = '') {
     const text = String(response || '');
     // Preserve an explicitly requested factual discussion of Qasim, but never
     // let the upstream model address unrelated users by the previous repo author's name.
-    if (/\\bqasim\\b/i.test(String(query || ''))) return text;
+    if (String(query || '').toLowerCase().includes('qasim')) return text;
     return text
-        .replace(/(?:^|[.!?]\\s*)Qasim(?:\\s+Ali)?\\s*,\\s*/gi, '')
-        .replace(/,\\s*Qasim(?:\\s+Ali)?(?=[.!?]|$)/gi, '')
-        .replace(/\\bQasim Ali\\b/gi, 'the previous repository author')
-        .replace(/\\bQasim\\b/gi, 'the previous repository author');
+        .replace(/,[ 	]*Qasim([ 	]+Ali)?(?=[.!?]|$)/gi, '')
+        .replace(/^Qasim([ 	]+Ali)?[ 	]*,[ 	]*/i, '')
+        .replace(/Qasim[ 	]+Ali/gi, 'the previous repository author')
+        .replace(/Qasim/gi, 'the previous repository author');
 }
 
 const askAI = async (query) => {
