@@ -2,7 +2,7 @@ import { dailyActivities, lockSchedule } from '../data/dailyActivities.js';
 import store from '../lib/lightweight_store.js';
 import config from '../config.js';
 import { goodnightMessages, goodmorningMessages, pickRotatingMessage } from '../data/groupLifecycleMessages.js';
-import { PRIMARY_FEATURE_GROUP, isFeatureGroup } from '../lib/featureGroups.js';
+import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 
 /**
  * Group Lock / Unlock + Daily Activity Announcer
@@ -260,7 +260,7 @@ async function unlockGroup(sock, chatId, { manual = false } = {}) {
  */
 export async function checkGroupLockSchedule(sock, chatId) {
     // Only run for the target group
-    if (!isFeatureGroup(chatId)) return;
+    if (!await hasMaturedMindedFeatures(chatId)) return;
 
     try {
         const day = getCurrentDay();
@@ -349,7 +349,7 @@ export default {
         const { chatId } = context;
         const action = (args[0] || '').toLowerCase();
 
-        if (!isFeatureGroup(chatId)) {
+        if (!await hasMaturedMindedFeatures(chatId)) {
             return sock.sendMessage(chatId, {
                 text: 'This command is enabled only in the authorized feature groups.'
             }, { quoted: message });
