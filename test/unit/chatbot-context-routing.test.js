@@ -365,3 +365,12 @@ describe('Answer-first chatbot routing', () => {
     }
   });
 });
+
+describe('context retention and answer relevance', () => {
+  it('routes a business detail through AI when it answers the bot\'s previous question', () => {
+    const history = [
+      { name: 'Forge Bot', text: 'What business or product are you trying to promote?' }
+    ];
+    expect(shouldUseAutomaticAI('I sell phones and gadgets', 'greeting', history)).toBe(true);
+  });
+});
