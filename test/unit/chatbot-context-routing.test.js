@@ -58,9 +58,20 @@ describe('Group chatbot addressing boundary', () => {
     expect(isExplicitlyAddressedInGroup({ isMention: false, isReply: false })).toBe(false);
   });
 
-  it('answers only when explicitly mentioned, never on reply-only game messages', () => {
+  it('answers when mentioned or when the quoted message was authored by the bot', () => {
     expect(isExplicitlyAddressedInGroup({ isMention: true })).toBe(true);
-    expect(isExplicitlyAddressedInGroup({ isMention: false, isReply: true })).toBe(false);
+    expect(isExplicitlyAddressedInGroup({
+      quotedParticipant: '2348012345678:4@s.whatsapp.net',
+      botJids: ['2348012345678@s.whatsapp.net']
+    })).toBe(true);
+  });
+
+  it('does not answer replies to another participant or ordinary game messages', () => {
+    expect(isExplicitlyAddressedInGroup({
+      quotedParticipant: '2348098765432@s.whatsapp.net',
+      botJids: ['2348012345678@s.whatsapp.net']
+    })).toBe(false);
+    expect(isExplicitlyAddressedInGroup({ isMention: false })).toBe(false);
   });
 });
 
