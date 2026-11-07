@@ -3,6 +3,7 @@ import { getIdentityGreeting } from '../../lib/identity.js';
 import { isExplicitlyAddressedInGroup } from '../../lib/chatbotAccess.js';
 import { sanitizeAIResponse } from '../../plugins/ai-gpt.js';
 import { shouldUseAutomaticAI } from '../../lib/aiService.js';
+import { classifyIntent, pickSubstantiveReply, getQuestionFallback } from '../../data/chatbotResponseLibrary.js';
 import { pickPersonalityReply, classifyPersonalityCategory } from '../../data/forgeBotPersonalityBank.js';
 
 const creator = { role: 'creator', name: 'Forge dcreative', alias: 'Forge' };
@@ -94,5 +95,37 @@ describe('Automatic AI opt-in routing', () => {
     expect(shouldUseAutomaticAI('What makes someone genuinely interesting to talk to?', 'fallback')).toBe(true);
     expect(shouldUseAutomaticAI('Hello bot', 'greeting')).toBe(false);
     expect(shouldUseAutomaticAI('What?', 'fallback')).toBe(false);
+  });
+});
+
+
+describe('Substantive chatbot question routing', () => {
+  it('classifies love and compatibility questions as relationship intent', () => {
+    expect(classifyIntent('Can two people love each other and still be incompatible?')).toBe('relationships');
+    expect(classifyIntent('How can I fall in love?')).toBe('relationships');
+    expect(classifyIntent('What is love?')).toBe('definition');
+  });
+
+  it('answers the compatibility question with a direct, reasoned distinction', () => {
+    const reply = pickSubstantiveReply('Can two people love each other and still be incompatible?');
+    expect(reply).toMatch(/^Yes\./);
+    expect(reply).toContain('values, needs, communication styles');
+    expect(reply).toContain('respected, secure');
+  });
+
+  it('answers how to fall in love without suggesting it can be forced', () => {
+    const reply = pickSubstantiveReply('How can I fall in love?');
+    expect(reply).toContain('cannot force yourself');
+    expect(reply).toContain('trust and affection');
+    expect(reply).toContain('mutual');
+  });
+
+  it('does not replace the established love definition with a different answer', () => {
+    expect(pickSubstantiveReply('What is love?')).toBeNull();
+  });
+
+  it('uses a question-aware fallback instead of unrelated banter for unknown questions', () => {
+    expect(getQuestionFallback('What makes someone genuinely interesting to talk to?')).toContain('addresses the question');
+    expect(getQuestionFallback('Hello bot')).toBeNull();
   });
 });
