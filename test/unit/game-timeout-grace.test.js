@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   NO_PARTICIPATION_GRACE_MS,
   startNoParticipationGrace,
-  isNoParticipationGraceExpired
+  isNoParticipationGraceExpired,
+  hasNoParticipation
 } from '../../lib/gameTimeouts.js';
 
 describe('game no-participation grace period', () => {
@@ -24,6 +25,14 @@ describe('game no-participation grace period', () => {
 
     expect(isNoParticipationGraceExpired(held, now + NO_PARTICIPATION_GRACE_MS - 1)).toBe(false);
     expect(isNoParticipationGraceExpired(held, now + NO_PARTICIPATION_GRACE_MS)).toBe(true);
+  });
+
+
+  it('starts the hold only when nobody has submitted anything', () => {
+    expect(hasNoParticipation({})).toBe(true);
+    expect(hasNoParticipation(null)).toBe(true);
+    expect(hasNoParticipation({ 'player-1': 1 })).toBe(false);
+    expect(hasNoParticipation({ 'player-1': { correct: false } })).toBe(false);
   });
 
   it('does not treat a normal active question as a grace-period expiry', () => {
