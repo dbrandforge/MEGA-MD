@@ -10,6 +10,9 @@ import { printLog } from '../lib/print.js';
 import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
 import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
 import { isExplicitlyAddressedInGroup } from '../lib/chatbotAccess.js';
+import { askFastAI, sanitizeAIResponse, shouldUseAutomaticAI } from '../lib/aiService.js';
+
+const CHATBOT_AI_ENABLED = process.env.CHATBOT_AI_ENABLED === 'true';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -119,14 +122,6 @@ async function saveChatHistory(chatId, history) {
     }
 }
 
-async function showTyping(sock, chatId) {
-    try {
-        await sock.presenceSubscribe(chatId);
-        await sock.sendPresenceUpdate('composing', chatId);
-        await new Promise(r => setTimeout(r, 800 + Math.random() * 1200));
-    } catch {}
-}
-
 // Live replies are selected locally from the curated personality bank.
 export async function handleChatbotResponse(sock, chatId, message, userMessage, senderId) {
     const data = await loadUserGroupData();
@@ -183,14 +178,16 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         }
 
         // In personal DMs, an enabled session responds naturally without requiring a mention or quoted reply.
-        if (isGroup && !isExplicitlyAddressedInGroup({ isMention })) return;
+        const quotedParticipant = contextInfo.participant || '';
+        const isReplyToBot = Boolean(quotedParticipant && botJids.some(b =>
+            b.split('@')[0].split(':')[0] === quotedParticipant.split('@')[0].split(':')[0]
+        ));
+        if (isGroup && !isExplicitlyAddressedInGroup({ isMention, isReplyToBot, quotedParticipant, botJids })) return;
         if (!cleanForHistory) return;
 
         const identityReply = getIdentityReply(cleanForHistory, undefined, identity);
         // Creator/Queen arrival greetings are for a fresh direct call, not every follow-up turn.
         const identityGreeting = getIdentityGreeting(cleanForHistory, identity);
-
-        await showTyping(sock, chatId);
 
         // Identity-specific replies take priority over the general personality bank.
         // Creator/VIP recognition never grants permissions; authorization remains in the command handler.
@@ -218,6 +215,16 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             // It must never override teasing, substantive questions, or contextual follow-ups.
             if (identity && ['greeting', 'wellbeing', 'thanks', 'agreement'].includes(intent) && Math.random() < 0.12) {
                 response = getIdentityAcknowledgement(identity) + response;
+            }
+            // AI enhancement is opt-in at deployment level and only runs after
+            // direct addressing/DM permission checks. One 1.2s attempt maximum;
+            // the local response remains available whenever the provider fails.
+            if (CHATBOT_AI_ENABLED && shouldUseAutomaticAI(cleanForHistory, intent)) {
+                try {
+                    response = sanitizeAIResponse(await askFastAI(cleanForHistory, { timeoutMs: 1200 }), cleanForHistory);
+                } catch {
+                    // Keep the already-selected local response; never block on retries.
+                }
             }
         }
         console.info(`[Chatbot] Reply (intent: ${classifyIntent(cleanForHistory)}, identity: ${identity?.role || 'standard'}, gender: ${registeredGender || 'unregistered'}).`);
