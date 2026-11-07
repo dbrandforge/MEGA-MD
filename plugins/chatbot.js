@@ -23,7 +23,7 @@ const MEMORY_SETTING = 'chatbotConversationMemory';
 const MAX_HISTORY_MESSAGES = 30;
 const MAX_HISTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
-async function loadUserGroupData() {
+export async function loadUserGroupData() {
     let data;
     try {
         if (HAS_DB) {
@@ -137,7 +137,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             await saveUserGroupData(data);
         }
         if (data.chatbot[chatId] !== true && !forceReply && !isThreadFollowup) return;
-    } else if (data.chatbotDMEnabled !== true && !identity) {
+    } else if (!getDMChatbotPermission(data, senderId, chatId, identity)) {
         return;
     }
 
