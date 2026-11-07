@@ -2,6 +2,7 @@ import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
 import isAdmin from '../lib/isAdmin.js';
+import { startNoParticipationGrace } from '../lib/gameTimeouts.js';
 import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES } from '../data/nigeriaTrivia.js';
 
 const STATE_KEY = 'triviaArenaV2';
@@ -269,7 +270,12 @@ async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
       mentions: winners
     });
     if (shouldEndTriviaForNoParticipation(game.answers)) {
-      await endMatch(sock, chatId, game, 'no-participation');
+      Object.assign(game, startNoParticipationGrace(game));
+      await saveGame(chatId, game);
+      await sock.sendMessage(chatId, {
+        text: '⏸️ *TRIVIA ARENA ON HOLD*\n\nNobody submitted an answer for this question. The match is paused for *5 minutes*. No new question will be generated during this period.\n\nIf nobody has participated by then, the match will end automatically.'
+      });
+      armTimer(sock, chatId, game);
       return true;
     }
     if (game.round >= game.totalRounds) {
@@ -286,9 +292,19 @@ async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
 }
 
 function armTimer(sock, chatId, game) {
-  if (!game?.active || game.questionClosed || !game.closesAt || timers.has(chatId)) return;
-  const delay = Math.max(0, game.closesAt - Date.now());
+  if (!game?.active || timers.has(chatId)) return;
   const token = game.roundToken;
+  if (game.questionClosed && game.noParticipationExpiresAt) {
+    const delay = Math.max(0, game.noParticipationExpiresAt - Date.now());
+    timers.set(chatId, setTimeout(() => withChatLock(chatId, async () => {
+      const latest = await readGame(chatId);
+      if (!latest || latest.roundToken !== token || !latest.questionClosed || !latest.noParticipationExpiresAt || latest.noParticipationExpiresAt > Date.now()) return;
+      await endMatch(sock, chatId, latest, 'no-participation');
+    }).catch(error => console.error('[TRIVIA] No-participation timer error:', error.message)), delay));
+    return;
+  }
+  if (game.questionClosed || !game.closesAt) return;
+  const delay = Math.max(0, game.closesAt - Date.now());
   timers.set(chatId, setTimeout(() => closeQuestion(sock, chatId, token).catch(error => console.error('[TRIVIA] Timer error:', error.message)), delay));
 }
 
@@ -424,7 +440,7 @@ export default {
         '',
         'Everyone in the group can play. Reply directly to each question.',
         'Question time: Easy 20s · Normal 30s · Hard 45s · Expert 60s.',
-        'If nobody submits an answer before the timer expires, the match ends.'
+        'If nobody submits an answer, the match holds for 5 minutes, then ends automatically.'
       ].join('\n');
       return sock.sendMessage(chatId, { text: menu, ...channelInfo }, { quoted: message });
     }
