@@ -12,6 +12,7 @@ import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess
 import { isExplicitlyAddressedInGroup } from '../lib/chatbotAccess.js';
 import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI } from '../lib/aiService.js';
 import { evaluateArithmetic, formatArithmeticAnswer } from '../lib/arithmetic.js';
+import { isTimeSensitiveQuestion, searchLiveKnowledge, buildLiveKnowledgeContext, formatLiveKnowledgeSources } from '../lib/liveKnowledge.js';
 
 const CHATBOT_AI_ENABLED = process.env.CHATBOT_AI_ENABLED === 'true';
 
@@ -199,6 +200,29 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         try { registeredGender = await getUserGender(senderId); } catch {}
         let response = arithmeticReply || identityReply || identityGreeting;
         if (!response) {
+            // Current facts must be grounded in fresh search evidence, never a dated local answer bank.
+            if (CHATBOT_AI_ENABLED && isTimeSensitiveQuestion(cleanForHistory)) {
+                const liveStartedAt = Date.now();
+                const liveResult = await searchLiveKnowledge(cleanForHistory, { timeoutMs: 5000 });
+                if (!liveResult.ok) {
+                    response = "I can't verify the latest information right now, so I don't want to guess. Please try again shortly.";
+                    console.info(`[Chatbot Live] outcome=unavailable reason=${liveResult.reason} latency_ms=${Date.now() - liveStartedAt}`);
+                } else {
+                    try {
+                        const liveReply = await askFastAI(cleanForHistory, {
+                            timeoutMs: 4000,
+                            history: history.slice(0, -1).slice(-8),
+                            liveContext: buildLiveKnowledgeContext(liveResult)
+                        });
+                        response = sanitizeAIResponse(liveReply, cleanForHistory) + formatLiveKnowledgeSources(liveResult);
+                        console.info(`[Chatbot Live] outcome=success sources=${liveResult.results.length} cached=${liveResult.cached} latency_ms=${Date.now() - liveStartedAt}`);
+                    } catch (error) {
+                        response = "I found recent sources, but couldn't safely compose a verified summary just now. Here are the sources to check directly:" + formatLiveKnowledgeSources(liveResult);
+                        const reason = String(error?.code || error?.message || 'unknown').slice(0, 80).replaceAll(String.fromCharCode(10), ' ').replaceAll(String.fromCharCode(13), ' ');
+                        console.warn(`[Chatbot Live] outcome=summary_fallback reason=${reason} latency_ms=${Date.now() - liveStartedAt}`);
+                    }
+                }
+            } else {
             const intent = classifyIntent(cleanForHistory);
             const substantiveReply = pickSubstantiveReply(cleanForHistory, history.slice(0, -1).slice(-8).map(item => item.text));
             // Exact knowledge-bank matches outrank broad topic banks and contextual suggestions.
@@ -242,6 +266,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                     const reason = String(error?.code || error?.message || 'unknown').slice(0, 80).replaceAll(String.fromCharCode(10), ' ').replaceAll(String.fromCharCode(13), ' ');
                     console.warn(`[Chatbot AI] outcome=fallback latency_ms=${Date.now() - aiStartedAt} reason=${reason}`);
                 }
+            }
             }
         }
         // Enforce clean output for every chatbot source: AI, curated banks and identity replies.
