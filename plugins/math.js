@@ -2,6 +2,7 @@ import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
 import isAdmin from '../lib/isAdmin.js';
+import { startNoParticipationGrace } from '../lib/gameTimeouts.js';
 import { generateMathQuestion, getMathNegativeQuestionCount } from '../lib/mathQuestionEngine.js';
 import { TRIVIA_DIFFICULTY_SECONDS, getTriviaMatchQuestionCount } from './trivia.js';
 
@@ -112,6 +113,15 @@ async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
       text: `⏱️ *Round ${game.round}/${game.totalRounds} closed.*\n${winnerText}\nCorrect answer: *${game.answer}*`,
       mentions: game.roundWinner ? [game.roundWinner] : []
     });
+    if (Object.keys(game.attemptedBy || {}).length === 0) {
+      Object.assign(game, startNoParticipationGrace(game));
+      await saveGame(chatId, game);
+      await sock.sendMessage(chatId, {
+        text: '⏸️ *MATHS ARENA ON HOLD*\n\nNobody submitted an answer for this question. The match is paused for *5 minutes*. No new question will be generated during this period.\n\nIf nobody has participated by then, the match will end automatically.'
+      });
+      armTimer(sock, chatId, game);
+      return true;
+    }
     if (game.round >= game.totalRounds) {
       await endMatch(sock, chatId, game, 'completed');
       return true;
@@ -126,9 +136,19 @@ async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
 }
 
 function armTimer(sock, chatId, game) {
-  if (!game?.active || game.questionClosed || !game.expiresAt || timers.has(chatId)) return;
-  const delay = Math.max(0, game.expiresAt - Date.now());
+  if (!game?.active || timers.has(chatId)) return;
   const token = game.roundToken;
+  if (game.questionClosed && game.noParticipationExpiresAt) {
+    const delay = Math.max(0, game.noParticipationExpiresAt - Date.now());
+    timers.set(chatId, setTimeout(() => withChatLock(chatId, async () => {
+      const latest = await readGame(chatId);
+      if (!latest || latest.roundToken !== token || !latest.questionClosed || !latest.noParticipationExpiresAt || latest.noParticipationExpiresAt > Date.now()) return;
+      await endMatch(sock, chatId, latest, 'no-participation');
+    }).catch(error => console.error('[MATH] No-participation timer error:', error.message)), delay));
+    return;
+  }
+  if (game.questionClosed || !game.expiresAt) return;
+  const delay = Math.max(0, game.expiresAt - Date.now());
   timers.set(chatId, setTimeout(() => closeQuestion(sock, chatId, token).catch(error => console.error('[MATH] Timer error:', error.message)), delay));
 }
 
