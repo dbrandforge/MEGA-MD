@@ -89,8 +89,9 @@ function choosePair(chatId, category, input, previousReply = '', context = [], r
   // Prefer responses with real topical overlap; only fall back to a tie-break when the
   // message contains too little signal to distinguish the two sides.
   const bestScore = Math.max(...available.map(item => item.score));
-  // A bank pair with no lexical or contextual relevance must not hijack casual banter.
-  if (bestScore <= 0) return null;
+  // Unmatched casual Pidgin should fall through to the personality bank, not a random advice pair.
+  // Specialist banks retain their established fallback selection for short substantive prompts.
+  if (bestScore <= 0 && category === 'conversational') return null;
   const shortlist = available.filter(item => item.score === bestScore);
   const selected = shortlist[Math.floor(Math.random() * shortlist.length)];
   const text = pickSide(selected, responseMode);
