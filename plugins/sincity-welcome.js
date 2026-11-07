@@ -1,10 +1,10 @@
 import { welcomeMessage, groupRules, introReminder } from '../data/welcomeData.js';
 import { dailyActivities } from '../data/dailyActivities.js';
 import store from '../lib/lightweight_store.js';
+import { isFeatureGroup } from '../lib/featureGroups.js';
 import { logWelcome } from './welcomelog.js';
 import { memberLeftMessages, memberRemovedMessages, memberLeftReturnMessages, memberRemovedReturnMessages, pickRotatingMessage, classifyDeparture } from '../data/groupLifecycleMessages.js';
 
-const TARGET_GROUP = '120363405434471171@g.us';
 const PENDING_INTRO_KEY = 'pendingIntros_v2';
 const DEPARTURE_INDEX_KEY = 'groupDepartureMessageIndexes';
 const MEMBER_HISTORY_KEY = 'groupMemberHistory';
@@ -24,7 +24,7 @@ async function savePendingIntros(chatId, data) {
 }
 
 export async function handleNewMember(sock, chatId, participants) {
-    if (chatId !== TARGET_GROUP) return;
+    if (!isFeatureGroup(chatId)) return;
 
     try {
         for (const user of participants) {
@@ -110,7 +110,7 @@ export async function handleNewMember(sock, chatId, participants) {
 
 
 async function handleMemberDeparture(sock, chatId, update) {
-    if (chatId !== TARGET_GROUP) return;
+    if (!isFeatureGroup(chatId)) return;
     for (const participant of update.participants || []) {
         const userId = typeof participant === 'string' ? participant : participant?.id;
         if (!userId) continue;
@@ -141,7 +141,7 @@ async function handleMemberDeparture(sock, chatId, update) {
 }
 
 export async function markMemberIntroduced(chatId, userId) {
-    if (chatId !== TARGET_GROUP || !userId) return false;
+    if (!isFeatureGroup(chatId) || !userId) return false;
     const pending = await getPendingIntros(chatId);
     if (!pending[userId]) return false;
     delete pending[userId];
@@ -152,7 +152,7 @@ export async function markMemberIntroduced(chatId, userId) {
 export async function processGroupParticipantsUpdate(sock, update) {
     try {
         if (!update?.id || !update.participants) return;
-        if (update.id !== TARGET_GROUP) return;
+        if (!isFeatureGroup(update.id)) return;
         if (update.action === 'add') {
             console.log('[Welcome] Join event:', update.participants);
             handleNewMember(sock, update.id, update.participants).catch(e =>
@@ -180,8 +180,8 @@ export default {
     groupOnly: true,
     async handler(sock, message, args, context) {
         const { chatId, senderId } = context;
-        if (chatId !== TARGET_GROUP) {
-            return sock.sendMessage(chatId, { text: 'Only works in Mature minded.' }, { quoted: message });
+        if (!isFeatureGroup(chatId)) {
+            return sock.sendMessage(chatId, { text: 'This group has not been registered for the Forge Guard feature profile.' }, { quoted: message });
         }
         await handleNewMember(sock, chatId, [senderId]);
         await sock.sendMessage(chatId, {
