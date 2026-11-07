@@ -13,7 +13,7 @@ describe('Automatic AI provider resilience', () => {
   it('forwards live evidence and falls back to the secondary provider after a primary HTTP failure', async () => {
     axios.get
       .mockRejectedValueOnce(Object.assign(new Error('Bad Request'), { code: 'ERR_BAD_REQUEST' }))
-      .mockResolvedValueOnce({ data: { data: { response: 'The current official source confirms the answer.' } } });
+      .mockResolvedValueOnce({ data: { data: { response: 'Nigeria's current president is Bola Ahmed Tinubu, according to the official source.' } } });
 
     const answer = await askFastAI('Who is the current president of Nigeria?', {
       timeoutMs: 4000,
@@ -28,8 +28,8 @@ describe('Automatic AI provider resilience', () => {
   });
 
   it('accepts a provider response using the alternate answer field', async () => {
-    axios.get.mockResolvedValueOnce({ data: { answer: 'A useful answer.' } });
-    await expect(askFastAI('Explain a simple concept')).resolves.toBe('A useful answer.');
+    axios.get.mockResolvedValueOnce({ data: { answer: 'A concept is a basic idea that helps explain something.' } });
+    await expect(askFastAI('Explain a simple concept')).resolves.toBe('A concept is a basic idea that helps explain something.');
   });
 });
 
