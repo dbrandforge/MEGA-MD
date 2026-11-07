@@ -21,7 +21,7 @@ describe('Automatic AI provider resilience', () => {
       liveContext: 'LIVE WEB SEARCH EVIDENCE: official source excerpt'
     });
 
-    expect(answer).toContain('current official source');
+    expect(answer).toContain('Nigeria\'s current president');
     expect(axios.get).toHaveBeenCalledTimes(2);
     expect(decodeURIComponent(axios.get.mock.calls[0][0])).toContain('LIVE WEB SEARCH EVIDENCE');
     expect(decodeURIComponent(axios.get.mock.calls[1][0])).toContain('official source excerpt');
@@ -35,6 +35,7 @@ describe('Automatic AI provider resilience', () => {
 
 
 describe('Automatic AI answer quality gate', () => {
+  beforeEach(() => axios.get.mockReset());
   it('rejects personality banter returned for a factual question and tries the next provider', async () => {
     axios.get
       .mockResolvedValueOnce({ data: { response: "Abi, what's good?" } })
