@@ -4,7 +4,7 @@ import { isGameAllowed } from './daylock.js';
 import isAdmin from '../lib/isAdmin.js';
 import { startNoParticipationGrace, hasNoParticipation, isNoParticipationGraceExpired } from '../lib/gameTimeouts.js';
 import { generateMathQuestion, getMathNegativeQuestionCount } from '../lib/mathQuestionEngine.js';
-import { calculateMathScore } from '../lib/mathScoring.js';
+import { recordCorrectMathAnswer } from '../lib/mathScoring.js';
 import { TRIVIA_DIFFICULTY_SECONDS, getTriviaMatchQuestionCount } from './trivia.js';
 
 const STATE_KEY = 'mathGame';
@@ -104,7 +104,7 @@ async function endMatch(sock, chatId, game, reason = 'completed', quoted) {
   }, quoted ? { quoted } : undefined);
 }
 
-async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
+async function closeQuestion(sock, chatId, roundToken) {
   return withChatLock(chatId, async () => {
     const game = await readGame(chatId);
     if (!game || game.roundToken !== roundToken || game.questionClosed) return false;
@@ -221,17 +221,14 @@ export async function handleMathContinuity(sock, chatId, message, senderId) {
     game.participants = game.participants || {};
     game.participants[senderId] = true;
     if (body === game.answer) {
-      const answeredAt = Date.now();
-      const score = calculateMathScore(game.questionTime, game.roundStartedAt, answeredAt);
-      game.correctAnswers = Array.isArray(game.correctAnswers) ? game.correctAnswers : [];
-      game.correctAnswers.push({ senderId, answeredAt, ...score });
-      if (!game.roundWinner) game.roundWinner = senderId;
-      game.scores = game.scores || {};
-      game.scores[senderId] = (game.scores[senderId] || 0) + score.points;
+      const result = recordCorrectMathAnswer(game, senderId, Date.now());
+      if (!result.accepted) {
+        await sock.sendMessage(chatId, { text: 'You have already submitted a correct answer for this question.' }, { quoted: message });
+        return true;
+      }
       await saveGame(chatId, game);
-      const fastest = game.roundWinner === senderId;
       await sock.sendMessage(chatId, {
-        text: `✅ *Correct, ${mention(senderId)}!*\n+${score.points} points (${score.speedBonus} speed bonus).\n${fastest ? '⚡ You are currently the fastest correct answer.' : 'The round remains open; other players can still score.'}`,
+        text: `✅ *Correct, ${mention(senderId)}!*\n+${result.score.points} points (${result.score.speedBonus} speed bonus).\n${result.fastest ? '⚡ You are currently the fastest correct answer.' : 'The round remains open; other players can still score.'}`,
         mentions: [senderId]
       }, { quoted: message });
       return true;
@@ -240,7 +237,7 @@ export async function handleMathContinuity(sock, chatId, message, senderId) {
     await sock.sendMessage(chatId, { text: '❌ Not quite. Your answer is recorded; other players can still compete.' }, { quoted: message });
     return true;
   });
-  if (result?.closeToken) await closeQuestion(sock, chatId, result.closeToken, 'correct');
+  if (result?.closeToken) await closeQuestion(sock, chatId, result.closeToken);
   return result === true || !!result?.handled;
 }
 
