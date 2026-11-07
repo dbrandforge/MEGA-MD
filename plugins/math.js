@@ -117,7 +117,7 @@ async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
       Object.assign(game, startNoParticipationGrace(game));
       await saveGame(chatId, game);
       await sock.sendMessage(chatId, {
-        text: '⏸️ *MATHS ARENA ON HOLD*\n\nNobody submitted an answer for this question. The match is paused for *5 minutes*. No new question will be generated during this period.\n\nIf nobody has participated by then, the match will end automatically.'
+        text: '⏸️ *MATHS ARENA ON HOLD*\n\nNobody submitted an answer for this question. The match is paused for *5 minutes*. No new question will be generated during this period.\n\nThe match will end automatically when the five-minute hold expires.'
       });
       armTimer(sock, chatId, game);
       return true;
