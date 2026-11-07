@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
-import { classifyIntent, pickSubstantiveReply, getQuestionFallback } from '../data/chatbotResponseLibrary.js';
+import { classifyIntent, pickSubstantiveReply, pickLibraryReply, getQuestionFallback } from '../data/chatbotResponseLibrary.js';
 import { pickPersonalityReply } from '../data/forgeBotPersonalityBank.js';
 import { pickDualReply } from '../data/chatDual/dualBankSelector.js';
 import { getUserGender } from './gender.js';
@@ -198,8 +198,11 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         if (!response) {
             const intent = classifyIntent(cleanForHistory);
             const substantiveReply = pickSubstantiveReply(cleanForHistory);
-            // ChatDual handles advice-shaped/contextual intents; personality bank remains the fallback.
-            const dualResponse = substantiveReply || pickDualReply(cleanForHistory, {
+            // Exact knowledge-bank matches outrank broad topic banks and contextual suggestions.
+            // This prevents a new definition or financial question inheriting an old topic.
+            const libraryReply = pickLibraryReply(cleanForHistory, previousBotReply);
+            // ChatDual handles relevant advice-shaped/contextual intents; personality bank remains the fallback.
+            const dualResponse = substantiveReply || libraryReply || pickDualReply(cleanForHistory, {
                 chatId,
                 previousReply: previousBotReply,
                 intent,
