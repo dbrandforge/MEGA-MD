@@ -11,6 +11,7 @@ import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAckn
 import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
 import { isExplicitlyAddressedInGroup } from '../lib/chatbotAccess.js';
 import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI } from '../lib/aiService.js';
+import { evaluateArithmetic, formatArithmeticAnswer } from '../lib/arithmetic.js';
 
 const CHATBOT_AI_ENABLED = process.env.CHATBOT_AI_ENABLED === 'true';
 
@@ -185,6 +186,8 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         if (isGroup && !isExplicitlyAddressedInGroup({ isMention, isReplyToBot, quotedParticipant, botJids })) return;
         if (!cleanForHistory) return;
 
+        const arithmeticValue = evaluateArithmetic(cleanForHistory);
+        const arithmeticReply = arithmeticValue === null ? null : `The answer is *${formatArithmeticAnswer(arithmeticValue)}*.`;
         const identityReply = getIdentityReply(cleanForHistory, undefined, identity);
         // Creator/Queen arrival greetings are for a fresh direct call, not every follow-up turn.
         const identityGreeting = getIdentityGreeting(cleanForHistory, identity);
@@ -194,10 +197,10 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         const previousBotReply = [...history].reverse().find(item => item.name === 'Forge Bot')?.text || '';
         let registeredGender = null;
         try { registeredGender = await getUserGender(senderId); } catch {}
-        let response = identityReply || identityGreeting;
+        let response = arithmeticReply || identityReply || identityGreeting;
         if (!response) {
             const intent = classifyIntent(cleanForHistory);
-            const substantiveReply = pickSubstantiveReply(cleanForHistory);
+            const substantiveReply = pickSubstantiveReply(cleanForHistory, history.slice(0, -1).slice(-8).map(item => item.text));
             // Exact knowledge-bank matches outrank broad topic banks and contextual suggestions.
             // This prevents a new definition or financial question inheriting an old topic.
             const libraryReply = pickLibraryReply(cleanForHistory, previousBotReply);
@@ -224,7 +227,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             // AI enhancement is opt-in at deployment level and only runs after
             // direct addressing/DM permission checks. One 3.5s attempt maximum;
             // the local response remains available whenever the provider fails.
-            if (CHATBOT_AI_ENABLED && shouldUseAutomaticAI(cleanForHistory, intent, history.slice(0, -1).slice(-8))) {
+            if (CHATBOT_AI_ENABLED && !substantiveReply && shouldUseAutomaticAI(cleanForHistory, intent, history.slice(0, -1).slice(-8))) {
                 const aiStartedAt = Date.now();
                 try {
                     // The current user message has already been appended to history;
