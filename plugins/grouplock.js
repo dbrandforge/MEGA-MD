@@ -3,6 +3,7 @@ import store from '../lib/lightweight_store.js';
 import config from '../config.js';
 import { goodnightMessages, goodmorningMessages, pickRotatingMessage } from '../data/groupLifecycleMessages.js';
 import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
+import { PRIMARY_FEATURE_GROUP } from '../lib/featureGroups.js';
 
 /**
  * Group Lock / Unlock + Daily Activity Announcer
