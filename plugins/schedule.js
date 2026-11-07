@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
-import { FEATURE_GROUPS } from '../lib/featureGroups.js';
+import { FEATURE_GROUPS, loadFeatureGroups } from '../lib/featureGroups.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -140,6 +140,7 @@ export function startSchedulerEngine(sock) {
     // Always refresh the socket reference after reconnects. The timer is
     // created once, but must never retain a stale, closed Baileys socket.
     if (sock) _activeSocket = sock;
+    loadFeatureGroups().catch(error => console.error('[SCHEDULE] Feature-group registry load failed:', error.message));
     if (_engineStarted) return;
     _engineStarted = true;
 
@@ -152,6 +153,7 @@ export function startSchedulerEngine(sock) {
             return;
         }
         try {
+            await loadFeatureGroups();
             // Restore group registrations after a process restart.
             const persistedGroups = await store.getSetting('global', TRACKED_GROUPS_KEY);
             if (Array.isArray(persistedGroups)) persistedGroups.forEach(id => { if (id?.endsWith('@g.us')) _trackedGroups.add(id); });
