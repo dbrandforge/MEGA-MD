@@ -333,7 +333,7 @@ describe('Forge Guard transcript regression coverage', () => {
     const question = 'I need Lyrics for the song aye by davido';
     expect(classifyIntent(question)).toBe('copyrightLyrics');
     expect(pickSubstantiveReply(question)).toContain("I can't provide the full copyrighted lyrics");
-    expect(pickSubstantiveReply('Just give me the lyrics')).toBeNull();
+    expect(pickSubstantiveReply('Just give me the lyrics', [question])).toContain("I can't provide the full copyrighted lyrics");
   });
 
   it('does not classify a simple current sports-news request as ordinary banter', () => {
