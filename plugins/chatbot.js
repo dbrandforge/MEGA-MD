@@ -155,16 +155,10 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             || message.message?.videoMessage?.contextInfo
             || {};
         const mentioned = contextInfo.mentionedJid || [];
-        const quoted = contextInfo.participant;
-
         let isMention = mentioned.some(j => botJids.some(b =>
             b.split('@')[0].split(':')[0] === j.split('@')[0].split(':')[0]
         ));
         if (!isMention && botNumber) isMention = userMessage.includes(`@${botNumber}`);
-
-        const isReply = !!quoted && botJids.some(b =>
-            b.replace(/[:@].*$/, '') === quoted.replace(/[:@].*$/, '')
-        );
 
         // Record normal messages as well, so a later mention can refer to the group discussion.
         const originalText = message.message?.conversation
