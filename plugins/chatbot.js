@@ -119,14 +119,6 @@ async function saveChatHistory(chatId, history) {
     }
 }
 
-async function showTyping(sock, chatId) {
-    try {
-        await sock.presenceSubscribe(chatId);
-        await sock.sendPresenceUpdate('composing', chatId);
-        await new Promise(r => setTimeout(r, 800 + Math.random() * 1200));
-    } catch {}
-}
-
 // Live replies are selected locally from the curated personality bank.
 export async function handleChatbotResponse(sock, chatId, message, userMessage, senderId) {
     const data = await loadUserGroupData();
@@ -183,14 +175,16 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         }
 
         // In personal DMs, an enabled session responds naturally without requiring a mention or quoted reply.
-        if (isGroup && !isExplicitlyAddressedInGroup({ isMention })) return;
+        const quotedParticipant = contextInfo.participant || '';
+        const isReplyToBot = Boolean(quotedParticipant && botJids.some(b =>
+            b.split('@')[0].split(':')[0] === quotedParticipant.split('@')[0].split(':')[0]
+        ));
+        if (isGroup && !isExplicitlyAddressedInGroup({ isMention, isReplyToBot, quotedParticipant, botJids })) return;
         if (!cleanForHistory) return;
 
         const identityReply = getIdentityReply(cleanForHistory, undefined, identity);
         // Creator/Queen arrival greetings are for a fresh direct call, not every follow-up turn.
         const identityGreeting = getIdentityGreeting(cleanForHistory, identity);
-
-        await showTyping(sock, chatId);
 
         // Identity-specific replies take priority over the general personality bank.
         // Creator/VIP recognition never grants permissions; authorization remains in the command handler.
