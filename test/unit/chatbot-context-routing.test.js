@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getIdentityGreeting } from '../../lib/identity.js';
 import { isExplicitlyAddressedInGroup } from '../../lib/chatbotAccess.js';
 import { sanitizeAIResponse } from '../../plugins/ai-gpt.js';
+import { shouldUseAutomaticAI } from '../../plugins/chatbot.js';
 import { pickPersonalityReply, classifyPersonalityCategory } from '../../data/forgeBotPersonalityBank.js';
 
 const creator = { role: 'creator', name: 'Forge dcreative', alias: 'Forge' };
@@ -83,5 +84,15 @@ describe('GPT legacy identity sanitization', () => {
 
   it('does not rewrite an explicitly requested factual question about that person', () => {
     expect(sanitizeAIResponse('Qasim Ali created the original repository.', 'Who is Qasim Ali?')).toBe('Qasim Ali created the original repository.');
+  });
+});
+
+
+describe('Automatic AI opt-in routing', () => {
+  it('limits automatic AI to substantive advice intents or full fallback questions', () => {
+    expect(shouldUseAutomaticAI('Can two people love each other?', 'relationships')).toBe(true);
+    expect(shouldUseAutomaticAI('What makes someone genuinely interesting to talk to?', 'fallback')).toBe(true);
+    expect(shouldUseAutomaticAI('Hello bot', 'greeting')).toBe(false);
+    expect(shouldUseAutomaticAI('What?', 'fallback')).toBe(false);
   });
 });
