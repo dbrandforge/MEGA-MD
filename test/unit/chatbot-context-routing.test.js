@@ -58,9 +58,9 @@ describe('Group chatbot addressing boundary', () => {
     expect(isExplicitlyAddressedInGroup({ isMention: false, isReply: false })).toBe(false);
   });
 
-  it('answers only when explicitly mentioned or directly replied to', () => {
-    expect(isExplicitlyAddressedInGroup({ isMention: true, isReply: false })).toBe(true);
-    expect(isExplicitlyAddressedInGroup({ isMention: false, isReply: true })).toBe(true);
+  it('answers only when explicitly mentioned, never on reply-only game messages', () => {
+    expect(isExplicitlyAddressedInGroup({ isMention: true })).toBe(true);
+    expect(isExplicitlyAddressedInGroup({ isMention: false, isReply: true })).toBe(false);
   });
 });
 
