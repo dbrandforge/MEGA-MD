@@ -1,5 +1,5 @@
 import store from '../lib/lightweight_store.js';
-import { PRIMARY_FEATURE_GROUP, registerFeatureGroup } from '../lib/featureGroups.js';
+import { PRIMARY_FEATURE_GROUP, registerFeatureGroup, isFeatureGroup } from '../lib/featureGroups.js';
 import { trackGroup, startSchedulerEngine } from './schedule.js';
 import { loadUserGroupData, saveUserGroupData } from './chatbot.js';
 import {
@@ -16,7 +16,7 @@ const ENABLED_FEATURES = [
   'Anti-link protection',
   'Anti-spam protection',
   'Anonymous Night',
-  'All game commands unlocked by default',
+  'Game commands enabled; Mature Minded day-lock schedule retained',
   'Daily group lock/unlock and activity announcements',
   'Scheduled group maintenance'
 ];
@@ -38,7 +38,7 @@ export default {
 
     if (action === 'status') {
       const profile = await store.getSetting(chatId, 'forgeGuardGroupProfile');
-      const isRegistered = (await store.getSetting('global', 'forgeGuardFeatureGroups') || []).includes(chatId);
+      const isRegistered = isFeatureGroup(chatId);
       return sock.sendMessage(chatId, {
         text: `🛠️ *FORGE GUARD GROUP PROFILE*\n\nRegistration: ${isRegistered ? '🟢 ACTIVE' : '🔴 NOT REGISTERED'}\nProfile: ${profile?.name || 'Not applied'}\nSource: ${profile?.source || '—'}\nLast applied: ${profile?.appliedAt ? new Date(profile.appliedAt).toLocaleString('en-GB', { timeZone: 'Africa/Lagos' }) : '—'}`
       }, { quoted: message });
