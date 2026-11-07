@@ -26,7 +26,7 @@ export default {
       '',
       ...available.map((plugin, index) => {
         const description = plugin.description ? ` — ${plugin.description}` : '';
-        const usage = plugin.usage ? `\n   Usage: ${plugin.usage.replace(/\\./g, prefix)}` : '';
+        const usage = plugin.usage ? `\n   Usage: ${plugin.usage.replace(/\./g, prefix)}` : '';
         return `${index + 1}. *${prefix}${plugin.command}*${description}${usage}`;
       }),
       '',
