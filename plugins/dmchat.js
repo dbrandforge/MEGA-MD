@@ -68,7 +68,7 @@ export default {
     if (scope === 'all') {
       if (action !== 'status') {
         data.chatbotDMEnabled = action === 'on';
-        await saveUserGroupData(data);
+        if (!await saveUserGroupData(data)) return sock.sendMessage(chatId, { text: '❌ Could not save the DM chatbot switch. No setting was confirmed.' }, { quoted: message });
       }
       const enabled = data.chatbotDMEnabled === true;
       return sock.sendMessage(chatId, {
