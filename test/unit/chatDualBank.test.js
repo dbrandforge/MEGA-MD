@@ -18,6 +18,9 @@ import fourthRelationshipExpansionModule from '../../data/chatDual/ev_2_1.js';
 import fifthRelationshipExpansionModule from '../../data/chatDual/ev_2_2.js';
 import sixthWellbeingExpansionModule from '../../data/chatDual/ev_2_3.js';
 import seventhWellbeingExpansionModule from '../../data/chatDual/ev_3_0.js';
+import eighthWellbeingExpansionModule from '../../data/chatDual/ev_3_1.js';
+import ninthWellbeingExpansionModule from '../../data/chatDual/ev_3_2.js';
+import thirdAdviceExpansionModule from '../../data/chatDual/ev_3_3.js';
 
 describe('ChatDual expansion bank', () => {
   it('reports complete and exact 5,183-pair expansion', () => {
@@ -154,6 +157,33 @@ describe('ChatDual expansion bank', () => {
     expect(new Set(rows.flatMap(row => [row.a, row.b])).size).toBe(364);
     expect(rows.every(row => row.a.length >= 60 && row.b.length >= 60)).toBe(true);
     expect(rows.every(row => row.a !== row.b)).toBe(true);
+  });
+
+  it('keeps the eighth wellbeing expansion module substantive and unique', () => {
+    const rows = eighthWellbeingExpansionModule.wellbeing;
+    expect(rows).toHaveLength(182);
+    expect(new Set(rows.map(row => row.a)).size).toBe(182);
+    expect(new Set(rows.map(row => row.b)).size).toBe(182);
+    expect(new Set(rows.flatMap(row => [row.a, row.b])).size).toBe(364);
+    expect(rows.every(row => row.a.length >= 60 && row.b.length >= 60 && row.a !== row.b)).toBe(true);
+  });
+
+  it('keeps the ninth wellbeing expansion module substantive and unique', () => {
+    const rows = ninthWellbeingExpansionModule.wellbeing;
+    expect(rows).toHaveLength(182);
+    expect(new Set(rows.map(row => row.a)).size).toBe(182);
+    expect(new Set(rows.map(row => row.b)).size).toBe(182);
+    expect(new Set(rows.flatMap(row => [row.a, row.b])).size).toBe(364);
+    expect(rows.every(row => row.a.length >= 60 && row.b.length >= 60 && row.a !== row.b)).toBe(true);
+  });
+
+  it('keeps the third advice expansion module substantive and unique', () => {
+    const rows = thirdAdviceExpansionModule.advice;
+    expect(rows).toHaveLength(181);
+    expect(new Set(rows.map(row => row.a)).size).toBe(181);
+    expect(new Set(rows.map(row => row.b)).size).toBe(181);
+    expect(new Set(rows.flatMap(row => [row.a, row.b])).size).toBe(362);
+    expect(rows.every(row => row.a.length >= 60 && row.b.length >= 60 && row.a !== row.b)).toBe(true);
   });
 
   it("scores the response that shares the user's actual topic more highly", () => {
