@@ -200,7 +200,7 @@ export const intentRules = [
   // Direct informational requests must be recognised before broad topic categories.
   { intent: 'slangDefinition', patterns: [/\b(what does .{1,40} mean|what is the meaning of .{1,40}|meaning of .{1,40}|define .{1,40})\b/i] },
   { intent: 'copyrightLyrics', patterns: [/\b(lyrics|lyric)\b.*\b(song|track|music|by)\b|\b(song|track)\b.*\b(full lyrics|lyrics)\b/i] },
-  { intent: 'definition', patterns: [/^\s*(what is|what are|who is|who are|explain)\b/i, /\b(define|definition of|meaning of)\b/i] },
+  { intent: 'definition', patterns: [/^\s*(what is|what are|explain)\b/i, /\b(define|definition of|meaning of)\b/i] },
   { intent: 'financialNeed', patterns: [/\b(i need money|need money|i need cash|need some cash|i need funds|need funds urgently|broke|i am broke|i'm broke|no money|out of money|how can i make money|how do i make money|what can i do to make money|how can i earn money|how do i earn money|how to make money|ways to make money|make money|raise money|urgent money|how do i get a loan|how can i get a loan|where can i get a loan|need a loan|borrow money|loan)\b/i] },
   { intent: 'error', patterns: [/^\s*(error|it'?s an error|that'?s an error|you made an error)\s*[.!?]*$/i, /\b(error message|showing an error|got an error|failed with an error)\b/i] },
   { intent: 'activityInfo', patterns: [/\b(what'?s|what is|any) (the )?(group'?s )?(activity|activities|plan|plans|agenda) (for )?(today|tonight|this evening)\b/i, /\bwhat (are we|is the group) doing (today|tonight)\b/i] },
@@ -367,17 +367,23 @@ export function ensureResponseEmoji(reply = '', text = '') {
 export function pickLibraryReply(text = '', previousReply = '') {
   const intent = classifyIntent(text);
   if (intent === 'fallback' || intent === 'copyrightLyrics') return null;
+  const input = String(text || '').trim();
+  const isDirectQuestion = /[?]\s*$/.test(input)
+    || /^(who|whom|whose|what|what's|when|where|why|how|which|who's)\b/i.test(input);
+  // Topic banks contain conversation starters, not verified factual answers.
+  // Never let one replace an answer to a direct question.
+  if (isDirectQuestion && !['definition', 'slangDefinition'].includes(intent)) return null;
   let replies = responseLibrary[intent];
   if (!Array.isArray(replies) || !replies.length) return null;
 
   // Knowledge presets must match the requested term; never return a random definition.
-  const input = String(text).toLowerCase();
+  const normalizedInput = input.toLowerCase();
   if (intent === 'definition') {
     const termRules = [
       [/\blove\b/, 0], [/\bfriendship\b/, 1], [/\brelationship\b/, 2],
       [/\bemotional intelligence\b/, 3], [/\bself[- ]respect\b/, 4]
     ];
-    const match = termRules.find(([pattern]) => pattern.test(input));
+    const match = termRules.find(([pattern]) => pattern.test(normalizedInput));
     if (!match) return null;
     replies = [replies[match[1]]].filter(Boolean);
   }
@@ -386,7 +392,7 @@ export function pickLibraryReply(text = '', previousReply = '') {
       [/\bfra\b|\bfr\b/, 0], [/\bno cap\b/, 1],
       [/\bbet\b/, 2], [/\blowkey\b/, 3]
     ];
-    const match = slangRules.find(([pattern]) => pattern.test(input));
+    const match = slangRules.find(([pattern]) => pattern.test(normalizedInput));
     if (!match) return null;
     replies = [replies[match[1]]].filter(Boolean);
   }
