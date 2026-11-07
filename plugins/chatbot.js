@@ -4,6 +4,7 @@ import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
 import { classifyIntent } from '../data/chatbotResponseLibrary.js';
 import { pickPersonalityReply } from '../data/forgeBotPersonalityBank.js';
+import { pickDualReply } from '../data/chatDual/dualBankSelector.js';
 import { getUserGender } from './gender.js';
 import { printLog } from '../lib/print.js';
 import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
@@ -198,7 +199,16 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         try { registeredGender = await getUserGender(senderId); } catch {}
         let response = identityReply || identityGreeting;
         if (!response) {
-            response = pickPersonalityReply(cleanForHistory, {
+            const intent = classifyIntent(cleanForHistory);
+            // ChatDual handles advice-shaped/contextual intents; personality bank remains the fallback.
+            const dualResponse = pickDualReply(cleanForHistory, {
+                chatId,
+                previousReply: previousBotReply,
+                intent,
+                context: history.slice(-8).map(item => item.text),
+                responseMode: 'reasoned'
+            });
+            response = dualResponse || pickPersonalityReply(cleanForHistory, {
                 chatId,
                 previousReply: previousBotReply,
                 gender: registeredGender,
@@ -206,12 +216,11 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             });
             // Identity acknowledgement is limited to neutral social exchanges.
             // It must never override teasing, substantive questions, or contextual follow-ups.
-            const intent = classifyIntent(cleanForHistory);
             if (identity && ['greeting', 'wellbeing', 'thanks', 'agreement'].includes(intent) && Math.random() < 0.12) {
                 response = getIdentityAcknowledgement(identity) + response;
             }
         }
-        console.info(`[Chatbot] Personality-bank reply (intent: ${classifyIntent(cleanForHistory)}, identity: ${identity?.role || 'standard'}, gender: ${registeredGender || 'unregistered'}).`);
+        console.info(`[Chatbot] Reply (intent: ${classifyIntent(cleanForHistory)}, identity: ${identity?.role || 'standard'}, gender: ${registeredGender || 'unregistered'}).`);
 
         printLog('info', `[Chatbot DM] Attempting reply via destinationType=${chatId.endsWith('@lid') ? 'LID' : 'PN_or_group'}`);
         const sentMessage = await sock.sendMessage(chatId, { text: response }, { quoted: message });

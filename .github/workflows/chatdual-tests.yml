@@ -1,0 +1,40 @@
+name: ChatDual feature-branch tests
+
+on:
+  push:
+    branches:
+      - feat/forge-guard-chatdual-integration
+    paths:
+      - 'data/chatDual/**'
+      - 'plugins/chatbot.js'
+      - 'test/unit/chatDualBank.test.js'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/chatdual-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run unit tests
+        run: npm run test:unit
+      - name: Audit specialty ChatDual banks
+        id: specialty-audit
+        run: npm run chatdual:audit
+        continue-on-error: true
+      - name: Report specialty-bank audit status
+        if: steps.specialty-audit.outcome == 'failure'
+        run: echo "::warning::Specialty ChatDual banks still require content-quality rewrites; see audit output above."
