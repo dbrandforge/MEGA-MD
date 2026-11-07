@@ -2,7 +2,7 @@ import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
 import isAdmin from '../lib/isAdmin.js';
-import { startNoParticipationGrace, hasNoParticipation } from '../lib/gameTimeouts.js';
+import { startNoParticipationGrace, hasNoParticipation, isNoParticipationGraceExpired } from '../lib/gameTimeouts.js';
 import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES } from '../data/nigeriaTrivia.js';
 
 const STATE_KEY = 'triviaArenaV2';
@@ -157,6 +157,8 @@ async function readGame(chatId) {
   let game = await store.getSetting(chatId, STATE_KEY);
   if (!game?.active) game = await importLegacyGame(chatId);
   if (!game?.active) return null;
+  // Let the persisted no-participation deadline win over the general match expiry after a restart.
+  if (isNoParticipationGraceExpired(game)) return game;
   if (game.matchExpiresAt && game.matchExpiresAt <= Date.now()) {
     await store.saveSettingVerified(chatId, STATE_KEY, { ...game, active: false, endedAt: Date.now(), reason: 'expired' });
     clearTimer(chatId);
