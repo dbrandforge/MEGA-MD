@@ -95,7 +95,10 @@ export default {
       }
 
       if (applyGeneral) {
-        const nextUserData = copyGroupUserData(userData, PRIMARY_FEATURE_GROUP, chatId, GENERAL_GROUP_MAPS);
+        // Reload after the exclusive package write so the general-package save
+        // cannot overwrite welcome/goodbye values with a stale pre-setup snapshot.
+        const latestUserData = applyMatured ? await loadUserGroupData() : userData;
+        const nextUserData = copyGroupUserData(latestUserData, PRIMARY_FEATURE_GROUP, chatId, GENERAL_GROUP_MAPS);
         if (!await store.saveSettingVerified('global', 'userGroupData', nextUserData)) {
           throw new Error('Could not save the general group feature switches.');
         }
@@ -114,14 +117,17 @@ export default {
       }
 
       const featureSets = {
-        maturedMinded: applyMatured || existingProfile?.featureSets?.maturedMinded === true || isFeatureGroup(chatId),
-        general: applyGeneral || existingProfile?.featureSets?.general === true
+        maturedMinded: applyMatured || existingProfile?.featureSets?.maturedMinded === true || chatId === PRIMARY_FEATURE_GROUP,
+        general: applyGeneral || existingProfile?.featureSets?.general === true || (!existingProfile && isFeatureGroup(chatId))
       };
 
-      if (applyMatured) {
+      // Both packages authorize general game access. Register and track the
+      // group for either package; the scheduler separately checks the
+      // Matured Minded-exclusive profile before running its daily lifecycle.
+      if (applyMatured || applyGeneral) {
         await registerFeatureGroup(chatId);
         if (!await trackGroup(chatId)) {
-          throw new Error('Matured Minded-exclusive features were saved, but scheduler registration could not be verified.');
+          throw new Error('Group features were saved, but scheduler registration could not be verified.');
         }
         startSchedulerEngine(sock);
       }
