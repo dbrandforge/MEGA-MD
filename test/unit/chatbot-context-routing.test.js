@@ -365,3 +365,33 @@ describe('Answer-first chatbot routing', () => {
     }
   });
 });
+
+describe('context retention and answer relevance', () => {
+  it('routes a business detail through AI when it answers the bot\'s previous question', () => {
+    const history = [
+      { name: 'Forge Bot', text: 'What business or product are you trying to promote?' }
+    ];
+    expect(shouldUseAutomaticAI('I sell phones and gadgets', 'greeting', history)).toBe(true);
+  });
+});
+
+
+describe('Multi-turn clarification continuity', () => {
+  it('keeps routing business details after an intermediate clarification from the bot', () => {
+    const history = [
+      { name: 'Forge Bot', text: 'What business or product are you trying to promote?' },
+      { name: 'Forge', text: 'I sell phones and gadgets.' },
+      { name: 'Forge Bot', text: 'Say am clear.' }
+    ];
+    expect(shouldUseAutomaticAI('I am trying to promote my phone and gadget business', 'fallback', history)).toBe(true);
+  });
+
+  it('does not treat unrelated casual banter as a business-context continuation', () => {
+    const history = [
+      { name: 'Forge Bot', text: 'What business or product are you trying to promote?' },
+      { name: 'Forge', text: 'I sell phones and gadgets.' },
+      { name: 'Forge Bot', text: 'Say am clear.' }
+    ];
+    expect(shouldUseAutomaticAI('Oya wa malo', 'pidgin', history)).toBe(false);
+  });
+});

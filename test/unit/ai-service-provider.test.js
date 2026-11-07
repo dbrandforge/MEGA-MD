@@ -5,7 +5,7 @@ vi.mock('axios', () => ({
 }));
 
 import axios from 'axios';
-import { askFastAI } from '../../lib/aiService.js';
+import { askFastAI, isUsefulAutomaticAnswer } from '../../lib/aiService.js';
 
 describe('Automatic AI provider resilience', () => {
   beforeEach(() => axios.get.mockReset());
@@ -54,5 +54,45 @@ describe('Automatic AI answer quality gate', () => {
   it('accepts a concise answer that directly names the subject', async () => {
     axios.get.mockResolvedValueOnce({ data: { response: 'Davido is a Nigerian singer.' } });
     await expect(askFastAI('Who is Davido?')).resolves.toContain('Nigerian singer');
+  });
+});
+
+describe('Subject relevance validation', () => {
+  it('rejects a fluent but unrelated response to a song question', () => {
+    expect(isUsefulAutomaticAnswer(
+      "Tell me about Davido's song Aye",
+      'A good character can save an average plot. Who gave the strongest performance?'
+    )).toBe(false);
+  });
+
+  it('accepts a substantive answer that names the requested subject', () => {
+    expect(isUsefulAutomaticAnswer(
+      "Tell me about Davido's song Aye",
+      'Aye is a song by Davido that explores romantic affection and commitment.'
+    )).toBe(true);
+  });
+});
+
+
+describe('General-purpose relevance guard', () => {
+  it('rejects answers that share one incidental word but miss the requested subject', () => {
+    expect(isUsefulAutomaticAnswer(
+      'Explain operating leverage in business',
+      'A quick loan can help a business cover urgent expenses when cash flow is tight.'
+    )).toBe(false);
+  });
+
+  it('accepts answers that address the key subject of a multi-part question', () => {
+    expect(isUsefulAutomaticAnswer(
+      'Explain operating leverage in business',
+      'Operating leverage describes how fixed operating costs affect a business\'s operating profit as sales change.'
+    )).toBe(true);
+  });
+
+  it('continues to accept concise answers to single-subject questions', () => {
+    expect(isUsefulAutomaticAnswer(
+      'What is photosynthesis?',
+      'Photosynthesis is the process plants use to convert light energy into chemical energy.'
+    )).toBe(true);
   });
 });
