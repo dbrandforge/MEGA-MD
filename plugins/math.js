@@ -258,8 +258,8 @@ export default {
       if (!game) return sock.sendMessage(chatId, { text: 'No active Maths Arena match. Start with *.math normal*.', ...channelInfo }, { quoted: message });
       const onHold = game.questionClosed && game.noParticipationExpiresAt;
       const statusText = onHold
-        ? '🧮 *MATHS ARENA STATUS*\\nQuestion ' + game.round + '/' + game.totalRounds + ' · ' + game.mode + '\\nStatus: ON HOLD — no submissions\\nMatch ends in: ' + Math.max(0, Math.ceil((game.noParticipationExpiresAt - Date.now()) / 1000)) + 's\\n\\n' + (formatScores(game.scores, 10).join('\\n') || 'No scores yet.')
-        : '🧮 *MATHS ARENA STATUS*\\nQuestion ' + game.round + '/' + game.totalRounds + ' · ' + game.mode + '\\nTime left: ' + Math.max(0, Math.ceil((game.expiresAt - Date.now()) / 1000)) + 's\\n\\n' + (formatScores(game.scores, 10).join('\\n') || 'No scores yet.');
+        ? '🧮 *MATHS ARENA STATUS*\nQuestion ' + game.round + '/' + game.totalRounds + ' · ' + game.mode + '\nStatus: ON HOLD — no submissions\nMatch ends in: ' + Math.max(0, Math.ceil((game.noParticipationExpiresAt - Date.now()) / 1000)) + 's\n\n' + (formatScores(game.scores, 10).join('\n') || 'No scores yet.')
+        : '🧮 *MATHS ARENA STATUS*\nQuestion ' + game.round + '/' + game.totalRounds + ' · ' + game.mode + '\nTime left: ' + Math.max(0, Math.ceil((game.expiresAt - Date.now()) / 1000)) + 's\n\n' + (formatScores(game.scores, 10).join('\n') || 'No scores yet.');
       return sock.sendMessage(chatId, { text: statusText, ...channelInfo }, { quoted: message });
     }
     if (action === 'score' || action === 'scores' || action === 'leaderboard') {
