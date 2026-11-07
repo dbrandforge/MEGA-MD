@@ -1,4 +1,5 @@
 import { dailyActivities } from '../data/dailyActivities.js';
+import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 
 /**
  * Lets anyone (admin or not) check today's scheduled activity on demand,
@@ -23,6 +24,13 @@ export default {
     usage: '.activity',
     async handler(sock, message, args, context) {
         const { chatId, channelInfo } = context;
+
+        if (!await hasMaturedMindedFeatures(chatId)) {
+            return sock.sendMessage(chatId, {
+                text: 'Today’s scheduled group activity is part of the Matured Minded package and is not enabled in this group.',
+                ...channelInfo
+            }, { quoted: message });
+        }
 
         const day = getCurrentDay();
         const activity = dailyActivities[day];
