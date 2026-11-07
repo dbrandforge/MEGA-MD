@@ -1,6 +1,6 @@
 import store from '../lib/lightweight_store.js';
+import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 
-const TARGET_GROUP = '120363405434471171@g.us';
 const PENDING_INTRO_KEY = 'pendingIntros_v2';
 
 function getMentionedUsers(message) {
@@ -22,7 +22,7 @@ export default {
             chatId, { text, ...extra, ...channelInfo }, { quoted: message }
         );
 
-        if (chatId !== TARGET_GROUP) {
+        if (!await hasMaturedMindedFeatures(chatId)) {
             return reply('This command is configured for Mature minded only.');
         }
 
