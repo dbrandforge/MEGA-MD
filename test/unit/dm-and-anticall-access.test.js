@@ -27,8 +27,15 @@ describe('DM chatbot access controls', () => {
     expect(getDMChatbotPermission({ chatbotDM: { '123456789@lid': true } }, '2348000000000@s.whatsapp.net', '123456789@lid')).toBe(true);
   });
 
-  it('keeps recognized identities available when no explicit override exists', () => {
-    expect(getDMChatbotPermission({ chatbotDMEnabled: false }, '2348000000000@s.whatsapp.net', '2348000000000@s.whatsapp.net', { role: 'creator' })).toBe(true);
+  it('does not let creator identity bypass a disabled universal default', () => {
+    expect(getDMChatbotPermission({ chatbotDMEnabled: false }, '2348000000000@s.whatsapp.net', '2348000000000@s.whatsapp.net', { role: 'creator' })).toBe(false);
+  });
+
+  it('keeps an explicit personal OFF authoritative even for the creator', () => {
+    expect(getDMChatbotPermission({
+      chatbotDMEnabled: true,
+      chatbotDM: { '2348000000000@s.whatsapp.net': false }
+    }, '2348000000000@s.whatsapp.net', '2348000000000@s.whatsapp.net', { role: 'creator' })).toBe(false);
   });
 });
 

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getIdentityGreeting } from '../../lib/identity.js';
+import { isExplicitlyAddressedInGroup } from '../../lib/chatbotAccess.js';
+import { sanitizeAIResponse } from '../../plugins/ai-gpt.js';
 import { pickPersonalityReply, classifyPersonalityCategory } from '../../data/forgeBotPersonalityBank.js';
 
 const creator = { role: 'creator', name: 'Forge dcreative', alias: 'Forge' };
@@ -48,5 +50,27 @@ describe('Forge Guard contextual response selection', () => {
       history: historyWith('Oya, give me the backstory.')
     });
     expect(reply).toBeTruthy();
+  });
+});
+
+describe('Group chatbot addressing boundary', () => {
+  it('does not answer ordinary group conversation or the word bot alone', () => {
+    expect(isExplicitlyAddressedInGroup({ isMention: false, isReply: false })).toBe(false);
+  });
+
+  it('answers only when explicitly mentioned, never on reply-only game messages', () => {
+    expect(isExplicitlyAddressedInGroup({ isMention: true })).toBe(true);
+    expect(isExplicitlyAddressedInGroup({ isMention: false, isReply: true })).toBe(false);
+  });
+});
+
+describe('GPT legacy identity sanitization', () => {
+  it('removes the previous repository author when the model uses it as an unsolicited name', () => {
+    expect(sanitizeAIResponse("You've got this, Qasim.", 'What is 2 + 2?')).toBe("You've got this.");
+    expect(sanitizeAIResponse("Qasim, you've got this.", 'What is 2 + 2?')).toBe("you've got this.");
+  });
+
+  it('does not rewrite an explicitly requested factual question about that person', () => {
+    expect(sanitizeAIResponse('Qasim Ali created the original repository.', 'Who is Qasim Ali?')).toBe('Qasim Ali created the original repository.');
   });
 });

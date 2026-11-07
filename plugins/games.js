@@ -13,6 +13,9 @@ export default {
     const registered = commandHandler.getCommandsByCategory('games')
       .map(name => commandHandler.commands.get(String(name).toLowerCase()))
       .filter(plugin => plugin && plugin.command !== 'games')
+      .filter(plugin => !plugin.hidden && !plugin.internal)
+      .filter(plugin => !String(plugin.command).toLowerCase().endsWith('_legacy'))
+      .filter(plugin => !['truthcontinue'].includes(String(plugin.command).toLowerCase()))
       .filter(plugin => !commandHandler.disabledCommands.has(String(plugin.command).toLowerCase()));
 
     // Hot Seat is a game command intentionally stored in the admin category.
@@ -38,7 +41,7 @@ export default {
     const lines = [
       '🎮 *FORGE GUARD — GAMES ARCADE*',
       '',
-      'Games currently registered and enabled:',
+      'Registered game commands (availability can depend on your group packages, manual locks and scheduled days):',
       '',
       ...available.map((plugin, index) => {
         const description = plugin.description ? ` — ${plugin.description}` : '';
@@ -46,6 +49,7 @@ export default {
         return `${index + 1}. *${prefix}${plugin.command}*${description}${usage}`;
       }),
       '',
+      'Some games follow their scheduled day. An admin can use .bypass <game> 1h for a temporary exception.',
       'Open a game command to see its modes, rules and controls.',
       'For example: .trivia · .math · .wyr'
     ];

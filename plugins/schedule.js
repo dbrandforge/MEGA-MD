@@ -3,6 +3,7 @@ import path from 'path';
 import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
 import { FEATURE_GROUPS, loadFeatureGroups } from '../lib/featureGroups.js';
+import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -112,7 +113,7 @@ async function checkTimedGroupMute(sock, chatId) {
     // A manual/scheduled feature-group lock takes precedence over a timed
     // group mute. Expiry must not accidentally reopen a group still locked
     // by the daily lifecycle schedule.
-    const scheduledLockState = FEATURE_GROUPS.includes(chatId)
+    const scheduledLockState = await hasMaturedMindedFeatures(chatId)
         ? await store.getSetting(chatId, 'groupLockState')
         : null;
 

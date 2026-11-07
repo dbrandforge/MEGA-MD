@@ -1,7 +1,8 @@
 import store from '../lib/lightweight_store.js';
-import { PRIMARY_FEATURE_GROUP, registerFeatureGroup, isFeatureGroup, loadFeatureGroups } from '../lib/featureGroups.js';
+import { PRIMARY_FEATURE_GROUP, registerFeatureGroup, unregisterFeatureGroup, isFeatureGroup, loadFeatureGroups } from '../lib/featureGroups.js';
 import { trackGroup, startSchedulerEngine } from './schedule.js';
 import { loadUserGroupData } from './chatbot.js';
+import { invalidateGroupFeatureAccessCache } from '../lib/groupFeatureAccess.js';
 import {
   MATURED_MIND_EXCLUSIVE_MAPS,
   GENERAL_GROUP_MAPS,
@@ -22,8 +23,8 @@ function enabledFeatureLines(featureSets = {}) {
   ];
 }
 
-function profileStatusText(profile, registered) {
-  const sets = profile?.featureSets || { maturedMinded: registered, general: false };
+function profileStatusText(profile, registered, maturedEnabled, generalEnabled) {
+  const sets = profile?.featureSets || { maturedMinded: maturedEnabled, general: generalEnabled };
   return [
     '🛠️ *FORGE GUARD GROUP PROFILE*',
     '',
@@ -61,8 +62,11 @@ export default {
     if (action === 'status') {
       await loadFeatureGroups();
       const profile = await store.getSetting(chatId, 'forgeGuardGroupProfile');
+      const maturedEnabled = chatId === PRIMARY_FEATURE_GROUP || profile?.featureSets?.maturedMinded === true;
+      const generalEnabled = isFeatureGroup(chatId);
+      const registered = generalEnabled || maturedEnabled;
       return sock.sendMessage(chatId, {
-        text: profileStatusText(profile, isFeatureGroup(chatId))
+        text: profileStatusText(profile, registered, maturedEnabled, generalEnabled)
       }, { quoted: message });
     }
 
@@ -95,7 +99,10 @@ export default {
       }
 
       if (applyGeneral) {
-        const nextUserData = copyGroupUserData(userData, PRIMARY_FEATURE_GROUP, chatId, GENERAL_GROUP_MAPS);
+        // Reload after the exclusive package write so the general-package save
+        // cannot overwrite welcome/goodbye values with a stale pre-setup snapshot.
+        const latestUserData = applyMatured ? await loadUserGroupData() : userData;
+        const nextUserData = copyGroupUserData(latestUserData, PRIMARY_FEATURE_GROUP, chatId, GENERAL_GROUP_MAPS);
         if (!await store.saveSettingVerified('global', 'userGroupData', nextUserData)) {
           throw new Error('Could not save the general group feature switches.');
         }
@@ -114,14 +121,19 @@ export default {
       }
 
       const featureSets = {
-        maturedMinded: applyMatured || existingProfile?.featureSets?.maturedMinded === true || isFeatureGroup(chatId),
-        general: applyGeneral || existingProfile?.featureSets?.general === true
+        maturedMinded: applyMatured || existingProfile?.featureSets?.maturedMinded === true || chatId === PRIMARY_FEATURE_GROUP,
+        general: applyGeneral || existingProfile?.featureSets?.general === true || (!existingProfile && isFeatureGroup(chatId))
       };
 
-      if (applyMatured) {
-        await registerFeatureGroup(chatId);
+      // Only the general package grants game/moderation feature-group access.
+      // Matured Minded-only groups are tracked by the scheduler, but are not
+      // added to the general game registry.
+      if (featureSets.general) await registerFeatureGroup(chatId);
+      else await unregisterFeatureGroup(chatId);
+
+      if (applyMatured || applyGeneral) {
         if (!await trackGroup(chatId)) {
-          throw new Error('Matured Minded-exclusive features were saved, but scheduler registration could not be verified.');
+          throw new Error('Group features were saved, but scheduler registration could not be verified.');
         }
         startSchedulerEngine(sock);
       }
@@ -136,6 +148,7 @@ export default {
       if (!await store.saveSettingVerified(chatId, 'forgeGuardGroupProfile', profile)) {
         throw new Error('Features were applied, but profile metadata could not be saved. Run .groupforge setup again to verify.');
       }
+      invalidateGroupFeatureAccessCache(chatId);
 
       const sections = [];
       if (applyMatured) sections.push(`*Matured Minded-exclusive package*\n${MATURED_MIND_EXCLUSIVE_FEATURES.map(item => `• ${item}`).join('\n')}`);

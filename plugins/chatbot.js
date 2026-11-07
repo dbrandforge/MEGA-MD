@@ -8,6 +8,7 @@ import { getUserGender } from './gender.js';
 import { printLog } from '../lib/print.js';
 import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
 import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
+import { isExplicitlyAddressedInGroup } from '../lib/chatbotAccess.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -126,24 +127,20 @@ async function showTyping(sock, chatId) {
 }
 
 // Live replies are selected locally from the curated personality bank.
-export async function handleChatbotResponse(sock, chatId, message, userMessage, senderId, options = {}) {
+export async function handleChatbotResponse(sock, chatId, message, userMessage, senderId) {
     const data = await loadUserGroupData();
     const isGroup = chatId.endsWith('@g.us');
     if (!data.chatbot) data.chatbot = {};
     if (!data.chatbotDM) data.chatbotDM = {};
     const identity = resolveIdentity(senderId);
-    const activeThreads = isGroup ? await store.getSetting(chatId, 'chatbotActiveThreads').catch(() => ({})) : {};
-    const activeThread = activeThreads?.[senderId];
-    const isThreadFollowup = !!(activeThread?.expiresAt > Date.now());
-    const forceReply = options.forceReply === true;
     if (isGroup) {
         const TARGET = '120363405434471171@g.us';
         if (chatId === TARGET && data.chatbot[chatId] === undefined) {
             data.chatbot[chatId] = true;
             await saveUserGroupData(data);
         }
-        if (data.chatbot[chatId] !== true && !forceReply && !isThreadFollowup) return;
-    } else if (!getDMChatbotPermission(data, senderId, chatId, identity)) {
+        if (data.chatbot[chatId] !== true) return;
+    } else if (!getDMChatbotPermission(data, senderId, chatId)) {
         return;
     }
 
@@ -158,16 +155,10 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             || message.message?.videoMessage?.contextInfo
             || {};
         const mentioned = contextInfo.mentionedJid || [];
-        const quoted = contextInfo.participant;
-
         let isMention = mentioned.some(j => botJids.some(b =>
             b.split('@')[0].split(':')[0] === j.split('@')[0].split(':')[0]
         ));
         if (!isMention && botNumber) isMention = userMessage.includes(`@${botNumber}`);
-
-        const isReply = !!quoted && botJids.some(b =>
-            b.replace(/[:@].*$/, '') === quoted.replace(/[:@].*$/, '')
-        );
 
         // Record normal messages as well, so a later mention can refer to the group discussion.
         const originalText = message.message?.conversation
@@ -191,12 +182,12 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         }
 
         // In personal DMs, an enabled session responds naturally without requiring a mention or quoted reply.
-        if (isGroup && !isMention && !isReply && !forceReply && !isThreadFollowup) return;
+        if (isGroup && !isExplicitlyAddressedInGroup({ isMention })) return;
         if (!cleanForHistory) return;
 
         const identityReply = getIdentityReply(cleanForHistory, undefined, identity);
         // Creator/Queen arrival greetings are for a fresh direct call, not every follow-up turn.
-        const identityGreeting = isThreadFollowup ? null : getIdentityGreeting(cleanForHistory, identity);
+        const identityGreeting = getIdentityGreeting(cleanForHistory, identity);
 
         await showTyping(sock, chatId);
 
@@ -229,20 +220,6 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         history.push({ name: 'Forge Bot', text: response.slice(0, 500), at: Date.now() });
         if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
         await saveChatHistory(chatId, history);
-        if (isGroup) {
-            const now = Date.now();
-            const threads = await store.getSetting(chatId, 'chatbotActiveThreads').catch(() => ({})) || {};
-            const active = Object.fromEntries(
-                Object.entries(threads).filter(([, thread]) => thread?.expiresAt > now)
-            );
-            active[senderId] = { expiresAt: now + 5 * 60 * 1000 };
-            const entries = Object.entries(active);
-            if (entries.length > 50) {
-                entries.sort((a, b) => (b[1].expiresAt || 0) - (a[1].expiresAt || 0));
-                for (const [jid] of entries.slice(50)) delete active[jid];
-            }
-            await store.saveSetting(chatId, 'chatbotActiveThreads', active);
-        }
 
     } catch (e) {
         printLog('error', `[Chatbot DM] Reply failed: ${String(e?.message || e).slice(0, 400)}`);

@@ -3,8 +3,8 @@
  * .welcomelog — who was welcomed today (Lagos time)
  */
 import store from '../lib/lightweight_store.js';
+import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 
-const TARGET_GROUP = '120363405434471171@g.us';
 const LOG_KEY = 'welcomeDailyLog';
 
 function lagosDateKey() {
@@ -12,7 +12,7 @@ function lagosDateKey() {
 }
 
 export async function logWelcome(chatId, userId) {
-    if (chatId !== TARGET_GROUP) return;
+    if (!await hasMaturedMindedFeatures(chatId)) return;
     const key = lagosDateKey();
     const all = (await store.getSetting(chatId, LOG_KEY)) || {};
     if (!all[key]) all[key] = [];
@@ -38,7 +38,7 @@ export default {
     adminOnly: true,
     async handler(sock, message, args, context) {
         const { chatId, channelInfo } = context;
-        if (chatId !== TARGET_GROUP) {
+        if (!await hasMaturedMindedFeatures(chatId)) {
             return sock.sendMessage(chatId, { text: 'Only for Mature minded.', ...channelInfo }, { quoted: message });
         }
         const key = lagosDateKey();
