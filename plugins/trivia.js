@@ -262,20 +262,20 @@ async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
       correctPlayers.push({ jid, points });
     }
     correctPlayers.sort((a, b) => b.points - a.points);
+    const noParticipation = shouldEndTriviaForNoParticipation(game.answers);
+    if (noParticipation) Object.assign(game, startNoParticipationGrace(game));
     await saveGame(chatId, game);
     const winners = correctPlayers.map(item => item.jid);
     const result = correctPlayers.length
-      ? correctPlayers.map(item => `✅ ${mention(item.jid)} +${item.points}`).join('\n')
+      ? correctPlayers.map(item => `✅ ${mention(item.jid)} +${item.points}`).join('\\n')
       : 'No correct answers this round.';
     await sock.sendMessage(chatId, {
-      text: `⏱️ *QUESTION ${game.round} CLOSED*\n\nCorrect answer: *${game.answer}*\n\n${result}\n\n${answerRows.length} player(s) submitted.`,
+      text: `⏱️ *QUESTION ${game.round} CLOSED*\\n\\nCorrect answer: *${game.answer}*\\n\\n${result}\\n\\n${answerRows.length} player(s) submitted.`,
       mentions: winners
     });
-    if (shouldEndTriviaForNoParticipation(game.answers)) {
-      Object.assign(game, startNoParticipationGrace(game));
-      await saveGame(chatId, game);
+    if (noParticipation) {
       await sock.sendMessage(chatId, {
-        text: '⏸️ *TRIVIA ARENA ON HOLD*\n\nNobody submitted an answer for this question. The match is paused for *5 minutes*. No new question will be generated during this period.\n\nThe match will end automatically when the five-minute hold expires.'
+        text: '⏸️ *TRIVIA ARENA ON HOLD*\\n\\nNobody submitted an answer for this question. The match is paused for *5 minutes*. No new question will be generated during this period.\\n\\nThe match will end automatically when the five-minute hold expires.'
       });
       armTimer(sock, chatId, game);
       return true;
