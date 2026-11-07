@@ -23,8 +23,8 @@ function enabledFeatureLines(featureSets = {}) {
   ];
 }
 
-function profileStatusText(profile, registered, maturedEnabled) {
-  const sets = profile?.featureSets || { maturedMinded: maturedEnabled, general: registered && !maturedEnabled };
+function profileStatusText(profile, registered, maturedEnabled, generalEnabled) {
+  const sets = profile?.featureSets || { maturedMinded: maturedEnabled, general: generalEnabled };
   return [
     '🛠️ *FORGE GUARD GROUP PROFILE*',
     '',
@@ -63,9 +63,10 @@ export default {
       await loadFeatureGroups();
       const profile = await store.getSetting(chatId, 'forgeGuardGroupProfile');
       const maturedEnabled = chatId === PRIMARY_FEATURE_GROUP || profile?.featureSets?.maturedMinded === true;
-      const registered = isFeatureGroup(chatId) || maturedEnabled;
+      const generalEnabled = isFeatureGroup(chatId);
+      const registered = generalEnabled || maturedEnabled;
       return sock.sendMessage(chatId, {
-        text: profileStatusText(profile, registered, maturedEnabled)
+        text: profileStatusText(profile, registered, maturedEnabled, generalEnabled)
       }, { quoted: message });
     }
 
