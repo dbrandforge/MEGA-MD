@@ -247,6 +247,7 @@ export default {
       return sock.sendMessage(chatId, { text: access.msg, ...channelInfo }, { quoted: message });
     }
     let game = await readGame(chatId);
+    if (game) armTimer(sock, chatId, game);
     if (['stop', 'end'].includes(action)) {
       if (!game) return sock.sendMessage(chatId, { text: 'There is no active Maths Arena match.', ...channelInfo }, { quoted: message });
       if (!await playerCanEnd(sock, chatId, senderId, context, message, game)) {
