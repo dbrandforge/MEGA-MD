@@ -7,6 +7,7 @@ import { pickPersonalityReply } from '../data/forgeBotPersonalityBank.js';
 import { getUserGender } from './gender.js';
 import { printLog } from '../lib/print.js';
 import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
+import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -23,18 +24,24 @@ const MAX_HISTORY_MESSAGES = 30;
 const MAX_HISTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 async function loadUserGroupData() {
+    let data;
     try {
         if (HAS_DB) {
-            const data = await store.getSetting('global', 'userGroupData');
-            return data || { chatbot: {} };
+            data = await store.getSetting('global', 'userGroupData');
+        } else {
+            data = JSON.parse(fs.readFileSync(USER_GROUP_DATA, 'utf-8'));
         }
-        return JSON.parse(fs.readFileSync(USER_GROUP_DATA, 'utf-8'));
     } catch {
-        return { chatbot: {} };
+        data = null;
     }
+    if (!data || typeof data !== 'object') data = { chatbot: {} };
+    if (!data.chatbot || typeof data.chatbot !== 'object') data.chatbot = {};
+    if (!data.chatbotDM || typeof data.chatbotDM !== 'object') data.chatbotDM = {};
+    if (migrateDMChatbotDefault(data)) await saveUserGroupData(data);
+    return data;
 }
 
-async function saveUserGroupData(data) {
+export async function saveUserGroupData(data) {
     try {
         if (HAS_DB) await store.saveSetting('global', 'userGroupData', data);
         else {
@@ -282,6 +289,9 @@ export default {
         }
 
         if (scope === 'dm') {
+            if (!context.isCreatorOrBot) {
+                return sock.sendMessage(chatId, { text: '🔒 Only the creator or bot number can change the universal DM chatbot switch.' }, { quoted: message });
+            }
             if (action === 'on' || action === 'off') {
                 // This is a global inbound-DM switch, controlled by the bot owner.
                 // Do not key it by the owner senderId: incoming messages arrive under each external sender's JID.
