@@ -1,7 +1,11 @@
 import TicTacToe from '../lib/tictactoe.js';
 import { isGameAllowed } from './daylock.js';
 const games = {};
-export function hasActiveTicTacToeGame(chatId) {\n    return Object.values(games).some(room => room.state === 'PLAYING' && (room.x === chatId || room.o === chatId));\n}\n\nexport async function handleTicTacToeMove(sock, chatId, senderId, text) {
+export function hasActiveTicTacToeGame(chatId) {
+    return Object.values(games).some(room => room.state === 'PLAYING' && (room.x === chatId || room.o === chatId));
+}
+
+export async function handleTicTacToeMove(sock, chatId, senderId, text) {
     try {
         const access = await isGameAllowed(chatId, 'tictactoe');
         if (!access.ok) { await sock.sendMessage(chatId, { text: access.msg }); return; }
