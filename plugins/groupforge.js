@@ -1,5 +1,5 @@
 import store from '../lib/lightweight_store.js';
-import { PRIMARY_FEATURE_GROUP, registerFeatureGroup, isFeatureGroup, loadFeatureGroups } from '../lib/featureGroups.js';
+import { PRIMARY_FEATURE_GROUP, registerFeatureGroup, unregisterFeatureGroup, isFeatureGroup, loadFeatureGroups } from '../lib/featureGroups.js';
 import { trackGroup, startSchedulerEngine } from './schedule.js';
 import { loadUserGroupData } from './chatbot.js';
 import { invalidateGroupFeatureAccessCache } from '../lib/groupFeatureAccess.js';
@@ -62,8 +62,9 @@ export default {
     if (action === 'status') {
       await loadFeatureGroups();
       const profile = await store.getSetting(chatId, 'forgeGuardGroupProfile');
+      const registered = isFeatureGroup(chatId) || profile?.featureSets?.maturedMinded === true || chatId === PRIMARY_FEATURE_GROUP;
       return sock.sendMessage(chatId, {
-        text: profileStatusText(profile, isFeatureGroup(chatId))
+        text: profileStatusText(profile, registered)
       }, { quoted: message });
     }
 
@@ -122,11 +123,13 @@ export default {
         general: applyGeneral || existingProfile?.featureSets?.general === true || (!existingProfile && isFeatureGroup(chatId))
       };
 
-      // Both packages authorize general game access. Register and track the
-      // group for either package; the scheduler separately checks the
-      // Matured Minded-exclusive profile before running its daily lifecycle.
+      // Only the general package grants game/moderation feature-group access.
+      // Matured Minded-only groups are tracked by the scheduler, but are not
+      // added to the general game registry.
+      if (featureSets.general) await registerFeatureGroup(chatId);
+      else await unregisterFeatureGroup(chatId);
+
       if (applyMatured || applyGeneral) {
-        await registerFeatureGroup(chatId);
         if (!await trackGroup(chatId)) {
           throw new Error('Group features were saved, but scheduler registration could not be verified.');
         }
