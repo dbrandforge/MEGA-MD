@@ -353,6 +353,30 @@ describe('Forge Guard transcript regression coverage', () => {
 
 
 describe('Answer-first chatbot routing', () => {
+  it('keeps who-questions in their actual topic instead of misclassifying them as definitions', () => {
+    expect(classifyIntent('Who is the best music Afro pop artist?')).toBe('entertainment');
+    expect(classifyIntent('Who is the GOAT in football?')).toBe('entertainment');
+  });
+
+  it('does not let Nigerian-culture or entertainment prompt banks answer factual questions', () => {
+    expect(pickLibraryReply('Who is the best music Afro pop artist?')).toBeNull();
+    expect(pickLibraryReply(\"What's the name of the first lady of Nigeria\")).toBeNull();
+  });
+
+  it('routes First Lady questions to current live knowledge', () => {
+    expect(isTimeSensitiveQuestion(\"What's the name of the first lady of Nigeria\")).toBe(true);
+  });
+
+  it('routes a meaningful statement as an answer to the bot\\'s recent question', () => {
+    const history = [{ name: 'Forge Bot', text: 'Who dey your side?' }];
+    expect(shouldUseAutomaticAI('I don\\'t have a best amongst the two of them', 'fallback', history)).toBe(true);
+  });
+
+  it('does not misroute short casual Pidgin banter as a substantive answer', () => {
+    const history = [{ name: 'Forge Bot', text: 'What do you think about that?' }];
+    expect(shouldUseAutomaticAI('Oya wa malo', 'pidgin', history)).toBe(false);
+  });
+
   it('does not classify broad factual and subject questions as personality-only exchanges', () => {
     for (const question of [
       'Who is Davido?',
