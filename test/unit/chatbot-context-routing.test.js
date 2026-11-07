@@ -392,6 +392,6 @@ describe('Multi-turn clarification continuity', () => {
       { name: 'Forge', text: 'I sell phones and gadgets.' },
       { name: 'Forge Bot', text: 'Say am clear.' }
     ];
-    expect(shouldUseAutomaticAI('Oya now, how far?', 'pidgin', history)).toBe(false);
+    expect(shouldUseAutomaticAI('Oya wa malo', 'pidgin', history)).toBe(false);
   });
 });
