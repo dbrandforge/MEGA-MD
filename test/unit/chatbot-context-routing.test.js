@@ -6,6 +6,7 @@ import { shouldUseAutomaticAI, buildConversationPrompt, sanitizeChatbotReply } f
 import { classifyIntent, pickSubstantiveReply, pickLibraryReply, getQuestionFallback } from '../../data/chatbotResponseLibrary.js';
 import { pickDualReply } from '../../data/chatDual/dualBankSelector.js';
 import { pickPersonalityReply, classifyPersonalityCategory } from '../../data/forgeBotPersonalityBank.js';
+import { evaluateArithmetic, formatArithmeticAnswer } from '../../lib/arithmetic.js';
 
 const creator = { role: 'creator', name: 'Forge dcreative', alias: 'Forge' };
 const historyWith = text => [{ name: 'Forge Bot', text, at: Date.now() }];
@@ -216,5 +217,38 @@ describe('Forge Guard clean output and refined AI routing', () => {
     expect(prompt).toContain('For factual questions, answer the exact question');
     expect(prompt).toContain('Never invent a URL');
     expect(prompt).toContain('© dbrandforge_bot');
+  });
+});
+
+
+describe('Forge Guard deterministic reliability answers', () => {
+  it('evaluates basic arithmetic with operator precedence and common x multiplication', () => {
+    expect(evaluateArithmetic('What is 4 + 5 x 9?')).toBe(49);
+    expect(evaluateArithmetic('What is 2000 x 45000')).toBe(90000000);
+    expect(evaluateArithmetic('6^2 - 8')).toBe(28);
+    expect(evaluateArithmetic('(12 + 8) / 4')).toBe(5);
+    expect(evaluateArithmetic('10 / 0')).toBeNull();
+    expect(evaluateArithmetic('hello there')).toBeNull();
+    expect(formatArithmeticAnswer(9000000)).toBe('9,000,000');
+  });
+
+  it('answers practical digital marketing questions with actionable content formats', () => {
+    const advice = pickSubstantiveReply('I am a digital marketer what do I do to attract customers?');
+    expect(advice).toContain('Choose one audience');
+    expect(advice).toContain('qualified leads');
+    const ideas = pickSubstantiveReply('Which kind of contents can I start creating?', [
+      'I am a digital marketer what do I do to attract customers?',
+      'Choose one audience and one clear service first.'
+    ]);
+    expect(ideas).toContain('educational posts');
+    expect(ideas).toContain('case studies');
+    expect(ideas).toContain('testimonials');
+  });
+
+  it('answers known artist and dated Nigeria officeholder facts without inventing identities', () => {
+    expect(pickSubstantiveReply('Do you know Tatiana Manaois?')).toContain('singer-songwriter');
+    expect(pickSubstantiveReply('I need one Tatiana love song')).toContain('Helplessly');
+    expect(pickSubstantiveReply('Who is the current president of Nigeria?')).toContain('Bola Ahmed Tinubu');
+    expect(pickSubstantiveReply('Who was the president of Nigeria before Tinubu?')).toBeNull();
   });
 });
