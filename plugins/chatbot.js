@@ -188,7 +188,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         }
 
         // In personal DMs, an enabled session responds naturally without requiring a mention or quoted reply.
-        if (isGroup && !isExplicitlyAddressedInGroup({ isMention, isReply })) return;
+        if (isGroup && !isExplicitlyAddressedInGroup({ isMention })) return;
         if (!cleanForHistory) return;
 
         const identityReply = getIdentityReply(cleanForHistory, undefined, identity);
