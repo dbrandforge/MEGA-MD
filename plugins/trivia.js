@@ -445,6 +445,7 @@ export default {
       return sock.sendMessage(chatId, { text: menu, ...channelInfo }, { quoted: message });
     }
     let game = await readGame(chatId);
+    if (game) armTimer(sock, chatId, game);
     if (['stop', 'end'].includes(rawAction)) {
       if (!game) return sock.sendMessage(chatId, { text: 'There is no active Trivia match.', ...channelInfo }, { quoted: message });
       if (!await canEnd(sock, chatId, senderId, context, message, game)) {
