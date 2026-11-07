@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getIdentityGreeting } from '../../lib/identity.js';
 import { isExplicitlyAddressedInGroup } from '../../lib/chatbotAccess.js';
 import { sanitizeAIResponse } from '../../plugins/ai-gpt.js';
-import { shouldUseAutomaticAI } from '../../plugins/chatbot.js';
+import { shouldUseAutomaticAI } from '../../lib/aiService.js';
 import { pickPersonalityReply, classifyPersonalityCategory } from '../../data/forgeBotPersonalityBank.js';
 
 const creator = { role: 'creator', name: 'Forge dcreative', alias: 'Forge' };
