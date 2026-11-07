@@ -218,7 +218,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                 gender: registeredGender,
                 history
             });
-            if (intent === 'fallback') response = getQuestionFallback(cleanForHistory) || response;
+            if (!substantiveReply && !libraryReply && intent === 'fallback') response = getQuestionFallback(cleanForHistory) || response;
             // Identity acknowledgement is limited to neutral social exchanges.
             // It must never override teasing, substantive questions, or contextual follow-ups.
             if (identity && ['greeting', 'wellbeing', 'thanks', 'agreement'].includes(intent) && Math.random() < 0.12) {
