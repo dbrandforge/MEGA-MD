@@ -72,7 +72,7 @@ export default {
             await sock.sendMessage(chatId, {
                 text: context.isBotAdmin === false
                     ? '❌ Group lock failed: the bot needs group-admin permission to change who can send messages.'
-                    : `❌ Group lock failed: ${String(error.message || 'WhatsApp rejected the group-setting update').slice(0, 180)}. Check that the bot is a group admin and try again.`,
+                    : `❌ Group lock error: ${String(error.message || 'WhatsApp rejected the group-setting update').slice(0, 180)}. Check that the bot is a group admin and try again.`,
                 ...channelInfo
             }, { quoted: message });
         }
