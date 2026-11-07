@@ -2,6 +2,7 @@ import store from '../lib/lightweight_store.js';
 import { PRIMARY_FEATURE_GROUP, registerFeatureGroup, isFeatureGroup, loadFeatureGroups } from '../lib/featureGroups.js';
 import { trackGroup, startSchedulerEngine } from './schedule.js';
 import { loadUserGroupData } from './chatbot.js';
+import { invalidateGroupFeatureAccessCache } from '../lib/groupFeatureAccess.js';
 import {
   MATURED_MIND_EXCLUSIVE_MAPS,
   GENERAL_GROUP_MAPS,
@@ -142,6 +143,7 @@ export default {
       if (!await store.saveSettingVerified(chatId, 'forgeGuardGroupProfile', profile)) {
         throw new Error('Features were applied, but profile metadata could not be saved. Run .groupforge setup again to verify.');
       }
+      invalidateGroupFeatureAccessCache(chatId);
 
       const sections = [];
       if (applyMatured) sections.push(`*Matured Minded-exclusive package*\n${MATURED_MIND_EXCLUSIVE_FEATURES.map(item => `• ${item}`).join('\n')}`);
