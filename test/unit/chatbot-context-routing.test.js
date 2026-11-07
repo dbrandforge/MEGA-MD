@@ -374,3 +374,24 @@ describe('context retention and answer relevance', () => {
     expect(shouldUseAutomaticAI('I sell phones and gadgets', 'greeting', history)).toBe(true);
   });
 });
+
+
+describe('Multi-turn clarification continuity', () => {
+  it('keeps routing business details after an intermediate clarification from the bot', () => {
+    const history = [
+      { name: 'Forge Bot', text: 'What business or product are you trying to promote?' },
+      { name: 'Forge', text: 'I sell phones and gadgets.' },
+      { name: 'Forge Bot', text: 'Say am clear.' }
+    ];
+    expect(shouldUseAutomaticAI('I am trying to promote my phone and gadget business', 'fallback', history)).toBe(true);
+  });
+
+  it('does not treat unrelated casual banter as a business-context continuation', () => {
+    const history = [
+      { name: 'Forge Bot', text: 'What business or product are you trying to promote?' },
+      { name: 'Forge', text: 'I sell phones and gadgets.' },
+      { name: 'Forge Bot', text: 'Say am clear.' }
+    ];
+    expect(shouldUseAutomaticAI('Oya now, how far?', 'pidgin', history)).toBe(false);
+  });
+});
