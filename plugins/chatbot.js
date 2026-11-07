@@ -238,7 +238,8 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             }
         }
         // Enforce clean output for every chatbot source: AI, curated banks and identity replies.
-        response = sanitizeChatbotReply(response);\n        console.info(`[Chatbot] Reply (intent: ${classifyIntent(cleanForHistory)}, identity: ${identity?.role || 'standard'}, gender: ${registeredGender || 'unregistered'}).`);
+        response = sanitizeChatbotReply(response);
+        console.info(`[Chatbot] Reply (intent: ${classifyIntent(cleanForHistory)}, identity: ${identity?.role || 'standard'}, gender: ${registeredGender || 'unregistered'}).`);
 
         printLog('info', `[Chatbot DM] Attempting reply via destinationType=${chatId.endsWith('@lid') ? 'LID' : 'PN_or_group'}`);
         const sentMessage = await sock.sendMessage(chatId, { text: response }, { quoted: message });
