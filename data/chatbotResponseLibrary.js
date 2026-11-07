@@ -206,7 +206,7 @@ export const intentRules = [
   // Specific emotional/social intents precede broad language and generic conversation matches.
   { intent: 'disagreement', patterns: [/\b(i disagree|not true|you're wrong|you are wrong|i don't think so|i don't agree|that is incorrect)\b/i] },
   { intent: 'flirty', patterns: [/\b(flirt|flirting|you are cute|you're cute|you are fine|you're fine|i like you|i have a crush|rizz|shoot your shot)\b/i] },
-  { intent: 'relationships', patterns: [/\b(relationship|dating|date|crush|boyfriend|girlfriend|partner|situationship|talking stage|breakup|break up|marriage|married|cheating|red flag|green flag)\b/i] },
+  { intent: 'relationships', patterns: [/\b(relationship|relationships|dating|date|crush|boyfriend|girlfriend|partner|situationship|talking stage|breakup|break up|marriage|married|cheating|red flag|green flag|love|loving|in love|fall in love|compatible|incompatible|compatibility)\b/i] },
   { intent: 'friendship', patterns: [/\b(friendship|best friend|my friend|friends|falling out|beef with|betrayed|loyalty|fake friend)\b/i] },
   { intent: 'boundaries', patterns: [/\b(boundary|boundaries|set limits|say no|personal space|respect my|access to me)\b/i] },
   { intent: 'empathy', patterns: [/\b(i feel|i'm sad|i am sad|i'm tired|i am tired|rough day|heartbroken|stressed|depressed|anxious|overwhelmed|grieving|lost someone)\b/i] },
@@ -232,6 +232,37 @@ export const intentRules = [
   { intent: 'pidgin', patterns: [/\b(abeg|wetin|dey|na so|omo|yarn|wahala|e choke)\b/i, /\byou dey go (now|naw)\b/i] },
   { intent: 'teasing', patterns: [/\b(you are funny|you sef|you no get|see this one|you dey craze|werey|wery|mumu|ode|you mad|mad bot)\b/i] }
 ];
+
+
+/**
+ * Small, high-confidence answers for recurring substantive questions.
+ * Keep these narrowly scoped: unknown questions should not receive a fabricated answer.
+ */
+export function pickSubstantiveReply(text = '') {
+  const input = String(text || '').trim();
+  if (!input) return null;
+
+  if (/\b(can|could|do)\b.*\b(two people|people|couple|partners)\b.*\b(love|care about each other)\b.*\b(incompatible|not compatible|compatibility)\b/i.test(input)
+      || /\b(can|could)\b.*\b(love each other)\b.*\b(incompatible|not compatible)\b/i.test(input)
+      || /\b(can|could)\b.*\b(love)\b.*\b(incompatible|not compatible)\b/i.test(input)) {
+    return "Yes. Two people can genuinely love each other and still be incompatible. Love is about care and attachment; compatibility is about whether their values, needs, communication styles, life goals and ways of handling conflict can work together. They may care deeply and still struggle to build a healthy life together. The useful question is not only whether love exists, but whether the relationship allows both people to feel respected, secure and able to be themselves. ❤️";
+  }
+
+  if (/\bhow (can|do) i fall in love\b/i.test(input)
+      || /\bhow to fall in love\b/i.test(input)
+      || /\bhow can someone fall in love\b/i.test(input)) {
+    return "You cannot force yourself to fall in love, but you can make room for it. Spend time with people you genuinely enjoy, stay curious about who they are, share honest experiences, and let trust and affection develop gradually. Pay attention to consistency, respect, emotional safety and shared values—not just chemistry or the idea of being in love. And do not rush yourself; a real connection should be mutual. ❤️";
+  }
+
+  return null;
+}
+
+export function getQuestionFallback(text = '') {
+  const input = String(text || '').trim();
+  const words = input.split(/\s+/).filter(Boolean);
+  if (words.length < 5 || !/\?\s*$/.test(input)) return null;
+  return "I want to give you an answer that actually addresses the question, not throw a random line at you. I don't have a reliable answer ready for this one yet. Try narrowing down the part you want to understand, and I'll follow that angle.";
+}
 
 export function classifyIntent(text = '') {
   const input = String(text).trim();

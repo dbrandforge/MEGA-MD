@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
-import { classifyIntent } from '../data/chatbotResponseLibrary.js';
+import { classifyIntent, pickSubstantiveReply, getQuestionFallback } from '../data/chatbotResponseLibrary.js';
 import { pickPersonalityReply } from '../data/forgeBotPersonalityBank.js';
 import { pickDualReply } from '../data/chatDual/dualBankSelector.js';
 import { getUserGender } from './gender.js';
@@ -197,8 +197,9 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         let response = identityReply || identityGreeting;
         if (!response) {
             const intent = classifyIntent(cleanForHistory);
+            const substantiveReply = pickSubstantiveReply(cleanForHistory);
             // ChatDual handles advice-shaped/contextual intents; personality bank remains the fallback.
-            const dualResponse = pickDualReply(cleanForHistory, {
+            const dualResponse = substantiveReply || pickDualReply(cleanForHistory, {
                 chatId,
                 previousReply: previousBotReply,
                 intent,
@@ -211,6 +212,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                 gender: registeredGender,
                 history
             });
+            if (intent === 'fallback') response = getQuestionFallback(cleanForHistory) || response;
             // Identity acknowledgement is limited to neutral social exchanges.
             // It must never override teasing, substantive questions, or contextual follow-ups.
             if (identity && ['greeting', 'wellbeing', 'thanks', 'agreement'].includes(intent) && Math.random() < 0.12) {
