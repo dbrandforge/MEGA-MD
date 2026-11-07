@@ -32,6 +32,13 @@ export default {
             }, { quoted: message });
         }
 
+        if (context.isBotAdmin === false) {
+            return sock.sendMessage(chatId, {
+                text: '❌ I cannot lock this group because the bot is not a group admin. Promote the bot to admin, then retry. Individual soft-mutes do not require this permission.',
+                ...channelInfo
+            }, { quoted: message });
+        }
+
         const durationInMinutes = args[0] ? Number(args[0]) : undefined;
         if (args[0] && (!Number.isInteger(durationInMinutes) || durationInMinutes <= 0 || durationInMinutes > 10080)) {
             return sock.sendMessage(chatId, { text: 'Use `.mute` to lock the group, `.mute 30` to lock it for 30 minutes, or `.mute @user` to mute one member.', ...channelInfo }, { quoted: message });
@@ -63,7 +70,9 @@ export default {
         } catch (error) {
             console.error('Error muting the group:', error);
             await sock.sendMessage(chatId, {
-                text: 'An error occurred while muting/unmuting the group. Please try again.',
+                text: context.isBotAdmin === false
+                    ? '❌ Group lock failed: the bot needs group-admin permission to change who can send messages.'
+                    : `❌ Group lock failed: ${String(error.message || 'WhatsApp rejected the group-setting update').slice(0, 180)}. Check that the bot is a group admin and try again.`,
                 ...channelInfo
             }, { quoted: message });
         }
