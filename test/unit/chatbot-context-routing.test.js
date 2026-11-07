@@ -184,7 +184,7 @@ describe('Substantive chatbot question routing', () => {
 describe('Forge Guard clean output and refined AI routing', () => {
   it('removes hashtags from any chatbot response without adding a branded footer', () => {
     expect(sanitizeChatbotReply('The answer is 28. #Maths #ForgeGuard')).toBe('The answer is 28.');
-    expect(sanitizeChatbotReply('Good one 😂\\n#banter')).toBe('Good one 😂');
+    expect(sanitizeChatbotReply('Good one 😂\n#banter')).toBe('Good one 😂');
     expect(sanitizeChatbotReply('A clean reply.')).toBe('A clean reply.');
   });
 
