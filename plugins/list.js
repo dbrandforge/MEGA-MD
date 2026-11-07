@@ -4,10 +4,7 @@ import sharp from 'sharp';
 import commandHandler from '../lib/commandHandler.js';
 import { isOwnerOnly } from '../lib/isOwner.js';
 
-const PUBLIC_CATEGORIES = new Set([
-    'general', 'ai', 'download', 'downloader', 'utility', 'games',
-    'stickers', 'tools', 'images', 'search', 'fun', 'quotes', 'music', 'info'
-]);
+const PRIVATE_CATEGORIES = new Set(['admin', 'owner', 'internal', 'developer']);
 
 const INTERNAL_COMMANDS = new Set([
     'hsdone_legacy', 'toddone_legacy', 'welcomemember_legacy',
@@ -32,16 +29,23 @@ function isInternal(plugin) {
         name.endsWith('_legacy');
 }
 
-function getVisibleCategories(ownerView) {
+function isPublicCommand(plugin) {
+    const category = String(plugin.category || 'misc').toLowerCase();
+    return !isInternal(plugin) &&
+        !PRIVATE_CATEGORIES.has(category) &&
+        plugin.ownerOnly !== true &&
+        plugin.strictOwnerOnly !== true &&
+        plugin.adminOnly !== true &&
+        plugin.sudoOnly !== true &&
+        plugin.creatorOnly !== true &&
+        plugin.publicMenu !== false;
+}
+
+export function getVisibleCategories(ownerView = false) {
     const categories = new Map();
     for (const plugin of commandHandler.commands.values()) {
+        if (isInternal(plugin) || (!ownerView && !isPublicCommand(plugin))) continue;
         const category = String(plugin.category || 'misc').toLowerCase();
-        if (isInternal(plugin)) continue;
-        if (!ownerView) {
-            if (!PUBLIC_CATEGORIES.has(category)) continue;
-            if (plugin.ownerOnly || plugin.strictOwnerOnly || plugin.adminOnly) continue;
-            if (plugin.publicMenu === false) continue;
-        }
         if (!categories.has(category)) categories.set(category, []);
         categories.get(category).push(plugin.command);
     }
@@ -106,12 +110,7 @@ export default {
             if (!plugin && commandHandler.aliases.has(searchTerm)) {
                 plugin = commandHandler.commands.get(commandHandler.aliases.get(searchTerm));
             }
-            if (!plugin || isInternal(plugin) ||
-                (!ownerView && (
-                    !PUBLIC_CATEGORIES.has(String(plugin.category || '').toLowerCase()) ||
-                    plugin.ownerOnly || plugin.strictOwnerOnly || plugin.adminOnly ||
-                    plugin.publicMenu === false
-                ))) {
+            if (!plugin || !isPublicCommand(plugin)) {
                 return sock.sendMessage(chatId, {
                     text: `❌ Public command "${args[0]}" not found. Use ${prefix}menu to view available commands.`,
                     ...channelInfo
@@ -131,7 +130,6 @@ export default {
         }
 
         const menuText = buildMenu(ownerView);
-        // Artwork is a separate header message so the complete dynamic command list is never truncated by WhatsApp caption limits.
         try {
             const artwork = await getMenuArtwork();
             await sock.sendMessage(chatId, {
