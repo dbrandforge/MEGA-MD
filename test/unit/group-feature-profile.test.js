@@ -10,8 +10,7 @@ import {
   copyGroupSettings,
   copyAntispamGroupConfig
 } from '../../lib/groupFeatureProfile.js';
-import { isMaturedMindedPackageEnabled } from '../../lib/groupFeatureAccess.js';
-import { PRIMARY_FEATURE_GROUP } from '../../lib/featureGroups.js';
+import { isMaturedMindedPackageEnabled } from '../../lib/groupFeatureProfile.js';
 
 const source = 'source@g.us';
 const target = 'target@g.us';
@@ -86,10 +85,10 @@ describe('Matured Minded and general group feature packages', () => {
 
 describe('Matured Minded exclusive package access', () => {
   it('always preserves the source group and requires explicit package enablement elsewhere', () => {
-    expect(isMaturedMindedPackageEnabled(PRIMARY_FEATURE_GROUP, null)).toBe(true);
-    expect(isMaturedMindedPackageEnabled(target, { featureSets: { maturedMinded: true, general: false } })).toBe(true);
-    expect(isMaturedMindedPackageEnabled(target, { featureSets: { maturedMinded: false, general: true } })).toBe(false);
-    expect(isMaturedMindedPackageEnabled(target, null)).toBe(false);
+    expect(isMaturedMindedPackageEnabled('primary@g.us', null, 'primary@g.us')).toBe(true);
+    expect(isMaturedMindedPackageEnabled(target, { featureSets: { maturedMinded: true, general: false } }, 'primary@g.us')).toBe(true);
+    expect(isMaturedMindedPackageEnabled(target, { featureSets: { maturedMinded: false, general: true } }, 'primary@g.us')).toBe(false);
+    expect(isMaturedMindedPackageEnabled(target, null, 'primary@g.us')).toBe(false);
   });
 
   it('preserves both packages when general settings are copied after exclusive settings', () => {
