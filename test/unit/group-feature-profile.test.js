@@ -10,6 +10,8 @@ import {
   copyGroupSettings,
   copyAntispamGroupConfig
 } from '../../lib/groupFeatureProfile.js';
+import { isMaturedMindedPackageEnabled } from '../../lib/groupFeatureAccess.js';
+import { PRIMARY_FEATURE_GROUP } from '../../lib/featureGroups.js';
 
 const source = 'source@g.us';
 const target = 'target@g.us';
@@ -79,5 +81,29 @@ describe('Matured Minded and general group feature packages', () => {
     }, source, target);
     expect(result.groups[target]).toEqual({ enabled: true, maxMessages: 5, windowSeconds: 10, action: 'warn', warnCount: 3 });
     expect(result.groups[source]).toBeDefined();
+  });
+});
+
+describe('Matured Minded exclusive package access', () => {
+  it('always preserves the source group and requires explicit package enablement elsewhere', () => {
+    expect(isMaturedMindedPackageEnabled(PRIMARY_FEATURE_GROUP, null)).toBe(true);
+    expect(isMaturedMindedPackageEnabled(target, { featureSets: { maturedMinded: true, general: false } })).toBe(true);
+    expect(isMaturedMindedPackageEnabled(target, { featureSets: { maturedMinded: false, general: true } })).toBe(false);
+    expect(isMaturedMindedPackageEnabled(target, null)).toBe(false);
+  });
+
+  it('preserves both packages when general settings are copied after exclusive settings', () => {
+    const original = {
+      welcome: { [source]: { enabled: true, message: 'Welcome {user}' } },
+      goodbye: { [source]: { enabled: true } },
+      chatbot: { [source]: true },
+      antilink: { [source]: true }
+    };
+    const exclusiveApplied = copyGroupUserData(original, source, target, MATURED_MIND_EXCLUSIVE_MAPS);
+    const bothApplied = copyGroupUserData(exclusiveApplied, source, target, GENERAL_GROUP_MAPS);
+    expect(bothApplied.welcome[target]).toEqual({ enabled: true, message: 'Welcome {user}' });
+    expect(bothApplied.goodbye[target]).toEqual({ enabled: true });
+    expect(bothApplied.chatbot[target]).toBe(true);
+    expect(bothApplied.antilink[target]).toBe(true);
   });
 });
