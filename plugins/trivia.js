@@ -2,7 +2,7 @@ import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
 import isAdmin from '../lib/isAdmin.js';
-import { startNoParticipationGrace } from '../lib/gameTimeouts.js';
+import { startNoParticipationGrace, hasNoParticipation } from '../lib/gameTimeouts.js';
 import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES } from '../data/nigeriaTrivia.js';
 
 const STATE_KEY = 'triviaArenaV2';
@@ -73,7 +73,7 @@ function questionMatchesCategory(question, category = 'mixed') {
   return (CATEGORY_ALIASES[category] || [category]).includes(question.category);
 }
 export function shouldEndTriviaForNoParticipation(answers = {}) {
-  return Object.keys(answers || {}).length === 0;
+  return hasNoParticipation(answers);
 }
 function normalizeDifficulty(value) { return value === 'medium' ? 'normal' : value || null; }
 function questionMatchesDifficulty(question, difficulty = null) {
