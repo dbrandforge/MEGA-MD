@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getIdentityGreeting } from '../../lib/identity.js';
+import { isExplicitlyAddressedInGroup } from '../../lib/chatbotAccess.js';
 import { pickPersonalityReply, classifyPersonalityCategory } from '../../data/forgeBotPersonalityBank.js';
 
 const creator = { role: 'creator', name: 'Forge dcreative', alias: 'Forge' };
@@ -48,5 +49,16 @@ describe('Forge Guard contextual response selection', () => {
       history: historyWith('Oya, give me the backstory.')
     });
     expect(reply).toBeTruthy();
+  });
+});
+
+describe('Group chatbot addressing boundary', () => {
+  it('does not answer ordinary group conversation or the word bot alone', () => {
+    expect(isExplicitlyAddressedInGroup({ isMention: false, isReply: false })).toBe(false);
+  });
+
+  it('answers only when explicitly mentioned or directly replied to', () => {
+    expect(isExplicitlyAddressedInGroup({ isMention: true, isReply: false })).toBe(true);
+    expect(isExplicitlyAddressedInGroup({ isMention: false, isReply: true })).toBe(true);
   });
 });
