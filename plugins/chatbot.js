@@ -194,11 +194,12 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         const previousBotReply = [...history].reverse().find(item => item.name === 'Forge Bot')?.text || '';
         let registeredGender = null;
         try { registeredGender = await getUserGender(senderId); } catch {}
-        let response = identityReply || identityGreeting || pickSubstantiveReply(cleanForHistory);
+        let response = identityReply || identityGreeting;
         if (!response) {
             const intent = classifyIntent(cleanForHistory);
+            const substantiveReply = pickSubstantiveReply(cleanForHistory);
             // ChatDual handles advice-shaped/contextual intents; personality bank remains the fallback.
-            const dualResponse = pickDualReply(cleanForHistory, {
+            const dualResponse = substantiveReply || pickDualReply(cleanForHistory, {
                 chatId,
                 previousReply: previousBotReply,
                 intent,
