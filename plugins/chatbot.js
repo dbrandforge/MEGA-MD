@@ -10,16 +10,9 @@ import { printLog } from '../lib/print.js';
 import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
 import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
 import { isExplicitlyAddressedInGroup } from '../lib/chatbotAccess.js';
-import { askFastAI, sanitizeAIResponse } from '../lib/aiService.js';
+import { askFastAI, sanitizeAIResponse, shouldUseAutomaticAI } from '../lib/aiService.js';
 
 const CHATBOT_AI_ENABLED = process.env.CHATBOT_AI_ENABLED === 'true';
-const AI_INTENTS = new Set(['advice', 'workLife', 'relationships', 'boundaries', 'friendship', 'empathy', 'wellbeing', 'financialNeed']);
-
-export function shouldUseAutomaticAI(text, intent) {
-    if (AI_INTENTS.has(intent)) return true;
-    const words = String(text || '').trim().split(/\s+/).filter(Boolean);
-    return intent === 'fallback' && words.length >= 6 && /[?]/.test(String(text || ''));
-}
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
