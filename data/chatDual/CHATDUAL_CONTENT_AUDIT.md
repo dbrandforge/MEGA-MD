@@ -116,3 +116,18 @@ A dedicated regression check locks the module at 181 rows, verifies 362 distinct
 ### Thirteenth module checkpoint (2026-11-07)
 
 `ev_3_0.js` has been substantively rewritten while preserving its verified 182-row wellbeing inventory. All 182 A statements and all 182 B statements are unique, with 364 distinct statements overall. The shortest A and B statements are both at least 60 characters after a final short-response correction. The rewrite covers workload and burnout, family and caregiving, parenting, workplace boundaries, financial pressure, online safety, grief, health access, therapy, disability and accommodation, social connection, and sustainable routines. The regression test checks exact inventory, uniqueness across both sides, distinct A/B pairs, and minimum response length. Thirteen of sixteen expansion modules have now been rewritten; three expansion modules and the specialty banks remain outstanding. The complete bank is not release-ready.
+
+
+### Fourteenth module checkpoint (2026-11-07)
+
+`ev_3_1.js` has been fully rewritten while preserving its 182-row wellbeing inventory. All A and B responses are unique within their side and across the combined set (364 distinct responses). Every response exceeds the 60-character minimum. The rewrite addresses support networks, safeguarding, caregiving, inclusion, grief, privacy, community conflict, and safe help-seeking. A dedicated regression test checks exact inventory, uniqueness, distinct A/B pairs, and minimum response length.
+
+### Fifteenth module checkpoint (2026-11-07)
+
+`ev_3_2.js` has been fully rewritten while preserving its 182-row wellbeing inventory. All 364 responses are distinct, with 182 unique A responses and 182 unique B responses; every response exceeds the 60-character minimum. Topics include persistent symptoms, clinical appointments, medication decisions, sleep, nutrition, physical activity, mental health, healthcare access, privacy, and support for people managing health conditions. A dedicated regression test checks inventory and content-quality invariants.
+
+### Sixteenth module checkpoint (2026-11-07)
+
+`ev_3_3.js` has been fully rewritten while preserving its 181-row advice inventory. All 362 responses are distinct, with 181 unique A responses and 181 unique B responses; every response exceeds the 60-character minimum. Topics include project scope, workplace communication, business validation, negotiation, cash flow, partnerships, customer complaints, prioritisation, and decision-making. A dedicated regression test checks inventory and content-quality invariants.
+
+All sixteen expansion modules are now recorded as rewritten. The five specialty banks (Yoruba, conversational, gist, financial, and relationship) still require full content review and substantive rewrite. This checkpoint does not certify the entire 5,183-pair bank as release-ready; the specialty banks, full-suite tests, routing checks, and manual conversational quality review remain outstanding.
