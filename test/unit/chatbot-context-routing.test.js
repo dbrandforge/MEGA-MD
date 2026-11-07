@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getIdentityGreeting } from '../../lib/identity.js';
 import { isExplicitlyAddressedInGroup } from '../../lib/chatbotAccess.js';
+import { sanitizeAIResponse } from '../../plugins/ai-gpt.js';
 import { pickPersonalityReply, classifyPersonalityCategory } from '../../data/forgeBotPersonalityBank.js';
 
 const creator = { role: 'creator', name: 'Forge dcreative', alias: 'Forge' };
@@ -60,5 +61,16 @@ describe('Group chatbot addressing boundary', () => {
   it('answers only when explicitly mentioned or directly replied to', () => {
     expect(isExplicitlyAddressedInGroup({ isMention: true, isReply: false })).toBe(true);
     expect(isExplicitlyAddressedInGroup({ isMention: false, isReply: true })).toBe(true);
+  });
+});
+
+describe('GPT legacy identity sanitization', () => {
+  it('removes the previous repository author when the model uses it as an unsolicited name', () => {
+    expect(sanitizeAIResponse("You've got this, Qasim.", 'What is 2 + 2?')).toBe("You've got this.");
+    expect(sanitizeAIResponse("Qasim, you've got this.", 'What is 2 + 2?')).toBe("you've got this.");
+  });
+
+  it('does not rewrite an explicitly requested factual question about that person', () => {
+    expect(sanitizeAIResponse('Qasim Ali created the original repository.', 'Who is Qasim Ali?')).toBe('Qasim Ali created the original repository.');
   });
 });
