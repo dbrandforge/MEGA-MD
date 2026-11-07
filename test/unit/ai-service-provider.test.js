@@ -72,3 +72,27 @@ describe('Subject relevance validation', () => {
     )).toBe(true);
   });
 });
+
+
+describe('General-purpose relevance guard', () => {
+  it('rejects answers that share one incidental word but miss the requested subject', () => {
+    expect(isUsefulAutomaticAnswer(
+      'Explain operating leverage in business',
+      'A quick loan can help a business cover urgent expenses when cash flow is tight.'
+    )).toBe(false);
+  });
+
+  it('accepts answers that address the key subject of a multi-part question', () => {
+    expect(isUsefulAutomaticAnswer(
+      'Explain operating leverage in business',
+      'Operating leverage describes how fixed operating costs affect a business\'s operating profit as sales change.'
+    )).toBe(true);
+  });
+
+  it('continues to accept concise answers to single-subject questions', () => {
+    expect(isUsefulAutomaticAnswer(
+      'What is photosynthesis?',
+      'Photosynthesis is the process plants use to convert light energy into chemical energy.'
+    )).toBe(true);
+  });
+});
