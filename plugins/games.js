@@ -14,8 +14,16 @@ export default {
     const registered = commandHandler.getCommandsByCategory('games')
       .map(name => commandHandler.commands.get(String(name).toLowerCase()))
       .filter(plugin => plugin && plugin.command !== 'games')
-      .filter(plugin => !commandHandler.disabledCommands.has(String(plugin.command).toLowerCase()))
-      .sort((a, b) => a.command.localeCompare(b.command));
+      .filter(plugin => !commandHandler.disabledCommands.has(String(plugin.command).toLowerCase()));
+
+    // The existing .game command is currently failing during image retrieval.
+    // Include it in the unavailable section even if it is registered outside the games category.
+    const gameCommand = commandHandler.commands.get('game')
+      || commandHandler.commands.get(commandHandler.aliases.get('game') || '');
+    if (gameCommand && !registered.some(plugin => plugin.command === gameCommand.command)) {
+      registered.push({ ...gameCommand, command: 'game' });
+    }
+    registered.sort((a, b) => a.command.localeCompare(b.command));
 
     const available = registered.filter(plugin => !UNAVAILABLE_GAME_COMMANDS.has(plugin.command));
     const unavailable = registered.filter(plugin => UNAVAILABLE_GAME_COMMANDS.has(plugin.command));
