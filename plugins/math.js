@@ -96,7 +96,7 @@ async function endMatch(sock, chatId, game, reason = 'completed', quoted) {
   await saveMatchRecords(chatId, game);
   const lines = formatScores(game.scores, 10);
   await sock.sendMessage(chatId, {
-    text: `🏁 *MATHS ARENA — MATCH ${reason === 'completed' ? 'COMPLETE' : 'ENDED'}*\n\n${lines.join('\n') || 'No points were scored.'}\n\n🏆 Champion: ${game.winner ? mention(game.winner) : 'No winner'}`,
+    text: `🏁 *MATHS ARENA — MATCH ${reason === 'completed' ? 'COMPLETE' : 'ENDED'}*\n\n${reason === 'no-participation' ? 'No player submitted an answer. The match ended after the five-minute waiting period.\n\n' : ''}${lines.join('\n') || 'No points were scored.'}\n\n🏆 Champion: ${game.winner ? mention(game.winner) : 'No winner'}`,
     mentions: ranking.map(([jid]) => jid)
   }, quoted ? { quoted } : undefined);
 }
