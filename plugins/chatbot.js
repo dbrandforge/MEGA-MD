@@ -128,7 +128,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             data.chatbot[chatId] = true;
             await saveUserGroupData(data);
         }
-        if (data.chatbot[chatId] !== true) return;
+        if (data.chatbot[chatId] !== true && !forceReply && !isThreadFollowup) return;
     } else if (data.chatbotDMEnabled !== true && !identity) {
         return;
     }
