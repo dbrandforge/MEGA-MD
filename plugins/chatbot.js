@@ -241,19 +241,22 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             const libraryReply = pickLibraryReply(chatbotQuery, previousBotReply);
             // ChatDual handles relevant advice-shaped/contextual intents; personality bank remains the fallback.
             const priorTurns = history.slice(0, -1).slice(-8);
-            const needsKnowledgeAnswer = !substantiveReply && !libraryReply
-                && shouldUseAutomaticAI(chatbotQuery, intent, priorTurns);
+            // Gemini is the primary reasoning engine for every genuine question or
+            // practical help request. Curated banks remain for social exchanges and
+            // can no longer intercept a question before the configured AI provider.
+            const needsKnowledgeAnswer = shouldUseAutomaticAI(chatbotQuery, intent, priorTurns);
 
-            // A genuine question must never fall through to a random personality
-            // or dual-bank line. Those banks are reserved for social conversation.
-            const dualResponse = substantiveReply || libraryReply || (needsKnowledgeAnswer ? null : pickDualReply(chatbotQuery, {
-                chatId,
-                previousReply: previousBotReply,
-                intent,
-                context: history.slice(-8).map(item => item.text),
-                responseMode: 'reasoned'
-            }));
-            response = dualResponse || (needsKnowledgeAnswer ? null : pickPersonalityReply(chatbotQuery, {
+            // Never let a deterministic topic/personality bank replace a genuine
+            // question. This keeps the AI path general-purpose rather than sample-specific.
+            const dualResponse = needsKnowledgeAnswer ? null
+                : (substantiveReply || libraryReply || pickDualReply(chatbotQuery, {
+                    chatId,
+                    previousReply: previousBotReply,
+                    intent,
+                    context: history.slice(-8).map(item => item.text),
+                    responseMode: 'reasoned'
+                }));
+            response = needsKnowledgeAnswer ? null : (dualResponse || pickPersonalityReply(chatbotQuery, {
                 chatId,
                 previousReply: previousBotReply,
                 gender: registeredGender,
