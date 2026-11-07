@@ -168,6 +168,16 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             .replace(botNumber ? new RegExp(`@${botNumber}`, 'g') : /$^/, '')
             .trim();
 
+        const quotedMessage = contextInfo.quotedMessage || {};
+        const quotedText = quotedMessage.conversation
+            || quotedMessage.extendedTextMessage?.text
+            || quotedMessage.imageMessage?.caption
+            || quotedMessage.videoMessage?.caption
+            || '';
+        const chatbotQuery = quotedText && /^(answer this|answer|explain this|tell me about this|what about this|help me with this)[.!?\\s👇]*$/i.test(cleanForHistory)
+            ? `The user is asking you to answer the following quoted message: "${String(quotedText).slice(0, 1500)}". Their instruction: ${cleanForHistory}`
+            : cleanForHistory;
+
         const history = await loadChatHistory(chatId);
         if (cleanForHistory && !message.key.fromMe) {
             history.push({
@@ -187,7 +197,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         if (isGroup && !isExplicitlyAddressedInGroup({ isMention, isReplyToBot, quotedParticipant, botJids })) return;
         if (!cleanForHistory) return;
 
-        const arithmeticValue = evaluateArithmetic(cleanForHistory);
+        const arithmeticValue = evaluateArithmetic(chatbotQuery);
         const arithmeticReply = arithmeticValue === null ? null : `The answer is *${formatArithmeticAnswer(arithmeticValue)}*.`;
         const identityReply = getIdentityReply(cleanForHistory, undefined, identity);
         // Creator/Queen arrival greetings are for a fresh direct call, not every follow-up turn.
@@ -201,20 +211,20 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         let response = arithmeticReply || identityReply || identityGreeting;
         if (!response) {
             // Current facts must be grounded in fresh search evidence, never a dated local answer bank.
-            if (CHATBOT_AI_ENABLED && isTimeSensitiveQuestion(cleanForHistory)) {
+            if (CHATBOT_AI_ENABLED && isTimeSensitiveQuestion(chatbotQuery)) {
                 const liveStartedAt = Date.now();
-                const liveResult = await searchLiveKnowledge(cleanForHistory, { timeoutMs: 5000 });
+                const liveResult = await searchLiveKnowledge(chatbotQuery, { timeoutMs: 5000 });
                 if (!liveResult.ok) {
                     response = "I can't verify the latest information right now, so I don't want to guess. Please try again shortly.";
                     console.info(`[Chatbot Live] outcome=unavailable reason=${liveResult.reason} latency_ms=${Date.now() - liveStartedAt}`);
                 } else {
                     try {
-                        const liveReply = await askFastAI(cleanForHistory, {
+                        const liveReply = await askFastAI(chatbotQuery, {
                             timeoutMs: 10000,
                             history: history.slice(0, -1).slice(-8),
                             liveContext: buildLiveKnowledgeContext(liveResult)
                         });
-                        response = sanitizeAIResponse(liveReply, cleanForHistory) + formatLiveKnowledgeSources(liveResult);
+                        response = sanitizeAIResponse(liveReply, chatbotQuery) + formatLiveKnowledgeSources(liveResult);
                         console.info(`[Chatbot Live] outcome=success sources=${liveResult.results.length} cached=${liveResult.cached} latency_ms=${Date.now() - liveStartedAt}`);
                     } catch (error) {
                         response = formatLiveKnowledgeEvidenceSummary(liveResult) || "I found recent sources, but couldn't safely compose a verified summary just now. Please check the linked sources directly:";
@@ -224,26 +234,26 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                     }
                 }
             } else {
-            const intent = classifyIntent(cleanForHistory);
-            const substantiveReply = pickSubstantiveReply(cleanForHistory, history.slice(0, -1).slice(-8).map(item => item.text));
+            const intent = classifyIntent(chatbotQuery);
+            const substantiveReply = pickSubstantiveReply(chatbotQuery, history.slice(0, -1).slice(-8).map(item => item.text));
             // Exact knowledge-bank matches outrank broad topic banks and contextual suggestions.
             // This prevents a new definition or financial question inheriting an old topic.
-            const libraryReply = pickLibraryReply(cleanForHistory, previousBotReply);
+            const libraryReply = pickLibraryReply(chatbotQuery, previousBotReply);
             // ChatDual handles relevant advice-shaped/contextual intents; personality bank remains the fallback.
             const priorTurns = history.slice(0, -1).slice(-8);
             const needsKnowledgeAnswer = !substantiveReply && !libraryReply
-                && shouldUseAutomaticAI(cleanForHistory, intent, priorTurns);
+                && shouldUseAutomaticAI(chatbotQuery, intent, priorTurns);
 
             // A genuine question must never fall through to a random personality
             // or dual-bank line. Those banks are reserved for social conversation.
-            const dualResponse = substantiveReply || libraryReply || (needsKnowledgeAnswer ? null : pickDualReply(cleanForHistory, {
+            const dualResponse = substantiveReply || libraryReply || (needsKnowledgeAnswer ? null : pickDualReply(chatbotQuery, {
                 chatId,
                 previousReply: previousBotReply,
                 intent,
                 context: history.slice(-8).map(item => item.text),
                 responseMode: 'reasoned'
             }));
-            response = dualResponse || (needsKnowledgeAnswer ? null : pickPersonalityReply(cleanForHistory, {
+            response = dualResponse || (needsKnowledgeAnswer ? null : pickPersonalityReply(chatbotQuery, {
                 chatId,
                 previousReply: previousBotReply,
                 gender: registeredGender,
@@ -254,19 +264,19 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                 if (CHATBOT_AI_ENABLED) {
                     const aiStartedAt = Date.now();
                     try {
-                        response = sanitizeAIResponse(await askFastAI(cleanForHistory, {
+                        response = sanitizeAIResponse(await askFastAI(chatbotQuery, {
                             timeoutMs: 8000,
                             history: priorTurns
-                        }), cleanForHistory);
+                        }), chatbotQuery);
                         console.info(`[Chatbot AI] outcome=success latency_ms=${Date.now() - aiStartedAt}`);
                     } catch (error) {
-                        response = getQuestionFallback(cleanForHistory)
+                        response = getQuestionFallback(chatbotQuery)
                             || "I couldn't produce a reliable answer to that just now. Please try again shortly.";
                         const reason = String(error?.code || error?.message || 'unknown').slice(0, 100).replaceAll(String.fromCharCode(10), ' ').replaceAll(String.fromCharCode(13), ' ');
                         console.warn(`[Chatbot AI] outcome=unavailable latency_ms=${Date.now() - aiStartedAt} reason=${reason}`);
                     }
                 } else {
-                    response = getQuestionFallback(cleanForHistory)
+                    response = getQuestionFallback(chatbotQuery)
                         || "I can't provide a reliable answer to that question right now.";
                 }
             }
