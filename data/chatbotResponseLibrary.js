@@ -238,9 +238,31 @@ export const intentRules = [
  * Small, high-confidence answers for recurring substantive questions.
  * Keep these narrowly scoped: unknown questions should not receive a fabricated answer.
  */
-export function pickSubstantiveReply(text = '') {
+export function pickSubstantiveReply(text = '', context = []) {
   const input = String(text || '').trim();
+  const recentContext = (Array.isArray(context) ? context : []).join(' ');
+  const marketingContext = /\b(digital marketer|digital marketing|attract customers|marketing service)\b/i.test(recentContext);
   if (!input) return null;
+
+  // Narrow, verified answers for common identity/current-affairs questions.
+  if (/\btatiana(?:\s+manaois)?\b/i.test(input)) {
+    if (/\b(song|love song|romantic|recommend|recommendation)\b/i.test(input)) {
+      return "Yes — Tatiana Manaois is a singer-songwriter. For a romantic track, try *Helplessly*; *Loved Like This* is another good option. 🎶";
+    }
+    return "Yes. Tatiana Manaois is an independent singer-songwriter known for melodic pop and acoustic-influenced songs. One of her well-known tracks is *Helplessly*. 🎶";
+  }
+
+  if (marketingContext && /\b(content|contents|post|posts|create|creating|what should i share)\b/i.test(input)) {
+    return "For your digital marketing work, create five repeatable content types: educational posts that solve one customer problem, short how-to videos, case studies showing a result, client testimonials or proof, and offer-focused posts explaining who you help and how to buy. For the next week, publish 2 educational posts, 2 short videos, 1 case study, 1 proof post and 1 direct offer. Keep each post aimed at one target customer and track enquiries and qualified leads—not likes alone.";
+  }
+
+  if (/\b(digital marketer|digital marketing)\b/i.test(input) &&
+      /\b(attract|customers|clients|content|contents|what should i post|what can i post)\b/i.test(input)) {
+    if (/\b(content|contents|post|create|creating)\b/i.test(input)) {
+      return "Start with five content types: (1) educational posts that solve one customer problem, (2) short how-to videos, (3) case studies showing a result, (4) client testimonials and proof, and (5) offer-focused posts explaining who you help and how to buy. Use one clear audience and one service as your focus. For the next 7 days, publish 2 educational posts, 2 short videos, 1 case study, 1 proof/testimonial post and 1 direct offer. Track enquiries, saves and qualified leads—not likes alone.";
+    }
+    return "Choose one audience and one clear service first. Show proof of your work, explain the problem you solve, publish useful content consistently, engage with people who fit your target market, and make the next step obvious with a clear offer or call to action. Start conversations with potential customers instead of relying on posts alone, and measure qualified leads rather than likes.";
+  }
 
   if (/\b(can|could|do)\b.*\b(two people|people|couple|partners)\b.*\b(love|care about each other)\b.*\b(incompatible|not compatible|compatibility)\b/i.test(input)
       || /\b(can|could)\b.*\b(love each other)\b.*\b(incompatible|not compatible)\b/i.test(input)

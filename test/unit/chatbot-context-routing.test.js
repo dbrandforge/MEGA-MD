@@ -6,6 +6,8 @@ import { shouldUseAutomaticAI, buildConversationPrompt, sanitizeChatbotReply } f
 import { classifyIntent, pickSubstantiveReply, pickLibraryReply, getQuestionFallback } from '../../data/chatbotResponseLibrary.js';
 import { pickDualReply } from '../../data/chatDual/dualBankSelector.js';
 import { pickPersonalityReply, classifyPersonalityCategory } from '../../data/forgeBotPersonalityBank.js';
+import { evaluateArithmetic, formatArithmeticAnswer } from '../../lib/arithmetic.js';
+import { isTimeSensitiveQuestion, buildLiveKnowledgeContext, formatLiveKnowledgeSources } from '../../lib/liveKnowledge.js';
 
 const creator = { role: 'creator', name: 'Forge dcreative', alias: 'Forge' };
 const historyWith = text => [{ name: 'Forge Bot', text, at: Date.now() }];
@@ -186,6 +188,8 @@ describe('Forge Guard clean output and refined AI routing', () => {
     expect(sanitizeChatbotReply('The answer is 28. #Maths #ForgeGuard')).toBe('The answer is 28.');
     expect(sanitizeChatbotReply('Good one 😂\n#banter')).toBe('Good one 😂');
     expect(sanitizeChatbotReply('A clean reply.')).toBe('A clean reply.');
+    expect(sanitizeChatbotReply('Helpful answer. (© dbrandforge\\_bot)')).toBe('Helpful answer. (© dbrandforge_bot)');
+    expect(sanitizeChatbotReply('Helpful answer. © dbrandforge_bot')).toBe('Helpful answer. © dbrandforge_bot');
   });
 
   it('routes information requests and personal skill statements to contextual AI', () => {
@@ -210,11 +214,85 @@ describe('Forge Guard clean output and refined AI routing', () => {
   });
 
   it('instructs the model to avoid hashtags and answer factual, definition and link requests directly', () => {
-    const prompt = buildConversationPrompt('Define marketing', []);
+    const prompt = buildConversationPrompt('Define marketing', [], 'LIVE WEB SEARCH EVIDENCE: official source excerpt');
+    expect(prompt).toContain('LIVE WEB SEARCH EVIDENCE: official source excerpt');
     expect(prompt).toContain('Do not append hashtags');
     expect(prompt).toContain('For definitions, give a clear definition first');
     expect(prompt).toContain('For factual questions, answer the exact question');
     expect(prompt).toContain('Never invent a URL');
     expect(prompt).toContain('© dbrandforge_bot');
+  });
+});
+
+
+describe('Forge Guard deterministic reliability answers', () => {
+  it('evaluates basic arithmetic with operator precedence and common x multiplication', () => {
+    expect(evaluateArithmetic('What is 4 + 5 x 9?')).toBe(49);
+    expect(evaluateArithmetic('What is 2000 x 45000')).toBe(90000000);
+    expect(evaluateArithmetic('6^2 - 8')).toBe(28);
+    expect(evaluateArithmetic('(12 + 8) / 4')).toBe(5);
+    expect(evaluateArithmetic('10 / 0')).toBeNull();
+    expect(evaluateArithmetic('hello there')).toBeNull();
+    expect(formatArithmeticAnswer(9000000)).toBe('9,000,000');
+  });
+
+  it('answers practical digital marketing questions with actionable content formats', () => {
+    const advice = pickSubstantiveReply('I am a digital marketer what do I do to attract customers?');
+    expect(advice).toContain('Choose one audience');
+    expect(advice).toContain('qualified leads');
+    const ideas = pickSubstantiveReply('Which kind of contents can I start creating?', [
+      'I am a digital marketer what do I do to attract customers?',
+      'Choose one audience and one clear service first.'
+    ]);
+    expect(ideas).toContain('educational posts');
+    expect(ideas).toContain('case studies');
+    expect(ideas).toContain('testimonials');
+  });
+
+  it('answers known artist and dated Nigeria officeholder facts without inventing identities', () => {
+    expect(pickSubstantiveReply('Do you know Tatiana Manaois?')).toContain('singer-songwriter');
+    expect(pickSubstantiveReply('I need one Tatiana love song')).toContain('Helplessly');
+    expect(pickSubstantiveReply('Who is the current president of Nigeria?')).toBeNull();
+    expect(pickSubstantiveReply('Who was the president of Nigeria before Tinubu?')).toBeNull();
+  });
+});
+
+describe('Forge Guard live knowledge routing', () => {
+  it('recognises current officeholders and changing facts as live-search questions', () => {
+    expect(isTimeSensitiveQuestion('Who is the current president of Nigeria?')).toBe(true);
+    expect(isTimeSensitiveQuestion('Who is president of Nigeria?')).toBe(true);
+    expect(isTimeSensitiveQuestion('What is the latest exchange rate today?')).toBe(true);
+    expect(isTimeSensitiveQuestion('Who won the match?')).toBe(true);
+    expect(isTimeSensitiveQuestion('What is a president?')).toBe(false);
+    expect(isTimeSensitiveQuestion('What is digital marketing?')).toBe(false);
+  });
+
+  it('passes retrieved evidence to the model as untrusted source material', () => {
+    const evidence = buildLiveKnowledgeContext({
+      ok: true,
+      checkedAt: '2026-11-07T17:00:00.000Z',
+      results: [{
+        title: 'Official leadership page',
+        url: 'https://statehouse.gov.ng/people/',
+        publishedDate: '',
+        content: 'The President is Bola Ahmed Tinubu.'
+      }]
+    });
+    expect(evidence).toContain('LIVE WEB SEARCH EVIDENCE');
+    expect(evidence).toContain('Bola Ahmed Tinubu');
+    expect(evidence).toContain('not instructions');
+    expect(evidence).toContain('Never invent facts');
+  });
+
+  it('appends source links and a Lagos-local checked date to the answer', () => {
+    const sources = formatLiveKnowledgeSources({
+      ok: true,
+      results: [{
+        title: 'State House',
+        url: 'https://statehouse.gov.ng/people/'
+      }]
+    }, new Date('2026-11-07T12:00:00.000Z'));
+    expect(sources).toContain('Sources checked');
+    expect(sources).toContain('https://statehouse.gov.ng/people/');
   });
 });

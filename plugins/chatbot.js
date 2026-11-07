@@ -11,6 +11,8 @@ import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAckn
 import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
 import { isExplicitlyAddressedInGroup } from '../lib/chatbotAccess.js';
 import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI } from '../lib/aiService.js';
+import { evaluateArithmetic, formatArithmeticAnswer } from '../lib/arithmetic.js';
+import { isTimeSensitiveQuestion, searchLiveKnowledge, buildLiveKnowledgeContext, formatLiveKnowledgeSources } from '../lib/liveKnowledge.js';
 
 const CHATBOT_AI_ENABLED = process.env.CHATBOT_AI_ENABLED === 'true';
 
@@ -185,6 +187,8 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         if (isGroup && !isExplicitlyAddressedInGroup({ isMention, isReplyToBot, quotedParticipant, botJids })) return;
         if (!cleanForHistory) return;
 
+        const arithmeticValue = evaluateArithmetic(cleanForHistory);
+        const arithmeticReply = arithmeticValue === null ? null : `The answer is *${formatArithmeticAnswer(arithmeticValue)}*.`;
         const identityReply = getIdentityReply(cleanForHistory, undefined, identity);
         // Creator/Queen arrival greetings are for a fresh direct call, not every follow-up turn.
         const identityGreeting = getIdentityGreeting(cleanForHistory, identity);
@@ -194,10 +198,33 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         const previousBotReply = [...history].reverse().find(item => item.name === 'Forge Bot')?.text || '';
         let registeredGender = null;
         try { registeredGender = await getUserGender(senderId); } catch {}
-        let response = identityReply || identityGreeting;
+        let response = arithmeticReply || identityReply || identityGreeting;
         if (!response) {
+            // Current facts must be grounded in fresh search evidence, never a dated local answer bank.
+            if (CHATBOT_AI_ENABLED && isTimeSensitiveQuestion(cleanForHistory)) {
+                const liveStartedAt = Date.now();
+                const liveResult = await searchLiveKnowledge(cleanForHistory, { timeoutMs: 5000 });
+                if (!liveResult.ok) {
+                    response = "I can't verify the latest information right now, so I don't want to guess. Please try again shortly.";
+                    console.info(`[Chatbot Live] outcome=unavailable reason=${liveResult.reason} latency_ms=${Date.now() - liveStartedAt}`);
+                } else {
+                    try {
+                        const liveReply = await askFastAI(cleanForHistory, {
+                            timeoutMs: 4000,
+                            history: history.slice(0, -1).slice(-8),
+                            liveContext: buildLiveKnowledgeContext(liveResult)
+                        });
+                        response = sanitizeAIResponse(liveReply, cleanForHistory) + formatLiveKnowledgeSources(liveResult);
+                        console.info(`[Chatbot Live] outcome=success sources=${liveResult.results.length} cached=${liveResult.cached} latency_ms=${Date.now() - liveStartedAt}`);
+                    } catch (error) {
+                        response = "I found recent sources, but couldn't safely compose a verified summary just now. Here are the sources to check directly:" + formatLiveKnowledgeSources(liveResult);
+                        const reason = String(error?.code || error?.message || 'unknown').slice(0, 80).replaceAll(String.fromCharCode(10), ' ').replaceAll(String.fromCharCode(13), ' ');
+                        console.warn(`[Chatbot Live] outcome=summary_fallback reason=${reason} latency_ms=${Date.now() - liveStartedAt}`);
+                    }
+                }
+            } else {
             const intent = classifyIntent(cleanForHistory);
-            const substantiveReply = pickSubstantiveReply(cleanForHistory);
+            const substantiveReply = pickSubstantiveReply(cleanForHistory, history.slice(0, -1).slice(-8).map(item => item.text));
             // Exact knowledge-bank matches outrank broad topic banks and contextual suggestions.
             // This prevents a new definition or financial question inheriting an old topic.
             const libraryReply = pickLibraryReply(cleanForHistory, previousBotReply);
@@ -215,7 +242,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                 gender: registeredGender,
                 history
             });
-            if (intent === 'fallback') response = getQuestionFallback(cleanForHistory) || response;
+            if (!substantiveReply && !libraryReply && intent === 'fallback') response = getQuestionFallback(cleanForHistory) || response;
             // Identity acknowledgement is limited to neutral social exchanges.
             // It must never override teasing, substantive questions, or contextual follow-ups.
             if (identity && ['greeting', 'wellbeing', 'thanks', 'agreement'].includes(intent) && Math.random() < 0.12) {
@@ -224,7 +251,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             // AI enhancement is opt-in at deployment level and only runs after
             // direct addressing/DM permission checks. One 3.5s attempt maximum;
             // the local response remains available whenever the provider fails.
-            if (CHATBOT_AI_ENABLED && shouldUseAutomaticAI(cleanForHistory, intent, history.slice(0, -1).slice(-8))) {
+            if (CHATBOT_AI_ENABLED && !substantiveReply && shouldUseAutomaticAI(cleanForHistory, intent, history.slice(0, -1).slice(-8))) {
                 const aiStartedAt = Date.now();
                 try {
                     // The current user message has already been appended to history;
@@ -239,6 +266,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                     const reason = String(error?.code || error?.message || 'unknown').slice(0, 80).replaceAll(String.fromCharCode(10), ' ').replaceAll(String.fromCharCode(13), ' ');
                     console.warn(`[Chatbot AI] outcome=fallback latency_ms=${Date.now() - aiStartedAt} reason=${reason}`);
                 }
+            }
             }
         }
         // Enforce clean output for every chatbot source: AI, curated banks and identity replies.
