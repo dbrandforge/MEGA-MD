@@ -7,7 +7,7 @@ import { classifyIntent, pickSubstantiveReply, pickLibraryReply, getQuestionFall
 import { pickDualReply } from '../../data/chatDual/dualBankSelector.js';
 import { pickPersonalityReply, classifyPersonalityCategory } from '../../data/forgeBotPersonalityBank.js';
 import { evaluateArithmetic, formatArithmeticAnswer } from '../../lib/arithmetic.js';
-import { isTimeSensitiveQuestion, buildLiveKnowledgeContext, formatLiveKnowledgeSources } from '../../lib/liveKnowledge.js';
+import { isTimeSensitiveQuestion, buildLiveKnowledgeContext, formatLiveKnowledgeSources, formatLiveKnowledgeEvidenceSummary } from '../../lib/liveKnowledge.js';
 
 const creator = { role: 'creator', name: 'Forge dcreative', alias: 'Forge' };
 const historyWith = text => [{ name: 'Forge Bot', text, at: Date.now() }];
@@ -294,5 +294,59 @@ describe('Forge Guard live knowledge routing', () => {
     }, new Date('2026-11-07T12:00:00.000Z'));
     expect(sources).toContain('Sources checked');
     expect(sources).toContain('https://statehouse.gov.ng/people/');
+  });
+});
+
+
+describe('Forge Guard transcript regression coverage', () => {
+  it('answers the relationship question about recognising love with observable behaviours', () => {
+    const reply = pickSubstantiveReply('How can I determine if someone loves me?');
+    expect(reply).toContain('consistent behaviour');
+    expect(reply).toContain('respect your boundaries');
+    expect(reply).toContain('No single sign proves love');
+  });
+
+  it('answers a hairdresser with craft-improvement and customer-acquisition steps', () => {
+    const reply = pickSubstantiveReply('I am an hairdresser how do I improve my skill and get more customers as well?');
+    expect(reply).toContain('advanced training');
+    expect(reply).toContain('before-and-after work');
+    expect(reply).toContain('repeat appointments');
+  });
+
+  it('gives cautious, practical loan guidance and screens for predatory tactics', () => {
+    const question = 'How do I get a loan?';
+    expect(classifyIntent(question)).toBe('financialNeed');
+    const reply = pickSubstantiveReply(question);
+    expect(reply).toContain('monthly repayment');
+    expect(reply).toContain('upfront release fee');
+    expect(reply).toContain('What amount do you need');
+  });
+
+  it('answers sex questions as non-graphic education rather than flirtation', () => {
+    const reply = pickSubstantiveReply('What is sex? Give me different style of sex as well');
+    expect(reply).toContain('consensual sexual activity');
+    expect(reply).toContain('vaginal sex, oral sex, anal sex');
+    expect(reply).toContain('freely given consent');
+  });
+
+  it('handles full-song lyric requests with a copyright-safe alternative', () => {
+    const question = 'I need Lyrics for the song aye by davido';
+    expect(classifyIntent(question)).toBe('copyrightLyrics');
+    expect(pickSubstantiveReply(question)).toContain("I can't provide the full copyrighted lyrics");
+    expect(pickSubstantiveReply('Just give me the lyrics')).toBeNull();
+  });
+
+  it('does not classify a simple current sports-news request as ordinary banter', () => {
+    expect(isTimeSensitiveQuestion("What's the current sport news?")).toBe(true);
+  });
+
+  it('keeps a useful source-excerpt fallback when live AI composition is unavailable', () => {
+    const summary = formatLiveKnowledgeEvidenceSummary({
+      ok: true,
+      results: [{ title: 'Official sports update', content: 'A current competition result and a dated update.' }]
+    });
+    expect(summary).toContain('Official sports update');
+    expect(summary).toContain('A current competition result');
+    expect(summary).toContain('summary service did not respond');
   });
 });
