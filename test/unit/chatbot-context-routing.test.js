@@ -3,7 +3,8 @@ import { getIdentityGreeting } from '../../lib/identity.js';
 import { isExplicitlyAddressedInGroup } from '../../lib/chatbotAccess.js';
 import { sanitizeAIResponse } from '../../plugins/ai-gpt.js';
 import { shouldUseAutomaticAI } from '../../lib/aiService.js';
-import { classifyIntent, pickSubstantiveReply, getQuestionFallback } from '../../data/chatbotResponseLibrary.js';
+import { classifyIntent, pickSubstantiveReply, pickLibraryReply, getQuestionFallback } from '../../data/chatbotResponseLibrary.js';
+import { pickDualReply } from '../../data/chatDual/dualBankSelector.js';
 import { pickPersonalityReply, classifyPersonalityCategory } from '../../data/forgeBotPersonalityBank.js';
 
 const creator = { role: 'creator', name: 'Forge dcreative', alias: 'Forge' };
@@ -122,6 +123,36 @@ describe('Substantive chatbot question routing', () => {
 
   it('does not replace the established love definition with a different answer', () => {
     expect(pickSubstantiveReply('What is love?')).toBeNull();
+  });
+
+
+  it('keeps the love definition ahead of relationship banks even after relationship context', () => {
+    expect(classifyIntent('What is love?')).toBe('definition');
+    expect(pickLibraryReply('What is love?', 'Do not turn assistance into proof of love;')).toContain('deep feeling of care, respect, affection and commitment');
+    expect(pickDualReply('What is love?', {
+      intent: 'definition',
+      context: ['How can I fall in love?', 'Can two people love each other and still be incompatible?']
+    })).toBeNull();
+  });
+
+  it('recognises practical money-making questions and selects a financial answer', () => {
+    const question = 'What can I do to make money?';
+    expect(classifyIntent(question)).toBe('financialNeed');
+    expect(pickLibraryReply(question)).toMatch(/paid task|short-term gig|amount|deadline|skill|service/i);
+  });
+
+  it('does not let old topic context hijack a fresh slang or banter message', () => {
+    expect(pickDualReply('Omo aaale', {
+      intent: 'pidgin',
+      context: ['What can I do to make money?', 'How can I fall in love?']
+    })).toBeNull();
+  });
+
+  it('still carries context for explicit follow-up wording', () => {
+    expect(pickDualReply('Why?', {
+      intent: 'followup',
+      context: ['Love is care plus consistency, not only butterflies.']
+    })).toBeTruthy();
   });
 
   it('uses a question-aware fallback instead of unrelated banter for unknown questions', () => {
