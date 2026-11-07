@@ -89,6 +89,9 @@ function choosePair(chatId, category, input, previousReply = '', context = [], r
   // Prefer responses with real topical overlap; only fall back to a tie-break when the
   // message contains too little signal to distinguish the two sides.
   const bestScore = Math.max(...available.map(item => item.score));
+  // Unmatched casual Pidgin should fall through to the personality bank, not a random advice pair.
+  // Specialist banks retain their established fallback selection for short substantive prompts.
+  if (bestScore <= 0 && category === 'conversational' && terms(input).length <= 2) return null;
   const shortlist = available.filter(item => item.score === bestScore);
   const selected = shortlist[Math.floor(Math.random() * shortlist.length)];
   const text = pickSide(selected, responseMode);
@@ -116,11 +119,11 @@ export function pickDualReply(text, options = {}) {
   // Short follow-ups often rely on the previous turns ("what if they refuse?",
   // "and if it hurts?"). Use recent context to recover the topic only when the
   // current message does not introduce a clear new subject.
-  const isContextualFollowUp = terms(input).length <= 8 ||
-    /\b(what about|what if|and then|why|how so|really|are you sure|then what|in that case|what should i do)\b/i.test(input);
-  const routeText = isContextualFollowUp
-    ? [input, ...context.slice(-3)].join(' ')
-    : input;
+  // Carry history only for messages that linguistically depend on a prior turn.
+  // Short standalone statements (slang, insults, definitions) are new turns, not follow-ups.
+  const isContextualFollowUp = /^(?:and\b|but\b|so\b|then\b|why\b|how so\b|what about\b|what if\b|in that case\b|really\b|are you sure\b|then what\b|what should i do\b|yes\b|yeah\b|yep\b|no\b|nope\b|that\b|they\b|it\b|he\b|she\b|them\b|this\b)/i.test(input);
+  const recentContext = isContextualFollowUp ? context.slice(-3) : [];
+  const routeText = isContextualFollowUp ? [input, ...recentContext].join(' ') : input;
 
   let category = null;
   if (SEX_ADVICE_RE.test(routeText) || (DIRTY_RE.test(routeText) && /\b(advice|should i|is it ok|safe|consent)\b/i.test(routeText))) {
@@ -143,7 +146,7 @@ export function pickDualReply(text, options = {}) {
     category = 'gist';
   }
   if (!category) return null;
-  return choosePair(chatId, category, input, previousReply, context, responseMode);
+  return choosePair(chatId, category, input, previousReply, recentContext, responseMode);
 }
 
 export function getDualBankStats() {

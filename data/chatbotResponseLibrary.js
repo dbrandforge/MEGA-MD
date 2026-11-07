@@ -200,7 +200,7 @@ export const intentRules = [
   // Direct informational requests must be recognised before broad topic categories.
   { intent: 'slangDefinition', patterns: [/\b(what does .{1,40} mean|what is the meaning of .{1,40}|meaning of .{1,40}|define .{1,40})\b/i] },
   { intent: 'definition', patterns: [/^\s*(what is|what are|who is|who are|explain)\b/i, /\b(define|definition of|meaning of)\b/i] },
-  { intent: 'financialNeed', patterns: [/\b(i need money|need money|i need cash|need some cash|i need funds|need funds urgently|broke|i am broke|i'm broke|no money|out of money|how can i make money|how do i make money|ways to make money|raise money|urgent money)\b/i] },
+  { intent: 'financialNeed', patterns: [/\b(i need money|need money|i need cash|need some cash|i need funds|need funds urgently|broke|i am broke|i'm broke|no money|out of money|how can i make money|how do i make money|what can i do to make money|how can i earn money|how do i earn money|how to make money|ways to make money|make money|raise money|urgent money)\b/i] },
   { intent: 'error', patterns: [/^\s*(error|it'?s an error|that'?s an error|you made an error)\s*[.!?]*$/i, /\b(error message|showing an error|got an error|failed with an error)\b/i] },
   { intent: 'activityInfo', patterns: [/\b(what'?s|what is|any) (the )?(group'?s )?(activity|activities|plan|plans|agenda) (for )?(today|tonight|this evening)\b/i, /\bwhat (are we|is the group) doing (today|tonight)\b/i] },
   // Specific emotional/social intents precede broad language and generic conversation matches.
@@ -252,6 +252,10 @@ export function pickSubstantiveReply(text = '') {
       || /\bhow to fall in love\b/i.test(input)
       || /\bhow can someone fall in love\b/i.test(input)) {
     return "You cannot force yourself to fall in love, but you can make room for it. Spend time with people you genuinely enjoy, stay curious about who they are, share honest experiences, and let trust and affection develop gradually. Pay attention to consistency, respect, emotional safety and shared values—not just chemistry or the idea of being in love. And do not rush yourself; a real connection should be mutual. ❤️";
+  }
+
+  if (/\b(what can i do to make money|how can i make money|how do i make money|how can i earn money|how do i earn money|how to make money|ways to make money)\b/i.test(input)) {
+    return "Start with something people already pay for, not just a vague business idea. You could sell a service you can deliver now—design, writing, editing, tutoring, repairs, admin support or social media help; resell a product with proven demand; take paid shifts or commission-based sales; or teach a skill. Pick one offer, define who needs it and the result you will deliver, set a clear price, then speak to 10 likely customers before spending heavily. Avoid opportunities that demand upfront fees or your bank details or OTP. Tell me your skills, available hours and starting budget, and I can help narrow this to realistic options. 💡";
   }
 
   return null;

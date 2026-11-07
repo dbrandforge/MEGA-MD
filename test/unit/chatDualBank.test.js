@@ -237,10 +237,11 @@ describe('ChatDual expansion bank', () => {
     ];
     for (const [prompt, expectedIntent] of cases) {
       expect(classifyIntent(prompt)).toBe(expectedIntent);
-      expect(pickDualReply(prompt, {
+      const reply = pickDualReply(prompt, {
         chatId: `routing-${expectedIntent}-${prompt}`,
         intent: classifyIntent(prompt),
-      })).toBeTruthy();
+      });
+      expect(reply, `Expected a dual-bank reply for: ${prompt}`).toBeTruthy();
     }
   });
 
