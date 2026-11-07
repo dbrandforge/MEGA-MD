@@ -214,7 +214,8 @@ describe('Forge Guard clean output and refined AI routing', () => {
   });
 
   it('instructs the model to avoid hashtags and answer factual, definition and link requests directly', () => {
-    const prompt = buildConversationPrompt('Define marketing', []);
+    const prompt = buildConversationPrompt('Define marketing', [], 'LIVE WEB SEARCH EVIDENCE: official source excerpt');
+    expect(prompt).toContain('LIVE WEB SEARCH EVIDENCE: official source excerpt');
     expect(prompt).toContain('Do not append hashtags');
     expect(prompt).toContain('For definitions, give a clear definition first');
     expect(prompt).toContain('For factual questions, answer the exact question');
