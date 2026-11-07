@@ -367,9 +367,9 @@ describe('Answer-first chatbot routing', () => {
     expect(isTimeSensitiveQuestion(\"What's the name of the first lady of Nigeria\")).toBe(true);
   });
 
-  it('routes a meaningful statement as an answer to the bot\\'s recent question', () => {
+  it('routes a meaningful statement as an answer to the bot\'s recent question', () => {
     const history = [{ name: 'Forge Bot', text: 'Who dey your side?' }];
-    expect(shouldUseAutomaticAI('I don\\'t have a best amongst the two of them', 'fallback', history)).toBe(true);
+    expect(shouldUseAutomaticAI('I don\'t have a best amongst the two of them', 'fallback', history)).toBe(true);
   });
 
   it('does not misroute short casual Pidgin banter as a substantive answer', () => {
