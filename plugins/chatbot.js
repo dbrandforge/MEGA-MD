@@ -222,7 +222,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                 response = getIdentityAcknowledgement(identity) + response;
             }
             // AI enhancement is opt-in at deployment level and only runs after
-            // direct addressing/DM permission checks. One 1.2s attempt maximum;
+            // direct addressing/DM permission checks. One 3.5s attempt maximum;
             // the local response remains available whenever the provider fails.
             if (CHATBOT_AI_ENABLED && shouldUseAutomaticAI(cleanForHistory, intent, history.slice(0, -1).slice(-8))) {
                 try {
@@ -237,7 +237,8 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                 }
             }
         }
-        // Enforce clean output for every chatbot source: AI, curated banks and identity replies.\n        response = sanitizeChatbotReply(response);\n        console.info(`[Chatbot] Reply (intent: ${classifyIntent(cleanForHistory)}, identity: ${identity?.role || 'standard'}, gender: ${registeredGender || 'unregistered'}).`);
+        // Enforce clean output for every chatbot source: AI, curated banks and identity replies.
+        response = sanitizeChatbotReply(response);\n        console.info(`[Chatbot] Reply (intent: ${classifyIntent(cleanForHistory)}, identity: ${identity?.role || 'standard'}, gender: ${registeredGender || 'unregistered'}).`);
 
         printLog('info', `[Chatbot DM] Attempting reply via destinationType=${chatId.endsWith('@lid') ? 'LID' : 'PN_or_group'}`);
         const sentMessage = await sock.sendMessage(chatId, { text: response }, { quoted: message });
