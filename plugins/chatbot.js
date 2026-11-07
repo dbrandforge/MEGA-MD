@@ -226,7 +226,12 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             // the local response remains available whenever the provider fails.
             if (CHATBOT_AI_ENABLED && shouldUseAutomaticAI(cleanForHistory, intent)) {
                 try {
-                    response = sanitizeAIResponse(await askFastAI(cleanForHistory, { timeoutMs: 1200 }), cleanForHistory);
+                    // The current user message has already been appended to history;
+                    // send only the preceding turns as context to avoid duplicating it.
+                    response = sanitizeAIResponse(await askFastAI(cleanForHistory, {
+                        timeoutMs: 3500,
+                        history: history.slice(0, -1).slice(-8)
+                    }), cleanForHistory);
                 } catch {
                     // Keep the already-selected local response; never block on retries.
                 }
