@@ -1,7 +1,7 @@
 import store from '../lib/lightweight_store.js';
 import { PRIMARY_FEATURE_GROUP, registerFeatureGroup, isFeatureGroup, loadFeatureGroups } from '../lib/featureGroups.js';
 import { trackGroup, startSchedulerEngine } from './schedule.js';
-import { loadUserGroupData, saveUserGroupData } from './chatbot.js';
+import { loadUserGroupData } from './chatbot.js';
 import {
   copyGroupUserData,
   copyGroupSettings,
