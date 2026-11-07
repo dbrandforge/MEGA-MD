@@ -111,7 +111,7 @@ describe('Automatic AI opt-in routing', () => {
     expect(prompt).toContain('Forge Bot: Tell me your skills');
     expect(prompt).toContain('A skill or profession is not a sexual innuendo');
     expect(prompt).toContain('Nigerian English, Nigerian Pidgin');
-    expect(prompt).toContain('CURRENT MESSAGE:\\nI repair systems');
+    expect(prompt).toContain('CURRENT MESSAGE:\nI repair systems');
   });
 });
 
