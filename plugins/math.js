@@ -2,7 +2,7 @@ import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
 import isAdmin from '../lib/isAdmin.js';
-import { startNoParticipationGrace } from '../lib/gameTimeouts.js';
+import { startNoParticipationGrace, hasNoParticipation } from '../lib/gameTimeouts.js';
 import { generateMathQuestion, getMathNegativeQuestionCount } from '../lib/mathQuestionEngine.js';
 import { TRIVIA_DIFFICULTY_SECONDS, getTriviaMatchQuestionCount } from './trivia.js';
 
@@ -113,7 +113,7 @@ async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
       text: `⏱️ *Round ${game.round}/${game.totalRounds} closed.*\n${winnerText}\nCorrect answer: *${game.answer}*`,
       mentions: game.roundWinner ? [game.roundWinner] : []
     });
-    if (Object.keys(game.attemptedBy || {}).length === 0) {
+    if (hasNoParticipation(game.attemptedBy)) {
       Object.assign(game, startNoParticipationGrace(game));
       await saveGame(chatId, game);
       await sock.sendMessage(chatId, {
