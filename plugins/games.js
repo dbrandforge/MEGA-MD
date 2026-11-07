@@ -26,7 +26,7 @@ export default {
       '',
       ...available.map((plugin, index) => {
         const description = plugin.description ? ` — ${plugin.description}` : '';
-        const usage = plugin.usage ? `\\n   Usage: ${plugin.usage.replace(/^\\.*/, match => match.startsWith('.') ? prefix + match.slice(1) : match)}` : '';
+        const usage = plugin.usage ? `\n   Usage: ${plugin.usage.replace(/\\./g, prefix)}` : '';
         return `${index + 1}. *${prefix}${plugin.command}*${description}${usage}`;
       }),
       '',
@@ -44,6 +44,6 @@ export default {
     if (!available.length) {
       return sock.sendMessage(chatId, { text: 'No enabled game commands are currently registered.', ...(context.channelInfo || {}) }, { quoted: message });
     }
-    return sock.sendMessage(chatId, { text: lines.join('\\n'), ...(context.channelInfo || {}) }, { quoted: message });
+    return sock.sendMessage(chatId, { text: lines.join('\n'), ...(context.channelInfo || {}) }, { quoted: message });
   }
 };
