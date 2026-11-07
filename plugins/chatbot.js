@@ -174,7 +174,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             || quotedMessage.imageMessage?.caption
             || quotedMessage.videoMessage?.caption
             || '';
-        const chatbotQuery = quotedText && /^(answer this|answer|explain this|tell me about this|what about this|help me with this)[.!?\\s👇]*$/i.test(cleanForHistory)
+        const chatbotQuery = quotedText && /^(answer this|answer|explain this|tell me about this|what about this|help me with this)[.!?\s👇]*$/i.test(cleanForHistory)
             ? `The user is asking you to answer the following quoted message: "${String(quotedText).slice(0, 1500)}". Their instruction: ${cleanForHistory}`
             : cleanForHistory;
 
