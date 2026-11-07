@@ -37,7 +37,9 @@ export async function loadUserGroupData() {
     if (!data || typeof data !== 'object') data = { chatbot: {} };
     if (!data.chatbot || typeof data.chatbot !== 'object') data.chatbot = {};
     if (!data.chatbotDM || typeof data.chatbotDM !== 'object') data.chatbotDM = {};
-    if (migrateDMChatbotDefault(data) && !await saveUserGroupData(data)) {\n        console.warn('[Chatbot] Could not persist the new DM-default-off migration.');\n    }
+    if (migrateDMChatbotDefault(data) && !await saveUserGroupData(data)) {
+        console.warn('[Chatbot] Could not persist the new DM-default-off migration.');
+    }
     return data;
 }
 
