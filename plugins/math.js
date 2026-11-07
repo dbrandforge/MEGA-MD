@@ -109,15 +109,15 @@ async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
     if (!game || game.roundToken !== roundToken || game.questionClosed) return false;
     clearTimer(chatId);
     game.questionClosed = true;
+    const noParticipation = hasNoParticipation(game.attemptedBy);
+    if (noParticipation) Object.assign(game, startNoParticipationGrace(game));
     await saveGame(chatId, game);
     const winnerText = game.roundWinner ? `⚡ ${mention(game.roundWinner)} got it first!` : 'No correct answer this round.';
     await sock.sendMessage(chatId, {
       text: `⏱️ *Round ${game.round}/${game.totalRounds} closed.*\n${winnerText}\nCorrect answer: *${game.answer}*`,
       mentions: game.roundWinner ? [game.roundWinner] : []
     });
-    if (hasNoParticipation(game.attemptedBy)) {
-      Object.assign(game, startNoParticipationGrace(game));
-      await saveGame(chatId, game);
+    if (noParticipation) {
       await sock.sendMessage(chatId, {
         text: '⏸️ *MATHS ARENA ON HOLD*\n\nNobody submitted an answer for this question. The match is paused for *5 minutes*. No new question will be generated during this period.\n\nThe match will end automatically when the five-minute hold expires.'
       });
