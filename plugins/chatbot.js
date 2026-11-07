@@ -210,7 +210,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                 } else {
                     try {
                         const liveReply = await askFastAI(cleanForHistory, {
-                            timeoutMs: 6500,
+                            timeoutMs: 10000,
                             history: history.slice(0, -1).slice(-8),
                             liveContext: buildLiveKnowledgeContext(liveResult)
                         });
@@ -255,7 +255,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                     const aiStartedAt = Date.now();
                     try {
                         response = sanitizeAIResponse(await askFastAI(cleanForHistory, {
-                            timeoutMs: 3500,
+                            timeoutMs: 8000,
                             history: priorTurns
                         }), cleanForHistory);
                         console.info(`[Chatbot AI] outcome=success latency_ms=${Date.now() - aiStartedAt}`);
