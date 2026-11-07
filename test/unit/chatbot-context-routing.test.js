@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getIdentityGreeting } from '../../lib/identity.js';
 import { isExplicitlyAddressedInGroup } from '../../lib/chatbotAccess.js';
 import { sanitizeAIResponse } from '../../plugins/ai-gpt.js';
-import { shouldUseAutomaticAI, buildConversationPrompt } from '../../lib/aiService.js';
+import { shouldUseAutomaticAI, buildConversationPrompt, sanitizeChatbotReply } from '../../lib/aiService.js';
 import { classifyIntent, pickSubstantiveReply, pickLibraryReply, getQuestionFallback } from '../../data/chatbotResponseLibrary.js';
 import { pickDualReply } from '../../data/chatDual/dualBankSelector.js';
 import { pickPersonalityReply, classifyPersonalityCategory } from '../../data/forgeBotPersonalityBank.js';
@@ -95,7 +95,7 @@ describe('Automatic AI opt-in routing', () => {
     expect(shouldUseAutomaticAI('Can two people love each other?', 'relationships')).toBe(true);
     expect(shouldUseAutomaticAI('What makes someone genuinely interesting to talk to?', 'fallback')).toBe(true);
     expect(shouldUseAutomaticAI('I repair systems', 'fallback')).toBe(true);
-    expect(shouldUseAutomaticAI('O ti ya werey', 'pidgin')).toBe(true);
+    expect(shouldUseAutomaticAI('O ti ya werey', 'pidgin')).toBe(false);
     expect(shouldUseAutomaticAI('Why?', 'followup')).toBe(true);
     expect(shouldUseAutomaticAI('Werey', 'savage')).toBe(false);
     expect(shouldUseAutomaticAI('😂', 'reaction')).toBe(false);
@@ -177,5 +177,44 @@ describe('Substantive chatbot question routing', () => {
   it('uses a question-aware fallback instead of unrelated banter for unknown questions', () => {
     expect(getQuestionFallback('What makes someone genuinely interesting to talk to?')).toContain('addresses the question');
     expect(getQuestionFallback('Hello bot')).toBeNull();
+  });
+});
+
+
+describe('Forge Guard clean output and refined AI routing', () => {
+  it('removes hashtags from any chatbot response without adding a branded footer', () => {
+    expect(sanitizeChatbotReply('The answer is 28. #Maths #ForgeGuard')).toBe('The answer is 28.');
+    expect(sanitizeChatbotReply('Good one 😂\n#banter')).toBe('Good one 😂');
+    expect(sanitizeChatbotReply('A clean reply.')).toBe('A clean reply.');
+  });
+
+  it('routes information requests and personal skill statements to contextual AI', () => {
+    expect(shouldUseAutomaticAI('Define marketing', 'definition')).toBe(true);
+    expect(shouldUseAutomaticAI('Who is the current president of Nigeria?', 'fallback')).toBe(true);
+    expect(shouldUseAutomaticAI('I repair systems', 'fallback')).toBe(true);
+    expect(shouldUseAutomaticAI('How do I attract the right customers?', 'fallback')).toBe(true);
+  });
+
+  it('routes short follow-ups only when prior conversation exists', () => {
+    const history = [{ name: 'Forge Bot', text: 'I can explain why that works.' }];
+    expect(shouldUseAutomaticAI('Yes please', 'agreement', history)).toBe(true);
+    expect(shouldUseAutomaticAI('Yes please', 'agreement', [])).toBe(false);
+    expect(shouldUseAutomaticAI('Why?', 'followup')).toBe(true);
+  });
+
+  it('keeps standalone slang and casual banter on the fast local path', () => {
+    expect(shouldUseAutomaticAI('O ti ya werey', 'pidgin')).toBe(false);
+    expect(shouldUseAutomaticAI('Oya wa malo', 'pidgin')).toBe(false);
+    expect(shouldUseAutomaticAI('Werey 😂', 'savage')).toBe(false);
+    expect(shouldUseAutomaticAI('😂', 'reaction')).toBe(false);
+  });
+
+  it('instructs the model to avoid hashtags and answer factual, definition and link requests directly', () => {
+    const prompt = buildConversationPrompt('Define marketing', []);
+    expect(prompt).toContain('Do not append hashtags');
+    expect(prompt).toContain('For definitions, give a clear definition first');
+    expect(prompt).toContain('For factual questions, answer the exact question');
+    expect(prompt).toContain('Never invent a URL');
+    expect(prompt).toContain('© dbrandforge_bot');
   });
 });
