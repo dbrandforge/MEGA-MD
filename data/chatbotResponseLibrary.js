@@ -372,7 +372,7 @@ export function pickLibraryReply(text = '', previousReply = '') {
     || /^(who|whom|whose|what|what's|when|where|why|how|which|who's)\b/i.test(input);
   // Topic banks contain conversation starters, not verified factual answers.
   // Never let one replace an answer to a direct question.
-  if (isDirectQuestion && !['definition', 'slangDefinition'].includes(intent)) return null;
+  if (isDirectQuestion && !['definition', 'slangDefinition', 'activityInfo'].includes(intent)) return null;
   let replies = responseLibrary[intent];
   if (!Array.isArray(replies) || !replies.length) return null;
 
