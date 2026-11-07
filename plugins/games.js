@@ -7,7 +7,6 @@ export default {
   category: 'games',
   description: 'List all available Forge Guard games.',
   usage: '.games',
-  groupOnly: true,
   async handler(sock, message, args, context) {
     const chatId = context.chatId || message.key.remoteJid;
     const prefix = context.config?.prefix || '.';
