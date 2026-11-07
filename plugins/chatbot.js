@@ -225,6 +225,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             // direct addressing/DM permission checks. One 3.5s attempt maximum;
             // the local response remains available whenever the provider fails.
             if (CHATBOT_AI_ENABLED && shouldUseAutomaticAI(cleanForHistory, intent, history.slice(0, -1).slice(-8))) {
+                const aiStartedAt = Date.now();
                 try {
                     // The current user message has already been appended to history;
                     // send only the preceding turns as context to avoid duplicating it.
@@ -232,8 +233,11 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                         timeoutMs: 3500,
                         history: history.slice(0, -1).slice(-8)
                     }), cleanForHistory);
-                } catch {
+                    console.info(`[Chatbot AI] outcome=success latency_ms=${Date.now() - aiStartedAt}`);
+                } catch (error) {
                     // Keep the already-selected local response; never block on retries.
+                    const reason = String(error?.code || error?.message || 'unknown').slice(0, 80).replace(/[\\r\\n]/g, ' ');
+                    console.warn(`[Chatbot AI] outcome=fallback latency_ms=${Date.now() - aiStartedAt} reason=${reason}`);
                 }
             }
         }
