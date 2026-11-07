@@ -217,7 +217,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                         response = sanitizeAIResponse(liveReply, cleanForHistory) + formatLiveKnowledgeSources(liveResult);
                         console.info(`[Chatbot Live] outcome=success sources=${liveResult.results.length} cached=${liveResult.cached} latency_ms=${Date.now() - liveStartedAt}`);
                     } catch (error) {
-                        response = formatLiveKnowledgeEvidenceSummary(liveResult) || "I found recent sources, but couldn't safely compose a verified summary just now. Please check the linked sources directly:"; 
+                        response = formatLiveKnowledgeEvidenceSummary(liveResult) || "I found recent sources, but couldn't safely compose a verified summary just now. Please check the linked sources directly:";
                         response += formatLiveKnowledgeSources(liveResult);
                         const reason = String(error?.code || error?.message || 'unknown').slice(0, 80).replaceAll(String.fromCharCode(10), ' ').replaceAll(String.fromCharCode(13), ' ');
                         console.warn(`[Chatbot Live] outcome=summary_fallback reason=${reason} latency_ms=${Date.now() - liveStartedAt}`);
