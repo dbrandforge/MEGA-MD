@@ -61,7 +61,7 @@ function evaluateGeneratedQuestion(question) {
     if ((m = e.match(/^(\d+) - \(-(\d+)\)$/))) return Number(m[1]) + Number(m[2]);
     if ((m = e.match(/^(\d+) ([+−×÷]) (\d+)$/))) {
       const a = Number(m[1]), b = Number(m[3]);
-      return ({ '+': a + b, '−': a - b, '×': a * b, '÷': a / b })[m[2]];
+      return ({ '+': a + b, '−': a - b, '-': a - b, '×': a * b, '÷': a / b })[m[2]];
     }
   }
   if (question.type === 'missing') {
