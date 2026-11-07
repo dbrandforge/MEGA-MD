@@ -17,7 +17,7 @@ const AI_INTENTS = new Set(['advice', 'workLife', 'relationships', 'boundaries',
 
 export function shouldUseAutomaticAI(text, intent) {
     if (AI_INTENTS.has(intent)) return true;
-    const words = String(text || '').trim().split(/\\s+/).filter(Boolean);
+    const words = String(text || '').trim().split(/\s+/).filter(Boolean);
     return intent === 'fallback' && words.length >= 6 && /[?]/.test(String(text || ''));
 }
 
