@@ -32,3 +32,26 @@ describe('Automatic AI provider resilience', () => {
     await expect(askFastAI('Explain a simple concept')).resolves.toBe('A useful answer.');
   });
 });
+
+
+describe('Automatic AI answer quality gate', () => {
+  it('rejects personality banter returned for a factual question and tries the next provider', async () => {
+    axios.get
+      .mockResolvedValueOnce({ data: { response: "Abi, what's good?" } })
+      .mockResolvedValueOnce({ data: { response: 'Davido is a Nigerian singer, songwriter and record producer.' } });
+    await expect(askFastAI('Who is Davido?')).resolves.toContain('Nigerian singer');
+    expect(axios.get).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects a short unrelated answer instead of treating it as a successful answer', async () => {
+    axios.get
+      .mockResolvedValueOnce({ data: { response: 'Wetin bring you here today?' } })
+      .mockResolvedValueOnce({ data: { response: "I'm listening." } });
+    await expect(askFastAI('Who is the best football player?')).rejects.toThrow('Automatic AI providers failed');
+  });
+
+  it('accepts a concise answer that directly names the subject', async () => {
+    axios.get.mockResolvedValueOnce({ data: { response: 'Davido is a Nigerian singer.' } });
+    await expect(askFastAI('Who is Davido?')).resolves.toContain('Nigerian singer');
+  });
+});
