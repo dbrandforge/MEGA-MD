@@ -199,8 +199,9 @@ for (const [category, entries] of Object.entries(responseExpansion)) {
 export const intentRules = [
   // Direct informational requests must be recognised before broad topic categories.
   { intent: 'slangDefinition', patterns: [/\b(what does .{1,40} mean|what is the meaning of .{1,40}|meaning of .{1,40}|define .{1,40})\b/i] },
+  { intent: 'copyrightLyrics', patterns: [/\b(lyrics|lyric)\b.*\b(song|track|music|by)\b|\b(song|track)\b.*\b(full lyrics|lyrics)\b/i] },
   { intent: 'definition', patterns: [/^\s*(what is|what are|who is|who are|explain)\b/i, /\b(define|definition of|meaning of)\b/i] },
-  { intent: 'financialNeed', patterns: [/\b(i need money|need money|i need cash|need some cash|i need funds|need funds urgently|broke|i am broke|i'm broke|no money|out of money|how can i make money|how do i make money|what can i do to make money|how can i earn money|how do i earn money|how to make money|ways to make money|make money|raise money|urgent money)\b/i] },
+  { intent: 'financialNeed', patterns: [/\b(i need money|need money|i need cash|need some cash|i need funds|need funds urgently|broke|i am broke|i'm broke|no money|out of money|how can i make money|how do i make money|what can i do to make money|how can i earn money|how do i earn money|how to make money|ways to make money|make money|raise money|urgent money|how do i get a loan|how can i get a loan|where can i get a loan|need a loan|borrow money|loan)\b/i] },
   { intent: 'error', patterns: [/^\s*(error|it'?s an error|that'?s an error|you made an error)\s*[.!?]*$/i, /\b(error message|showing an error|got an error|failed with an error)\b/i] },
   { intent: 'activityInfo', patterns: [/\b(what'?s|what is|any) (the )?(group'?s )?(activity|activities|plan|plans|agenda) (for )?(today|tonight|this evening)\b/i, /\bwhat (are we|is the group) doing (today|tonight)\b/i] },
   // Specific emotional/social intents precede broad language and generic conversation matches.
@@ -243,6 +244,35 @@ export function pickSubstantiveReply(text = '', context = []) {
   const recentContext = (Array.isArray(context) ? context : []).join(' ');
   const marketingContext = /\b(digital marketer|digital marketing|attract customers|marketing service)\b/i.test(recentContext);
   if (!input) return null;
+
+  // Copyright-safe handling must win over entertainment/personality banks,
+  // including short follow-ups such as "just give me the lyrics".
+  const asksForLyrics = /\b(lyrics|lyric)\b/i.test(input)
+    && (/\b(song|track|music|davido|artist|singer|by)\b/i.test(input)
+      || /\b(lyrics|lyric)\b/i.test(recentContext));
+  if (asksForLyrics) {
+    return "I can't provide the full copyrighted lyrics, but I can summarise the song, explain its meaning, or discuss a short excerpt you share. 🎵";
+  }
+
+  // Clear, non-graphic sexual-health education; never infer that a definition request is flirtation.
+  if (/\b(what is|define|explain)\s+(sex|sexual intercourse)\b/i.test(input)
+      || (/\bsex\b/i.test(input) && /\b(different styles|types of sex|forms of sex)\b/i.test(input))) {
+    return "Sex can mean biological characteristics, but in this context it usually means consensual sexual activity between people. Forms of sexual activity include vaginal sex, oral sex, anal sex, mutual masturbation and non-penetrative intimacy. Any sexual activity should involve informed, freely given consent, communication and the ability to stop at any time. Condoms and appropriate contraception can reduce STI and pregnancy risks. ❤️";
+  }
+
+  if (/\b(how can i determine|how do i know|how can i tell|signs)\b/i.test(input)
+      && /\b(loves? me|in love with me|genuinely loves me)\b/i.test(input)) {
+    return "Look for consistent behaviour, not one dramatic gesture: they make time for you, listen, respect your boundaries, communicate honestly, show care when it is inconvenient and take responsibility when they hurt you. Their actions should make you feel respected and emotionally safe, not constantly confused. No single sign proves love, so look at the pattern and have an honest conversation about what you both want. ❤️";
+  }
+
+  if (/\b(hairdresser|hairstylist|hair stylist|barber|salon)\b/i.test(input)
+      && /\b(improve|better|skill|customers|clients|grow|business|more people)\b/i.test(input)) {
+    return "Build both your craft and your client pipeline. For your skill: practise one technique at a time on models, take advanced training, study clean sectioning and finishing, improve consultation and hygiene, and photograph each result in consistent light. For customers: choose the services you want to be known for, post clear before-and-after work, show short process videos, collect client reviews, create a referral reward, keep a simple booking/WhatsApp catalogue and follow up for repeat appointments. Track which posts and referrals actually bring bookings. 💇";
+  }
+
+  if (/\b(loan|borrow)\b/i.test(input) && /\b(get|apply|where|need|want|how|borrow)\b/i.test(input)) {
+    return "Start by deciding the exact amount, purpose and monthly repayment you can genuinely afford. Compare a bank or regulated microfinance lender with other legitimate options; check the total repayment, interest, fees, late charges and due dates in writing before accepting. Verify the lender's current authorisation through the relevant Nigerian regulator's official information. Avoid lenders demanding an upfront release fee, your PIN or OTP, or access to your contacts. If the repayment would consume money needed for essentials, do not take the loan yet. What amount do you need, and what income can repay it? 💡";
+  }
 
   // Narrow, verified answers for common identity/current-affairs questions.
   if (/\btatiana(?:\s+manaois)?\b/i.test(input)) {
@@ -336,7 +366,7 @@ export function ensureResponseEmoji(reply = '', text = '') {
 
 export function pickLibraryReply(text = '', previousReply = '') {
   const intent = classifyIntent(text);
-  if (intent === 'fallback') return null;
+  if (intent === 'fallback' || intent === 'copyrightLyrics') return null;
   let replies = responseLibrary[intent];
   if (!Array.isArray(replies) || !replies.length) return null;
 
