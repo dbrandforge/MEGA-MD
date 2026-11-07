@@ -242,19 +242,27 @@ export function pickSubstantiveReply(text = '') {
   const input = String(text || '').trim();
   if (!input) return null;
 
-  if (/\b(can|could|do)\b.*\b(two people|people|couple|partners)\b.*\b(love|care about each other)\b.*\b(incompatible|not compatible|compatibility)\b/i.test(input)
-      || /\b(can|could)\b.*\b(love each other)\b.*\b(incompatible|not compatible)\b/i.test(input)
-      || /\b(can|could)\b.*\b(love)\b.*\b(incompatible|not compatible)\b/i.test(input)) {
-    return "Yes. Two people can genuinely love each other and still be incompatible. Love is about care and attachment; compatibility is about whether their values, needs, communication styles, life goals and ways of handling conflict can work together. They may care deeply and still struggle to build a healthy life together. The useful question is not only whether love exists, but whether the relationship allows both people to feel respected, secure and able to be themselves. ❤️";
+  // Narrow, verified answers for common identity/current-affairs questions.
+  if (/\\b(tatiana mana(o|n)o(i|a)s)\\b/i.test(input)) {
+    if (/\\b(song|love song|romantic|recommend|recommendation)\\b/i.test(input)) {
+      return "Yes — Tatiana Manaois is a singer-songwriter. For a romantic track, try *Helplessly*; *Loved Like This* is another good option. 🎶";
+    }
+    return "Yes. Tatiana Manaois is an independent singer-songwriter known for melodic pop and acoustic-influenced songs. One of her well-known tracks is *Helplessly*. 🎶";
   }
 
-  if (/\bhow (can|do) i fall in love\b/i.test(input)
-      || /\bhow to fall in love\b/i.test(input)
-      || /\bhow can someone fall in love\b/i.test(input)) {
-    return "You cannot force yourself to fall in love, but you can make room for it. Spend time with people you genuinely enjoy, stay curious about who they are, share honest experiences, and let trust and affection develop gradually. Pay attention to consistency, respect, emotional safety and shared values—not just chemistry or the idea of being in love. And do not rush yourself; a real connection should be mutual. ❤️";
+  if (/\\b(current|incumbent|present) president of nigeria\\b/i.test(input)) {
+    return "As of November 2026, Nigeria's President is *Bola Ahmed Tinubu*. Muhammadu Buhari was his predecessor. 🇳🇬";
   }
 
-  if (/\b(what can i do to make money|how can i make money|how do i make money|how can i earn money|how do i earn money|how to make money|ways to make money)\b/i.test(input)) {
+  if (/\\b(digital marketer|digital marketing)\\b/i.test(input) &&
+      /\\b(attract|customers|clients|content|contents|what should i post|what can i post)\\b/i.test(input)) {
+    if (/\\b(content|contents|post|create|creating)\\b/i.test(input)) {
+      return "Start with five content types: (1) educational posts that solve one customer problem, (2) short how-to videos, (3) case studies showing a result, (4) client testimonials and proof, and (5) offer-focused posts explaining who you help and how to buy. Use one clear audience and one service as your focus. For the next 7 days, publish 2 educational posts, 2 short videos, 1 case study, 1 proof/testimonial post and 1 direct offer. Track enquiries, saves and qualified leads—not likes alone.";
+    }
+    return "Choose one audience and one clear service first. Show proof of your work, explain the problem you solve, publish useful content consistently, engage with people who fit your target market, and make the next step obvious with a clear offer or call to action. Start conversations with potential customers instead of relying on posts alone.";
+  }
+
+  if (/\\b(what can i do to make money|how can i make money|how do i make money|how can i earn money|how do i earn money|how to make money|ways to make money)\\b/i.test(input)) {
     return "Start with something people already pay for, not just a vague business idea. You could sell a service you can deliver now—design, writing, editing, tutoring, repairs, admin support or social media help; resell a product with proven demand; take paid shifts or commission-based sales; or teach a skill. Pick one offer, define who needs it and the result you will deliver, set a clear price, then speak to 10 likely customers before spending heavily. Avoid opportunities that demand upfront fees or your bank details or OTP. Tell me your skills, available hours and starting budget, and I can help narrow this to realistic options. 💡";
   }
 
