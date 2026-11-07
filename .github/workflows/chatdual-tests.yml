@@ -8,6 +8,7 @@ on:
       - 'data/chatDual/**'
       - 'plugins/chatbot.js'
       - 'test/unit/chatDualBank.test.js'
+      - 'scripts/**'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/chatdual-tests.yml'
@@ -30,3 +31,10 @@ jobs:
         run: npm ci
       - name: Run unit tests
         run: npm run test:unit
+      - name: Audit specialty ChatDual banks
+        id: specialty-audit
+        run: npm run chatdual:audit
+        continue-on-error: true
+      - name: Report specialty-bank audit status
+        if: steps.specialty-audit.outcome == 'failure'
+        run: echo "::warning::Specialty ChatDual banks still require content-quality rewrites; see audit output above."
