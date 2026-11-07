@@ -29,10 +29,21 @@ async function endSession(sock, chatId, session, reason = 'ended') {
     let text = `🛑 *Truth or Dare session ended*\n\n${session.players.map(mention).join(' & ')}`;
     if (reason === 'timeout') text += `\n\nEnded due to 10 minutes inactivity.`;
     else if (reason === 'manual') text += `\n\nEnded by a player.`;
-    await sock.sendMessage(chatId, { text, mentions: session.players });
+    const sent = await sock.sendMessage(chatId, { text, mentions: session.players });
+    session.questionMessageId = sent?.key?.id || null;
+    const latestSessions = await getSessions(chatId);
+    const latest = latestSessions[session.id];
+    if (latest?.status === 'active' && latest.round === session.round) {
+        latest.questionMessageId = session.questionMessageId;
+        latest.advancing = false;
+        latestSessions[session.id] = latest;
+        await saveSessions(chatId, latestSessions);
+    }
 }
 
 async function startRound(sock, chatId, session) {
+    session.advancing = false;
+    session.questionMessageId = null;
     session.round += 1;
     session.lastActivity = Date.now();
     session.warningSent = false;
@@ -137,6 +148,7 @@ export async function completeTodTurn(sock, chatId, senderId, options = {}) {
         s.players?.includes(senderId) && s.status === 'active' && s.waitingFor === senderId
     );
     if (!session) return false;
+    if (session.advancing) return true;
 
     // A manual/day lock blocks further rounds, but a participant who has
     // completed a prompt may still use `.done end` to close their session.
@@ -148,6 +160,7 @@ export async function completeTodTurn(sock, chatId, senderId, options = {}) {
         }
     }
 
+    session.advancing = true;
     session.questionsCompleted = session.questionsCompleted || {};
     session.questionsCompleted[senderId] = (session.questionsCompleted[senderId] || 0) + 1;
     session.lastCompletedBy = senderId;
@@ -278,6 +291,33 @@ export async function checkTodTimeouts(sock, chatId) {
     }
 }
 
-export async function handleTodReply() {
-    return false;
+function isBotMentioned(sock, message, text = '') {
+    const botId = sock.user?.id || '';
+    const botNumber = botId.split(':')[0].split('@')[0];
+    const botLid = sock.user?.lid || '';
+    const mentions = message?.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+    return mentions.some(jid => {
+        const id = String(jid || '').split(':')[0].split('@')[0];
+        return (botNumber && id === botNumber) || (botLid && jid === botLid);
+    }) || (!!botNumber && String(text).includes('@' + botNumber));
+}
+
+export async function handleTodReply(sock, chatId, senderId, text, message) {
+    if (!chatId?.endsWith('@g.us') || message?.key?.fromMe || !senderId) return false;
+    const sessions = await getSessions(chatId);
+    const session = Object.values(sessions).find(s =>
+        s.status === 'active' && s.waitingFor === senderId
+    );
+    if (!session) return false;
+    if (session.advancing) return true;
+
+    const context = message?.message?.extendedTextMessage?.contextInfo
+        || message?.message?.imageMessage?.contextInfo
+        || message?.message?.videoMessage?.contextInfo
+        || message?.message?.documentMessage?.contextInfo || {};
+    const replied = Boolean(session.questionMessageId && context.stanzaId === session.questionMessageId);
+    const tagged = isBotMentioned(sock, message, text);
+    if (!replied && !tagged) return false;
+
+    return completeTodTurn(sock, chatId, senderId, { message });
 }

@@ -1,0 +1,48 @@
+name: Trivia regression tests
+
+on:
+  pull_request:
+    paths:
+      - 'plugins/trivia.js'
+      - 'data/nigeriaTrivia.js'
+      - 'lib/triviaBankAudit.js'
+      - 'lib/triviaOptionNormalizer.js'
+      - 'test/unit/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/trivia-regression.yml'
+  push:
+    branches:
+      - main
+      - 'forge/**'
+    paths:
+      - 'plugins/trivia.js'
+      - 'data/nigeriaTrivia.js'
+      - 'lib/triviaBankAudit.js'
+      - 'lib/triviaOptionNormalizer.js'
+      - 'test/unit/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/trivia-regression.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  trivia-unit-tests:
+    name: Trivia and game unit regression suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run unit regression tests
+        run: npm run test:unit
+      - name: Enforce approved Trivia bank coverage
+        run: npm run trivia:audit:release

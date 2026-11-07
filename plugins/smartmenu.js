@@ -34,15 +34,27 @@ function getCategoryEmoji(category) {
     return getRandomEmoji(emojis);
 }
 function formatTime() {
-    const now = new Date();
-    const options = {
+    return new Date().toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
-        timeZone: config.timeZone || 'UTC'
-    };
-    return now.toLocaleTimeString('en-US', options);
+        timeZone: config.timeZone || 'Africa/Lagos'
+    });
 }
+
+function getDiagnosticCategories() {
+    const categories = new Map();
+    for (const plugin of CommandHandler.commands.values()) {
+        const category = String(plugin.category || 'misc').toLowerCase();
+        if (!categories.has(category)) categories.set(category, []);
+        categories.get(category).push(plugin.command);
+    }
+    for (const [category, commands] of categories) {
+        categories.set(category, commands.sort((a, b) => a.localeCompare(b)));
+    }
+    return [...categories.entries()].sort(([a], [b]) => a.localeCompare(b));
+}
+
 export default {
     command: 'smenu',
     aliases: ['shelp', 'smart', 'help2'],
@@ -54,7 +66,7 @@ export default {
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
         try {
-            const categories = Array.from(CommandHandler.categories.keys());
+            const categories = getDiagnosticCategories();
             const stats = CommandHandler.getDiagnostics();
             const menuEmoji = getRandomEmoji(menuEmojis);
             const activeEmoji = getRandomEmoji(activeEmojis);
@@ -79,11 +91,10 @@ export default {
                 });
                 menuText += `\n`;
             }
-            for (const cat of categories) {
+            for (const [cat, catCmds] of categories) {
                 const catEmoji = getCategoryEmoji(cat);
                 menuText += `${catEmoji} *${cat.toUpperCase()}*\n`;
                 menuText += `┌─────────────────\n`;
-                const catCmds = CommandHandler.getCommandsByCategory(cat);
                 catCmds.forEach((cmdName, index) => {
                     const isLast = index === catCmds.length - 1;
                     const prefix = isLast ? '└' : '├';
@@ -93,10 +104,8 @@ export default {
                     let speedTag = '';
                     if (cmdStats && !isOff) {
                         const ms = parseFloat(cmdStats.average_speed);
-                        if (ms > 0 && ms < 100)
-                            speedTag = ` ${fastEmoji}`;
-                        else if (ms > 1000)
-                            speedTag = ` ${slowEmoji}`;
+                        if (ms > 0 && ms < 100) speedTag = ` ${fastEmoji}`;
+                        else if (ms > 1000) speedTag = ` ${slowEmoji}`;
                     }
                     menuText += `${prefix}─ ${statusIcon} .${cmdName}${speedTag}\n`;
                 });
@@ -109,10 +118,8 @@ export default {
             menuText += `├─ ${fastEmoji} Fast Response\n`;
             menuText += `├─ ${slowEmoji} Slow Response\n`;
             menuText += `⁠└────────────────`;
-            // No legacy thumbnail or former-owner newsletter attribution.
             await sock.sendMessage(chatId, { text: menuText }, { quoted: message });
-        }
-        catch (error) {
+        } catch (error) {
             console.error('Menu Error:', error);
             await sock.sendMessage(chatId, {
                 text: `❌ *Menu Error*\n\n${error.message}`

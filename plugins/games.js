@@ -1,0 +1,69 @@
+import commandHandler from '../lib/commandHandler.js';
+
+const UNAVAILABLE_GAME_COMMANDS = new Set(['game']);
+
+export default {
+  command: 'games',
+  category: 'games',
+  description: 'List all available Forge Guard games.',
+  usage: '.games',
+  async handler(sock, message, args, context) {
+    const chatId = context.chatId || message.key.remoteJid;
+    const prefix = context.config?.prefix || '.';
+    const registered = commandHandler.getCommandsByCategory('games')
+      .map(name => commandHandler.commands.get(String(name).toLowerCase()))
+      .filter(plugin => plugin && plugin.command !== 'games')
+      .filter(plugin => !plugin.hidden && !plugin.internal)
+      .filter(plugin => !String(plugin.command).toLowerCase().endsWith('_legacy'))
+      .filter(plugin => !['truthcontinue'].includes(String(plugin.command).toLowerCase()))
+      .filter(plugin => !commandHandler.disabledCommands.has(String(plugin.command).toLowerCase()));
+
+    // Hot Seat is a game command intentionally stored in the admin category.
+    const extraGameCommands = ['hotseat'];
+    for (const name of extraGameCommands) {
+      const plugin = commandHandler.commands.get(name);
+      if (plugin && !commandHandler.disabledCommands.has(name) && !registered.some(item => item.command === plugin.command)) {
+        registered.push(plugin);
+      }
+    }
+
+    // The existing .game command is currently failing during image retrieval.
+    // Include it in the unavailable section even if it is registered outside the games category.
+    const gameCommand = commandHandler.commands.get('game')
+      || commandHandler.commands.get(commandHandler.aliases.get('game') || '');
+    if (gameCommand && !registered.some(plugin => plugin.command === gameCommand.command)) {
+      registered.push({ ...gameCommand, command: 'game' });
+    }
+    registered.sort((a, b) => a.command.localeCompare(b.command));
+
+    const available = registered.filter(plugin => !UNAVAILABLE_GAME_COMMANDS.has(plugin.command));
+    const unavailable = registered.filter(plugin => UNAVAILABLE_GAME_COMMANDS.has(plugin.command));
+    const lines = [
+      '🎮 *FORGE GUARD — GAMES ARCADE*',
+      '',
+      'Registered game commands (availability can depend on your group packages, manual locks and scheduled days):',
+      '',
+      ...available.map((plugin, index) => {
+        const description = plugin.description ? ` — ${plugin.description}` : '';
+        const usage = plugin.usage ? `\n   Usage: ${plugin.usage.replace(/\./g, prefix)}` : '';
+        return `${index + 1}. *${prefix}${plugin.command}*${description}${usage}`;
+      }),
+      '',
+      'Some games follow their scheduled day. An admin can use .bypass <game> 1h for a temporary exception.',
+      'Open a game command to see its modes, rules and controls.',
+      'For example: .trivia · .math · .wyr'
+    ];
+
+    if (unavailable.length) {
+      lines.push('', '⚠️ *TEMPORARILY UNAVAILABLE*');
+      for (const plugin of unavailable) {
+        lines.push(`• *${prefix}${plugin.command}* — image retrieval is currently failing; excluded from the playable list until fixed.`);
+      }
+    }
+
+    if (!available.length) {
+      return sock.sendMessage(chatId, { text: 'No enabled game commands are currently registered.', ...(context.channelInfo || {}) }, { quoted: message });
+    }
+    return sock.sendMessage(chatId, { text: lines.join('\n'), ...(context.channelInfo || {}) }, { quoted: message });
+  }
+};

@@ -94,6 +94,25 @@ export const personalityBank = {
     "I dey kampe. Hope life never use you do practical. 😂",
     "Are you actually fine or doing Nigerian 'I'm fine'? 👀", "Holding up. You? Talk true. ❤️"
   ],
+  wellbeingAcknowledgement: [
+    "Good to hear. At least one of us is having a peaceful day. 😂",
+    "That's good. Hope the rest of your day keeps that same energy. 🤝",
+    "Nice one. So, wetin dey happen on your side? 👀",
+    "Glad you're doing well. Make we keep the good news coming. 😌",
+    "Better. I was about to open an investigation. 😂"
+  ],
+  affirmativeFollowup: [
+    "Ah, so there's something there. Oya, what happened? 👀",
+    "I knew there was more to it. Start from the beginning; I'm listening. 🤝",
+    "Okay, let's unpack it properly. What's the main issue? 💬",
+    "Then tell me the part that's bothering you most. No rush. ❤️"
+  ],
+  decline: [
+    "No wahala. I won't force the gist out of you. If you change your mind, I'm here. 😂",
+    "Fair enough. Your gist is safe with you. I'll mind my business for now. 😌",
+    "Oya, keep your secrets. Just know the listening desk is still open. 👀",
+    "No pressure. We can talk about something else. 🤝"
+  ],
   pidgin: [
     "Omo, yarn the full gist. No give us trailer only. 😂", "Abeg, no package am. Talk as e be. 😏",
     "Wetin happen? I dey hear you. 👀", "Na wa o. You people and drama. 😭",
@@ -336,34 +355,22 @@ function choose(chatId, category, pool, previousReply) {
 
 const DIRTY_RE = /\b(fuck|sex|dick|pussy|ass|cum|horny|wet|hard|stroke|suck|ride|nudes?|naked|boobs?|nipple|throat|moan|orgasm|fantasy|blowjob|handjob|creampie|edge|edging|spank|choke|slut|whore|daddy|mommy|touch me|make me|use me|ruin me|dirty|filthy|nasty|explicit|talk dirty|be nasty)\b/i;
 const FLIRTY_RE = /\b(fine|beautiful|handsome|crush|sexy|babe|baby|attracted|like you|miss you|want you|flirt|flirty|rizz|be flirty|talk flirty)\b/i;
-const GREETING_RE = /\b(hi|hello|hey|how far|good morning|good evening|good night|bawo|sup|how body|yoo|yo)\b/i;
+const GREETING_RE = /\b(hi|hello|hey|how far|good morning|good evening|good night|bawo|sup|how body|yoo|yo|what'?s popping|what'?s good|what'?s up)\b/i;
 const SERIOUS_RE = /\b(suicid|self harm|hurt myself|abuse|assault|rape|unsafe|in danger|emergency|someone died|passed away|grieving|depressed|I want to die)\b/i;
 const SAVAGE_RE = /\b(stupid|mumu|werey|dull|foolish|idiot|you'?re mad|you are mad|mad bot|dumb|nonsense|shut up)\b/i;
 const MONEY_RE = /\b(dash me|send money|give me money|borrow|lend me|i need money|need cash|i'?m broke|broke|no money)\b/i;
 
-export function pickPersonalityReply(text, options = {}) {
+export function classifyPersonalityCategory(text, options = {}) {
   const input = String(text || '').trim();
-  const { chatId = 'global', previousReply = '', gender = null, history = [] } = options;
+  const { history = [] } = options;
   const norm = normalize(input);
 
-  if (SERIOUS_RE.test(norm)) {
-    return ensureResponseEmoji(choose(chatId, 'serious', personalityBank.serious, previousReply), input);
-  }
-  if (DIRTY_RE.test(norm)) {
-    return ensureResponseEmoji(choose(chatId, 'dirty', personalityBank.dirty, previousReply), input);
-  }
-  if (GREETING_RE.test(norm) && norm.split(/\s+/).length <= 8) {
-    return ensureResponseEmoji(choose(chatId, 'greeting', personalityBank.greeting, previousReply), input);
-  }
-  if (MONEY_RE.test(norm)) {
-    return ensureResponseEmoji(choose(chatId, 'financialNeed', personalityBank.financialNeed, previousReply), input);
-  }
-  if (SAVAGE_RE.test(norm)) {
-    return ensureResponseEmoji(choose(chatId, 'savage', personalityBank.savage, previousReply), input);
-  }
-  if (FLIRTY_RE.test(norm)) {
-    return ensureResponseEmoji(choose(chatId, 'flirty', personalityBank.flirty, previousReply), input);
-  }
+  if (SERIOUS_RE.test(norm)) return 'serious';
+  if (DIRTY_RE.test(norm)) return 'dirty';
+  if (GREETING_RE.test(norm) && norm.split(/\s+/).length <= 8) return 'greeting';
+  if (MONEY_RE.test(norm)) return 'financialNeed';
+  if (SAVAGE_RE.test(norm)) return 'savage';
+  if (FLIRTY_RE.test(norm)) return 'flirty';
 
   let intent = 'fallback';
   try { intent = classifyIntent(input) || 'fallback'; } catch { intent = 'fallback'; }
@@ -375,14 +382,19 @@ export function pickPersonalityReply(text, options = {}) {
   else if (/\b(bye|goodnight|good night|I dey go|I'm out|see you)\b/i.test(norm)) category = 'departure';
   else if (/\b(how are you|how you dey|you good|you okay)\b/i.test(norm)) category = 'wellbeing';
 
-  if (['definition', 'slangDefinition', 'activityInfo', 'error'].includes(intent)) {
-    try {
-      const exact = pickLibraryReply(input, previousReply);
-      if (exact) return exact;
-    } catch {}
+  const historyRows = Array.isArray(history) ? history : [];
+  const lastBot = [...historyRows].reverse().find(item => item.name === 'Forge Bot')?.text || '';
+  if (/\b(?:how are you|how are you doing|how far|how body|what'?s up|how is your day)\b/i.test(lastBot)
+      && /^(?:i'?m good|i am good|good|fine|i'?m fine|i am fine|doing well|i'?m okay|i am okay|all good)[.!\s]*$/i.test(norm)) {
+    category = 'wellbeingAcknowledgement';
+  } else if (/\b(?:could there be|is there|what happened|tell me|give me the backstory|what'?s going on|what is going on)\b/i.test(lastBot)
+      && /^(?:yes(?:\s+(?:there(?:'s| is)|it is))?|yeah(?:\s+there(?:'s| is))?|yep|there(?:'s| is)|i think so|a little|kind of|sort of)[.!?\s]*$/i.test(norm)) {
+    category = 'affirmativeFollowup';
+  } else if (/\b(?:what happened|tell me|give me the backstory|what'?s going on|what is going on|what'?s the gist)\b/i.test(lastBot)
+      && /^(?:nothing|nothing for you|never mind|nevermind|forget it|leave it|not telling|it's nothing|it is nothing)[.!\s]*$/i.test(norm)) {
+    category = 'decline';
   }
 
-  const lastBot = [...(history || [])].reverse().find(item => item.name === 'Forge Bot')?.text || '';
   if (/\b(how much|amount|need)\b/i.test(lastBot) && /(?:₦|ngn|\b\d{2,}(?:,\d{3})*\b)/i.test(input)) {
     category = 'moneyFollowup';
   }
@@ -399,16 +411,32 @@ export function pickPersonalityReply(text, options = {}) {
     else if (intent === 'financialNeed') category = 'financialNeed';
     else category = 'fallback';
   }
+  return category;
+}
 
-  let pool = personalityBank[category] || personalityBank.fallback;
+export function pickPersonalityReply(text, options = {}) {
+  const input = String(text || '').trim();
+  const { chatId = 'global', previousReply = '', gender = null } = options;
+  const intent = classifyIntent(input) || 'fallback';
+  const category = classifyPersonalityCategory(input, options);
+
+  if (['definition', 'slangDefinition', 'activityInfo', 'error'].includes(intent)) {
+    try {
+      const exact = pickLibraryReply(input, previousReply);
+      if (exact) return exact;
+    } catch {}
+  }
+
+  const pool = personalityBank[category] || personalityBank.fallback;
+  let selectedPool = pool;
   if (gender === 'guy' && ['teasing', 'savage', 'banter'].includes(category) && Math.random() < 0.22) {
-    pool = personalityBank.genderGuy?.length ? personalityBank.genderGuy : pool;
+    selectedPool = personalityBank.genderGuy?.length ? personalityBank.genderGuy : pool;
   }
   if (gender === 'lady' && ['teasing', 'savage', 'banter'].includes(category) && Math.random() < 0.22) {
-    pool = personalityBank.genderLady?.length ? personalityBank.genderLady : pool;
+    selectedPool = personalityBank.genderLady?.length ? personalityBank.genderLady : pool;
   }
 
-  return ensureResponseEmoji(choose(chatId, category, pool, previousReply), input);
+  return ensureResponseEmoji(choose(chatId, category, selectedPool, previousReply), input);
 }
 
 export function getPersonalityBankStats() {

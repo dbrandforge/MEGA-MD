@@ -2,10 +2,13 @@ import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
 import isAdmin from '../lib/isAdmin.js';
+import { startNoParticipationGrace, hasNoParticipation, isNoParticipationGraceExpired } from '../lib/gameTimeouts.js';
+import { generateMathQuestion, getMathNegativeQuestionCount } from '../lib/mathQuestionEngine.js';
+import { recordCorrectMathAnswer } from '../lib/mathScoring.js';
+import { TRIVIA_DIFFICULTY_SECONDS, getTriviaMatchQuestionCount } from './trivia.js';
 
 const STATE_KEY = 'mathGame';
 const RECORD_KEY = 'mathRecords';
-const QUESTIONS_PER_MATCH = 10;
 const MATCH_EXPIRY_MS = 45 * 60 * 1000;
 const timers = new Map();
 const chatLocks = new Map();
@@ -23,44 +26,28 @@ async function withChatLock(chatId, task) {
   }
 }
 
-export const MATH_MODES = {
-  noob: { min: -9, max: 9, operators: ['+', '-'], time: 20000 },
-  easy: { min: -20, max: 20, operators: ['+', '-', '*'], time: 25000 },
-  normal: { min: -60, max: 60, operators: ['+', '-', '*', '/'], time: 30000 },
-  hard: { min: -150, max: 150, operators: ['+', '-', '*', '/'], time: 35000 },
-  extreme: { min: -500, max: 500, operators: ['+', '-', '*', '/'], time: 40000 },
-  impossible: { min: -2000, max: 2000, operators: ['+', '-', '*', '/'], time: 45000 },
-  impossible2: { min: -10000, max: 10000, operators: ['+', '-', '*', '/'], time: 50000 }
-};
-
-const pick = values => values[Math.floor(Math.random() * values.length)];
-const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+export const MATH_MODES = Object.freeze({
+  noob: { time: TRIVIA_DIFFICULTY_SECONDS.easy * 1000 },
+  easy: { time: TRIVIA_DIFFICULTY_SECONDS.easy * 1000 },
+  normal: { time: TRIVIA_DIFFICULTY_SECONDS.normal * 1000 },
+  hard: { time: TRIVIA_DIFFICULTY_SECONDS.hard * 1000 },
+  extreme: { time: TRIVIA_DIFFICULTY_SECONDS.expert * 1000 },
+  impossible: { time: TRIVIA_DIFFICULTY_SECONDS.expert * 1000 },
+  impossible2: { time: TRIVIA_DIFFICULTY_SECONDS.expert * 1000 }
+});
 const mention = jid => '@' + String(jid || '').split('@')[0].split(':')[0];
-
-export function generateMathQuestion(mode = 'normal') {
-  const settings = MATH_MODES[mode] || MATH_MODES.normal;
-  let a = randomInt(settings.min, settings.max);
-  let b = randomInt(settings.min, settings.max);
-  const op = pick(settings.operators);
-  let result;
-  if (op === '+') result = a + b;
-  else if (op === '-') result = a - b;
-  else if (op === '*') result = a * b;
-  else {
-    // Generate exact integer division; never expose a rounded or fractional answer.
-    b = randomInt(Math.max(1, Math.abs(settings.min)), Math.max(2, Math.abs(settings.max)));
-    result = randomInt(settings.min, settings.max);
-    a = result * b;
-  }
-  if (Object.is(a, -0)) a = 0;
-  if (Object.is(b, -0)) b = 0;
-  if (Object.is(result, -0)) result = 0;
-  return { expression: `${a} ${op === '*' ? '×' : op === '/' ? '÷' : op} ${b}`, answer: String(result), mode, time: settings.time };
+export { generateMathQuestion, getMathNegativeQuestionCount };
+export function getMathMatchQuestionCount(mode = 'normal') {
+  const difficulty = mode === 'noob' || mode === 'easy' ? 'easy'
+    : mode === 'normal' ? 'normal' : mode === 'hard' ? 'hard' : 'expert';
+  return getTriviaMatchQuestionCount('maths', difficulty);
 }
 
 async function readGame(chatId) {
   const game = await store.getSetting(chatId, STATE_KEY);
   if (!game?.active) return null;
+  // Let the persisted no-participation deadline win over the general match expiry after a restart.
+  if (isNoParticipationGraceExpired(game)) return game;
   if (game.matchExpiresAt && game.matchExpiresAt <= Date.now()) {
     await store.saveSettingVerified(chatId, STATE_KEY, { ...game, active: false, endedAt: Date.now(), reason: 'expired' });
     clearTimer(chatId);
@@ -112,23 +99,39 @@ async function endMatch(sock, chatId, game, reason = 'completed', quoted) {
   await saveMatchRecords(chatId, game);
   const lines = formatScores(game.scores, 10);
   await sock.sendMessage(chatId, {
-    text: `🏁 *MATHS ARENA — MATCH ${reason === 'completed' ? 'COMPLETE' : 'ENDED'}*\n\n${lines.join('\n') || 'No points were scored.'}\n\n🏆 Champion: ${game.winner ? mention(game.winner) : 'No winner'}`,
+    text: `🏁 *MATHS ARENA — MATCH ${reason === 'completed' ? 'COMPLETE' : 'ENDED'}*\n\n${reason === 'no-participation' ? 'No player submitted an answer. The match ended after the five-minute waiting period.\n\n' : ''}${lines.join('\n') || 'No points were scored.'}\n\n🏆 Champion: ${game.winner ? mention(game.winner) : 'No winner'}`,
     mentions: ranking.map(([jid]) => jid)
   }, quoted ? { quoted } : undefined);
 }
 
-async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
+async function closeQuestion(sock, chatId, roundToken) {
   return withChatLock(chatId, async () => {
     const game = await readGame(chatId);
     if (!game || game.roundToken !== roundToken || game.questionClosed) return false;
     clearTimer(chatId);
     game.questionClosed = true;
+    const noParticipation = hasNoParticipation(game.attemptedBy);
+    if (noParticipation) Object.assign(game, startNoParticipationGrace(game));
     await saveGame(chatId, game);
-    const winnerText = game.roundWinner ? `⚡ ${mention(game.roundWinner)} got it first!` : 'No correct answer this round.';
+    const correctAnswers = [...(game.correctAnswers || [])].sort((a, b) => a.answeredAt - b.answeredAt);
+    const fastest = correctAnswers[0] || null;
+    const winnerText = fastest
+      ? `⚡ Fastest correct answer: ${mention(fastest.senderId)}`
+      : 'No correct answer this round.';
+    const answerLines = correctAnswers.map((entry, index) =>
+      `${index + 1}. ${mention(entry.senderId)} — +${entry.points} pts (${entry.speedBonus} speed bonus)`
+    );
     await sock.sendMessage(chatId, {
-      text: `⏱️ *Round ${game.round}/${game.totalRounds} closed.*\n${winnerText}\nCorrect answer: *${game.answer}*`,
-      mentions: game.roundWinner ? [game.roundWinner] : []
+      text: `⏱️ *Round ${game.round}/${game.totalRounds} closed.*\n${winnerText}\nCorrect submissions: ${correctAnswers.length}${answerLines.length ? `\n\n${answerLines.join('\n')}` : ''}\n\nCorrect answer: *${game.answer}*`,
+      mentions: correctAnswers.map(entry => entry.senderId)
     });
+    if (noParticipation) {
+      await sock.sendMessage(chatId, {
+        text: '⏸️ *MATHS ARENA ON HOLD*\n\nNobody submitted an answer for this question. The match is paused for *5 minutes*. No new question will be generated during this period.\n\nThe match will end automatically when the five-minute hold expires.'
+      });
+      armTimer(sock, chatId, game);
+      return true;
+    }
     if (game.round >= game.totalRounds) {
       await endMatch(sock, chatId, game, 'completed');
       return true;
@@ -143,9 +146,19 @@ async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
 }
 
 function armTimer(sock, chatId, game) {
-  if (!game?.active || game.questionClosed || !game.expiresAt || timers.has(chatId)) return;
-  const delay = Math.max(0, game.expiresAt - Date.now());
+  if (!game?.active || timers.has(chatId)) return;
   const token = game.roundToken;
+  if (game.questionClosed && game.noParticipationExpiresAt) {
+    const delay = Math.max(0, game.noParticipationExpiresAt - Date.now());
+    timers.set(chatId, setTimeout(() => withChatLock(chatId, async () => {
+      const latest = await readGame(chatId);
+      if (!latest || latest.roundToken !== token || !latest.questionClosed || !latest.noParticipationExpiresAt || latest.noParticipationExpiresAt > Date.now()) return;
+      await endMatch(sock, chatId, latest, 'no-participation');
+    }).catch(error => console.error('[MATH] No-participation timer error:', error.message)), delay));
+    return;
+  }
+  if (game.questionClosed || !game.expiresAt) return;
+  const delay = Math.max(0, game.expiresAt - Date.now());
   timers.set(chatId, setTimeout(() => closeQuestion(sock, chatId, token).catch(error => console.error('[MATH] Timer error:', error.message)), delay));
 }
 
@@ -153,16 +166,17 @@ async function postNextQuestion(sock, chatId, game) {
   game.round += 1;
   game.questionClosed = false;
   game.roundWinner = null;
+  game.correctAnswers = [];
   game.roundStartedAt = Date.now();
   game.attemptedBy = {};
-  const question = generateMathQuestion(game.mode);
+  const question = generateMathQuestion(game.mode, { includeNegative: (game.negativeRounds || []).includes(game.round) });
   game.expression = question.expression;
   game.answer = question.answer;
   game.questionTime = question.time;
   game.expiresAt = Date.now() + question.time;
   game.roundToken = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
   const sent = await sock.sendMessage(chatId, {
-    text: `🧮 *FORGE GUARD — MATHS ARENA*\n\n*Question ${game.round}/${game.totalRounds}* · ${game.mode.toUpperCase()}\n\nHow much is:\n\n*${game.expression} = ?*\n\n⏱️ ${Math.round(question.time / 1000)} seconds\n\nReply directly to this question with your answer. First correct answer earns the round points.\n🏆 ${formatScores(game.scores, 3).join(' | ') || 'No scores yet'}`
+    text: `🧮 *FORGE GUARD — MATHS ARENA*\n\n*Question ${game.round}/${game.totalRounds}* · ${game.mode.toUpperCase()}\n\nHow much is:\n\n*${game.expression} = ?*\n\n⏱️ ${Math.round(question.time / 1000)} seconds\n\nReply directly to this question with your answer. Everyone who answers correctly earns points; the fastest correct answer gets the biggest speed bonus. One attempt per player.\n🏆 ${formatScores(game.scores, 3).join(' | ') || 'No scores yet'}`
   });
   game.questionMessageId = sent?.key?.id || null;
   await saveGame(chatId, game);
@@ -194,7 +208,7 @@ export async function handleMathContinuity(sock, chatId, message, senderId) {
       await sock.sendMessage(chatId, { text: access.msg }, { quoted: message });
       return true;
     }
-    if (game.questionClosed || game.roundWinner) return true;
+    if (game.questionClosed) return true;
     if (Date.now() >= game.expiresAt) return { handled: true, closeToken: game.roundToken };
     const body = String(message.message?.conversation || message.message?.extendedTextMessage?.text || '').trim().replace(/,/g, '');
     if (!/^-?\d+$/.test(body)) return false;
@@ -207,24 +221,23 @@ export async function handleMathContinuity(sock, chatId, message, senderId) {
     game.participants = game.participants || {};
     game.participants[senderId] = true;
     if (body === game.answer) {
-      game.roundWinner = senderId;
-      const remaining = Math.max(0, game.expiresAt - Date.now());
-      const bonus = Math.floor((remaining / game.questionTime) * 5);
-      const points = 10 + bonus;
-      game.scores = game.scores || {};
-      game.scores[senderId] = (game.scores[senderId] || 0) + points;
+      const result = recordCorrectMathAnswer(game, senderId, Date.now());
+      if (!result.accepted) {
+        await sock.sendMessage(chatId, { text: 'You have already submitted a correct answer for this question.' }, { quoted: message });
+        return true;
+      }
       await saveGame(chatId, game);
       await sock.sendMessage(chatId, {
-        text: `✅ *Correct, ${mention(senderId)}!*\n+*${points} points* (including speed bonus).\n\nThe round is now closed.`,
+        text: `✅ *Correct, ${mention(senderId)}!*\n+${result.score.points} points (${result.score.speedBonus} speed bonus).\n${result.fastest ? '⚡ You are currently the fastest correct answer.' : 'The round remains open; other players can still score.'}`,
         mentions: [senderId]
       }, { quoted: message });
-      return { handled: true, closeToken: game.roundToken };
+      return true;
     }
     await saveGame(chatId, game);
     await sock.sendMessage(chatId, { text: '❌ Not quite. Your answer is recorded; other players can still compete.' }, { quoted: message });
     return true;
   });
-  if (result?.closeToken) await closeQuestion(sock, chatId, result.closeToken, 'correct');
+  if (result?.closeToken) await closeQuestion(sock, chatId, result.closeToken);
   return result === true || !!result?.handled;
 }
 
@@ -244,6 +257,7 @@ export default {
       return sock.sendMessage(chatId, { text: access.msg, ...channelInfo }, { quoted: message });
     }
     let game = await readGame(chatId);
+    if (game) armTimer(sock, chatId, game);
     if (['stop', 'end'].includes(action)) {
       if (!game) return sock.sendMessage(chatId, { text: 'There is no active Maths Arena match.', ...channelInfo }, { quoted: message });
       if (!await playerCanEnd(sock, chatId, senderId, context, message, game)) {
@@ -253,7 +267,11 @@ export default {
     }
     if (action === 'status') {
       if (!game) return sock.sendMessage(chatId, { text: 'No active Maths Arena match. Start with *.math normal*.', ...channelInfo }, { quoted: message });
-      return sock.sendMessage(chatId, { text: `🧮 *MATHS ARENA STATUS*\nQuestion ${game.round}/${game.totalRounds} · ${game.mode}\nTime left: ${Math.max(0, Math.ceil((game.expiresAt - Date.now()) / 1000))}s\n\n${formatScores(game.scores, 10).join('\n') || 'No scores yet.'}`, ...channelInfo }, { quoted: message });
+      const onHold = game.questionClosed && game.noParticipationExpiresAt;
+      const statusText = onHold
+        ? '🧮 *MATHS ARENA STATUS*\nQuestion ' + game.round + '/' + game.totalRounds + ' · ' + game.mode + '\nStatus: ON HOLD — no submissions\nMatch ends in: ' + Math.max(0, Math.ceil((game.noParticipationExpiresAt - Date.now()) / 1000)) + 's\n\n' + (formatScores(game.scores, 10).join('\n') || 'No scores yet.')
+        : '🧮 *MATHS ARENA STATUS*\nQuestion ' + game.round + '/' + game.totalRounds + ' · ' + game.mode + '\nTime left: ' + Math.max(0, Math.ceil((game.expiresAt - Date.now()) / 1000)) + 's\n\n' + (formatScores(game.scores, 10).join('\n') || 'No scores yet.');
+      return sock.sendMessage(chatId, { text: statusText, ...channelInfo }, { quoted: message });
     }
     if (action === 'score' || action === 'scores' || action === 'leaderboard') {
       const records = (await store.getSetting(chatId, RECORD_KEY)) || {};
@@ -263,15 +281,23 @@ export default {
     if (game) return sock.sendMessage(chatId, { text: 'A Maths Arena match is already active. Use *.math status* or *.math stop*.', ...channelInfo }, { quoted: message });
     const mode = action === 'start' ? String(args[1] || 'normal').toLowerCase() : action;
     if (!Object.hasOwn(MATH_MODES, mode)) {
-      return sock.sendMessage(chatId, { text: `🧮 *MATHS ARENA DIFFICULTIES*\n\n${Object.keys(MATH_MODES).join(' · ')}\n\nExample: ${config.prefix}math normal\n10 questions · first correct answer wins each round · speed bonus · group leaderboard.`, ...channelInfo }, { quoted: message });
+      return sock.sendMessage(chatId, { text: `🧮 *MATHS ARENA DIFFICULTIES*\n\n${Object.keys(MATH_MODES).join(' · ')}\n\nExample: ${config.prefix}math normal\n10 questions · all correct players score · speed-based bonus · group leaderboard.`, ...channelInfo }, { quoted: message });
     }
+    const totalRounds = getMathMatchQuestionCount(mode);
+    const negativeQuestionCount = getMathNegativeQuestionCount(mode, totalRounds);
+    const roundOrder = Array.from({ length: totalRounds }, (_, index) => index + 1);
+    for (let i = roundOrder.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [roundOrder[i], roundOrder[j]] = [roundOrder[j], roundOrder[i]];
+    }
+    const negativeRounds = roundOrder.slice(0, negativeQuestionCount).sort((a, b) => a - b);
     game = {
-      active: true, mode, round: 0, totalRounds: QUESTIONS_PER_MATCH,
+      active: true, mode, round: 0, totalRounds, negativeRounds,
       scores: {}, attemptedBy: {}, participants: {}, startedBy: senderId,
       startedAt: Date.now(), matchExpiresAt: Date.now() + MATCH_EXPIRY_MS
     };
     await saveGame(chatId, game);
-    await sock.sendMessage(chatId, { text: `🎮 *MATHS ARENA MATCH STARTED*\n\nDifficulty: *${mode.toUpperCase()}*\nQuestions: *${QUESTIONS_PER_MATCH}*\nPlayers: everyone in this group can join.\n\nFirst correct answer wins each round. Reply directly to each question.\n🏆 ${config.prefix}math score · ${config.prefix}math status · ${config.prefix}math stop`, ...channelInfo }, { quoted: message });
+    await sock.sendMessage(chatId, { text: `🎮 *MATHS ARENA MATCH STARTED*\n\nDifficulty: *${mode.toUpperCase()}*\nQuestions: *${totalRounds}*\nPlayers: everyone in this group can join.\n\nEvery correct player scores; the fastest correct answer earns the highest speed bonus. Reply directly to each question.\n🏆 ${config.prefix}math score · ${config.prefix}math status · ${config.prefix}math stop`, ...channelInfo }, { quoted: message });
     await postNextQuestion(sock, chatId, game);
   }
 };

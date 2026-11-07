@@ -2,7 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
-import { FEATURE_GROUPS } from '../lib/featureGroups.js';
+import { FEATURE_GROUPS, loadFeatureGroups } from '../lib/featureGroups.js';
+import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -112,7 +113,7 @@ async function checkTimedGroupMute(sock, chatId) {
     // A manual/scheduled feature-group lock takes precedence over a timed
     // group mute. Expiry must not accidentally reopen a group still locked
     // by the daily lifecycle schedule.
-    const scheduledLockState = FEATURE_GROUPS.includes(chatId)
+    const scheduledLockState = await hasMaturedMindedFeatures(chatId)
         ? await store.getSetting(chatId, 'groupLockState')
         : null;
 
@@ -140,6 +141,7 @@ export function startSchedulerEngine(sock) {
     // Always refresh the socket reference after reconnects. The timer is
     // created once, but must never retain a stale, closed Baileys socket.
     if (sock) _activeSocket = sock;
+    loadFeatureGroups().catch(error => console.error('[SCHEDULE] Feature-group registry load failed:', error.message));
     if (_engineStarted) return;
     _engineStarted = true;
 
@@ -152,6 +154,7 @@ export function startSchedulerEngine(sock) {
             return;
         }
         try {
+            await loadFeatureGroups();
             // Restore group registrations after a process restart.
             const persistedGroups = await store.getSetting('global', TRACKED_GROUPS_KEY);
             if (Array.isArray(persistedGroups)) persistedGroups.forEach(id => { if (id?.endsWith('@g.us')) _trackedGroups.add(id); });

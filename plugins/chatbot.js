@@ -8,6 +8,8 @@ import { pickDualReply } from '../data/chatDual/dualBankSelector.js';
 import { getUserGender } from './gender.js';
 import { printLog } from '../lib/print.js';
 import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
+import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
+import { isExplicitlyAddressedInGroup } from '../lib/chatbotAccess.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -23,27 +25,39 @@ const MEMORY_SETTING = 'chatbotConversationMemory';
 const MAX_HISTORY_MESSAGES = 30;
 const MAX_HISTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
-async function loadUserGroupData() {
+export async function loadUserGroupData() {
+    let data;
     try {
         if (HAS_DB) {
-            const data = await store.getSetting('global', 'userGroupData');
-            return data || { chatbot: {} };
+            data = await store.getSetting('global', 'userGroupData');
+        } else {
+            data = JSON.parse(fs.readFileSync(USER_GROUP_DATA, 'utf-8'));
         }
-        return JSON.parse(fs.readFileSync(USER_GROUP_DATA, 'utf-8'));
     } catch {
-        return { chatbot: {} };
+        data = null;
     }
+    if (!data || typeof data !== 'object') data = { chatbot: {} };
+    if (!data.chatbot || typeof data.chatbot !== 'object') data.chatbot = {};
+    if (!data.chatbotDM || typeof data.chatbotDM !== 'object') data.chatbotDM = {};
+    if (migrateDMChatbotDefault(data) && !await saveUserGroupData(data)) {
+        console.warn('[Chatbot] Could not persist the new DM-default-off migration.');
+    }
+    return data;
 }
 
-async function saveUserGroupData(data) {
+export async function saveUserGroupData(data) {
     try {
-        if (HAS_DB) await store.saveSetting('global', 'userGroupData', data);
-        else {
-            const dir = path.dirname(USER_GROUP_DATA);
-            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-            fs.writeFileSync(USER_GROUP_DATA, JSON.stringify(data, null, 2));
+        if (HAS_DB) {
+            return await store.saveSettingVerified('global', 'userGroupData', data);
         }
-    } catch {}
+        const dir = path.dirname(USER_GROUP_DATA);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(USER_GROUP_DATA, JSON.stringify(data, null, 2));
+        return true;
+    } catch (error) {
+        console.error('[Chatbot] Could not save user/group settings:', error.message);
+        return false;
+    }
 }
 
 async function loadChatHistory(chatId) {
@@ -113,7 +127,7 @@ async function showTyping(sock, chatId) {
     } catch {}
 }
 
-// Live replies: dual bank for advice-shaped intents; personality bank otherwise (incl. dirty talk).
+// Live replies are selected locally from the curated personality bank.
 export async function handleChatbotResponse(sock, chatId, message, userMessage, senderId) {
     const data = await loadUserGroupData();
     const isGroup = chatId.endsWith('@g.us');
@@ -127,7 +141,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             await saveUserGroupData(data);
         }
         if (data.chatbot[chatId] !== true) return;
-    } else if (data.chatbotDMEnabled !== true && !identity) {
+    } else if (!getDMChatbotPermission(data, senderId, chatId)) {
         return;
     }
 
@@ -142,17 +156,12 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             || message.message?.videoMessage?.contextInfo
             || {};
         const mentioned = contextInfo.mentionedJid || [];
-        const quoted = contextInfo.participant;
-
         let isMention = mentioned.some(j => botJids.some(b =>
             b.split('@')[0].split(':')[0] === j.split('@')[0].split(':')[0]
         ));
         if (!isMention && botNumber) isMention = userMessage.includes(`@${botNumber}`);
 
-        const isReply = !!quoted && botJids.some(b =>
-            b.replace(/[:@].*$/, '') === quoted.replace(/[:@].*$/, '')
-        );
-
+        // Record normal messages as well, so a later mention can refer to the group discussion.
         const originalText = message.message?.conversation
             || message.message?.extendedTextMessage?.text
             || message.message?.imageMessage?.caption
@@ -173,38 +182,41 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             await saveChatHistory(chatId, history);
         }
 
-        if (isGroup && !isMention && !isReply) return;
+        // In personal DMs, an enabled session responds naturally without requiring a mention or quoted reply.
+        if (isGroup && !isExplicitlyAddressedInGroup({ isMention })) return;
         if (!cleanForHistory) return;
 
         const identityReply = getIdentityReply(cleanForHistory, undefined, identity);
+        // Creator/Queen arrival greetings are for a fresh direct call, not every follow-up turn.
         const identityGreeting = getIdentityGreeting(cleanForHistory, identity);
 
         await showTyping(sock, chatId);
 
+        // Identity-specific replies take priority over the general personality bank.
+        // Creator/VIP recognition never grants permissions; authorization remains in the command handler.
         const previousBotReply = [...history].reverse().find(item => item.name === 'Forge Bot')?.text || '';
         let registeredGender = null;
         try { registeredGender = await getUserGender(senderId); } catch {}
         let response = identityReply || identityGreeting;
         if (!response) {
-            // Dual bank: advice/relationship/wellbeing/money/yoruba. Pure dirty → null → personality dirty.
-            const dual = pickDualReply(cleanForHistory, {
+            const intent = classifyIntent(cleanForHistory);
+            // ChatDual handles advice-shaped/contextual intents; personality bank remains the fallback.
+            const dualResponse = pickDualReply(cleanForHistory, {
                 chatId,
                 previousReply: previousBotReply,
-                intent: classifyIntent(cleanForHistory),
+                intent,
                 context: history.slice(-8).map(item => item.text),
-                responseMode: 'reasoned',
+                responseMode: 'reasoned'
             });
-            if (dual) {
-                response = dual;
-            } else {
-                response = pickPersonalityReply(cleanForHistory, {
-                    chatId,
-                    previousReply: previousBotReply,
-                    gender: registeredGender,
-                    history
-                });
-            }
-            if (identity && Math.random() < (identity.role === 'creator' ? 0.22 : 0.14)) {
+            response = dualResponse || pickPersonalityReply(cleanForHistory, {
+                chatId,
+                previousReply: previousBotReply,
+                gender: registeredGender,
+                history
+            });
+            // Identity acknowledgement is limited to neutral social exchanges.
+            // It must never override teasing, substantive questions, or contextual follow-ups.
+            if (identity && ['greeting', 'wellbeing', 'thanks', 'agreement'].includes(intent) && Math.random() < 0.12) {
                 response = getIdentityAcknowledgement(identity) + response;
             }
         }
@@ -238,6 +250,7 @@ export default {
         if (!data.chatbot) data.chatbot = {};
         if (!data.chatbotDM) data.chatbotDM = {};
 
+        // DM controls are deliberately restricted to the bot owner/sudo account.
         if (!isGroup && !context.isOwnerOrSudoCheck) {
             return sock.sendMessage(chatId, { text: '🔒 Only the bot owner can change personal DM chatbot settings.' }, { quoted: message });
         }
@@ -258,7 +271,7 @@ export default {
             }
             if (action === 'on' || action === 'off') {
                 data.chatbot[chatId] = action === 'on';
-                await saveUserGroupData(data);
+                if (!await saveUserGroupData(data)) return sock.sendMessage(chatId, { text: '❌ Could not save the group chatbot setting.' }, { quoted: message });
                 return sock.sendMessage(chatId, { text: action === 'on' ? '✅ Group chatbot is ON. Tag me or reply to my message.' : '⏸️ Group chatbot is OFF.' }, { quoted: message });
             }
             if (action === 'status') {
@@ -268,9 +281,14 @@ export default {
         }
 
         if (scope === 'dm') {
+            if (!context.isCreatorOrBot) {
+                return sock.sendMessage(chatId, { text: '🔒 Only the creator or bot number can change the universal DM chatbot switch.' }, { quoted: message });
+            }
             if (action === 'on' || action === 'off') {
+                // This is a global inbound-DM switch, controlled by the bot owner.
+                // Do not key it by the owner senderId: incoming messages arrive under each external sender's JID.
                 data.chatbotDMEnabled = action === 'on';
-                await saveUserGroupData(data);
+                if (!await saveUserGroupData(data)) return sock.sendMessage(chatId, { text: '❌ Could not save the universal DM chatbot setting.' }, { quoted: message });
                 return sock.sendMessage(chatId, { text: action === 'on' ? '✅ Incoming DM chatbot is ON. I can now reply to private messages from other users.' : '⏸️ Incoming DM chatbot is OFF.' }, { quoted: message });
             }
             if (action === 'status') {

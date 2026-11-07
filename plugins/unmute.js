@@ -1,6 +1,6 @@
 import { softUnmuteUser } from './softmute.js';
 import store from '../lib/lightweight_store.js';
-import { isFeatureGroup } from '../lib/featureGroups.js';
+import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 import { setManualGroupUnlockOverride } from './grouplock.js';
 
 function mention(jid) {
@@ -26,25 +26,32 @@ export default {
         }
 
         if (!user) {
-            try {
-                await sock.groupSettingUpdate(chatId, 'not_announcement');
-                if (!await store.saveSettingVerified(chatId, 'timedGroupMute', { until: null, clearedAt: Date.now() })) {
-                    throw new Error('Timed group mute state could not be cleared.');
-                }
-                // Prevent the feature-group night scheduler from immediately reversing
-                // a deliberate admin unlock performed with the inverse of .mute.
-                if (isFeatureGroup(chatId)) await setManualGroupUnlockOverride(chatId);
+            const previousMuteState = await store.getSetting(chatId, 'timedGroupMute');
+            if (!await store.saveSettingVerified(chatId, 'timedGroupMute', { until: null, clearedAt: Date.now() })) {
                 return sock.sendMessage(chatId, {
-                    text: '🔊 The group has been unlocked. Members can send messages again.',
-                    ...channelInfo
-                }, { quoted: message });
-            } catch (error) {
-                console.error('[UNMUTE] Could not unlock group:', error.message);
-                return sock.sendMessage(chatId, {
-                    text: '❌ Could not unlock the group. Check the bot admin permissions and try again.',
+                    text: '❌ Could not persist the group-unlock state. The group was not changed.',
                     ...channelInfo
                 }, { quoted: message });
             }
+            try {
+                await sock.groupSettingUpdate(chatId, 'not_announcement');
+            } catch (error) {
+                await store.saveSettingVerified(chatId, 'timedGroupMute', previousMuteState || { until: null, clearedAt: Date.now() });
+                console.error('[UNMUTE] Could not unlock group:', error.message);
+                return sock.sendMessage(chatId, {
+                    text: '❌ Could not unlock the group. The previous mute record was restored. Make sure the bot is a group admin.',
+                    ...channelInfo
+                }, { quoted: message });
+            }
+            // Only the Matured Minded package owns the daily lock/unlock schedule.
+            if (await hasMaturedMindedFeatures(chatId)) {
+                try { await setManualGroupUnlockOverride(chatId); }
+                catch (error) { console.error('[UNMUTE] Manual schedule override could not be saved:', error.message); }
+            }
+            return sock.sendMessage(chatId, {
+                text: '🔊 The group has been unlocked. Members can send messages again.',
+                ...channelInfo
+            }, { quoted: message });
         }
 
         await softUnmuteUser(chatId, user);

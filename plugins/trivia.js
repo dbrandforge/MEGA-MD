@@ -2,6 +2,7 @@ import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
 import isAdmin from '../lib/isAdmin.js';
+import { startNoParticipationGrace, hasNoParticipation, isNoParticipationGraceExpired } from '../lib/gameTimeouts.js';
 import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES } from '../data/nigeriaTrivia.js';
 
 const STATE_KEY = 'triviaArenaV2';
@@ -10,14 +11,16 @@ const LEGACY_IMPORTED_KEY = 'triviaLegacyImportedV2';
 const RECORD_KEY = 'triviaRecords';
 const QUESTIONS_PER_MATCH = 10;
 const ANSWER_WINDOW_MS = 20000;
-const DIFFICULTY_SECONDS = { easy: 20, normal: 30, medium: 30, hard: 45, expert: 60 };
+export const TRIVIA_DIFFICULTY_SECONDS = Object.freeze({ easy: 20, normal: 30, medium: 30, hard: 45, expert: 60 });
+const MIXED_QUESTION_COUNTS = Object.freeze({ easy: 20, normal: 15, hard: 12, expert: 10 });
+const CATEGORY_QUESTION_COUNTS = Object.freeze({ easy: 15, normal: 13, hard: 10, expert: 8 });
 const CATEGORY_ALIASES = {
-  football: ['sports', 'football'], movies: ['nollywood', 'movies', 'film', 'hollywood', 'bollywood', 'animation', 'series'],
-  nollywood: ['nollywood'], hollywood: ['hollywood'], bollywood: ['bollywood'], animation: ['animation'], series: ['series'],
+  football: ['sports', 'football'], movies: ['nollywood', 'movies', 'film', 'hollywood', 'bollywood', 'animation', 'series', 'entertainment'],
   lifestyle: ['everyday', 'lifestyle'], technology: ['tech', 'technology'],
   nigeria: ['nigeria'], music: ['music'], geography: ['geography'],
   history: ['history'], culture: ['culture'], food: ['food'], business: ['business'],
-  science: ['science'], gaming: ['gaming'], literature: ['literature'], general: ['general']
+  science: ['science'], gaming: ['gaming'], literature: ['literature'],
+  'current-affairs': ['current-affairs'], forge: ['forge']
 };
 const DIFFICULTIES = ['easy', 'normal', 'hard', 'expert'];
 const MATCH_EXPIRY_MS = 45 * 60 * 1000;
@@ -51,13 +54,26 @@ const shuffle = values => {
 
 export { NIGERIA_TRIVIA, TRIVIA_CATEGORIES };
 
+const TRIVIA_COMMAND_ALIASES = Object.freeze({
+  all: 'mixed', sports: 'football', film: 'movies',
+  nollywood: 'movies', hollywood: 'movies', bollywood: 'movies',
+  animation: 'movies', series: 'movies', entertainment: 'movies',
+  everyday: 'lifestyle', tech: 'technology'
+});
+
+export function normalizeTriviaCategory(value) {
+  const raw = String(value || '').toLowerCase().trim();
+  const category = TRIVIA_COMMAND_ALIASES[raw] || raw;
+  return category === 'mixed' || Object.hasOwn(CATEGORY_ALIASES, category) ? category : null;
+}
+
 function questionMatchesCategory(question, category = 'mixed') {
   if (!category || category === 'all' || category === 'mixed') return true;
   if (category === 'nigeria') return String(question.id || '').startsWith('ng') || question.region === 'nigeria';
   return (CATEGORY_ALIASES[category] || [category]).includes(question.category);
 }
 export function shouldEndTriviaForNoParticipation(answers = {}) {
-  return Object.keys(answers || {}).length === 0;
+  return hasNoParticipation(answers);
 }
 function normalizeDifficulty(value) { return value === 'medium' ? 'normal' : value || null; }
 function questionMatchesDifficulty(question, difficulty = null) {
@@ -65,8 +81,8 @@ function questionMatchesDifficulty(question, difficulty = null) {
 }
 export function secondsForQuestion(question, selectedDifficulty) {
   const selected = normalizeDifficulty(selectedDifficulty);
-  const grade = DIFFICULTY_SECONDS[selected] ? selected : normalizeDifficulty(question.difficulty);
-  return DIFFICULTY_SECONDS[grade] || 30;
+  const grade = TRIVIA_DIFFICULTY_SECONDS[selected] ? selected : normalizeDifficulty(question.difficulty);
+  return TRIVIA_DIFFICULTY_SECONDS[grade] || 30;
 }
 export function getAvailableTriviaQuestions(category = 'mixed', difficulty = null, usedIds = []) {
   const used = new Set(usedIds);
@@ -75,6 +91,12 @@ export function getAvailableTriviaQuestions(category = 'mixed', difficulty = nul
 }
 export function getTriviaQuestionCount(category = 'mixed', difficulty = null) {
   return getAvailableTriviaQuestions(category, difficulty).length;
+}
+export function getTriviaMatchQuestionCount(category = 'mixed', difficulty = null) {
+  const grade = normalizeDifficulty(difficulty);
+  if (!grade) return QUESTIONS_PER_MATCH;
+  const counts = category === 'mixed' ? MIXED_QUESTION_COUNTS : CATEGORY_QUESTION_COUNTS;
+  return counts[grade] || QUESTIONS_PER_MATCH;
 }
 
 async function importLegacyGame(chatId) {
@@ -135,6 +157,8 @@ async function readGame(chatId) {
   let game = await store.getSetting(chatId, STATE_KEY);
   if (!game?.active) game = await importLegacyGame(chatId);
   if (!game?.active) return null;
+  // Let the persisted no-participation deadline win over the general match expiry after a restart.
+  if (isNoParticipationGraceExpired(game)) return game;
   if (game.matchExpiresAt && game.matchExpiresAt <= Date.now()) {
     await store.saveSettingVerified(chatId, STATE_KEY, { ...game, active: false, endedAt: Date.now(), reason: 'expired' });
     clearTimer(chatId);
@@ -215,7 +239,7 @@ async function endMatch(sock, chatId, game, reason = 'completed', quoted) {
   await saveGame(chatId, game);
   await saveMatchRecords(chatId, game);
   await sock.sendMessage(chatId, {
-    text: `🏁 *TRIVIA ARENA — ${reason === 'completed' ? 'MATCH COMPLETE' : reason === 'no-participation' ? 'MATCH ENDED: NO PARTICIPATION' : 'MATCH ENDED'}*\n\n${reason === 'no-participation' ? 'Nobody submitted an answer before the question timer expired. This match has ended automatically.\n\n' : ''}${formatScores(game.scores, 10).join('\n') || 'No points were scored.'}\n\n🏆 Champion: ${game.winner ? mention(game.winner) : 'No winner'}`,
+    text: `🏁 *TRIVIA ARENA — ${reason === 'completed' ? 'MATCH COMPLETE' : reason === 'no-participation' ? 'MATCH ENDED: NO PARTICIPATION' : 'MATCH ENDED'}*\n\n${reason === 'no-participation' ? 'Nobody submitted an answer. After the five-minute waiting period, this match ended automatically.\n\n' : ''}${formatScores(game.scores, 10).join('\n') || 'No points were scored.'}\n\n🏆 Champion: ${game.winner ? mention(game.winner) : 'No winner'}`,
     mentions: ranking.map(([jid]) => jid)
   }, quoted ? { quoted } : undefined);
 }
@@ -238,6 +262,8 @@ async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
       correctPlayers.push({ jid, points });
     }
     correctPlayers.sort((a, b) => b.points - a.points);
+    const noParticipation = shouldEndTriviaForNoParticipation(game.answers);
+    if (noParticipation) Object.assign(game, startNoParticipationGrace(game));
     await saveGame(chatId, game);
     const winners = correctPlayers.map(item => item.jid);
     const result = correctPlayers.length
@@ -247,8 +273,11 @@ async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
       text: `⏱️ *QUESTION ${game.round} CLOSED*\n\nCorrect answer: *${game.answer}*\n\n${result}\n\n${answerRows.length} player(s) submitted.`,
       mentions: winners
     });
-    if (shouldEndTriviaForNoParticipation(game.answers)) {
-      await endMatch(sock, chatId, game, 'no-participation');
+    if (noParticipation) {
+      await sock.sendMessage(chatId, {
+        text: '⏸️ *TRIVIA ARENA ON HOLD*\n\nNobody submitted an answer for this question. The match is paused for *5 minutes*. No new question will be generated during this period.\n\nThe match will end automatically when the five-minute hold expires.'
+      });
+      armTimer(sock, chatId, game);
       return true;
     }
     if (game.round >= game.totalRounds) {
@@ -265,9 +294,19 @@ async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
 }
 
 function armTimer(sock, chatId, game) {
-  if (!game?.active || game.questionClosed || !game.closesAt || timers.has(chatId)) return;
-  const delay = Math.max(0, game.closesAt - Date.now());
+  if (!game?.active || timers.has(chatId)) return;
   const token = game.roundToken;
+  if (game.questionClosed && game.noParticipationExpiresAt) {
+    const delay = Math.max(0, game.noParticipationExpiresAt - Date.now());
+    timers.set(chatId, setTimeout(() => withChatLock(chatId, async () => {
+      const latest = await readGame(chatId);
+      if (!latest || latest.roundToken !== token || !latest.questionClosed || !latest.noParticipationExpiresAt || latest.noParticipationExpiresAt > Date.now()) return;
+      await endMatch(sock, chatId, latest, 'no-participation');
+    }).catch(error => console.error('[TRIVIA] No-participation timer error:', error.message)), delay));
+    return;
+  }
+  if (game.questionClosed || !game.closesAt) return;
+  const delay = Math.max(0, game.closesAt - Date.now());
   timers.set(chatId, setTimeout(() => closeQuestion(sock, chatId, token).catch(error => console.error('[TRIVIA] Timer error:', error.message)), delay));
 }
 
@@ -375,22 +414,27 @@ export default {
         'Choose a category, then choose a grade.',
         '',
         '*CATEGORIES*',
-        '🎵 Music — Nigerian favourites + international hits',
-        '⚽ Football — Nigerian and world football',
-        '🎬 MOVIES: .trivia nollywood · .trivia hollywood · .trivia bollywood',
-        '🎞️ Animation: .trivia animation · Series: .trivia series',
-        '📺 Lifestyle — everyday life and popular culture',
-        '🌍 Geography · 📜 History · 🔬 Science',
-        '💻 Technology · 💼 Business · 🍲 Food',
-        '🎮 Gaming · 📚 Literature · 🇳🇬 Nigeria',
+        '🎵 Music: .trivia music',
+        '⚽ Football: .trivia football',
+        '🎬 Movies & Entertainment: .trivia movies',
+        '🌿 Lifestyle: .trivia lifestyle',
+        '🌍 Geography: .trivia geography · 📜 History: .trivia history',
+        '🎭 Culture: .trivia culture · 🍲 Food: .trivia food',
+        '🔬 Science: .trivia science · 💻 Technology: .trivia technology',
+        '💼 Business: .trivia business · 🎮 Gaming: .trivia gaming',
+        '📚 Literature: .trivia literature · 🇳🇬 Nigeria: .trivia nigeria',
+        '🗞️ Current Affairs: .trivia current-affairs',
+        '🔥 FORGE: .trivia forge — branding, creative, marketing and business strategy',
         '',
         '*GRADES*',
         '🟢 Easy · 🔵 Normal · 🟠 Hard · 🔴 Expert',
         '',
         '*PLAY COMMANDS*',
         '.trivia music · .trivia music easy',
-        '.trivia football hard · .trivia movies expert',
-        '.trivia nollywood normal · .trivia hollywood hard',
+        '.trivia lifestyle normal · .trivia football hard',
+        '.trivia movies expert · .trivia nollywood normal',
+        '.trivia hollywood hard · .trivia current-affairs',
+        '.trivia forge · .trivia forge expert',
         '.trivia mixed · .trivia mixed normal',
         '',
         '*MATCH CONTROLS*',
@@ -398,11 +442,12 @@ export default {
         '',
         'Everyone in the group can play. Reply directly to each question.',
         'Question time: Easy 20s · Normal 30s · Hard 45s · Expert 60s.',
-        'If nobody submits an answer before the timer expires, the match ends.'
+        'If nobody submits an answer, the match holds for 5 minutes, then ends automatically.'
       ].join('\n');
       return sock.sendMessage(chatId, { text: menu, ...channelInfo }, { quoted: message });
     }
     let game = await readGame(chatId);
+    if (game) armTimer(sock, chatId, game);
     if (['stop', 'end'].includes(rawAction)) {
       if (!game) return sock.sendMessage(chatId, { text: 'There is no active Trivia match.', ...channelInfo }, { quoted: message });
       if (!await canEnd(sock, chatId, senderId, context, message, game)) {
@@ -412,7 +457,11 @@ export default {
     }
     if (rawAction === 'status') {
       if (!game) return sock.sendMessage(chatId, { text: 'No active Trivia match. Start with *.trivia*.', ...channelInfo }, { quoted: message });
-      return sock.sendMessage(chatId, { text: `🇳🇬 *TRIVIA ARENA STATUS*\nQuestion ${game.round}/${game.totalRounds}\nCategory: ${game.category}\nTime left: ${Math.max(0, Math.ceil((game.closesAt - Date.now()) / 1000))}s\nAnswers submitted: ${Object.keys(game.answers || {}).length}\n\n${formatScores(game.scores, 10).join('\n') || 'No scores yet.'}`, ...channelInfo }, { quoted: message });
+      const onHold = game.questionClosed && game.noParticipationExpiresAt;
+      const statusText = onHold
+        ? '🇳🇬 *TRIVIA ARENA STATUS*\nQuestion ' + game.round + '/' + game.totalRounds + '\nCategory: ' + game.category + '\nStatus: ON HOLD — no submissions\nMatch ends in: ' + Math.max(0, Math.ceil((game.noParticipationExpiresAt - Date.now()) / 1000)) + 's\nAnswers submitted: 0\n\n' + (formatScores(game.scores, 10).join('\n') || 'No scores yet.')
+        : '🇳🇬 *TRIVIA ARENA STATUS*\nQuestion ' + game.round + '/' + game.totalRounds + '\nCategory: ' + game.category + '\nTime left: ' + Math.max(0, Math.ceil((game.closesAt - Date.now()) / 1000)) + 's\nAnswers submitted: ' + Object.keys(game.answers || {}).length + '\n\n' + (formatScores(game.scores, 10).join('\n') || 'No scores yet.');
+      return sock.sendMessage(chatId, { text: statusText, ...channelInfo }, { quoted: message });
     }
     if (['score', 'scores', 'leaderboard'].includes(rawAction)) {
       const records = (await store.getSetting(chatId, RECORD_KEY)) || {};
@@ -422,19 +471,22 @@ export default {
     if (game) return sock.sendMessage(chatId, { text: 'A Trivia match is already active. Reply to its question, or use *.trivia status*.', ...channelInfo }, { quoted: message });
 
     const startArgs = (rawAction === 'start' ? args.slice(1) : args).map(v => String(v).toLowerCase().trim());
-    const aliases = { all: 'mixed', sports: 'football', film: 'movies', everyday: 'lifestyle', tech: 'technology' };
     let category = 'mixed', difficulty = null;
     for (const raw of startArgs) {
-      const value = aliases[raw] || raw;
-      if (value === 'mixed' || Object.hasOwn(CATEGORY_ALIASES, value)) category = value;
-      else if (DIFFICULTIES.includes(value) || value === 'medium') difficulty = normalizeDifficulty(value);
+      const normalizedCategory = normalizeTriviaCategory(raw);
+      if (normalizedCategory) category = normalizedCategory;
+      else if (DIFFICULTIES.includes(raw) || raw === 'medium') difficulty = normalizeDifficulty(raw);
+      else return sock.sendMessage(chatId, {
+        text: `⚠️ Unknown Trivia category or grade: *${raw}*. Use *.trivia* to view the available categories and grades.`,
+        ...channelInfo
+      }, { quoted: message });
     }
     const availableQuestions = getTriviaQuestionCount(category, difficulty);
     if (!availableQuestions) return sock.sendMessage(chatId, {
       text: `⚠️ No questions are currently available for *${category} / ${difficulty || 'mixed'}*. Choose another category or grade. Questions will never be recycled within a match.`,
       ...channelInfo
     }, { quoted: message });
-    const totalRounds = Math.min(QUESTIONS_PER_MATCH, availableQuestions);
+    const totalRounds = Math.min(getTriviaMatchQuestionCount(category, difficulty), availableQuestions);
     game = {
       active: true, category, difficulty, round: 0, totalRounds,
       scores: {}, answers: {}, participants: {}, usedQuestions: [],
