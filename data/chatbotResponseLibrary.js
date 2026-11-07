@@ -252,10 +252,6 @@ export function pickSubstantiveReply(text = '', context = []) {
     return "Yes. Tatiana Manaois is an independent singer-songwriter known for melodic pop and acoustic-influenced songs. One of her well-known tracks is *Helplessly*. 🎶";
   }
 
-  if (/\b(current|incumbent|present) president of nigeria\b/i.test(input)) {
-    return "As of November 2026, Nigeria's President is *Bola Ahmed Tinubu*. Muhammadu Buhari was his predecessor. 🇳🇬";
-  }
-
   if (marketingContext && /\b(content|contents|post|posts|create|creating|what should i share)\b/i.test(input)) {
     return "For your digital marketing work, create five repeatable content types: educational posts that solve one customer problem, short how-to videos, case studies showing a result, client testimonials or proof, and offer-focused posts explaining who you help and how to buy. For the next week, publish 2 educational posts, 2 short videos, 1 case study, 1 proof post and 1 direct offer. Keep each post aimed at one target customer and track enquiries and qualified leads—not likes alone.";
   }
