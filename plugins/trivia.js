@@ -456,8 +456,8 @@ export default {
       if (!game) return sock.sendMessage(chatId, { text: 'No active Trivia match. Start with *.trivia*.', ...channelInfo }, { quoted: message });
       const onHold = game.questionClosed && game.noParticipationExpiresAt;
       const statusText = onHold
-        ? '🇳🇬 *TRIVIA ARENA STATUS*\\nQuestion ' + game.round + '/' + game.totalRounds + '\\nCategory: ' + game.category + '\\nStatus: ON HOLD — no submissions\\nMatch ends in: ' + Math.max(0, Math.ceil((game.noParticipationExpiresAt - Date.now()) / 1000)) + 's\\nAnswers submitted: 0\\n\\n' + (formatScores(game.scores, 10).join('\\n') || 'No scores yet.')
-        : '🇳🇬 *TRIVIA ARENA STATUS*\\nQuestion ' + game.round + '/' + game.totalRounds + '\\nCategory: ' + game.category + '\\nTime left: ' + Math.max(0, Math.ceil((game.closesAt - Date.now()) / 1000)) + 's\\nAnswers submitted: ' + Object.keys(game.answers || {}).length + '\\n\\n' + (formatScores(game.scores, 10).join('\\n') || 'No scores yet.');
+        ? '🇳🇬 *TRIVIA ARENA STATUS*\nQuestion ' + game.round + '/' + game.totalRounds + '\nCategory: ' + game.category + '\nStatus: ON HOLD — no submissions\nMatch ends in: ' + Math.max(0, Math.ceil((game.noParticipationExpiresAt - Date.now()) / 1000)) + 's\nAnswers submitted: 0\n\n' + (formatScores(game.scores, 10).join('\n') || 'No scores yet.')
+        : '🇳🇬 *TRIVIA ARENA STATUS*\nQuestion ' + game.round + '/' + game.totalRounds + '\nCategory: ' + game.category + '\nTime left: ' + Math.max(0, Math.ceil((game.closesAt - Date.now()) / 1000)) + 's\nAnswers submitted: ' + Object.keys(game.answers || {}).length + '\n\n' + (formatScores(game.scores, 10).join('\n') || 'No scores yet.');
       return sock.sendMessage(chatId, { text: statusText, ...channelInfo }, { quoted: message });
     }
     if (['score', 'scores', 'leaderboard'].includes(rawAction)) {
