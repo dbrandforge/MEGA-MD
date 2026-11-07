@@ -109,7 +109,7 @@ describe('General-purpose relevance guard', () => {
 
   it('accepts a named answer when it is grounded in retrieved live evidence', () => {
     expect(isUsefulAutomaticAnswer(
-      \"What's the name of the first lady of Nigeria\",
+      "What's the name of the first lady of Nigeria",
       'Senator Oluremi Tinubu is the First Lady of Nigeria.',
       'LIVE WEB SEARCH EVIDENCE: State House leadership page lists Sen. Oluremi Tinubu as First Lady, Federal Republic of Nigeria.'
     )).toBe(true);
