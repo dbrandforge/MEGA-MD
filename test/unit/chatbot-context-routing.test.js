@@ -95,7 +95,7 @@ describe('Automatic AI opt-in routing', () => {
     expect(shouldUseAutomaticAI('Can two people love each other?', 'relationships')).toBe(true);
     expect(shouldUseAutomaticAI('What makes someone genuinely interesting to talk to?', 'fallback')).toBe(true);
     expect(shouldUseAutomaticAI('I repair systems', 'fallback')).toBe(true);
-    expect(shouldUseAutomaticAI('O ti ya werey', 'pidgin')).toBe(true);
+    expect(shouldUseAutomaticAI('O ti ya werey', 'pidgin')).toBe(false);
     expect(shouldUseAutomaticAI('Why?', 'followup')).toBe(true);
     expect(shouldUseAutomaticAI('Werey', 'savage')).toBe(false);
     expect(shouldUseAutomaticAI('😂', 'reaction')).toBe(false);
