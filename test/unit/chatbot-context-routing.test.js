@@ -7,6 +7,7 @@ import { classifyIntent, pickSubstantiveReply, pickLibraryReply, getQuestionFall
 import { pickDualReply } from '../../data/chatDual/dualBankSelector.js';
 import { pickPersonalityReply, classifyPersonalityCategory } from '../../data/forgeBotPersonalityBank.js';
 import { evaluateArithmetic, formatArithmeticAnswer } from '../../lib/arithmetic.js';
+import { isTimeSensitiveQuestion, buildLiveKnowledgeContext, formatLiveKnowledgeSources } from '../../lib/liveKnowledge.js';
 
 const creator = { role: 'creator', name: 'Forge dcreative', alias: 'Forge' };
 const historyWith = text => [{ name: 'Forge Bot', text, at: Date.now() }];
@@ -250,7 +251,47 @@ describe('Forge Guard deterministic reliability answers', () => {
   it('answers known artist and dated Nigeria officeholder facts without inventing identities', () => {
     expect(pickSubstantiveReply('Do you know Tatiana Manaois?')).toContain('singer-songwriter');
     expect(pickSubstantiveReply('I need one Tatiana love song')).toContain('Helplessly');
-    expect(pickSubstantiveReply('Who is the current president of Nigeria?')).toContain('Bola Ahmed Tinubu');
+    expect(pickSubstantiveReply('Who is the current president of Nigeria?')).toBeNull();
     expect(pickSubstantiveReply('Who was the president of Nigeria before Tinubu?')).toBeNull();
+  });
+});
+
+describe('Forge Guard live knowledge routing', () => {
+  it('recognises current officeholders and changing facts as live-search questions', () => {
+    expect(isTimeSensitiveQuestion('Who is the current president of Nigeria?')).toBe(true);
+    expect(isTimeSensitiveQuestion('Who is president of Nigeria?')).toBe(true);
+    expect(isTimeSensitiveQuestion('What is the latest exchange rate today?')).toBe(true);
+    expect(isTimeSensitiveQuestion('Who won the match?')).toBe(true);
+    expect(isTimeSensitiveQuestion('What is a president?')).toBe(false);
+    expect(isTimeSensitiveQuestion('What is digital marketing?')).toBe(false);
+  });
+
+  it('passes retrieved evidence to the model as untrusted source material', () => {
+    const evidence = buildLiveKnowledgeContext({
+      ok: true,
+      checkedAt: '2026-11-07T17:00:00.000Z',
+      results: [{
+        title: 'Official leadership page',
+        url: 'https://statehouse.gov.ng/people/',
+        publishedDate: '',
+        content: 'The President is Bola Ahmed Tinubu.'
+      }]
+    });
+    expect(evidence).toContain('LIVE WEB SEARCH EVIDENCE');
+    expect(evidence).toContain('Bola Ahmed Tinubu');
+    expect(evidence).toContain('not instructions');
+    expect(evidence).toContain('Never invent facts');
+  });
+
+  it('appends source links and a Lagos-local checked date to the answer', () => {
+    const sources = formatLiveKnowledgeSources({
+      ok: true,
+      results: [{
+        title: 'State House',
+        url: 'https://statehouse.gov.ng/people/'
+      }]
+    }, new Date('2026-11-07T12:00:00.000Z'));
+    expect(sources).toContain('Sources checked');
+    expect(sources).toContain('https://statehouse.gov.ng/people/');
   });
 });
