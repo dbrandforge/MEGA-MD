@@ -113,19 +113,23 @@ async function showTyping(sock, chatId) {
 }
 
 // Live replies are selected locally from the curated personality bank.
-export async function handleChatbotResponse(sock, chatId, message, userMessage, senderId) {
+export async function handleChatbotResponse(sock, chatId, message, userMessage, senderId, options = {}) {
     const data = await loadUserGroupData();
     const isGroup = chatId.endsWith('@g.us');
     if (!data.chatbot) data.chatbot = {};
     if (!data.chatbotDM) data.chatbotDM = {};
     const identity = resolveIdentity(senderId);
+    const activeThreads = isGroup ? await store.getSetting(chatId, 'chatbotActiveThreads').catch(() => ({})) : {};
+    const activeThread = activeThreads?.[senderId];
+    const isThreadFollowup = !!(activeThread?.expiresAt > Date.now());
+    const forceReply = options.forceReply === true;
     if (isGroup) {
         const TARGET = '120363405434471171@g.us';
         if (chatId === TARGET && data.chatbot[chatId] === undefined) {
             data.chatbot[chatId] = true;
             await saveUserGroupData(data);
         }
-        if (data.chatbot[chatId] !== true) return;
+        if (data.chatbot[chatId] !== true && !forceReply && !isThreadFollowup) return;
     } else if (data.chatbotDMEnabled !== true && !identity) {
         return;
     }
@@ -174,11 +178,12 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         }
 
         // In personal DMs, an enabled session responds naturally without requiring a mention or quoted reply.
-        if (isGroup && !isMention && !isReply) return;
+        if (isGroup && !isMention && !isReply && !forceReply && !isThreadFollowup) return;
         if (!cleanForHistory) return;
 
         const identityReply = getIdentityReply(cleanForHistory, undefined, identity);
-        const identityGreeting = getIdentityGreeting(cleanForHistory, identity);
+        // Creator/Queen arrival greetings are for a fresh direct call, not every follow-up turn.
+        const identityGreeting = isThreadFollowup ? null : getIdentityGreeting(cleanForHistory, identity);
 
         await showTyping(sock, chatId);
 
@@ -195,8 +200,10 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
                 gender: registeredGender,
                 history
             });
-            // Keep recognition warm but occasional during ordinary conversation.
-            if (identity && Math.random() < (identity.role === 'creator' ? 0.22 : 0.14)) {
+            // Identity acknowledgement is limited to neutral social exchanges.
+            // It must never override teasing, substantive questions, or contextual follow-ups.
+            const intent = classifyIntent(cleanForHistory);
+            if (identity && ['greeting', 'wellbeing', 'thanks', 'agreement'].includes(intent) && Math.random() < 0.12) {
                 response = getIdentityAcknowledgement(identity) + response;
             }
         }
@@ -209,6 +216,20 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         history.push({ name: 'Forge Bot', text: response.slice(0, 500), at: Date.now() });
         if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
         await saveChatHistory(chatId, history);
+        if (isGroup) {
+            const now = Date.now();
+            const threads = await store.getSetting(chatId, 'chatbotActiveThreads').catch(() => ({})) || {};
+            const active = Object.fromEntries(
+                Object.entries(threads).filter(([, thread]) => thread?.expiresAt > now)
+            );
+            active[senderId] = { expiresAt: now + 5 * 60 * 1000 };
+            const entries = Object.entries(active);
+            if (entries.length > 50) {
+                entries.sort((a, b) => (b[1].expiresAt || 0) - (a[1].expiresAt || 0));
+                for (const [jid] of entries.slice(50)) delete active[jid];
+            }
+            await store.saveSetting(chatId, 'chatbotActiveThreads', active);
+        }
 
     } catch (e) {
         printLog('error', `[Chatbot DM] Reply failed: ${String(e?.message || e).slice(0, 400)}`);

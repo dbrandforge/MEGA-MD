@@ -2,6 +2,7 @@ import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
 import isAdmin from '../lib/isAdmin.js';
+import { startNoParticipationGrace, hasNoParticipation, isNoParticipationGraceExpired } from '../lib/gameTimeouts.js';
 import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES } from '../data/nigeriaTrivia.js';
 
 const STATE_KEY = 'triviaArenaV2';
@@ -72,7 +73,7 @@ function questionMatchesCategory(question, category = 'mixed') {
   return (CATEGORY_ALIASES[category] || [category]).includes(question.category);
 }
 export function shouldEndTriviaForNoParticipation(answers = {}) {
-  return Object.keys(answers || {}).length === 0;
+  return hasNoParticipation(answers);
 }
 function normalizeDifficulty(value) { return value === 'medium' ? 'normal' : value || null; }
 function questionMatchesDifficulty(question, difficulty = null) {
@@ -156,6 +157,8 @@ async function readGame(chatId) {
   let game = await store.getSetting(chatId, STATE_KEY);
   if (!game?.active) game = await importLegacyGame(chatId);
   if (!game?.active) return null;
+  // Let the persisted no-participation deadline win over the general match expiry after a restart.
+  if (isNoParticipationGraceExpired(game)) return game;
   if (game.matchExpiresAt && game.matchExpiresAt <= Date.now()) {
     await store.saveSettingVerified(chatId, STATE_KEY, { ...game, active: false, endedAt: Date.now(), reason: 'expired' });
     clearTimer(chatId);
@@ -236,7 +239,7 @@ async function endMatch(sock, chatId, game, reason = 'completed', quoted) {
   await saveGame(chatId, game);
   await saveMatchRecords(chatId, game);
   await sock.sendMessage(chatId, {
-    text: `🏁 *TRIVIA ARENA — ${reason === 'completed' ? 'MATCH COMPLETE' : reason === 'no-participation' ? 'MATCH ENDED: NO PARTICIPATION' : 'MATCH ENDED'}*\n\n${reason === 'no-participation' ? 'Nobody submitted an answer before the question timer expired. This match has ended automatically.\n\n' : ''}${formatScores(game.scores, 10).join('\n') || 'No points were scored.'}\n\n🏆 Champion: ${game.winner ? mention(game.winner) : 'No winner'}`,
+    text: `🏁 *TRIVIA ARENA — ${reason === 'completed' ? 'MATCH COMPLETE' : reason === 'no-participation' ? 'MATCH ENDED: NO PARTICIPATION' : 'MATCH ENDED'}*\n\n${reason === 'no-participation' ? 'Nobody submitted an answer. After the five-minute waiting period, this match ended automatically.\n\n' : ''}${formatScores(game.scores, 10).join('\n') || 'No points were scored.'}\n\n🏆 Champion: ${game.winner ? mention(game.winner) : 'No winner'}`,
     mentions: ranking.map(([jid]) => jid)
   }, quoted ? { quoted } : undefined);
 }
@@ -259,6 +262,8 @@ async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
       correctPlayers.push({ jid, points });
     }
     correctPlayers.sort((a, b) => b.points - a.points);
+    const noParticipation = shouldEndTriviaForNoParticipation(game.answers);
+    if (noParticipation) Object.assign(game, startNoParticipationGrace(game));
     await saveGame(chatId, game);
     const winners = correctPlayers.map(item => item.jid);
     const result = correctPlayers.length
@@ -268,8 +273,11 @@ async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
       text: `⏱️ *QUESTION ${game.round} CLOSED*\n\nCorrect answer: *${game.answer}*\n\n${result}\n\n${answerRows.length} player(s) submitted.`,
       mentions: winners
     });
-    if (shouldEndTriviaForNoParticipation(game.answers)) {
-      await endMatch(sock, chatId, game, 'no-participation');
+    if (noParticipation) {
+      await sock.sendMessage(chatId, {
+        text: '⏸️ *TRIVIA ARENA ON HOLD*\n\nNobody submitted an answer for this question. The match is paused for *5 minutes*. No new question will be generated during this period.\n\nThe match will end automatically when the five-minute hold expires.'
+      });
+      armTimer(sock, chatId, game);
       return true;
     }
     if (game.round >= game.totalRounds) {
@@ -286,9 +294,19 @@ async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
 }
 
 function armTimer(sock, chatId, game) {
-  if (!game?.active || game.questionClosed || !game.closesAt || timers.has(chatId)) return;
-  const delay = Math.max(0, game.closesAt - Date.now());
+  if (!game?.active || timers.has(chatId)) return;
   const token = game.roundToken;
+  if (game.questionClosed && game.noParticipationExpiresAt) {
+    const delay = Math.max(0, game.noParticipationExpiresAt - Date.now());
+    timers.set(chatId, setTimeout(() => withChatLock(chatId, async () => {
+      const latest = await readGame(chatId);
+      if (!latest || latest.roundToken !== token || !latest.questionClosed || !latest.noParticipationExpiresAt || latest.noParticipationExpiresAt > Date.now()) return;
+      await endMatch(sock, chatId, latest, 'no-participation');
+    }).catch(error => console.error('[TRIVIA] No-participation timer error:', error.message)), delay));
+    return;
+  }
+  if (game.questionClosed || !game.closesAt) return;
+  const delay = Math.max(0, game.closesAt - Date.now());
   timers.set(chatId, setTimeout(() => closeQuestion(sock, chatId, token).catch(error => console.error('[TRIVIA] Timer error:', error.message)), delay));
 }
 
@@ -424,11 +442,12 @@ export default {
         '',
         'Everyone in the group can play. Reply directly to each question.',
         'Question time: Easy 20s · Normal 30s · Hard 45s · Expert 60s.',
-        'If nobody submits an answer before the timer expires, the match ends.'
+        'If nobody submits an answer, the match holds for 5 minutes, then ends automatically.'
       ].join('\n');
       return sock.sendMessage(chatId, { text: menu, ...channelInfo }, { quoted: message });
     }
     let game = await readGame(chatId);
+    if (game) armTimer(sock, chatId, game);
     if (['stop', 'end'].includes(rawAction)) {
       if (!game) return sock.sendMessage(chatId, { text: 'There is no active Trivia match.', ...channelInfo }, { quoted: message });
       if (!await canEnd(sock, chatId, senderId, context, message, game)) {
@@ -438,7 +457,11 @@ export default {
     }
     if (rawAction === 'status') {
       if (!game) return sock.sendMessage(chatId, { text: 'No active Trivia match. Start with *.trivia*.', ...channelInfo }, { quoted: message });
-      return sock.sendMessage(chatId, { text: `🇳🇬 *TRIVIA ARENA STATUS*\nQuestion ${game.round}/${game.totalRounds}\nCategory: ${game.category}\nTime left: ${Math.max(0, Math.ceil((game.closesAt - Date.now()) / 1000))}s\nAnswers submitted: ${Object.keys(game.answers || {}).length}\n\n${formatScores(game.scores, 10).join('\n') || 'No scores yet.'}`, ...channelInfo }, { quoted: message });
+      const onHold = game.questionClosed && game.noParticipationExpiresAt;
+      const statusText = onHold
+        ? '🇳🇬 *TRIVIA ARENA STATUS*\nQuestion ' + game.round + '/' + game.totalRounds + '\nCategory: ' + game.category + '\nStatus: ON HOLD — no submissions\nMatch ends in: ' + Math.max(0, Math.ceil((game.noParticipationExpiresAt - Date.now()) / 1000)) + 's\nAnswers submitted: 0\n\n' + (formatScores(game.scores, 10).join('\n') || 'No scores yet.')
+        : '🇳🇬 *TRIVIA ARENA STATUS*\nQuestion ' + game.round + '/' + game.totalRounds + '\nCategory: ' + game.category + '\nTime left: ' + Math.max(0, Math.ceil((game.closesAt - Date.now()) / 1000)) + 's\nAnswers submitted: ' + Object.keys(game.answers || {}).length + '\n\n' + (formatScores(game.scores, 10).join('\n') || 'No scores yet.');
+      return sock.sendMessage(chatId, { text: statusText, ...channelInfo }, { quoted: message });
     }
     if (['score', 'scores', 'leaderboard'].includes(rawAction)) {
       const records = (await store.getSetting(chatId, RECORD_KEY)) || {};
