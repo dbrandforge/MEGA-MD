@@ -254,6 +254,10 @@ export function pickSubstantiveReply(text = '') {
     return "You cannot force yourself to fall in love, but you can make room for it. Spend time with people you genuinely enjoy, stay curious about who they are, share honest experiences, and let trust and affection develop gradually. Pay attention to consistency, respect, emotional safety and shared values—not just chemistry or the idea of being in love. And do not rush yourself; a real connection should be mutual. ❤️";
   }
 
+  if (/\b(what can i do to make money|how can i make money|how do i make money|how can i earn money|how do i earn money|how to make money|ways to make money)\b/i.test(input)) {
+    return "Start with something people already pay for, not just a vague business idea. You could sell a service you can deliver now—design, writing, editing, tutoring, repairs, admin support or social media help; resell a product with proven demand; take paid shifts or commission-based sales; or teach a skill. Pick one offer, define who needs it and the result you will deliver, set a clear price, then speak to 10 likely customers before spending heavily. Avoid opportunities that demand upfront fees or your bank details or OTP. Tell me your skills, available hours and starting budget, and I can help narrow this to realistic options. 💡";
+  }
+
   return null;
 }
 
