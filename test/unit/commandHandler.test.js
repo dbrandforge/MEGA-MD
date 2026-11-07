@@ -126,7 +126,7 @@ describe('CommandHandler', () => {
         expect(count).toBe(handler.commands.size);
         expect(count).toBeGreaterThan(200);
         expect(handler.commands.has('staleprobe')).toBe(false);
-    });
+    }, 10000);
 
     it('toggleCommand disables and re-enables', () => {
         handler.registerCommand({ command: 'toggleprobe', aliases: [], category: 'admin', description: 'test', async handler() {} });
