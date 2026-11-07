@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateMathScore } from '../../lib/mathScoring.js';
+import { calculateMathScore, recordCorrectMathAnswer } from '../../lib/mathScoring.js';
 
 describe('Maths Arena speed scoring', () => {
   it('awards every correct player a base score plus a time-proportional bonus', () => {
@@ -26,3 +26,29 @@ describe('Maths Arena speed scoring', () => {
     expect(calculateMathScore(10000, 1000, 0).points).toBe(15);
   });
 });
+
+  it('records multiple correct players and preserves the fastest player as round winner', () => {
+    const game = { questionTime: 10000, roundStartedAt: 1000, scores: {}, correctAnswers: [] };
+    const first = recordCorrectMathAnswer(game, 'first@s.whatsapp.net', 1000);
+    const second = recordCorrectMathAnswer(game, 'second@s.whatsapp.net', 3000);
+    const third = recordCorrectMathAnswer(game, 'third@s.whatsapp.net', 8000);
+
+    expect(first).toMatchObject({ accepted: true, fastest: true, score: { points: 15 } });
+    expect(second).toMatchObject({ accepted: true, fastest: false, score: { points: 14 } });
+    expect(third).toMatchObject({ accepted: true, fastest: false, score: { points: 11 } });
+    expect(game.roundWinner).toBe('first@s.whatsapp.net');
+    expect(game.correctAnswers).toHaveLength(3);
+    expect(game.scores).toEqual({
+      'first@s.whatsapp.net': 15,
+      'second@s.whatsapp.net': 14,
+      'third@s.whatsapp.net': 11
+    });
+  });
+
+  it('prevents the same player from receiving multiple correct-answer awards in one round', () => {
+    const game = { questionTime: 10000, roundStartedAt: 0, scores: {}, correctAnswers: [] };
+    recordCorrectMathAnswer(game, 'player@s.whatsapp.net', 1000);
+    expect(recordCorrectMathAnswer(game, 'player@s.whatsapp.net', 2000)).toMatchObject({ accepted: false });
+    expect(game.correctAnswers).toHaveLength(1);
+    expect(game.scores['player@s.whatsapp.net']).toBe(15);
+  });
