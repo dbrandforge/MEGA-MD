@@ -8,6 +8,7 @@ import { getUserGender } from './gender.js';
 import { printLog } from '../lib/print.js';
 import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
 import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
+import { isExplicitlyAddressedInGroup } from '../lib/chatbotAccess.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -126,7 +127,7 @@ async function showTyping(sock, chatId) {
 }
 
 // Live replies are selected locally from the curated personality bank.
-export async function handleChatbotResponse(sock, chatId, message, userMessage, senderId, options = {}) {
+export async function handleChatbotResponse(sock, chatId, message, userMessage, senderId) {
     const data = await loadUserGroupData();
     const isGroup = chatId.endsWith('@g.us');
     if (!data.chatbot) data.chatbot = {};
@@ -187,7 +188,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         }
 
         // In personal DMs, an enabled session responds naturally without requiring a mention or quoted reply.
-        if (isGroup && !isMention && !isReply) return;
+        if (isGroup && !isExplicitlyAddressedInGroup({ isMention, isReply })) return;
         if (!cleanForHistory) return;
 
         const identityReply = getIdentityReply(cleanForHistory, undefined, identity);
