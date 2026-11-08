@@ -21,6 +21,7 @@ vi.mock('../../config.js', () => ({ default: { muteDurationHours: 10 } }));
 import store from '../../lib/lightweight_store.js';
 import {
     cleanExpiredSoftMutes,
+    getSoftMuteDurationHours,
     isSoftMuted,
     softMuteUser,
     softUnmuteUser,
@@ -58,6 +59,16 @@ describe('soft mute expiry and scheduler registration', () => {
 
         await expect(isSoftMuted(GROUP, '2348000000000@s.whatsapp.net')).resolves.toBe(false);
         expect(await store.getSetting(GROUP, 'softMutes')).toEqual({});
+    });
+
+    it('uses the group-specific soft-mute duration when no explicit duration is passed', async () => {
+        await store.saveSetting(GROUP, 'softMuteDurationHours', 3);
+        await expect(getSoftMuteDurationHours(GROUP)).resolves.toBe(3);
+        const startedAt = Date.now();
+        await softMuteUser({}, GROUP, '2348000000000@s.whatsapp.net');
+        const mute = (await store.getSetting(GROUP, 'softMutes'))['2348000000000@s.whatsapp.net'];
+        expect(mute.until - startedAt).toBeGreaterThanOrEqual(3 * 60 * 60 * 1000 - 100);
+        expect(mute.until - startedAt).toBeLessThanOrEqual(3 * 60 * 60 * 1000 + 100);
     });
 
     it('deletes messages from an actively muted member', async () => {
