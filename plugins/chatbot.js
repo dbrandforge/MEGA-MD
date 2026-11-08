@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
-import { classifyIntent, pickSubstantiveReply, pickLibraryReply, getQuestionFallback } from '../data/chatbotResponseLibrary.js';
+import { classifyIntent, pickSubstantiveReply, pickLibraryReply } from '../data/chatbotResponseLibrary.js';
 import { pickPersonalityReply } from '../data/forgeBotPersonalityBank.js';
 import { pickDualReply } from '../data/chatDual/dualBankSelector.js';
 import { getUserGender } from './gender.js';
@@ -13,7 +13,7 @@ import { isExplicitlyAddressedInGroup } from '../lib/chatbotAccess.js';
 import { createKeyedSerialExecutor, getConversationMemoryKey } from '../lib/chatbotConversationMemory.js';
 import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI } from '../lib/aiService.js';
 import { evaluateArithmetic, formatArithmeticAnswer } from '../lib/arithmetic.js';
-import { isTimeSensitiveQuestion, searchLiveKnowledge, buildLiveKnowledgeContext, formatLiveKnowledgeSources, formatLiveKnowledgeEvidenceSummary } from '../lib/liveKnowledge.js';
+import { isTimeSensitiveQuestion, searchLiveKnowledge, buildLiveKnowledgeContext, formatLiveKnowledgeSources, formatLiveKnowledgeEvidenceSummary, formatLiveKnowledgeUnavailable, resolveContextualBusinessFollowup } from '../lib/liveKnowledge.js';
 
 const CHATBOT_AI_ENABLED = process.env.CHATBOT_AI_ENABLED === 'true';
 
@@ -32,6 +32,22 @@ const runLocalMemoryWriteSerial = createKeyedSerialExecutor();
 const MEMORY_SETTING = 'chatbotConversationMemory';
 const MAX_HISTORY_MESSAGES = 30;
 const MAX_HISTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+export function getLagosClockReply(query, now = new Date()) {
+    const text = String(query || '').toLowerCase();
+    const asksDate = /\b(today'?s date|date today|current date|what date is it)\b/.test(text);
+    const asksTime = /\b(current time|time now|what time is it|time in lagos|clock)\b/.test(text);
+    if (!asksDate && !asksTime) return null;
+    const date = new Intl.DateTimeFormat('en-NG', {
+        timeZone: 'Africa/Lagos', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    }).format(now);
+    const time = new Intl.DateTimeFormat('en-NG', {
+        timeZone: 'Africa/Lagos', hour: 'numeric', minute: '2-digit', hour12: true
+    }).format(now);
+    if (asksDate && asksTime) return `Today is *${date}*. The current time in Lagos is *${time} WAT (UTC+1)*.`;
+    if (asksDate) return `Today is *${date}*.`;
+    return `The current time in Lagos, Nigeria is *${time} WAT (UTC+1)*.`;
+}
 
 export async function loadUserGroupData() {
     let data;
@@ -231,6 +247,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
 
         const arithmeticValue = evaluateArithmetic(chatbotQuery);
         const arithmeticReply = arithmeticValue === null ? null : `The answer is *${formatArithmeticAnswer(arithmeticValue)}*.`;
+        const clockReply = getLagosClockReply(chatbotQuery);
         const identityReply = getIdentityReply(cleanForHistory, undefined, identity);
         // Creator/Queen arrival greetings are for a fresh direct call, not every follow-up turn.
         const identityGreeting = getIdentityGreeting(cleanForHistory, identity);
@@ -240,14 +257,15 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         const previousBotReply = [...history].reverse().find(item => item.name === 'Forge Bot')?.text || '';
         let registeredGender = null;
         try { registeredGender = await getUserGender(senderId); } catch {}
-        let response = arithmeticReply || identityReply || identityGreeting;
+        let response = arithmeticReply || clockReply || identityReply || identityGreeting;
         if (!response) {
             // Current facts must be grounded in fresh search evidence, never a dated local answer bank.
-            if (CHATBOT_AI_ENABLED && isTimeSensitiveQuestion(chatbotQuery)) {
+            const contextualLiveQuery = resolveContextualBusinessFollowup(chatbotQuery, history.slice(0, -1));
+            if (CHATBOT_AI_ENABLED && (isTimeSensitiveQuestion(chatbotQuery) || contextualLiveQuery)) {
                 const liveStartedAt = Date.now();
-                const liveResult = await searchLiveKnowledge(chatbotQuery, { timeoutMs: 5000 });
+                const liveResult = await searchLiveKnowledge(contextualLiveQuery || chatbotQuery, { timeoutMs: 5000 });
                 if (!liveResult.ok) {
-                    response = "I can't verify the latest information right now, so I don't want to guess. Please try again shortly.";
+                    response = formatLiveKnowledgeUnavailable(contextualLiveQuery || chatbotQuery);
                     console.info(`[Chatbot Live] outcome=unavailable reason=${liveResult.reason} latency_ms=${Date.now() - liveStartedAt}`);
                 } else {
                     try {
@@ -305,14 +323,12 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                         }), chatbotQuery);
                         console.info(`[Chatbot AI] outcome=success latency_ms=${Date.now() - aiStartedAt}`);
                     } catch (error) {
-                        response = getQuestionFallback(chatbotQuery)
-                            || "I couldn't produce a reliable answer to that just now. Please try again shortly.";
+                        response = "I couldn't produce a reliable answer to that just now. Please try again shortly.";
                         const reason = String(error?.code || error?.message || 'unknown').slice(0, 100).replaceAll(String.fromCharCode(10), ' ').replaceAll(String.fromCharCode(13), ' ');
                         console.warn(`[Chatbot AI] outcome=unavailable latency_ms=${Date.now() - aiStartedAt} reason=${reason}`);
                     }
                 } else {
-                    response = getQuestionFallback(chatbotQuery)
-                        || "I can't provide a reliable answer to that question right now.";
+                    response = "I can't provide a reliable answer to that question right now.";
                 }
             }
 

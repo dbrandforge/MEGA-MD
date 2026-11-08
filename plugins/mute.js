@@ -23,8 +23,8 @@ export default {
             if (userToMute === botId || userToMute.endsWith('@g.us')) {
                 return sock.sendMessage(chatId, { text: '❌ That account cannot be muted with this command.', ...channelInfo }, { quoted: message });
             }
-            const hours = Number(config.muteDurationHours) > 0 ? Number(config.muteDurationHours) : 10;
-            await softMuteUser(sock, chatId, userToMute, hours);
+            const duration = await softMuteUser(sock, chatId, userToMute);
+            const hours = duration / (60 * 60 * 1000);
             return sock.sendMessage(chatId, {
                 text: `🔇 @${userToMute.split('@')[0]} has been *soft-muted for ${hours} hours*. Their messages will be deleted automatically. Use *.unmute @user* to lift the mute early.`,
                 mentions: [userToMute],

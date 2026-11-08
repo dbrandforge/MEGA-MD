@@ -1,27 +1,117 @@
-/*****************************************************************************
- *                                                                           *
- *                     Developed By Qasim Ali                                *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/GlobalTechInfo                         *
- *  ▶️  YouTube  : https://youtube.com/@GlobalTechInfo                       *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VagJIAr3bbVBCpEkAM07     *
- *                                                                           *
- *    © 2026 GlobalTechInfo. All rights reserved.                            *
- *                                                                           *
- *    Description: This file is part of the MEGA-MD Project.                 *
- *                 Unauthorized copying or distribution is prohibited.       *
- *                                                                           *
- *****************************************************************************/
+import { downloadMediaMessage, delay } from '@whiskeysockets/baileys';
+import store from '../lib/lightweight_store.js';
+import { parseVCardContacts } from '../lib/vcardContacts.js';
+
+const PENDING_VCF_KEY = 'pendingVcfContactImport';
+
+function quotedMessageFromContext(message) {
+    const context = message.message?.extendedTextMessage?.contextInfo;
+    if (!context?.quotedMessage) return null;
+    return {
+        key: { remoteJid: message.key.remoteJid, fromMe: false, id: context.stanzaId, participant: context.participant },
+        message: context.quotedMessage
+    };
+}
+
+function getVcfTarget(message) {
+    if (message.message?.documentMessage) return message;
+    const quoted = quotedMessageFromContext(message);
+    return quoted?.message?.documentMessage ? quoted : null;
+}
+
+async function processVcfImport(sock, chatId, pending) {
+    const metadata = await sock.groupMetadata(chatId);
+    const existing = new Set((metadata.participants || []).map(p => String(p.id || '').split('@')[0].split(':')[0]));
+    const targets = (pending.contacts || []).filter(contact => !existing.has(contact.number));
+    const alreadyPresent = (pending.contacts || []).length - targets.length;
+    const added = [], invited = [], privacyBlocked = [], failed = [];
+    for (let offset = 0; offset < targets.length; offset += 5) {
+        const batch = targets.slice(offset, offset + 5);
+        try {
+            const results = await sock.groupParticipantsUpdate(chatId, batch.map(item => item.jid), 'add');
+            for (let i = 0; i < batch.length; i++) {
+                const contact = batch[i];
+                const status = String(results?.[i]?.status || 'unknown');
+                if (status === '200') added.push(contact);
+                else if (status === '408') invited.push(contact);
+                else if (status === '403') privacyBlocked.push(contact);
+                else failed.push({ ...contact, status });
+            }
+        } catch (error) {
+            for (const contact of batch) failed.push({ ...contact, status: String(error?.message || 'request failed').slice(0, 80) });
+        }
+        if (offset + 5 < targets.length) await delay(1200);
+    }
+    return { total: pending.contacts.length, alreadyPresent, added, invited, privacyBlocked, failed };
+}
+
 export default {
     command: 'add',
     aliases: ['invite', 'gcadd', 'addgc'],
     category: 'admin',
-    description: 'Add a user to the group',
-    usage: '.add <number> or reply to vcard/message',
+    description: 'Add a user or import multiple contacts from a VCF file',
+    usage: '.add <number> | attach .vcf + .add | .add confirm | .add cancel',
     groupOnly: true,
     adminOnly: true,
     async handler(sock, message, args, context) {
-        const { chatId, channelInfo } = context;
+        const { chatId, senderId, channelInfo } = context;
+        const action = String(args?.[0] || '').toLowerCase();
+        if (action === 'cancel') {
+            const pending = await store.getSetting(chatId, PENDING_VCF_KEY);
+            if (!pending) return sock.sendMessage(chatId, { text: 'There is no pending VCF import to cancel.', ...channelInfo }, { quoted: message });
+            if (pending.requestedBy && pending.requestedBy !== senderId) return sock.sendMessage(chatId, { text: 'Only the admin who prepared this VCF import can cancel it.', ...channelInfo }, { quoted: message });
+            await store.saveSettingVerified(chatId, PENDING_VCF_KEY, null);
+            return sock.sendMessage(chatId, { text: '🛑 Pending VCF contact import cancelled. No contacts were added.', ...channelInfo }, { quoted: message });
+        }
+        if (action === 'confirm') {
+            const pending = await store.getSetting(chatId, PENDING_VCF_KEY);
+            if (!pending || !Array.isArray(pending.contacts) || !pending.contacts.length) return sock.sendMessage(chatId, { text: 'There is no pending VCF import. Attach a .vcf file and send *.add* first.', ...channelInfo }, { quoted: message });
+            if (pending.requestedBy && pending.requestedBy !== senderId) return sock.sendMessage(chatId, { text: 'Only the admin who prepared this VCF import can confirm it.', ...channelInfo }, { quoted: message });
+            if (Date.now() - Number(pending.createdAt || 0) > 10 * 60 * 1000) {
+                await store.saveSettingVerified(chatId, PENDING_VCF_KEY, null);
+                return sock.sendMessage(chatId, { text: 'This VCF preview has expired. Attach the file again to prepare a fresh import.', ...channelInfo }, { quoted: message });
+            }
+            if (pending.processing) return sock.sendMessage(chatId, { text: 'This VCF import is already being processed.', ...channelInfo }, { quoted: message });
+            pending.processing = true;
+            if (!await store.saveSettingVerified(chatId, PENDING_VCF_KEY, pending)) return sock.sendMessage(chatId, { text: 'Could not lock the pending import for processing. Nothing was added.', ...channelInfo }, { quoted: message });
+            try {
+                const result = await processVcfImport(sock, chatId, pending);
+                await store.saveSettingVerified(chatId, PENDING_VCF_KEY, null);
+                return sock.sendMessage(chatId, {
+                    text: `📇 *VCF IMPORT RESULTS*\n\nContacts in file: *${result.total}*\nAlready in group: *${result.alreadyPresent}*\nSuccessfully added: *${result.added.length}*\nInvite required: *${result.invited.length}*\nPrivacy blocked: *${result.privacyBlocked.length}*\nFailed: *${result.failed.length}*\n\nWhatsApp privacy settings may require some contacts to accept an invite. No failed contact is reported as added.`,
+                    mentions: result.added.map(item => item.jid),
+                    ...channelInfo
+                }, { quoted: message });
+            } catch (error) {
+                pending.processing = false;
+                await store.saveSettingVerified(chatId, PENDING_VCF_KEY, pending);
+                return sock.sendMessage(chatId, { text: `❌ VCF import could not be completed: ${String(error?.message || error).slice(0, 180)}. The preview was retained so you can retry with *.add confirm*.`, ...channelInfo }, { quoted: message });
+            }
+        }
+
+        const vcfTarget = getVcfTarget(message);
+        const vcfDocument = vcfTarget?.message?.documentMessage;
+        const isVcf = !!vcfDocument && (/\.vcf$/i.test(vcfDocument.fileName || '') || /vcard/i.test(vcfDocument.mimetype || '') || action === 'vcf');
+        if (isVcf) {
+            const size = Number(vcfDocument.fileLength || 0);
+            if (size > 2 * 1024 * 1024) return sock.sendMessage(chatId, { text: 'VCF file exceeds the 2 MB import limit. Split the contact file and try again.', ...channelInfo }, { quoted: message });
+            try {
+                const buffer = await downloadMediaMessage(vcfTarget, 'buffer', {}, { logger: sock.logger, reuploadRequest: sock.updateMediaMessage });
+                if (!buffer || buffer.length > 2 * 1024 * 1024) return sock.sendMessage(chatId, { text: 'Downloaded VCF file exceeds the 2 MB import limit or is empty. Split the file and try again.', ...channelInfo }, { quoted: message });
+                const contacts = parseVCardContacts(buffer.toString('utf8'));
+                if (contacts.length > 100) return sock.sendMessage(chatId, { text: `This VCF contains ${contacts.length} valid contacts. The safe per-file limit is 100; split it into smaller files and try again.`, ...channelInfo }, { quoted: message });
+                if (!contacts.length) return sock.sendMessage(chatId, { text: 'No valid international phone numbers were found in that VCF. Include country codes; Nigerian local 11-digit numbers beginning with 0 are normalized automatically.', ...channelInfo }, { quoted: message });
+                const pending = { contacts, requestedBy: senderId, createdAt: Date.now(), processing: false };
+                if (!await store.saveSettingVerified(chatId, PENDING_VCF_KEY, pending)) throw new Error('Could not save the import preview.');
+                return sock.sendMessage(chatId, {
+                    text: `📇 *VCF CONTACT IMPORT PREVIEW*\n\nValid unique contacts: *${contacts.length}*\nImport limit: *100 contacts per batch*\n\nThe bot will check existing members, then attempt additions in small batches. Contacts whose WhatsApp privacy settings prevent direct addition will be reported separately.\n\nConfirm with *.add confirm* or cancel with *.add cancel*. Preview expires after 10 minutes.`,
+                    ...channelInfo
+                }, { quoted: message });
+            } catch (error) {
+                return sock.sendMessage(chatId, { text: `❌ Could not read the VCF file: ${String(error?.message || error).slice(0, 180)}`, ...channelInfo }, { quoted: message });
+            }
+        }
+
         let targetNumber = null;
         if (message.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
             const quotedMsg = message.message.extendedTextMessage.contextInfo.quotedMessage;
