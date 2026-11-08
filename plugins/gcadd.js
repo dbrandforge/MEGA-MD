@@ -97,7 +97,8 @@ export default {
             if (size > 2 * 1024 * 1024) return sock.sendMessage(chatId, { text: 'VCF file exceeds the 2 MB import limit. Split the contact file and try again.', ...channelInfo }, { quoted: message });
             try {
                 const buffer = await downloadMediaMessage(vcfTarget, 'buffer', {}, { logger: sock.logger, reuploadRequest: sock.updateMediaMessage });
-                const contacts = parseVCardContacts(buffer.toString('utf8')).slice(0, 100);
+                const contacts = parseVCardContacts(buffer.toString('utf8'));
+                if (contacts.length > 100) return sock.sendMessage(chatId, { text: `This VCF contains ${contacts.length} valid contacts. The safe per-file limit is 100; split it into smaller files and try again.`, ...channelInfo }, { quoted: message });
                 if (!contacts.length) return sock.sendMessage(chatId, { text: 'No valid international phone numbers were found in that VCF. Include country codes; Nigerian local 11-digit numbers beginning with 0 are normalized automatically.', ...channelInfo }, { quoted: message });
                 const pending = { contacts, requestedBy: senderId, createdAt: Date.now(), processing: false };
                 if (!await store.saveSettingVerified(chatId, PENDING_VCF_KEY, pending)) throw new Error('Could not save the import preview.');
