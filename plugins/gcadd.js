@@ -97,6 +97,7 @@ export default {
             if (size > 2 * 1024 * 1024) return sock.sendMessage(chatId, { text: 'VCF file exceeds the 2 MB import limit. Split the contact file and try again.', ...channelInfo }, { quoted: message });
             try {
                 const buffer = await downloadMediaMessage(vcfTarget, 'buffer', {}, { logger: sock.logger, reuploadRequest: sock.updateMediaMessage });
+                if (!buffer || buffer.length > 2 * 1024 * 1024) return sock.sendMessage(chatId, { text: 'Downloaded VCF file exceeds the 2 MB import limit or is empty. Split the file and try again.', ...channelInfo }, { quoted: message });
                 const contacts = parseVCardContacts(buffer.toString('utf8'));
                 if (contacts.length > 100) return sock.sendMessage(chatId, { text: `This VCF contains ${contacts.length} valid contacts. The safe per-file limit is 100; split it into smaller files and try again.`, ...channelInfo }, { quoted: message });
                 if (!contacts.length) return sock.sendMessage(chatId, { text: 'No valid international phone numbers were found in that VCF. Include country codes; Nigerian local 11-digit numbers beginning with 0 are normalized automatically.', ...channelInfo }, { quoted: message });
