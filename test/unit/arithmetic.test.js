@@ -17,6 +17,7 @@ describe('conversational arithmetic', () => {
   it('preserves normal operator precedence and chained multiplication', () => {
     expect(evaluateArithmetic('47 x 300')).toBe(14100);
     expect(evaluateArithmetic('6700 x 56 x 9900 x 37 ÷ 437')).toBe(314498306.6361556);
+    expect(evaluateArithmetic('Multiply 6700 x 56 x 9900 x 37 ÷ 437')).toBe(314498306.6361556);
   });
   it('does not pretend to solve expressions with unknown variables', () => {
     expect(evaluateArithmetic('2x - 7y + 88 x 27')).toBeNull();
