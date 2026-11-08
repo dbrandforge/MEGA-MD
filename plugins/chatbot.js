@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
-import { classifyIntent, pickSubstantiveReply, pickLibraryReply, getQuestionFallback } from '../data/chatbotResponseLibrary.js';
+import { classifyIntent, pickSubstantiveReply, pickLibraryReply } from '../data/chatbotResponseLibrary.js';
 import { pickPersonalityReply } from '../data/forgeBotPersonalityBank.js';
 import { pickDualReply } from '../data/chatDual/dualBankSelector.js';
 import { getUserGender } from './gender.js';
@@ -323,14 +323,12 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                         }), chatbotQuery);
                         console.info(`[Chatbot AI] outcome=success latency_ms=${Date.now() - aiStartedAt}`);
                     } catch (error) {
-                        response = getQuestionFallback(chatbotQuery)
-                            || "I couldn't produce a reliable answer to that just now. Please try again shortly.";
+                        response = "I couldn't produce a reliable answer to that just now. Please try again shortly.";
                         const reason = String(error?.code || error?.message || 'unknown').slice(0, 100).replaceAll(String.fromCharCode(10), ' ').replaceAll(String.fromCharCode(13), ' ');
                         console.warn(`[Chatbot AI] outcome=unavailable latency_ms=${Date.now() - aiStartedAt} reason=${reason}`);
                     }
                 } else {
-                    response = getQuestionFallback(chatbotQuery)
-                        || "I can't provide a reliable answer to that question right now.";
+                    response = "I can't provide a reliable answer to that question right now.";
                 }
             }
 
