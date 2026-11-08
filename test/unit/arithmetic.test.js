@@ -8,7 +8,7 @@ describe('conversational arithmetic', () => {
   });
   it('calculates cube roots', () => {
     expect(evaluateArithmetic('Cube root of 156')).toBe(5.3832126121);
-    expect(evaluateArithmetic('∛156')).toBe(5.3860867251);
+    expect(evaluateArithmetic('∛156')).toBe(5.3832126121);
   });
   it('calculates HCF/GCD and LCM', () => {
     expect(evaluateArithmetic('H.C.F of 50 and 10')).toBe(10);
