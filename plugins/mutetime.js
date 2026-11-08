@@ -20,7 +20,9 @@ export default {
       return sock.sendMessage(chatId, { text: `⏱️ *SOFT-MUTE DURATION*\\n\\nCurrent group duration: *${hours} hour(s)*\\n\\nChange it with *.mutetime 4h* or restore the default with *.mutetime reset*.`, ...channelInfo }, { quoted: message });
     }
     if (action === 'reset' || action === 'default') {
-      await store.deleteSetting(chatId, KEY);
+      if (!await store.saveSettingVerified(chatId, KEY, null)) {
+        return sock.sendMessage(chatId, { text: '❌ Could not restore the default duration.', ...channelInfo }, { quoted: message });
+      }
       const hours = await getSoftMuteDurationHours(chatId);
       return sock.sendMessage(chatId, { text: `✅ Soft-mute duration restored to the default: *${hours} hour(s)*.`, ...channelInfo }, { quoted: message });
     }
