@@ -10,6 +10,7 @@ import { printLog } from '../lib/print.js';
 import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
 import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
 import { isExplicitlyAddressedInGroup } from '../lib/chatbotAccess.js';
+import { createKeyedSerialExecutor, getConversationMemoryKey } from '../lib/chatbotConversationMemory.js';
 import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI } from '../lib/aiService.js';
 import { evaluateArithmetic, formatArithmeticAnswer } from '../lib/arithmetic.js';
 import { isTimeSensitiveQuestion, searchLiveKnowledge, buildLiveKnowledgeContext, formatLiveKnowledgeSources, formatLiveKnowledgeEvidenceSummary } from '../lib/liveKnowledge.js';
@@ -24,8 +25,10 @@ const HAS_DB = !!(MONGO_URL || POSTGRES_URL || MYSQL_URL || SQLITE_URL);
 const USER_GROUP_DATA = dataFile('userGroupData.json');
 const CHAT_MEMORY_FILE = dataFile('chatbotConversationMemory.json');
 
-// Rolling, per-group transcript with speaker labels for contextual replies.
+// Each participant gets an independent transcript per chat. Group transcripts are never shared.
 const chatMemory = { messages: new Map(), loaded: new Set() };
+const runConversationSerial = createKeyedSerialExecutor();
+const runLocalMemoryWriteSerial = createKeyedSerialExecutor();
 const MEMORY_SETTING = 'chatbotConversationMemory';
 const MAX_HISTORY_MESSAGES = 30;
 const MAX_HISTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -65,67 +68,93 @@ export async function saveUserGroupData(data) {
     }
 }
 
-async function loadChatHistory(chatId) {
-    if (chatMemory.loaded.has(chatId)) return chatMemory.messages.get(chatId) || [];
+async function loadChatHistory(memoryKey, legacyDirectChatId = null) {
+    if (chatMemory.loaded.has(memoryKey)) return chatMemory.messages.get(memoryKey) || [];
     try {
         let history = [];
         if (HAS_DB) {
-            const saved = await store.getSetting(chatId, MEMORY_SETTING);
-            history = Array.isArray(saved) ? saved : (Array.isArray(saved?.[chatId]) ? saved[chatId] : []);
-            if (!history.length) {
-                const legacy = await store.getSetting('global', MEMORY_SETTING);
-                if (Array.isArray(legacy?.[chatId])) history = legacy[chatId];
+            const saved = await store.getSetting(memoryKey, MEMORY_SETTING);
+            history = Array.isArray(saved) ? saved : (Array.isArray(saved?.[memoryKey]) ? saved[memoryKey] : []);
+            // A one-to-one DM has an unambiguous legacy owner, so it can be migrated.
+            // Old group transcripts mixed several participants and must never be imported.
+            if (!history.length && legacyDirectChatId) {
+                const legacyDirect = await store.getSetting(legacyDirectChatId, MEMORY_SETTING);
+                history = Array.isArray(legacyDirect) ? legacyDirect
+                    : (Array.isArray(legacyDirect?.[legacyDirectChatId]) ? legacyDirect[legacyDirectChatId] : []);
+                if (!history.length) {
+                    const legacyGlobal = await store.getSetting('global', MEMORY_SETTING);
+                    if (Array.isArray(legacyGlobal?.[legacyDirectChatId])) history = legacyGlobal[legacyDirectChatId];
+                }
             }
         } else if (fs.existsSync(CHAT_MEMORY_FILE)) {
             const saved = JSON.parse(fs.readFileSync(CHAT_MEMORY_FILE, 'utf8'));
-            history = Array.isArray(saved?.[chatId]) ? saved[chatId] : [];
+            history = Array.isArray(saved?.[memoryKey]) ? saved[memoryKey]
+                : (legacyDirectChatId && Array.isArray(saved?.[legacyDirectChatId]) ? saved[legacyDirectChatId] : []);
         }
         const fresh = history
             .filter(item => item && typeof item.text === 'string' &&
                 (!item.at || Date.now() - item.at <= MAX_HISTORY_AGE_MS))
             .slice(-MAX_HISTORY_MESSAGES);
-        chatMemory.messages.set(chatId, fresh);
+        chatMemory.messages.set(memoryKey, fresh);
     } catch (error) {
         console.warn('[Chatbot] Could not load persistent conversation memory:', error.message);
-        chatMemory.messages.set(chatId, []);
+        chatMemory.messages.set(memoryKey, []);
     }
-    chatMemory.loaded.add(chatId);
-    return chatMemory.messages.get(chatId);
+    chatMemory.loaded.add(memoryKey);
+    return chatMemory.messages.get(memoryKey);
 }
 
-async function saveChatHistory(chatId, history) {
+async function saveChatHistory(memoryKey, history) {
     try {
         const fresh = history
             .filter(item => item && typeof item.text === 'string' &&
                 (!item.at || Date.now() - item.at <= MAX_HISTORY_AGE_MS))
             .slice(-MAX_HISTORY_MESSAGES);
-        chatMemory.messages.set(chatId, fresh);
+        chatMemory.messages.set(memoryKey, fresh);
         if (HAS_DB) {
-            await store.saveSetting(chatId, MEMORY_SETTING, fresh);
+            await store.saveSetting(memoryKey, MEMORY_SETTING, fresh);
         } else {
-            const dir = path.dirname(CHAT_MEMORY_FILE);
-            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-            let allGroups = {};
-            try {
-                if (fs.existsSync(CHAT_MEMORY_FILE)) {
-                    const parsed = JSON.parse(fs.readFileSync(CHAT_MEMORY_FILE, 'utf8'));
-                    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) allGroups = parsed;
+            // Different participants can save concurrently; serialize the shared JSON-file
+            // read/modify/write so one person's update cannot overwrite another's.
+            await runLocalMemoryWriteSerial('chatbot-memory-file', async () => {
+                const dir = path.dirname(CHAT_MEMORY_FILE);
+                if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+                let allGroups = {};
+                try {
+                    if (fs.existsSync(CHAT_MEMORY_FILE)) {
+                        const parsed = JSON.parse(fs.readFileSync(CHAT_MEMORY_FILE, 'utf8'));
+                        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) allGroups = parsed;
+                    }
+                } catch (readError) {
+                    console.warn('[Chatbot] Existing memory file could not be parsed; rebuilding it:', readError.message);
                 }
-            } catch (readError) {
-                console.warn('[Chatbot] Existing memory file could not be parsed; rebuilding it:', readError.message);
-            }
-            allGroups[chatId] = fresh;
-            const tempFile = CHAT_MEMORY_FILE + '.tmp';
-            fs.writeFileSync(tempFile, JSON.stringify(allGroups));
-            fs.renameSync(tempFile, CHAT_MEMORY_FILE);
+                allGroups[memoryKey] = fresh;
+                const tempFile = CHAT_MEMORY_FILE + '.tmp';
+                fs.writeFileSync(tempFile, JSON.stringify(allGroups));
+                fs.renameSync(tempFile, CHAT_MEMORY_FILE);
+            });
         }
     } catch (error) {
         console.warn('[Chatbot] Could not save persistent conversation memory:', error.message);
     }
 }
 
-// Live replies are selected locally from the curated personality bank.
+// Serialize turns per person/chat. Different group members remain fully independent.
 export async function handleChatbotResponse(sock, chatId, message, userMessage, senderId) {
+    const isGroup = String(chatId || '').endsWith('@g.us');
+    const participantId = senderId || message?.key?.participant || (!isGroup ? chatId : '');
+    const memoryKey = getConversationMemoryKey({ chatId, senderId: participantId, isGroup });
+    if (!memoryKey) {
+        console.warn('[Chatbot] Skipping group response because the sender identity could not be resolved.');
+        return;
+    }
+    return runConversationSerial(memoryKey, () =>
+        handleChatbotResponseForConversation(sock, chatId, message, userMessage, participantId, memoryKey)
+    );
+}
+
+// Live replies are selected locally from the curated personality bank.
+async function handleChatbotResponseForConversation(sock, chatId, message, userMessage, senderId, memoryKey) {
     const data = await loadUserGroupData();
     const isGroup = chatId.endsWith('@g.us');
     if (!data.chatbot) data.chatbot = {};
@@ -178,24 +207,27 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             ? `The user is asking you to answer the following quoted message: "${String(quotedText).slice(0, 1500)}". Their instruction: ${cleanForHistory}`
             : cleanForHistory;
 
-        const history = await loadChatHistory(chatId);
-        if (cleanForHistory && !message.key.fromMe) {
-            history.push({
-                name: message.pushName || senderId.split('@')[0],
-                text: cleanForHistory.slice(0, 500),
-                at: Date.now()
-            });
-            if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
-            await saveChatHistory(chatId, history);
-        }
-
-        // In personal DMs, an enabled session responds naturally without requiring a mention or quoted reply.
+        // Only explicitly addressed group turns enter an individual's private transcript.
+        // Ordinary messages from other members are not imported into this person's context.
         const quotedParticipant = contextInfo.participant || '';
         const isReplyToBot = Boolean(quotedParticipant && botJids.some(b =>
             b.split('@')[0].split(':')[0] === quotedParticipant.split('@')[0].split(':')[0]
         ));
         if (isGroup && !isExplicitlyAddressedInGroup({ isMention, isReplyToBot, quotedParticipant, botJids })) return;
         if (!cleanForHistory) return;
+
+        // Group history is keyed by (group, participant); DM history is keyed by participant.
+        // Legacy history is migrated only for one-to-one chats, never from a mixed group log.
+        const history = await loadChatHistory(memoryKey, isGroup ? null : chatId);
+        if (!message.key.fromMe) {
+            history.push({
+                name: message.pushName || 'You',
+                text: cleanForHistory.slice(0, 500),
+                at: Date.now()
+            });
+            if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
+            await saveChatHistory(memoryKey, history);
+        }
 
         const arithmeticValue = evaluateArithmetic(chatbotQuery);
         const arithmeticReply = arithmeticValue === null ? null : `The answer is *${formatArithmeticAnswer(arithmeticValue)}*.`;
@@ -250,14 +282,14 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
             // question. This keeps the AI path general-purpose rather than sample-specific.
             const dualResponse = needsKnowledgeAnswer ? null
                 : (substantiveReply || libraryReply || pickDualReply(chatbotQuery, {
-                    chatId,
+                    chatId: memoryKey,
                     previousReply: previousBotReply,
                     intent,
                     context: history.slice(-8).map(item => item.text),
                     responseMode: 'reasoned'
                 }));
             response = needsKnowledgeAnswer ? null : (dualResponse || pickPersonalityReply(chatbotQuery, {
-                chatId,
+                chatId: memoryKey,
                 previousReply: previousBotReply,
                 gender: registeredGender,
                 history
@@ -301,7 +333,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
 
         history.push({ name: 'Forge Bot', text: response.slice(0, 500), at: Date.now() });
         if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
-        await saveChatHistory(chatId, history);
+        await saveChatHistory(memoryKey, history);
 
     } catch (e) {
         printLog('error', `[Chatbot DM] Reply failed: ${String(e?.message || e).slice(0, 400)}`);

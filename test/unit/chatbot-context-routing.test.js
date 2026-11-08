@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getIdentityGreeting } from '../../lib/identity.js';
 import { isExplicitlyAddressedInGroup } from '../../lib/chatbotAccess.js';
 import { sanitizeAIResponse } from '../../plugins/ai-gpt.js';
-import { shouldUseAutomaticAI, buildConversationPrompt, sanitizeChatbotReply } from '../../lib/aiService.js';
+import { shouldUseAutomaticAI, buildConversationPrompt, sanitizeChatbotReply, isUsefulAutomaticAnswer } from '../../lib/aiService.js';
 import { classifyIntent, pickSubstantiveReply, pickLibraryReply, getQuestionFallback } from '../../data/chatbotResponseLibrary.js';
 import { pickDualReply } from '../../data/chatDual/dualBankSelector.js';
 import { pickPersonalityReply, classifyPersonalityCategory } from '../../data/forgeBotPersonalityBank.js';
@@ -113,10 +113,24 @@ describe('Automatic AI opt-in routing', () => {
     expect(prompt).toContain('Forge Bot: Tell me your skills');
     expect(prompt).toContain('A skill or profession is not a sexual innuendo');
     expect(prompt).toContain('Nigerian English, Nigerian Pidgin');
+    expect(prompt).toContain('current sender\'s private conversation thread');
     expect(prompt).toContain('CURRENT MESSAGE:\nI repair systems');
   });
 });
 
+
+describe('Automatic AI response relevance validation', () => {
+  it('accepts equivalent numeric amounts in contextual follow-up answers', () => {
+    expect(isUsefulAutomaticAnswer('I need 200k', 'For ₦200,000, I can help you compare safe borrowing options.')).toBe(true);
+  });
+
+  it('rejects an unrelated answer that only repeats a generic money keyword', () => {
+    expect(isUsefulAutomaticAnswer(
+      'Apps that pays real money',
+      'Do not count expected money as received money when planning business pricing.'
+    )).toBe(false);
+  });
+});
 
 describe('Substantive chatbot question routing', () => {
   it('classifies love and compatibility questions as relationship intent', () => {
