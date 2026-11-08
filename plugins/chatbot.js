@@ -13,7 +13,7 @@ import { isExplicitlyAddressedInGroup } from '../lib/chatbotAccess.js';
 import { createKeyedSerialExecutor, getConversationMemoryKey } from '../lib/chatbotConversationMemory.js';
 import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI } from '../lib/aiService.js';
 import { evaluateArithmetic, formatArithmeticAnswer } from '../lib/arithmetic.js';
-import { isTimeSensitiveQuestion, searchLiveKnowledge, buildLiveKnowledgeContext, formatLiveKnowledgeSources, formatLiveKnowledgeEvidenceSummary, resolveContextualBusinessFollowup } from '../lib/liveKnowledge.js';
+import { isTimeSensitiveQuestion, searchLiveKnowledge, buildLiveKnowledgeContext, formatLiveKnowledgeSources, formatLiveKnowledgeEvidenceSummary, formatLiveKnowledgeUnavailable, resolveContextualBusinessFollowup } from '../lib/liveKnowledge.js';
 
 const CHATBOT_AI_ENABLED = process.env.CHATBOT_AI_ENABLED === 'true';
 
@@ -265,7 +265,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                 const liveStartedAt = Date.now();
                 const liveResult = await searchLiveKnowledge(contextualLiveQuery || chatbotQuery, { timeoutMs: 5000 });
                 if (!liveResult.ok) {
-                    response = "I can't verify the latest information right now, so I don't want to guess. Please try again shortly.";
+                    response = formatLiveKnowledgeUnavailable(contextualLiveQuery || chatbotQuery);
                     console.info(`[Chatbot Live] outcome=unavailable reason=${liveResult.reason} latency_ms=${Date.now() - liveStartedAt}`);
                 } else {
                     try {
