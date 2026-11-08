@@ -33,6 +33,22 @@ const MEMORY_SETTING = 'chatbotConversationMemory';
 const MAX_HISTORY_MESSAGES = 30;
 const MAX_HISTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
+export function getLagosClockReply(query, now = new Date()) {
+    const text = String(query || '').toLowerCase();
+    const asksDate = /\\b(today'?s date|date today|current date|what date is it)\\b/.test(text);
+    const asksTime = /\\b(current time|time now|what time is it|time in lagos|clock)\\b/.test(text);
+    if (!asksDate && !asksTime) return null;
+    const date = new Intl.DateTimeFormat('en-NG', {
+        timeZone: 'Africa/Lagos', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    }).format(now);
+    const time = new Intl.DateTimeFormat('en-NG', {
+        timeZone: 'Africa/Lagos', hour: 'numeric', minute: '2-digit', hour12: true
+    }).format(now);
+    if (asksDate && asksTime) return `Today is *${date}*. The current time in Lagos is *${time} WAT (UTC+1)*.`;
+    if (asksDate) return `Today is *${date}*.`;
+    return `The current time in Lagos, Nigeria is *${time} WAT (UTC+1)*.`;
+}
+
 export async function loadUserGroupData() {
     let data;
     try {
@@ -231,6 +247,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
 
         const arithmeticValue = evaluateArithmetic(chatbotQuery);
         const arithmeticReply = arithmeticValue === null ? null : `The answer is *${formatArithmeticAnswer(arithmeticValue)}*.`;
+        const clockReply = getLagosClockReply(chatbotQuery);
         const identityReply = getIdentityReply(cleanForHistory, undefined, identity);
         // Creator/Queen arrival greetings are for a fresh direct call, not every follow-up turn.
         const identityGreeting = getIdentityGreeting(cleanForHistory, identity);
@@ -240,7 +257,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         const previousBotReply = [...history].reverse().find(item => item.name === 'Forge Bot')?.text || '';
         let registeredGender = null;
         try { registeredGender = await getUserGender(senderId); } catch {}
-        let response = arithmeticReply || identityReply || identityGreeting;
+        let response = arithmeticReply || clockReply || identityReply || identityGreeting;
         if (!response) {
             // Current facts must be grounded in fresh search evidence, never a dated local answer bank.
             if (CHATBOT_AI_ENABLED && isTimeSensitiveQuestion(chatbotQuery)) {
