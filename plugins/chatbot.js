@@ -98,7 +98,7 @@ async function loadChatHistory(memoryKey, legacyDirectChatId = null) {
         chatMemory.messages.set(memoryKey, fresh);
     } catch (error) {
         console.warn('[Chatbot] Could not load persistent conversation memory:', error.message);
-        chatMemory.messages.set(chatId, []);
+        chatMemory.messages.set(memoryKey, []);
     }
     chatMemory.loaded.add(memoryKey);
     return chatMemory.messages.get(memoryKey);
