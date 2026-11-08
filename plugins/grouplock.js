@@ -40,6 +40,19 @@ const GOODMORNING_SENT_KEY = 'groupLockGoodmorningSent';
 const GOODNIGHT_INDEX_KEY = 'groupLockGoodnightIndex';
 const GOODMORNING_INDEX_KEY = 'groupLockGoodmorningIndex';
 const DAY_UNLOCK_GREETING_KEY = 'groupDayUnlockGreeting';
+const GROUP_LOCK_SCHEDULE_KEY = 'groupLockSchedule';
+
+async function getGroupLockSchedule(chatId) {
+    const saved = await store.getSetting(chatId, GROUP_LOCK_SCHEDULE_KEY);
+    return {
+        default: { ...lockSchedule.default, ...(saved?.default || {}) },
+        sunday: { ...lockSchedule.sunday, ...(saved?.sunday || {}) }
+    };
+}
+
+function validClock(value) {
+    return typeof value === 'string' && /^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(value);
+}
 
 async function saveGroupSetting(chatId, key, value) {
     if (!await store.saveSettingVerified(chatId, key, value)) throw new Error(`Group lifecycle state (${key}) could not be persisted.`);
@@ -266,7 +279,8 @@ export async function checkGroupLockSchedule(sock, chatId) {
     try {
         const day = getCurrentDay();
         const time = getCurrentTimeString();
-        const schedule = day === 'sunday' ? lockSchedule.sunday : lockSchedule.default;
+        const schedules = await getGroupLockSchedule(chatId);
+        const schedule = day === 'sunday' ? schedules.sunday : schedules.default;
 
         const state = (await store.getSetting(chatId, LOCK_STATE_KEY)) || { locked: false };
         const lastAction = (await store.getSetting(chatId, LAST_ACTION_KEY)) || {};
@@ -342,12 +356,12 @@ export default {
     command: 'grouplock',
     aliases: ['lock', 'unlock', 'glock'],
     category: 'admin',
-    description: 'Manually lock/unlock the group or check schedule',
-    usage: '.grouplock [lock|unlock|status]',
+    description: 'Manually lock/unlock the group and configure its automatic schedule',
+    usage: '.grouplock [lock|unlock|status|schedule|set|reset]',
     adminOnly: true,
     groupOnly: true,
     async handler(sock, message, args, context) {
-        const { chatId } = context;
+        const { chatId, channelInfo } = context;
         const action = (args[0] || '').toLowerCase();
 
         if (!await hasMaturedMindedFeatures(chatId)) {
@@ -356,6 +370,31 @@ export default {
             }, { quoted: message });
         }
 
+        if (action === 'schedule') {
+            const schedules = await getGroupLockSchedule(chatId);
+            return sock.sendMessage(chatId, { text: `🕒 *GROUP LOCK SCHEDULE*\\n\\nMonday–Saturday: Lock *${schedules.default.lock}* · Unlock *${schedules.default.unlock}*\\nSunday: Lock *${schedules.sunday.lock}* · Unlock *${schedules.sunday.unlock}*\\n\\nSet weekday schedule: *.grouplock set default 01:00 06:00*\\nSet Sunday schedule: *.grouplock set sunday 01:00 12:00*\\nRestore defaults: *.grouplock reset*`, ...channelInfo }, { quoted: message });
+        }
+        if (action === 'set') {
+            const dayType = String(args[1] || 'default').toLowerCase();
+            const lock = String(args[2] || '');
+            const unlock = String(args[3] || '');
+            if (!['default', 'sunday'].includes(dayType) || !validClock(lock) || !validClock(unlock) || lock === unlock) {
+                return sock.sendMessage(chatId, { text: 'Use *.grouplock set default 01:00 06:00* or *.grouplock set sunday 01:00 12:00*. Times must use 24-hour HH:MM format and must differ.', ...channelInfo }, { quoted: message });
+            }
+            const schedules = await getGroupLockSchedule(chatId);
+            schedules[dayType] = { lock, unlock };
+            if (!await store.saveSettingVerified(chatId, GROUP_LOCK_SCHEDULE_KEY, schedules)) {
+                return sock.sendMessage(chatId, { text: '❌ Could not save the group lock schedule. Existing schedule remains unchanged.', ...channelInfo }, { quoted: message });
+            }
+            return sock.sendMessage(chatId, { text: `✅ ${dayType === 'sunday' ? 'Sunday' : 'Monday–Saturday'} lock schedule updated.\\nLock: *${lock}*\\nUnlock: *${unlock}*\\n\\nThe scheduler will use the new times automatically.`, ...channelInfo }, { quoted: message });
+        }
+        if (action === 'reset') {
+            if (!await store.saveSettingVerified(chatId, GROUP_LOCK_SCHEDULE_KEY, null)) {
+                return sock.sendMessage(chatId, { text: '❌ Could not restore the default schedule.', ...channelInfo }, { quoted: message });
+            }
+            const schedules = await getGroupLockSchedule(chatId);
+            return sock.sendMessage(chatId, { text: `✅ Default schedule restored.\\nMonday–Saturday: ${schedules.default.lock}–${schedules.default.unlock}\\nSunday: ${schedules.sunday.lock}–${schedules.sunday.unlock}`, ...channelInfo }, { quoted: message });
+        }
         if (action === 'lock') {
             const day = getCurrentDay();
             // A deliberate manual lock clears today's "admin unlocked" flag
@@ -371,7 +410,8 @@ export default {
 
         const day = getCurrentDay();
         const time = getCurrentTimeString();
-        const schedule = day === 'sunday' ? lockSchedule.sunday : lockSchedule.default;
+        const schedules = await getGroupLockSchedule(chatId);
+        const schedule = day === 'sunday' ? schedules.sunday : schedules.default;
         const state = (await store.getSetting(chatId, LOCK_STATE_KEY)) || { locked: false };
 
         await sock.sendMessage(chatId, {
