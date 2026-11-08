@@ -3,7 +3,7 @@ import { parseVCardContacts, normalizeVCardNumber } from '../../lib/vcardContact
 
 describe('VCF contact parsing', () => {
   it('extracts international numbers and WhatsApp waid values', () => {
-    const vcf = 'BEGIN:VCARD\nVERSION:3.0\nFN:Jane Doe\nTEL;TYPE=CELL;waid=2348012345678:+234 801 234 5678\nEND:VCARD';
+    const vcf = 'BEGIN:VCARD\nVERSION:3.0\nFN:Jane Doe\nitem1.TEL;TYPE=CELL;waid=2348012345678:+234 801 234 5678\nEND:VCARD';
     expect(parseVCardContacts(vcf)).toEqual([
       { name: 'Jane Doe', number: '2348012345678', jid: '2348012345678@s.whatsapp.net' }
     ]);
