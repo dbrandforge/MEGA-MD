@@ -16,12 +16,67 @@ export default {
     command: 'add',
     aliases: ['invite', 'gcadd', 'addgc'],
     category: 'admin',
-    description: 'Add a user to the group',
-    usage: '.add <number> or reply to vcard/message',
+    description: 'Add a user or import multiple contacts from a VCF file',
+    usage: '.add <number> | attach .vcf + .add | .add confirm | .add cancel',
     groupOnly: true,
     adminOnly: true,
     async handler(sock, message, args, context) {
-        const { chatId, channelInfo } = context;
+        const { chatId, senderId, channelInfo } = context;
+        const action = String(args?.[0] || '').toLowerCase();
+        if (action === 'cancel') {
+            const pending = await store.getSetting(chatId, PENDING_VCF_KEY);
+            if (!pending) return sock.sendMessage(chatId, { text: 'There is no pending VCF import to cancel.', ...channelInfo }, { quoted: message });
+            if (pending.requestedBy && pending.requestedBy !== senderId) return sock.sendMessage(chatId, { text: 'Only the admin who prepared this VCF import can cancel it.', ...channelInfo }, { quoted: message });
+            await store.saveSettingVerified(chatId, PENDING_VCF_KEY, null);
+            return sock.sendMessage(chatId, { text: '🛑 Pending VCF contact import cancelled. No contacts were added.', ...channelInfo }, { quoted: message });
+        }
+        if (action === 'confirm') {
+            const pending = await store.getSetting(chatId, PENDING_VCF_KEY);
+            if (!pending || !Array.isArray(pending.contacts) || !pending.contacts.length) return sock.sendMessage(chatId, { text: 'There is no pending VCF import. Attach a .vcf file and send *.add* first.', ...channelInfo }, { quoted: message });
+            if (pending.requestedBy && pending.requestedBy !== senderId) return sock.sendMessage(chatId, { text: 'Only the admin who prepared this VCF import can confirm it.', ...channelInfo }, { quoted: message });
+            if (Date.now() - Number(pending.createdAt || 0) > 10 * 60 * 1000) {
+                await store.saveSettingVerified(chatId, PENDING_VCF_KEY, null);
+                return sock.sendMessage(chatId, { text: 'This VCF preview has expired. Attach the file again to prepare a fresh import.', ...channelInfo }, { quoted: message });
+            }
+            if (pending.processing) return sock.sendMessage(chatId, { text: 'This VCF import is already being processed.', ...channelInfo }, { quoted: message });
+            pending.processing = true;
+            if (!await store.saveSettingVerified(chatId, PENDING_VCF_KEY, pending)) return sock.sendMessage(chatId, { text: 'Could not lock the pending import for processing. Nothing was added.', ...channelInfo }, { quoted: message });
+            try {
+                const result = await processVcfImport(sock, chatId, pending);
+                await store.saveSettingVerified(chatId, PENDING_VCF_KEY, null);
+                return sock.sendMessage(chatId, {
+                    text: `📇 *VCF IMPORT RESULTS*\\n\\nContacts in file: *${result.total}*\\nAlready in group: *${result.alreadyPresent}*\\nSuccessfully added: *${result.added.length}*\\nInvite required: *${result.invited.length}*\\nPrivacy blocked: *${result.privacyBlocked.length}*\\nFailed: *${result.failed.length}*\\n\\nWhatsApp privacy settings may require some contacts to accept an invite. No failed contact is reported as added.`,
+                    mentions: result.added.map(item => item.jid),
+                    ...channelInfo
+                }, { quoted: message });
+            } catch (error) {
+                pending.processing = false;
+                await store.saveSettingVerified(chatId, PENDING_VCF_KEY, pending);
+                return sock.sendMessage(chatId, { text: `❌ VCF import could not be completed: ${String(error?.message || error).slice(0, 180)}. The preview was retained so you can retry with *.add confirm*.`, ...channelInfo }, { quoted: message });
+            }
+        }
+
+        const vcfTarget = getVcfTarget(message);
+        const vcfDocument = vcfTarget?.message?.documentMessage;
+        const isVcf = !!vcfDocument && (/\\.vcf$/i.test(vcfDocument.fileName || '') || /vcard/i.test(vcfDocument.mimetype || '') || action === 'vcf');
+        if (isVcf) {
+            const size = Number(vcfDocument.fileLength || 0);
+            if (size > 2 * 1024 * 1024) return sock.sendMessage(chatId, { text: 'VCF file exceeds the 2 MB import limit. Split the contact file and try again.', ...channelInfo }, { quoted: message });
+            try {
+                const buffer = await downloadMediaMessage(vcfTarget, 'buffer', {}, { logger: sock.logger, reuploadRequest: sock.updateMediaMessage });
+                const contacts = parseVCardContacts(buffer.toString('utf8')).slice(0, 100);
+                if (!contacts.length) return sock.sendMessage(chatId, { text: 'No valid international phone numbers were found in that VCF. Include country codes; Nigerian local 11-digit numbers beginning with 0 are normalized automatically.', ...channelInfo }, { quoted: message });
+                const pending = { contacts, requestedBy: senderId, createdAt: Date.now(), processing: false };
+                if (!await store.saveSettingVerified(chatId, PENDING_VCF_KEY, pending)) throw new Error('Could not save the import preview.');
+                return sock.sendMessage(chatId, {
+                    text: `📇 *VCF CONTACT IMPORT PREVIEW*\\n\\nValid unique contacts: *${contacts.length}*\\nImport limit: *100 contacts per batch*\\n\\nThe bot will check existing members, then attempt additions in small batches. Contacts whose WhatsApp privacy settings prevent direct addition will be reported separately.\\n\\nConfirm with *.add confirm* or cancel with *.add cancel*. Preview expires after 10 minutes.`,
+                    ...channelInfo
+                }, { quoted: message });
+            } catch (error) {
+                return sock.sendMessage(chatId, { text: `❌ Could not read the VCF file: ${String(error?.message || error).slice(0, 180)}`, ...channelInfo }, { quoted: message });
+            }
+        }
+
         let targetNumber = null;
         if (message.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
             const quotedMsg = message.message.extendedTextMessage.contextInfo.quotedMessage;
