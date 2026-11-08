@@ -10,7 +10,13 @@ import config from '../config.js';
 import { trackGroup } from './schedule.js';
 
 const MUTE_KEY = 'softMutes';
-const MUTE_MS = (config.muteDurationHours || 10) * 60 * 60 * 1000;
+const MUTE_DURATION_KEY = 'softMuteDurationHours';
+const DEFAULT_MUTE_HOURS = Number(config.muteDurationHours) > 0 ? Number(config.muteDurationHours) : 10;
+
+export async function getSoftMuteDurationHours(chatId) {
+    const configured = Number(await store.getSetting(chatId, MUTE_DURATION_KEY));
+    return Number.isFinite(configured) && configured >= 1 && configured <= 168 ? configured : DEFAULT_MUTE_HOURS;
+}
 
 function mention(jid) {
     return `@${(jid || '').split('@')[0]}`;
@@ -86,7 +92,8 @@ export async function isSoftMuted(chatId, userId, sock = null) {
 }
 
 export async function softMuteUser(sock, chatId, userId, hours = null) {
-    const duration = hours ? hours * 60 * 60 * 1000 : MUTE_MS;
+    const durationHours = Number.isFinite(Number(hours)) && Number(hours) > 0 ? Number(hours) : await getSoftMuteDurationHours(chatId);
+    const duration = durationHours * 60 * 60 * 1000;
     const mutes = await getMutes(chatId);
     const key = cleanId(userId);
     const canonicalKey = await normalizeSoftMuteUserId(sock, userId);
@@ -186,8 +193,8 @@ export default {
             }, { quoted: message });
         }
 
-        const hours = config.muteDurationHours || 10;
-        await softMuteUser(sock, chatId, userToMute, hours);
+        const duration = await softMuteUser(sock, chatId, userToMute);
+        const hours = duration / (60 * 60 * 1000);
 
         await sock.sendMessage(chatId, {
             text: `🔇 ${mention(userToMute)} has been *soft-muted for ${hours} hours*.\n\nTheir messages will be automatically deleted until the mute expires.\n\nUse *.unmute @user* to unmute early.`,
