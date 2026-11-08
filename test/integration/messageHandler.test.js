@@ -77,6 +77,15 @@ describe('handleMessages', () => {
         );
     });
 
+    it('processes a repeated WhatsApp notify event only once', async () => {
+        const { handleChatbotResponse } = await import('../../plugins/chatbot.js');
+        const msg = createMockMessage({ text: 'Hello Forge Bot', isGroup: false });
+        const update = { messages: [msg], type: 'notify' };
+        await handleMessages(sock, update);
+        await handleMessages(sock, update);
+        expect(handleChatbotResponse).toHaveBeenCalledTimes(1);
+    });
+
     it('keeps the original LID as the DM reply destination while resolving PN identity', async () => {
         const { handleChatbotResponse } = await import('../../plugins/chatbot.js');
         const msg = createMockMessage({

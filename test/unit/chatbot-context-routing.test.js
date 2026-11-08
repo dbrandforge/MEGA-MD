@@ -124,7 +124,7 @@ describe('Automatic AI response relevance validation', () => {
     expect(isUsefulAutomaticAnswer('I need 200k', 'For ₦200,000, I can help you compare safe borrowing options.')).toBe(true);
   });
 
-  it('rejects an unrelated answer that only repeats a generic money keyword', () => {
+  it('rejects unrelated money advice that does not answer an app-payout question', () => {
     expect(isUsefulAutomaticAnswer(
       'Apps that pays real money',
       'Do not count expected money as received money when planning business pricing.'

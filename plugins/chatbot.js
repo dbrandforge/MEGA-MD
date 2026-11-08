@@ -12,7 +12,8 @@ import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess
 import { isExplicitlyAddressedInGroup } from '../lib/chatbotAccess.js';
 import { createKeyedSerialExecutor, getConversationMemoryKey } from '../lib/chatbotConversationMemory.js';
 import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI } from '../lib/aiService.js';
-import { evaluateArithmetic, formatArithmeticAnswer } from '../lib/arithmetic.js';
+import { evaluateArithmetic, evaluateArithmeticFollowup, formatArithmeticAnswer } from '../lib/arithmetic.js';
+import { detectMessageLanguage, getLocalizedAnswerPrefix, getLocalizedFailureReply, getLocalizedSourceSummaryFailure } from '../lib/chatbotLanguage.js';
 import { isTimeSensitiveQuestion, searchLiveKnowledge, buildLiveKnowledgeContext, formatLiveKnowledgeSources, formatLiveKnowledgeEvidenceSummary, formatLiveKnowledgeUnavailable, resolveContextualBusinessFollowup } from '../lib/liveKnowledge.js';
 
 const CHATBOT_AI_ENABLED = process.env.CHATBOT_AI_ENABLED === 'true';
@@ -33,20 +34,30 @@ const MEMORY_SETTING = 'chatbotConversationMemory';
 const MAX_HISTORY_MESSAGES = 30;
 const MAX_HISTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
-export function getLagosClockReply(query, now = new Date()) {
+export function getLagosClockReply(query, now = new Date(), language = 'english') {
     const text = String(query || '').toLowerCase();
-    const asksDate = /\b(today'?s date|date today|current date|what date is it)\b/.test(text);
-    const asksTime = /\b(current time|time now|what time is it|time in lagos|clock)\b/.test(text);
+    const asksDate = /\b(today'?s date|date today|current date|what date is it|wetin be today's date)\b/.test(text) || /ọjọ́ mélòó ni/i.test(text);
+    const asksTime = /\b(current time|time now|what time is it|time in lagos|time for lagos|wetin be the time|clock)\b/.test(text) || /àkókò mélòó|àkókò ni/i.test(text);
     if (!asksDate && !asksTime) return null;
-    const date = new Intl.DateTimeFormat('en-NG', {
+    const date = new Intl.DateTimeFormat(language === 'yoruba' ? 'yo-NG' : 'en-NG', {
         timeZone: 'Africa/Lagos', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
     }).format(now);
     const time = new Intl.DateTimeFormat('en-NG', {
         timeZone: 'Africa/Lagos', hour: 'numeric', minute: '2-digit', hour12: true
     }).format(now);
-    if (asksDate && asksTime) return `Today is *${date}*. The current time in Lagos is *${time} WAT (UTC+1)*.`;
-    if (asksDate) return `Today is *${date}*.`;
-    return `The current time in Lagos, Nigeria is *${time} WAT (UTC+1)*.`;
+    if (language === 'pidgin') {
+        if (asksDate && asksTime) return 'Today na *' + date + '*. Time for Lagos now na *' + time + ' WAT (UTC+1)*.';
+        if (asksDate) return 'Today na *' + date + '*.';
+        return 'Time for Lagos, Nigeria now na *' + time + ' WAT (UTC+1)*.';
+    }
+    if (language === 'yoruba') {
+        if (asksDate && asksTime) return 'Òní ni *' + date + '*. Àkókò ní Èkó báyìí ni *' + time + ' WAT (UTC+1)*.';
+        if (asksDate) return 'Òní ni *' + date + '*.';
+        return 'Àkókò ní Èkó, Nàìjíríà báyìí ni *' + time + ' WAT (UTC+1)*.';
+    }
+    if (asksDate && asksTime) return 'Today is *' + date + '*. The current time in Lagos is *' + time + ' WAT (UTC+1)*.';
+    if (asksDate) return 'Today is *' + date + '*.';
+    return 'The current time in Lagos, Nigeria is *' + time + ' WAT (UTC+1)*.';
 }
 
 export async function loadUserGroupData() {
@@ -245,12 +256,14 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
             await saveChatHistory(memoryKey, history);
         }
 
-        const arithmeticValue = evaluateArithmetic(chatbotQuery);
-        const arithmeticReply = arithmeticValue === null ? null : `The answer is *${formatArithmeticAnswer(arithmeticValue)}*.`;
-        const clockReply = getLagosClockReply(chatbotQuery);
-        const identityReply = getIdentityReply(cleanForHistory, undefined, identity);
+        const languageInput = quotedText && /^(answer this|answer|explain this|tell me about this|what about this|help me with this)[.!?\s👇]*$/i.test(cleanForHistory) ? quotedText : cleanForHistory;
+        const responseLanguage = detectMessageLanguage(languageInput, history.slice(0, -1));
+        const arithmeticValue = evaluateArithmetic(chatbotQuery) ?? evaluateArithmeticFollowup(chatbotQuery, history.slice(0, -1));
+        const arithmeticReply = arithmeticValue === null ? null : getLocalizedAnswerPrefix(responseLanguage) + ' *' + formatArithmeticAnswer(arithmeticValue) + '*.';
+        const clockReply = getLagosClockReply(chatbotQuery, new Date(), responseLanguage);
+        const identityReply = responseLanguage === 'english' ? getIdentityReply(cleanForHistory, undefined, identity) : null;
         // Creator/Queen arrival greetings are for a fresh direct call, not every follow-up turn.
-        const identityGreeting = getIdentityGreeting(cleanForHistory, identity);
+        const identityGreeting = responseLanguage === 'english' ? getIdentityGreeting(cleanForHistory, identity) : null;
 
         // Identity-specific replies take priority over the general personality bank.
         // Creator/VIP recognition never grants permissions; authorization remains in the command handler.
@@ -265,20 +278,21 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                 const liveStartedAt = Date.now();
                 const liveResult = await searchLiveKnowledge(contextualLiveQuery || chatbotQuery, { timeoutMs: 5000 });
                 if (!liveResult.ok) {
-                    response = formatLiveKnowledgeUnavailable(contextualLiveQuery || chatbotQuery);
+                    response = formatLiveKnowledgeUnavailable(contextualLiveQuery || chatbotQuery, responseLanguage);
                     console.info(`[Chatbot Live] outcome=unavailable reason=${liveResult.reason} latency_ms=${Date.now() - liveStartedAt}`);
                 } else {
                     try {
                         const liveReply = await askFastAI(chatbotQuery, {
                             timeoutMs: 10000,
                             history: history.slice(0, -1).slice(-8),
-                            liveContext: buildLiveKnowledgeContext(liveResult)
+                            liveContext: buildLiveKnowledgeContext(liveResult),
+                            language: responseLanguage
                         });
-                        response = sanitizeAIResponse(liveReply, chatbotQuery) + formatLiveKnowledgeSources(liveResult);
+                        response = sanitizeAIResponse(liveReply, chatbotQuery) + formatLiveKnowledgeSources(liveResult, new Date(), responseLanguage);
                         console.info(`[Chatbot Live] outcome=success sources=${liveResult.results.length} cached=${liveResult.cached} latency_ms=${Date.now() - liveStartedAt}`);
                     } catch (error) {
-                        response = formatLiveKnowledgeEvidenceSummary(liveResult) || "I found recent sources, but couldn't safely compose a verified summary just now. Please check the linked sources directly:";
-                        response += formatLiveKnowledgeSources(liveResult);
+                        response = formatLiveKnowledgeEvidenceSummary(liveResult, responseLanguage) || getLocalizedSourceSummaryFailure(responseLanguage);
+                        response += formatLiveKnowledgeSources(liveResult, new Date(), responseLanguage);
                         const reason = String(error?.code || error?.message || 'unknown').slice(0, 80).replaceAll(String.fromCharCode(10), ' ').replaceAll(String.fromCharCode(13), ' ');
                         console.warn(`[Chatbot Live] outcome=summary_fallback reason=${reason} latency_ms=${Date.now() - liveStartedAt}`);
                     }
@@ -291,10 +305,10 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
             const libraryReply = pickLibraryReply(chatbotQuery, previousBotReply);
             // ChatDual handles relevant advice-shaped/contextual intents; personality bank remains the fallback.
             const priorTurns = history.slice(0, -1).slice(-8);
-            // Gemini is the primary reasoning engine for every genuine question or
-            // practical help request. Curated banks remain for social exchanges and
-            // can no longer intercept a question before the configured AI provider.
-            const needsKnowledgeAnswer = shouldUseAutomaticAI(chatbotQuery, intent, priorTurns);
+            // Gemini is the primary conversation engine while enabled. The system prompt
+            // preserves Forge Guard's personality; curated banks remain available
+            // as the non-AI fallback and never intercept an active Gemini turn.
+            const needsKnowledgeAnswer = CHATBOT_AI_ENABLED || shouldUseAutomaticAI(chatbotQuery, intent, priorTurns);
 
             // Never let a deterministic topic/personality bank replace a genuine
             // question. This keeps the AI path general-purpose rather than sample-specific.
@@ -319,16 +333,17 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                     try {
                         response = sanitizeAIResponse(await askFastAI(chatbotQuery, {
                             timeoutMs: 8000,
-                            history: priorTurns
+                            history: priorTurns,
+                            language: responseLanguage
                         }), chatbotQuery);
                         console.info(`[Chatbot AI] outcome=success latency_ms=${Date.now() - aiStartedAt}`);
                     } catch (error) {
-                        response = "I couldn't produce a reliable answer to that just now. Please try again shortly.";
+                        response = getLocalizedFailureReply(responseLanguage);
                         const reason = String(error?.code || error?.message || 'unknown').slice(0, 100).replaceAll(String.fromCharCode(10), ' ').replaceAll(String.fromCharCode(13), ' ');
                         console.warn(`[Chatbot AI] outcome=unavailable latency_ms=${Date.now() - aiStartedAt} reason=${reason}`);
                     }
                 } else {
-                    response = "I can't provide a reliable answer to that question right now.";
+                    response = getLocalizedFailureReply(responseLanguage);
                 }
             }
 
