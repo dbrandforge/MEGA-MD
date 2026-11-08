@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isRelevantSearchResult, isTimeSensitiveQuestion, resolveContextualBusinessFollowup } from '../../lib/liveKnowledge.js';
+import { isRelevantSearchResult, isTimeSensitiveQuestion, resolveContextualBusinessFollowup, formatLiveKnowledgeUnavailable } from '../../lib/liveKnowledge.js';
 
 describe('Forge Guard live-information routing', () => {
     it('routes local business recommendations through current evidence', () => {
@@ -40,6 +40,11 @@ describe('Forge Guard live-information routing', () => {
     it('routes task-app payment and eligibility questions through current evidence', () => {
         expect(isTimeSensitiveQuestion('Apps that pay real money for tasks in Nigeria')).toBe(true);
         expect(isTimeSensitiveQuestion('What do you know about Poppo Live app?')).toBe(true);
+    });
+
+    it('uses transparent fallbacks for unverified local businesses and slang', () => {
+        expect(formatLiveKnowledgeUnavailable('Find the address of De-Orange Hotel in Igando')).toContain("won't invent business names");
+        expect(formatLiveKnowledgeUnavailable('The slang fra in Nigeria means what?')).toContain('reliable evidence');
     });
 
     it('does not treat ordinary evergreen definitions as live searches', () => {
