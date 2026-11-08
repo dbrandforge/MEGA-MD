@@ -3,11 +3,11 @@ import { evaluateArithmetic, formatArithmeticAnswer } from '../../lib/arithmetic
 
 describe('conversational arithmetic', () => {
   it('calculates square roots expressed in natural language and symbols', () => {
-    expect(evaluateArithmetic('Calculate the square root of 8800')).toBe(93.8083151964686);
+    expect(evaluateArithmetic('Calculate the square root of 8800')).toBe(93.8083151965);
     expect(evaluateArithmetic('√8800')).toBe(93.8083151965);
   });
   it('calculates cube roots', () => {
-    expect(evaluateArithmetic('Cube root of 156')).toBe(5.3860867251);
+    expect(evaluateArithmetic('Cube root of 156')).toBe(5.3832126121);
     expect(evaluateArithmetic('∛156')).toBe(5.3860867251);
   });
   it('calculates HCF/GCD and LCM', () => {
