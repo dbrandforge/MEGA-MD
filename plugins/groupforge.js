@@ -122,11 +122,11 @@ export default {
         })) throw new Error('Feature switches were cleared, but the group profile could not be verified.');
         invalidateGroupFeatureAccessCache(chatId);
         return sock.sendMessage(chatId, {
-          text: `✅ *GROUP FEATURE PACKAGE DISABLED*\\n\\nRemoved: *${requestedSet.toUpperCase()}*\\nGeneral package: ${featureSets.general ? 'ON' : 'OFF'}\\nMatured Minded-exclusive package: ${featureSets.maturedMinded ? 'ON' : 'OFF'}\\n\\nUnselected packages were preserved. Game scores, member histories, chatbot conversation memory and unrelated group settings were not deleted.`
+          text: `✅ *GROUP FEATURE PACKAGE DISABLED*\n\nRemoved: *${requestedSet.toUpperCase()}*\nGeneral package: ${featureSets.general ? 'ON' : 'OFF'}\nMatured Minded-exclusive package: ${featureSets.maturedMinded ? 'ON' : 'OFF'}\n\nUnselected packages were preserved. Game scores, member histories, chatbot conversation memory and unrelated group settings were not deleted.`
         }, { quoted: message });
       } catch (error) {
         console.error('[GROUPFORGE] Package removal failed:', error);
-        return sock.sendMessage(chatId, { text: `⚠️ *GROUP PACKAGE REMOVAL INCOMPLETE*\\n\\n${error.message}\\n\\nRun *.groupforge status* to inspect the saved profile before retrying.` }, { quoted: message });
+        return sock.sendMessage(chatId, { text: `⚠️ *GROUP PACKAGE REMOVAL INCOMPLETE*\n\n${error.message}\n\nRun *.groupforge status* to inspect the saved profile before retrying.` }, { quoted: message });
       }
     }
 
