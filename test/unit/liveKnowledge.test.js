@@ -11,6 +11,19 @@ describe('Forge Guard live-information routing', () => {
         expect(isTimeSensitiveQuestion('Where can I get a good Tokunbo car dealer in Ojo?')).toBe(true);
     });
 
+    it('routes Ilorin food and Oye-Ekiti date recommendations through current evidence', () => {
+        expect(isTimeSensitiveQuestion('Where is the best spot for amala in Ilorin?')).toBe(true);
+        expect(isTimeSensitiveQuestion('Can you recommend restaurants suitable for dates in Oye Ekiti?')).toBe(true);
+        expect(isTimeSensitiveQuestion('What is the best jollof rice spot in Ilorin?')).toBe(true);
+        expect(isTimeSensitiveQuestion('How much is Item 7 rice with beef in Ilorin?')).toBe(true);
+    });
+
+    it('routes current university leadership and admissions facts through live evidence', () => {
+        expect(isTimeSensitiveQuestion('Who is the current Vice-Chancellor of FUOYE?')).toBe(true);
+        expect(isTimeSensitiveQuestion('Please confirm the incumbent VC for FUOYE')).toBe(true);
+        expect(isTimeSensitiveQuestion('What is FUOYE admission cut-off mark for 2026/2027?')).toBe(true);
+    });
+
     it('routes Nigerian slang meaning questions through current evidence', () => {
         expect(isTimeSensitiveQuestion('The slang fra in Nigeria means what?')).toBe(true);
     });
@@ -47,6 +60,11 @@ describe('Forge Guard live-information routing', () => {
         expect(formatLiveKnowledgeUnavailable('The slang fra in Nigeria means what?')).toContain('reliable evidence');
     });
 
+    it('keeps live-evidence fallbacks in the detected language', () => {
+        expect(formatLiveKnowledgeUnavailable('Find a restaurant in Ilorin', 'pidgin')).toContain('I no fit verify');
+        expect(formatLiveKnowledgeUnavailable('Find a restaurant in Ilorin', 'yoruba')).toContain('Mi ò rí ẹ̀rí');
+    });
+
     it('does not treat ordinary evergreen definitions as live searches', () => {
         expect(isTimeSensitiveQuestion('What is accounting?')).toBe(false);
     });
@@ -55,6 +73,21 @@ describe('Forge Guard live-information routing', () => {
         expect(isRelevantSearchResult('testing if you have superpowers', {
             title: 'Snake Clash App Store',
             content: 'A casual mobile game about snakes.'
+        })).toBe(false);
+    });
+
+    it('accepts institution-specific FUOYE evidence from a Nigerian university domain', () => {
+        expect(isRelevantSearchResult('Who is the current Vice-Chancellor of FUOYE?', {
+            title: 'Federal University Oye-Ekiti announces its Vice-Chancellor',
+            content: 'Federal University Oye-Ekiti (FUOYE) official university leadership announcement.',
+            host: 'fuoye.edu.ng'
+        })).toBe(true);
+    });
+
+    it('rejects generic venture-capital pages as evidence for FUOYE leadership', () => {
+        expect(isRelevantSearchResult('Who is the current VC of FUOYE?', {
+            title: 'How VCs Decide to Take a First Meeting',
+            content: 'Venture capital investors review startup pitches and company growth.'
         })).toBe(false);
     });
 

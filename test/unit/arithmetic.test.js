@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { evaluateArithmetic, formatArithmeticAnswer } from '../../lib/arithmetic.js';
+import { evaluateArithmetic, evaluateArithmeticFollowup, formatArithmeticAnswer } from '../../lib/arithmetic.js';
 
 describe('conversational arithmetic', () => {
   it('calculates square roots expressed in natural language and symbols', () => {
@@ -19,6 +19,18 @@ describe('conversational arithmetic', () => {
     expect(evaluateArithmetic('6700 x 56 x 9900 x 37 ÷ 437')).toBe(314498306.6361556);
     expect(evaluateArithmetic('Multiply 6700 x 56 x 9900 x 37 ÷ 437')).toBe(314498306.6361556);
     expect(evaluateArithmetic('Multiply 6700 x 56 x 9900 x 37 then divide it by 437')).toBe(314498306.6361556);
+  });
+  it('calculates the large mixed-operator expression exactly', () => {
+    expect(evaluateArithmetic('99,000 x 778 x 77,800 ÷ 60 + 5,678,000')).toBe(99877538000);
+  });
+  it('resolves short divide follow-ups from the previous bot result', () => {
+    const history = [{ name: 'Forge Bot', text: 'The answer is *99,877,538,000*.' }];
+    expect(evaluateArithmeticFollowup('Divide it by 777', history)).toBeCloseTo(128542519.94851995, 7);
+    expect(evaluateArithmeticFollowup('÷ 777', history)).toBeCloseTo(128542519.94851995, 7);
+    expect(evaluateArithmeticFollowup('divide am by 777', history)).toBeCloseTo(128542519.94851995, 7);
+    expect(evaluateArithmeticFollowup('pín un sí 777', history)).toBeCloseTo(128542519.94851995, 7);
+    expect(evaluateArithmeticFollowup('divide it by 0', history)).toBeNull();
+    expect(evaluateArithmeticFollowup('divide it by 777', [{ name: 'Forge Bot', text: 'The current time is 10:55 WAT.' }])).toBeNull();
   });
   it('does not pretend to solve expressions with unknown variables', () => {
     expect(evaluateArithmetic('2x - 7y + 88 x 27')).toBeNull();

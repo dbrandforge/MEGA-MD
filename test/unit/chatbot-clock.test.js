@@ -11,6 +11,12 @@ describe('Lagos clock answers', () => {
     const result = getLagosClockReply('What is the current time in Lagos Nigeria?', new Date('2026-11-08T09:55:00.000Z'));
     expect(result).toContain('10:55 am WAT (UTC+1)');
   });
+  it('answers the same clock query in Nigerian Pidgin and Yoruba', () => {
+    const now = new Date('2026-11-08T09:55:00.000Z');
+    expect(getLagosClockReply('Wetin be the time for Lagos now?', now, 'pidgin')).toContain('Time for Lagos');
+    expect(getLagosClockReply('Àkókò mélòó ni ní Èkó báyìí?', now, 'yoruba')).toContain('Àkókò ní Èkó');
+    expect(getLagosClockReply('Ọjọ́ mélòó ni lónìí?', now, 'yoruba')).toContain('Òní ni');
+  });
   it('does not intercept unrelated current-information questions', () => {
     expect(getLagosClockReply('Who is the president of Nigeria?')).toBeNull();
   });

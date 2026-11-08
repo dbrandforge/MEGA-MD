@@ -1,4 +1,5 @@
-import { askAI, sanitizeAIResponse } from '../lib/aiService.js';
+import { askFastAI, sanitizeAIResponse } from '../lib/aiService.js';
+import { detectMessageLanguage, getLocalizedFailureReply } from '../lib/chatbotLanguage.js';
 export { sanitizeAIResponse };
 
 export default {
@@ -17,14 +18,15 @@ export default {
             }, { quoted: message });
         }
 
+        const language = detectMessageLanguage(query);
         try {
             await sock.sendMessage(chatId, { react: { text: '🤖', key: message.key } });
-            const answer = sanitizeAIResponse(await askAI(query), query);
+            const answer = sanitizeAIResponse(await askFastAI(query, { timeoutMs: 15000, language }), query);
             await sock.sendMessage(chatId, { text: answer }, { quoted: message });
         } catch (error) {
             console.error('AI Command Error:', error.message);
             await sock.sendMessage(chatId, {
-                text: '❌ Failed to get AI response. Please try again later.'
+                text: '❌ ' + getLocalizedFailureReply(language)
             }, { quoted: message });
         }
     }
