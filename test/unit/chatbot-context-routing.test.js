@@ -233,6 +233,8 @@ describe('Forge Guard clean output and refined AI routing', () => {
     expect(prompt).toContain('Do not append hashtags');
     expect(prompt).toContain('For definitions, give a clear definition first');
     expect(prompt).toContain('For factual questions, answer the exact question');
+    expect(prompt).toContain('Never invent business names, addresses, phone numbers, prices or opening hours');
+    expect(prompt).toContain('do not invent an origin or etymology');
     expect(prompt).toContain('Never invent a URL');
     expect(prompt).toContain('© dbrandforge_bot');
   });
