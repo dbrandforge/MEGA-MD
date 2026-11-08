@@ -1,7 +1,7 @@
 import store from '../lib/lightweight_store.js';
 import { PRIMARY_FEATURE_GROUP, registerFeatureGroup, unregisterFeatureGroup, isFeatureGroup, loadFeatureGroups } from '../lib/featureGroups.js';
 import { trackGroup, startSchedulerEngine } from './schedule.js';
-import { loadUserGroupData } from './chatbot.js';
+import { loadUserGroupData, saveUserGroupData } from './chatbot.js';
 import { invalidateGroupFeatureAccessCache } from '../lib/groupFeatureAccess.js';
 import {
   MATURED_MIND_EXCLUSIVE_MAPS,
@@ -48,7 +48,7 @@ export default {
   aliases: ['groupregister', 'groupsetup', 'forgegroup'],
   category: 'owner',
   description: 'Apply the Matured Minded-exclusive and/or general Forge Guard group feature package.',
-  usage: '.groupforge setup [all|matured|general] | .groupforge status',
+  usage: '.groupforge setup [all|matured|general] | .groupforge off [all|matured|general] | .groupforge status',
   groupOnly: true,
   strictOwnerOnly: true,
   async handler(sock, message, args, context) {
@@ -68,6 +68,66 @@ export default {
       return sock.sendMessage(chatId, {
         text: profileStatusText(profile, registered, maturedEnabled, generalEnabled)
       }, { quoted: message });
+    }
+
+    if (action === 'off' || action === 'disable' || action === 'remove') {
+      if (!['all', 'matured', 'general'].includes(requestedSet)) {
+        return sock.sendMessage(chatId, { text: 'Usage: .groupforge off [all|matured|general]' }, { quoted: message });
+      }
+      if (chatId === PRIMARY_FEATURE_GROUP) {
+        return sock.sendMessage(chatId, { text: 'Matured Minded is the protected source group. Its core group profile cannot be disabled through .groupforge.' }, { quoted: message });
+      }
+      try {
+        const [userData, existingProfile, antispam] = await Promise.all([
+          loadUserGroupData(),
+          store.getSetting(chatId, 'forgeGuardGroupProfile'),
+          store.getSetting('global', 'antispam')
+        ]);
+        const removeMatured = requestedSet === 'all' || requestedSet === 'matured';
+        const removeGeneral = requestedSet === 'all' || requestedSet === 'general';
+        const nextUserData = { ...userData };
+        const mapsToClear = [
+          ...(removeMatured ? MATURED_MIND_EXCLUSIVE_MAPS : []),
+          ...(removeGeneral ? GENERAL_GROUP_MAPS : [])
+        ];
+        for (const key of mapsToClear) {
+          if (nextUserData[key] && typeof nextUserData[key] === 'object') {
+            nextUserData[key] = { ...nextUserData[key] };
+            delete nextUserData[key][chatId];
+          }
+        }
+        if (mapsToClear.length && !await saveUserGroupData(nextUserData)) {
+          throw new Error('Could not clear the selected group feature switches.');
+        }
+        if (removeGeneral) {
+          const nextAntispam = { ...(antispam || {}), groups: { ...(antispam?.groups || {}) } };
+          delete nextAntispam.groups[chatId];
+          if (!await store.saveSettingVerified('global', 'antispam', nextAntispam)) {
+            throw new Error('Could not remove this group from AntiSpam settings.');
+          }
+          for (const key of GENERAL_GROUP_SETTINGS) {
+            if (!await store.saveSettingVerified(chatId, key, null)) {
+              throw new Error(`Could not clear group setting: ${key}`);
+            }
+          }
+        }
+        const featureSets = {
+          maturedMinded: removeMatured ? false : existingProfile?.featureSets?.maturedMinded === true,
+          general: removeGeneral ? false : (existingProfile?.featureSets?.general === true || (!existingProfile && isFeatureGroup(chatId)))
+        };
+        if (removeGeneral || !featureSets.general) await unregisterFeatureGroup(chatId);
+        if (!await store.saveSettingVerified(chatId, 'forgeGuardGroupProfile', {
+          name: PROFILE_NAME, source: PRIMARY_FEATURE_GROUP, appliedAt: Date.now(),
+          featureSets, features: enabledFeatureLines(featureSets)
+        })) throw new Error('Feature switches were cleared, but the group profile could not be verified.');
+        invalidateGroupFeatureAccessCache(chatId);
+        return sock.sendMessage(chatId, {
+          text: `✅ *GROUP FEATURE PACKAGE DISABLED*\\n\\nRemoved: *${requestedSet.toUpperCase()}*\\nGeneral package: ${featureSets.general ? 'ON' : 'OFF'}\\nMatured Minded-exclusive package: ${featureSets.maturedMinded ? 'ON' : 'OFF'}\\n\\nUnselected packages were preserved. Game scores, member histories, chatbot conversation memory and unrelated group settings were not deleted.`
+        }, { quoted: message });
+      } catch (error) {
+        console.error('[GROUPFORGE] Package removal failed:', error);
+        return sock.sendMessage(chatId, { text: `⚠️ *GROUP PACKAGE REMOVAL INCOMPLETE*\\n\\n${error.message}\\n\\nRun *.groupforge status* to inspect the saved profile before retrying.` }, { quoted: message });
+      }
     }
 
     if (!['setup', 'apply', 'on'].includes(action) || !['all', 'matured', 'general'].includes(requestedSet)) {
