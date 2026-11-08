@@ -69,7 +69,7 @@ export async function saveUserGroupData(data) {
 }
 
 async function loadChatHistory(memoryKey, legacyDirectChatId = null) {
-    if (chatMemory.loaded.has(chatId)) return chatMemory.messages.get(chatId) || [];
+    if (chatMemory.loaded.has(memoryKey)) return chatMemory.messages.get(memoryKey) || [];
     try {
         let history = [];
         if (HAS_DB) {
@@ -95,13 +95,13 @@ async function loadChatHistory(memoryKey, legacyDirectChatId = null) {
             .filter(item => item && typeof item.text === 'string' &&
                 (!item.at || Date.now() - item.at <= MAX_HISTORY_AGE_MS))
             .slice(-MAX_HISTORY_MESSAGES);
-        chatMemory.messages.set(chatId, fresh);
+        chatMemory.messages.set(memoryKey, fresh);
     } catch (error) {
         console.warn('[Chatbot] Could not load persistent conversation memory:', error.message);
         chatMemory.messages.set(chatId, []);
     }
-    chatMemory.loaded.add(chatId);
-    return chatMemory.messages.get(chatId);
+    chatMemory.loaded.add(memoryKey);
+    return chatMemory.messages.get(memoryKey);
 }
 
 async function saveChatHistory(memoryKey, history) {
@@ -110,7 +110,7 @@ async function saveChatHistory(memoryKey, history) {
             .filter(item => item && typeof item.text === 'string' &&
                 (!item.at || Date.now() - item.at <= MAX_HISTORY_AGE_MS))
             .slice(-MAX_HISTORY_MESSAGES);
-        chatMemory.messages.set(chatId, fresh);
+        chatMemory.messages.set(memoryKey, fresh);
         if (HAS_DB) {
             await store.saveSetting(memoryKey, MEMORY_SETTING, fresh);
         } else {
