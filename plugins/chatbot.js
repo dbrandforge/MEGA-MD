@@ -35,8 +35,8 @@ const MAX_HISTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function getLagosClockReply(query, now = new Date()) {
     const text = String(query || '').toLowerCase();
-    const asksDate = /\\b(today'?s date|date today|current date|what date is it)\\b/.test(text);
-    const asksTime = /\\b(current time|time now|what time is it|time in lagos|clock)\\b/.test(text);
+    const asksDate = /\b(today'?s date|date today|current date|what date is it)\b/.test(text);
+    const asksTime = /\b(current time|time now|what time is it|time in lagos|clock)\b/.test(text);
     if (!asksDate && !asksTime) return null;
     const date = new Intl.DateTimeFormat('en-NG', {
         timeZone: 'Africa/Lagos', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
