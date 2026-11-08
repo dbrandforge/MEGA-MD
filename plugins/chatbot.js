@@ -28,6 +28,7 @@ const CHAT_MEMORY_FILE = dataFile('chatbotConversationMemory.json');
 // Each participant gets an independent transcript per chat. Group transcripts are never shared.
 const chatMemory = { messages: new Map(), loaded: new Set() };
 const runConversationSerial = createKeyedSerialExecutor();
+const runLocalMemoryWriteSerial = createKeyedSerialExecutor();
 const MEMORY_SETTING = 'chatbotConversationMemory';
 const MAX_HISTORY_MESSAGES = 30;
 const MAX_HISTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -113,21 +114,25 @@ async function saveChatHistory(memoryKey, history) {
         if (HAS_DB) {
             await store.saveSetting(memoryKey, MEMORY_SETTING, fresh);
         } else {
-            const dir = path.dirname(CHAT_MEMORY_FILE);
-            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-            let allGroups = {};
-            try {
-                if (fs.existsSync(CHAT_MEMORY_FILE)) {
-                    const parsed = JSON.parse(fs.readFileSync(CHAT_MEMORY_FILE, 'utf8'));
-                    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) allGroups = parsed;
+            // Different participants can save concurrently; serialize the shared JSON-file
+            // read/modify/write so one person's update cannot overwrite another's.
+            await runLocalMemoryWriteSerial('chatbot-memory-file', async () => {
+                const dir = path.dirname(CHAT_MEMORY_FILE);
+                if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+                let allGroups = {};
+                try {
+                    if (fs.existsSync(CHAT_MEMORY_FILE)) {
+                        const parsed = JSON.parse(fs.readFileSync(CHAT_MEMORY_FILE, 'utf8'));
+                        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) allGroups = parsed;
+                    }
+                } catch (readError) {
+                    console.warn('[Chatbot] Existing memory file could not be parsed; rebuilding it:', readError.message);
                 }
-            } catch (readError) {
-                console.warn('[Chatbot] Existing memory file could not be parsed; rebuilding it:', readError.message);
-            }
-            allGroups[memoryKey] = fresh;
-            const tempFile = CHAT_MEMORY_FILE + '.tmp';
-            fs.writeFileSync(tempFile, JSON.stringify(allGroups));
-            fs.renameSync(tempFile, CHAT_MEMORY_FILE);
+                allGroups[memoryKey] = fresh;
+                const tempFile = CHAT_MEMORY_FILE + '.tmp';
+                fs.writeFileSync(tempFile, JSON.stringify(allGroups));
+                fs.renameSync(tempFile, CHAT_MEMORY_FILE);
+            });
         }
     } catch (error) {
         console.warn('[Chatbot] Could not save persistent conversation memory:', error.message);
