@@ -197,6 +197,30 @@ export async function handleMathContinuity(sock, chatId, message, senderId) {
   if (!pendingGame) return false;
   armTimer(sock, chatId, pendingGame);
   const contextInfo = message.message?.extendedTextMessage?.contextInfo || message.message?.imageMessage?.contextInfo || {};
+  const body = String(message.message?.conversation || message.message?.extendedTextMessage?.text ||
+    message.message?.imageMessage?.caption || message.message?.videoMessage?.caption || '').trim();
+  if (/^(next|continue)$/i.test(body) && pendingGame.questionClosed && pendingGame.noParticipationExpiresAt) {
+    const resumed = await withChatLock(chatId, async () => {
+      const game = await readGame(chatId);
+      if (!game || !game.active || !game.questionClosed || !game.noParticipationExpiresAt) return false;
+      if (Date.now() >= game.noParticipationExpiresAt) {
+        await endMatch(sock, chatId, game, 'no-participation', message);
+        return true;
+      }
+      const access = await isGameAllowed(chatId, 'math');
+      if (!access.ok) {
+        await sock.sendMessage(chatId, { text: access.msg }, { quoted: message });
+        return true;
+      }
+      clearTimer(chatId);
+      delete game.noParticipationExpiresAt;
+      game.questionClosed = false;
+      await saveGame(chatId, game);
+      await postNextQuestion(sock, chatId, game);
+      return true;
+    });
+    return resumed;
+  }
   if (!contextInfo.stanzaId) return false;
   const result = await withChatLock(chatId, async () => {
     const game = await readGame(chatId);
