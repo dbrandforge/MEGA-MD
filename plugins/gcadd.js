@@ -1,17 +1,50 @@
-/*****************************************************************************
- *                                                                           *
- *                     Developed By Qasim Ali                                *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/GlobalTechInfo                         *
- *  ▶️  YouTube  : https://youtube.com/@GlobalTechInfo                       *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VagJIAr3bbVBCpEkAM07     *
- *                                                                           *
- *    © 2026 GlobalTechInfo. All rights reserved.                            *
- *                                                                           *
- *    Description: This file is part of the MEGA-MD Project.                 *
- *                 Unauthorized copying or distribution is prohibited.       *
- *                                                                           *
- *****************************************************************************/
+import { downloadMediaMessage, delay } from '@whiskeysockets/baileys';
+import store from '../lib/lightweight_store.js';
+import { parseVCardContacts } from '../lib/vcardContacts.js';
+
+const PENDING_VCF_KEY = 'pendingVcfContactImport';
+
+function quotedMessageFromContext(message) {
+    const context = message.message?.extendedTextMessage?.contextInfo;
+    if (!context?.quotedMessage) return null;
+    return {
+        key: { remoteJid: message.key.remoteJid, fromMe: false, id: context.stanzaId, participant: context.participant },
+        message: context.quotedMessage
+    };
+}
+
+function getVcfTarget(message) {
+    if (message.message?.documentMessage) return message;
+    const quoted = quotedMessageFromContext(message);
+    return quoted?.message?.documentMessage ? quoted : null;
+}
+
+async function processVcfImport(sock, chatId, pending) {
+    const metadata = await sock.groupMetadata(chatId);
+    const existing = new Set((metadata.participants || []).map(p => String(p.id || '').split('@')[0].split(':')[0]));
+    const targets = (pending.contacts || []).filter(contact => !existing.has(contact.number));
+    const alreadyPresent = (pending.contacts || []).length - targets.length;
+    const added = [], invited = [], privacyBlocked = [], failed = [];
+    for (let offset = 0; offset < targets.length; offset += 5) {
+        const batch = targets.slice(offset, offset + 5);
+        try {
+            const results = await sock.groupParticipantsUpdate(chatId, batch.map(item => item.jid), 'add');
+            for (let i = 0; i < batch.length; i++) {
+                const contact = batch[i];
+                const status = String(results?.[i]?.status || 'unknown');
+                if (status === '200') added.push(contact);
+                else if (status === '408') invited.push(contact);
+                else if (status === '403') privacyBlocked.push(contact);
+                else failed.push({ ...contact, status });
+            }
+        } catch (error) {
+            for (const contact of batch) failed.push({ ...contact, status: String(error?.message || 'request failed').slice(0, 80) });
+        }
+        if (offset + 5 < targets.length) await delay(1200);
+    }
+    return { total: pending.contacts.length, alreadyPresent, added, invited, privacyBlocked, failed };
+}
+
 export default {
     command: 'add',
     aliases: ['invite', 'gcadd', 'addgc'],
@@ -45,7 +78,7 @@ export default {
                 const result = await processVcfImport(sock, chatId, pending);
                 await store.saveSettingVerified(chatId, PENDING_VCF_KEY, null);
                 return sock.sendMessage(chatId, {
-                    text: `📇 *VCF IMPORT RESULTS*\\n\\nContacts in file: *${result.total}*\\nAlready in group: *${result.alreadyPresent}*\\nSuccessfully added: *${result.added.length}*\\nInvite required: *${result.invited.length}*\\nPrivacy blocked: *${result.privacyBlocked.length}*\\nFailed: *${result.failed.length}*\\n\\nWhatsApp privacy settings may require some contacts to accept an invite. No failed contact is reported as added.`,
+                    text: `📇 *VCF IMPORT RESULTS*\n\nContacts in file: *${result.total}*\nAlready in group: *${result.alreadyPresent}*\nSuccessfully added: *${result.added.length}*\nInvite required: *${result.invited.length}*\nPrivacy blocked: *${result.privacyBlocked.length}*\nFailed: *${result.failed.length}*\n\nWhatsApp privacy settings may require some contacts to accept an invite. No failed contact is reported as added.`,
                     mentions: result.added.map(item => item.jid),
                     ...channelInfo
                 }, { quoted: message });
@@ -58,7 +91,7 @@ export default {
 
         const vcfTarget = getVcfTarget(message);
         const vcfDocument = vcfTarget?.message?.documentMessage;
-        const isVcf = !!vcfDocument && (/\\.vcf$/i.test(vcfDocument.fileName || '') || /vcard/i.test(vcfDocument.mimetype || '') || action === 'vcf');
+        const isVcf = !!vcfDocument && (/\.vcf$/i.test(vcfDocument.fileName || '') || /vcard/i.test(vcfDocument.mimetype || '') || action === 'vcf');
         if (isVcf) {
             const size = Number(vcfDocument.fileLength || 0);
             if (size > 2 * 1024 * 1024) return sock.sendMessage(chatId, { text: 'VCF file exceeds the 2 MB import limit. Split the contact file and try again.', ...channelInfo }, { quoted: message });
@@ -69,7 +102,7 @@ export default {
                 const pending = { contacts, requestedBy: senderId, createdAt: Date.now(), processing: false };
                 if (!await store.saveSettingVerified(chatId, PENDING_VCF_KEY, pending)) throw new Error('Could not save the import preview.');
                 return sock.sendMessage(chatId, {
-                    text: `📇 *VCF CONTACT IMPORT PREVIEW*\\n\\nValid unique contacts: *${contacts.length}*\\nImport limit: *100 contacts per batch*\\n\\nThe bot will check existing members, then attempt additions in small batches. Contacts whose WhatsApp privacy settings prevent direct addition will be reported separately.\\n\\nConfirm with *.add confirm* or cancel with *.add cancel*. Preview expires after 10 minutes.`,
+                    text: `📇 *VCF CONTACT IMPORT PREVIEW*\n\nValid unique contacts: *${contacts.length}*\nImport limit: *100 contacts per batch*\n\nThe bot will check existing members, then attempt additions in small batches. Contacts whose WhatsApp privacy settings prevent direct addition will be reported separately.\n\nConfirm with *.add confirm* or cancel with *.add cancel*. Preview expires after 10 minutes.`,
                     ...channelInfo
                 }, { quoted: message });
             } catch (error) {
