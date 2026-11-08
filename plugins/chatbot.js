@@ -13,7 +13,7 @@ import { isExplicitlyAddressedInGroup } from '../lib/chatbotAccess.js';
 import { createKeyedSerialExecutor, getConversationMemoryKey } from '../lib/chatbotConversationMemory.js';
 import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI } from '../lib/aiService.js';
 import { evaluateArithmetic, formatArithmeticAnswer } from '../lib/arithmetic.js';
-import { isTimeSensitiveQuestion, searchLiveKnowledge, buildLiveKnowledgeContext, formatLiveKnowledgeSources, formatLiveKnowledgeEvidenceSummary } from '../lib/liveKnowledge.js';
+import { isTimeSensitiveQuestion, searchLiveKnowledge, buildLiveKnowledgeContext, formatLiveKnowledgeSources, formatLiveKnowledgeEvidenceSummary, resolveContextualBusinessFollowup } from '../lib/liveKnowledge.js';
 
 const CHATBOT_AI_ENABLED = process.env.CHATBOT_AI_ENABLED === 'true';
 
@@ -260,9 +260,10 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         let response = arithmeticReply || clockReply || identityReply || identityGreeting;
         if (!response) {
             // Current facts must be grounded in fresh search evidence, never a dated local answer bank.
-            if (CHATBOT_AI_ENABLED && isTimeSensitiveQuestion(chatbotQuery)) {
+            const contextualLiveQuery = resolveContextualBusinessFollowup(chatbotQuery, history.slice(0, -1));
+            if (CHATBOT_AI_ENABLED && (isTimeSensitiveQuestion(chatbotQuery) || contextualLiveQuery)) {
                 const liveStartedAt = Date.now();
-                const liveResult = await searchLiveKnowledge(chatbotQuery, { timeoutMs: 5000 });
+                const liveResult = await searchLiveKnowledge(contextualLiveQuery || chatbotQuery, { timeoutMs: 5000 });
                 if (!liveResult.ok) {
                     response = "I can't verify the latest information right now, so I don't want to guess. Please try again shortly.";
                     console.info(`[Chatbot Live] outcome=unavailable reason=${liveResult.reason} latency_ms=${Date.now() - liveStartedAt}`);
