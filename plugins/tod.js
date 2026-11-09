@@ -257,8 +257,6 @@ export default {
             }, { quoted: message });
         }
 
-        const firstArg = (args[0] || '').toLowerCase();
-
         if (firstArg === 'solo') {
             return startSolo(sock, chatId, senderId, gender);
         }
