@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const state = new Map();
+const { state } = vi.hoisted(() => ({ state: new Map() }));
 vi.mock('../../lib/lightweight_store.js', () => ({
   default: {
     getSetting: vi.fn(async (chatId, key) => state.get(`${chatId}:${key}`) || {}),
