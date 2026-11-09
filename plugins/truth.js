@@ -1,7 +1,7 @@
 import { getUserGender } from './gender.js';
 import { getTruths, randomFrom } from '../data/todLists.js';
 import { isGameAllowed } from './daylock.js';
-import { startSoloSession, setSoloQuestionMessage } from './truth-continue.js';
+import { startSoloSession, setSoloQuestionMessage, endSoloSession } from './truth-continue.js';
 
 export default {
     command: 'truth',
@@ -11,6 +11,18 @@ export default {
     usage: '.truth',
     async handler(sock, message, args, context) {
         const { chatId, senderId, channelInfo } = context;
+        const action = String(args?.[0] || '').toLowerCase();
+
+        // Session controls must remain available even when Truth/Dare is locked.
+        if (action === 'stop' || action === 'end' || action === 'cancel') {
+            const ended = await endSoloSession(chatId, senderId);
+            return sock.sendMessage(chatId, {
+                text: ended
+                    ? '🛑 Your Truth session has ended. Use *.truth* when you want to start again.'
+                    : 'You do not have an active solo Truth session to end.',
+                ...channelInfo
+            }, { quoted: message });
+        }
 
         const manualAllowed = await isGameAllowed(chatId, 'truth');
         if (!manualAllowed.ok) return sock.sendMessage(chatId, { text: manualAllowed.msg, ...channelInfo }, { quoted: message });
