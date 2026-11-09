@@ -94,12 +94,23 @@ export default {
     aliases: ['devil', 'db', 'devilsbasket'],
     category: 'games',
     description: "Devil's Basket — gender-aware random dare",
-    usage: '.basket [number] | list | reset',
+    usage: '.basket [number] | list | reset | stop',
     groupOnly: true,
     async handler(sock, message, args, context) {
         const { chatId, senderId, channelInfo, isSenderAdmin, senderIsOwnerOrSudo, isOwnerOrSudoCheck } = context;
         try {
             const input = (args[0] || '').toLowerCase();
+            if (['stop', 'end', 'cancel'].includes(input)) {
+                const sessions = (await store.getSetting(chatId, SESSION_KEY)) || {};
+                if (!sessions[senderId]) {
+                    return sock.sendMessage(chatId, { text: "You don't have an active Devil's Basket run to end.", ...channelInfo }, { quoted: message });
+                }
+                delete sessions[senderId];
+                if (!await store.saveSettingVerified(chatId, SESSION_KEY, sessions)) {
+                    throw new Error('Basket session state could not be persisted.');
+                }
+                return sock.sendMessage(chatId, { text: "🛑 Your Devil's Basket run has ended.", ...channelInfo }, { quoted: message });
+            }
             let canAdmin = !!(isSenderAdmin || senderIsOwnerOrSudo || isOwnerOrSudoCheck ||
                 message.key.fromMe || numMatch(senderId, config.ownerNumber));
             if (!canAdmin && (input === 'list' || input === 'used' || input === 'reset' || input === 'clear')) {

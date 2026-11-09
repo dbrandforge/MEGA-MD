@@ -20,6 +20,7 @@ import store from '../lib/lightweight_store.js';
 import { getTruths, getDares, randomFrom } from '../data/todLists.js';
 import { getUserGender } from './gender.js';
 import isAdmin from '../lib/isAdmin.js';
+import { isGameAllowed } from './daylock.js';
 
 const TRUTH_MARKER = '🔥 *TRUTH*';
 const DARE_MARKER = '🔥 *DARE*';
@@ -155,6 +156,19 @@ export async function handleTruthDareContinue(sock, chatId, message, userMessage
         const repliedToCurrentPrompt = !!(stanzaId && session.questionMessageId && stanzaId === session.questionMessageId);
         const mentioned = isBotMentioned(sock, message, userMessage);
         if (!repliedToCurrentPrompt && !mentioned) return false;
+
+        // Manual and scheduled locks must stop new rounds, but never prevent
+        // the player from using the stop/end controls handled above.
+        const gameAccess = await isGameAllowed(chatId, session.type);
+        if (!gameAccess.ok) {
+            await sock.sendMessage(chatId, { text: gameAccess.msg }, { quoted: message });
+            return true;
+        }
+        const todAccess = await isGameAllowed(chatId, 'tod');
+        if (!todAccess.ok) {
+            await sock.sendMessage(chatId, { text: todAccess.msg }, { quoted: message });
+            return true;
+        }
 
         await sendNext(sock, chatId, senderId, session, sessions);
         return true;

@@ -89,6 +89,17 @@ describe('General-purpose relevance guard', () => {
     )).toBe(true);
   });
 
+  it('accepts a substantive semantic answer that does not repeat the question keywords', () => {
+    expect(isUsefulAutomaticAnswer(
+      'What is the botanical name of rice?',
+      'Rice is scientifically known as Oryza sativa. It is a domesticated cereal grass cultivated worldwide, with several varieties used in food production. The plant belongs to the grass family Poaceae and is one of the most important staple crops for human nutrition.'
+    )).toBe(true);
+    expect(isUsefulAutomaticAnswer(
+      'How do I prepare Nigerian smoky jollof rice?',
+      'Start by blending tomatoes, red bell peppers, Scotch bonnet and onion. Fry the mixture in seasoned oil, add stock and washed long-grain rice, then cook covered until tender. Allow the bottom layer to toast gently near the end to develop the characteristic smoky aroma without burning the rice.'
+    )).toBe(true);
+  });
+
   it('continues to accept concise answers to single-subject questions', () => {
     expect(isUsefulAutomaticAnswer(
       'What is photosynthesis?',
