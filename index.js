@@ -28,6 +28,7 @@ import { startSchedulerEngine, trackGroup } from './plugins/schedule.js';
 import { FEATURE_GROUPS } from './lib/featureGroups.js';
 
 import { installSignalDiagnosticGuard } from './lib/signalDiagnostics.js';
+import { parseGroupSenderKeyRecoveryTargets, resetGroupSenderKeyMemoryBeforeSend } from './lib/groupSenderKeyRecovery.js';
 
 // Keep libsignal diagnostics useful without allowing serialized ratchets or key material into logs.
 installSignalDiagnosticGuard();
@@ -373,6 +374,8 @@ async function startQasimDev() {
             backupSessionToMongo().catch(() => { });
         };
         const msgRetryCounterCache = new NodeCache();
+        const signalKeyStore = makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" }));
+        const groupSenderKeyRecoveryTargets = parseGroupSenderKeyRecoveryTargets(process.env.GROUP_SENDER_KEY_REKEY_GROUPS || '');
         const ghostMode = await store.getSetting('global', 'stealthMode');
         const isGhostActive = ghostMode && ghostMode.enabled;
         const QasimDev = makeWASocket({
@@ -381,7 +384,7 @@ async function startQasimDev() {
             browser: Browsers.macOS('Chrome'),
             auth: {
                 creds: state.creds,
-                keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" })),
+                keys: signalKeyStore,
             },
             markOnlineOnConnect: !isGhostActive,
             generateHighQualityLinkPreview: true,
@@ -389,7 +392,8 @@ async function startQasimDev() {
             getMessage: async (key) => {
                 const jid = jidNormalizedUser(key.remoteJid);
                 const msg = await store.loadMessage(jid, key.id);
-                return msg?.message || "";
+                // Baileys expects undefined when the original message is not in the store.
+                return msg?.message;
             },
             msgRetryCounterCache,
             defaultQueryTimeoutMs: 60000,
@@ -397,6 +401,20 @@ async function startQasimDev() {
             keepAliveIntervalMs: 10000,
         });
         activeSocket = QasimDev;
+        // Opt-in workaround for stale group Sender Key distribution memory.
+        // Scope it with GROUP_SENDER_KEY_REKEY_GROUPS (comma-separated group JIDs);
+        // unset by default so normal group traffic is unchanged.
+        if (groupSenderKeyRecoveryTargets.size) {
+            const originalSendMessage = QasimDev.sendMessage.bind(QasimDev);
+            QasimDev.sendMessage = async (jid, ...args) => {
+                const reset = await resetGroupSenderKeyMemoryBeforeSend(jid, signalKeyStore, groupSenderKeyRecoveryTargets);
+                if (reset) {
+                    printLog('warning', `[SenderKeyRecovery] refreshed distribution state for configured group ${jid}`);
+                }
+                return originalSendMessage(jid, ...args);
+            };
+            printLog('warning', `[SenderKeyRecovery] enabled for ${groupSenderKeyRecoveryTargets.size} explicitly configured group(s)`);
+        }
         QasimDev.store = store;
         const originalSendPresenceUpdate = QasimDev.sendPresenceUpdate;
         const originalReadMessages = QasimDev.readMessages;
