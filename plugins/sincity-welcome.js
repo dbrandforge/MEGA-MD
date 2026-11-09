@@ -36,7 +36,7 @@ function scheduleGroupIntroReminder(sock, chatId) {
             if (!entries.length) return;
             const mentions = entries.map(([jid]) => jid);
             const mentionText = mentions.map(jid => `@${jid.split('@')[0]}`).join(', ');
-            const reminder = introReminder.replace(/@?\\{user\\}/g, mentionText);
+            const reminder = introReminder.replace(/@?\{user\}/g, mentionText);
             await sock.sendMessage(chatId, { text: reminder, mentions });
             for (const [jid] of entries) {
                 if (pending[jid]) pending[jid].reminded = true;
@@ -115,7 +115,7 @@ export async function handleNewMember(sock, chatId, participants) {
         const mentionText = newMembers.map(id => `@${id.split('@')[0]}`).join(', ');
         const welcomeText = welcomeMessage
             .replace(/@user/g, mentionText)
-            .replace(/\\{user\\}/g, mentionText);
+            .replace(/\{user\}/g, mentionText);
 
         // One shared welcome pack for the whole join event, not one pack per member.
         await sock.sendMessage(chatId, { text: welcomeText, mentions: newMembers });
@@ -126,7 +126,7 @@ export async function handleNewMember(sock, chatId, participants) {
         try {
             const activity = dailyActivities[getLagosDay()];
             if (activity?.full) {
-                await sock.sendMessage(chatId, { text: `📅 *Today's activity*\\n\\n${activity.full}` });
+                await sock.sendMessage(chatId, { text: `📅 *Today's activity*\n\n${activity.full}` });
             }
         } catch (error) {
             console.error('Activity send error:', error.message);
