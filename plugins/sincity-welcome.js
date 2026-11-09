@@ -170,8 +170,24 @@ async function handleMemberDeparture(sock, chatId, update) {
     }
 }
 
-export async function markMemberIntroduced(chatId, userId) {
-    if (!await hasMaturedMindedFeatures(chatId) || !userId) return false;
+export function looksLikeMemberIntroduction(messageText) {
+    const text = String(messageText || '').trim();
+    if (text.length < 25) return false;
+
+    const hasName = /\\b(my name is|name is|name\\s*[:=-]|i am|i'm)\\b/i.test(text);
+    const profileSignals = [
+        /\\b(location|based in|from|live in|reside in)\\b/i,
+        /\\b(single|married|dating|engaged|relationship status)\\b/i,
+        /\\b(looking for|here for|seeking)\\b/i,
+        /\\b(work as|i work|occupation|profession|business owner|student)\\b/i,
+        /\\b(\\d{2}\\s*(years? old|yrs? old)|age\\s*[:=-])\\b/i
+    ];
+    const detailCount = profileSignals.filter(pattern => pattern.test(text)).length;
+    return (hasName && detailCount >= 1) || (text.length >= 45 && detailCount >= 2);
+}
+
+export async function markMemberIntroduced(chatId, userId, messageText = '') {
+    if (!await hasMaturedMindedFeatures(chatId) || !userId || !looksLikeMemberIntroduction(messageText)) return false;
     const pending = await getPendingIntros(chatId);
     if (!pending[userId]) return false;
     delete pending[userId];
