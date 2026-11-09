@@ -51,6 +51,16 @@ describe('gameplay-aware AI protection', () => {
         expect(hasActiveGameplayState({}, now)).toBe(false);
     });
 
+    it('recognizes the legacy solo Truth/Dare session store', () => {
+        const now = Date.now();
+        expect(hasActiveGameplayState({
+            soloTod: { '2348000000000@s.whatsapp.net': { type: 'truth', startedAt: now - 1000, lastActivity: now } }
+        }, now)).toBe(true);
+        expect(hasActiveGameplayState({
+            soloTod: { '2348000000000@s.whatsapp.net': { type: 'truth', startedAt: now - 3 * 60 * 60 * 1000 } }
+        }, now)).toBe(false);
+    });
+
     it('checks persisted group game state only for group chats', async () => {
         vi.mocked(store.getSetting).mockImplementation(async (_chatId, key) =>
             key === 'mathGame' ? { active: true, matchExpiresAt: Date.now() + 60_000 } : null
