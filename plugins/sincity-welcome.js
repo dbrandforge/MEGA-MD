@@ -9,6 +9,7 @@ const PENDING_INTRO_KEY = 'pendingIntros_v2';
 const DEPARTURE_INDEX_KEY = 'groupDepartureMessageIndexes';
 const MEMBER_HISTORY_KEY = 'groupMemberHistory';
 const RETURN_INDEX_KEY = 'groupReturnMessageIndexes';
+const introReminderTimers = new Map();
 
 function getLagosDay() {
     const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -23,91 +24,120 @@ async function savePendingIntros(chatId, data) {
     await store.saveSetting(chatId, PENDING_INTRO_KEY, data);
 }
 
+function scheduleGroupIntroReminder(sock, chatId) {
+    if (introReminderTimers.has(chatId)) return;
+    const timer = setTimeout(async () => {
+        introReminderTimers.delete(chatId);
+        try {
+            const pending = await getPendingIntros(chatId);
+            const entries = Object.entries(pending).filter(([, record]) =>
+                record && record.introduced !== true && record.status !== 'inactive' && !record.reminded
+            );
+            if (!entries.length) return;
+            const mentions = entries.map(([jid]) => jid);
+            const mentionText = mentions.map(jid => `@${jid.split('@')[0]}`).join(', ');
+            const reminder = introReminder.replace(/@?\\{user\\}/g, mentionText);
+            await sock.sendMessage(chatId, { text: reminder, mentions });
+            for (const [jid] of entries) {
+                if (pending[jid]) pending[jid].reminded = true;
+            }
+            await savePendingIntros(chatId, pending);
+        } catch (error) {
+            console.error('Group intro reminder error:', error.message);
+        }
+    }, 10 * 60 * 1000);
+    introReminderTimers.set(chatId, timer);
+}
+
 export async function handleNewMember(sock, chatId, participants) {
     if (!await hasMaturedMindedFeatures(chatId)) return;
 
     try {
-        for (const user of participants) {
-            const userId = typeof user === 'string' ? user : (user.id || user);
-            if (!userId) continue;
+        const participantIds = [...new Set((participants || [])
+            .map(user => typeof user === 'string' ? user : (user?.id || user?.phoneNumber || user?.lid))
+            .filter(Boolean))];
+        if (!participantIds.length) return;
 
-            const history = (await store.getSetting(chatId, MEMBER_HISTORY_KEY)) || {};
+        const history = (await store.getSetting(chatId, MEMBER_HISTORY_KEY)) || {};
+        const pending = await getPendingIntros(chatId);
+        const returnIndexes = (await store.getSetting(chatId, RETURN_INDEX_KEY)) || {};
+        const newMembers = [];
+        const returningGroups = { left: [], removed: [], unknown: [] };
+        const now = Date.now();
+
+        for (const userId of participantIds) {
             const prior = history[userId] || history[userId.split('@')[0]];
             const returningType = prior?.everJoined
                 ? (prior.lastDeparture === 'removed' || prior.lastDeparture === 'left' ? prior.lastDeparture : 'unknown')
                 : null;
-            const mention = `@${userId.split('@')[0]}`;
-
-            // Register immediately on the join event, before sending welcome messages.
-            // This prevents a fast first message from arriving before the pending record exists.
-            const pending = await getPendingIntros(chatId);
-            pending[userId] = { joinedAt: Date.now(), reminded: false, introduced: false };
-            await savePendingIntros(chatId, pending);
 
             if (returningType) {
-                const bank = returningType === 'removed'
-                    ? memberRemovedReturnMessages
-                    : returningType === 'left'
-                        ? memberLeftReturnMessages
-                        : ['Welcome back. 👋'];
-                const indexes = (await store.getSetting(chatId, RETURN_INDEX_KEY)) || {};
-                const selected = pickRotatingMessage(bank, indexes[returningType] ?? -1);
-                indexes[returningType] = selected.index;
-                await store.saveSetting(chatId, RETURN_INDEX_KEY, indexes);
-                await sock.sendMessage(chatId, { text: selected.text.replaceAll('{name}', mention), mentions: [userId] });
-                history[userId] = { ...prior, everJoined: true, status: 'active', lastJoinedAt: Date.now() };
-                await store.saveSetting(chatId, MEMBER_HISTORY_KEY, history);
-                // Returning members are not new and never re-enter pending introductions.
+                returningGroups[returningType].push(userId);
+                history[userId] = { ...prior, everJoined: true, status: 'active', lastJoinedAt: now };
+                delete pending[userId];
                 continue;
             }
 
-            const welcomeText = welcomeMessage
-                .replace(/@user/g, mention)
-                .replace(/\{user\}/g, mention);
-
-            await sock.sendMessage(chatId, { text: welcomeText, mentions: [userId] });
-            await new Promise(r => setTimeout(r, 1000));
-            await sock.sendMessage(chatId, { text: groupRules });
-            await new Promise(r => setTimeout(r, 1000));
-
-            try {
-                const day = getLagosDay();
-                const activity = dailyActivities[day];
-                if (activity?.full) {
-                    await sock.sendMessage(chatId, { text: `📅 *Today's activity*\n\n${activity.full}` });
-                }
-            } catch (e) {
-                console.error('Activity send error:', e.message);
-            }
-
-            await logWelcome(chatId, userId).catch(() => {});
-
-            history[userId] = { everJoined: true, status: 'active', firstJoinedAt: Date.now(), lastJoinedAt: Date.now() };
-            await store.saveSetting(chatId, MEMBER_HISTORY_KEY, history);
-
-            setTimeout(async () => {
-                try {
-                    const current = await getPendingIntros(chatId);
-                    if (current[userId] && !current[userId].reminded) {
-                        const reminder = introReminder
-                            .replace(/\{user\}/g, userId.split('@')[0])
-                            .replace(/@\{user\}/g, mention);
-                        await sock.sendMessage(chatId, { text: reminder, mentions: [userId] });
-                        current[userId].reminded = true;
-                        await savePendingIntros(chatId, current);
-                    }
-                } catch (e) {
-                    console.error('Intro reminder error:', e.message);
-                }
-            }, 10 * 60 * 1000);
-
-            await new Promise(r => setTimeout(r, 1500));
+            newMembers.push(userId);
+            pending[userId] = { joinedAt: now, reminded: false, introduced: false };
+            history[userId] = {
+                everJoined: true,
+                status: 'active',
+                firstJoinedAt: prior?.firstJoinedAt || now,
+                lastJoinedAt: now
+            };
         }
+
+        // Save the entire join batch before sending messages to avoid intro races.
+        await savePendingIntros(chatId, pending);
+        await store.saveSetting(chatId, MEMBER_HISTORY_KEY, history);
+
+        for (const type of ['removed', 'left', 'unknown']) {
+            const ids = returningGroups[type];
+            if (!ids.length) continue;
+            const bank = type === 'removed' ? memberRemovedReturnMessages
+                : type === 'left' ? memberLeftReturnMessages
+                    : ['Welcome back. 👋'];
+            const selected = pickRotatingMessage(bank, returnIndexes[type] ?? -1);
+            returnIndexes[type] = selected.index;
+            const mentionText = ids.map(id => `@${id.split('@')[0]}`).join(', ');
+            await sock.sendMessage(chatId, {
+                text: selected.text.replaceAll('{name}', mentionText),
+                mentions: ids
+            });
+        }
+        if (Object.values(returningGroups).some(ids => ids.length)) {
+            await store.saveSetting(chatId, RETURN_INDEX_KEY, returnIndexes);
+        }
+
+        if (!newMembers.length) return;
+
+        const mentionText = newMembers.map(id => `@${id.split('@')[0]}`).join(', ');
+        const welcomeText = welcomeMessage
+            .replace(/@user/g, mentionText)
+            .replace(/\\{user\\}/g, mentionText);
+
+        // One shared welcome pack for the whole join event, not one pack per member.
+        await sock.sendMessage(chatId, { text: welcomeText, mentions: newMembers });
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await sock.sendMessage(chatId, { text: groupRules });
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        try {
+            const activity = dailyActivities[getLagosDay()];
+            if (activity?.full) {
+                await sock.sendMessage(chatId, { text: `📅 *Today's activity*\\n\\n${activity.full}` });
+            }
+        } catch (error) {
+            console.error('Activity send error:', error.message);
+        }
+
+        await Promise.all(newMembers.map(userId => logWelcome(chatId, userId).catch(() => {})));
+        scheduleGroupIntroReminder(sock, chatId);
     } catch (error) {
         console.error('Welcome system error:', error);
     }
 }
-
 
 async function handleMemberDeparture(sock, chatId, update) {
     if (!await hasMaturedMindedFeatures(chatId)) return;
