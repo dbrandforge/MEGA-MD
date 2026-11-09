@@ -210,6 +210,28 @@ export default {
     groupOnly: true,
     async handler(sock, message, args, context) {
         const { chatId, senderId, channelInfo } = context;
+        const firstArg = String(args?.[0] || '').toLowerCase();
+        if (['stop', 'end', 'cancel'].includes(firstArg)) {
+            const sessions = await getSessions(chatId);
+            const active = Object.values(sessions).filter(session =>
+                session.status === 'active' && session.players?.includes(senderId)
+            );
+            if (!active.length) {
+                return sock.sendMessage(chatId, { text: 'You do not have an active Truth or Dare session to end.', ...channelInfo }, { quoted: message });
+            }
+            for (const session of active) {
+                session.status = 'ended';
+                session.endedAt = Date.now();
+                session.endedBy = senderId;
+                sessions[session.id] = session;
+            }
+            await saveSessions(chatId, sessions);
+            return sock.sendMessage(chatId, {
+                text: '🛑 Your Truth or Dare session has ended.',
+                mentions: active.flatMap(session => session.players || []),
+                ...channelInfo
+            }, { quoted: message });
+        }
 
         const allowed = await isGameAllowed(chatId, 'tod');
         if (!allowed.ok) {
