@@ -18,7 +18,7 @@ import pino from 'pino';
 import config from './config.js';
 import store from './lib/lightweight_store.js';
 import SaveCreds from './lib/session.js';
-import { restoreSessionFromMongo, backupSessionToMongo, isMongoBackupEnabled, clearMongoSessionBackup, claimSessionBackupLeadership } from './lib/sessionBackup.js';
+import { restoreSessionFromMongo, backupSessionToMongo, isMongoBackupEnabled, clearMongoSessionBackup, claimSessionBackupLeadership, getAuthStateInventory } from './lib/sessionBackup.js';
 import { server, PORT } from './lib/server.js';
 import { printLog } from './lib/print.js';
 import { writeErrorLog } from './lib/logger.js';
@@ -364,6 +364,12 @@ async function startQasimDev() {
         ensureSessionDirectory();
         await delay(1000);
         const { state, saveCreds } = await useMultiFileAuthState(`./session`);
+        try {
+            const inventory = getAuthStateInventory();
+            printLog('info', `[AuthState Inventory] total=${inventory.total} creds=${inventory.credentials} sessions=${inventory.sessions} senderKeys=${inventory.senderKeys} preKeys=${inventory.preKeys} appStateKeys=${inventory.appStateKeys} other=${inventory.other}`);
+        } catch {
+            printLog('warning', '[AuthState Inventory] unavailable; no auth contents were inspected or logged');
+        }
         startSessionBackupWatcher();
         const _saveCreds = async () => {
             ensureSessionDirectory();
@@ -401,18 +407,33 @@ async function startQasimDev() {
             keepAliveIntervalMs: 10000,
         });
         activeSocket = QasimDev;
-        // Opt-in workaround for stale group Sender Key distribution memory.
-        // Scope it with GROUP_SENDER_KEY_REKEY_GROUPS (comma-separated group JIDs);
-        // unset by default so normal group traffic is unchanged.
-        if (groupSenderKeyRecoveryTargets.size) {
-            const originalSendMessage = QasimDev.sendMessage.bind(QasimDev);
-            QasimDev.sendMessage = async (jid, ...args) => {
+        // Trace outbound message acceptance without logging message bodies or raw chat identifiers.
+        // The map correlates Baileys message IDs with later server/delivery status updates.
+        const outboundTrace = new Map();
+        const originalSendMessage = QasimDev.sendMessage.bind(QasimDev);
+        QasimDev.sendMessage = async (jid, ...args) => {
+            const destinationType = typeof jid === 'string' && jid.endsWith('@g.us') ? 'group' : 'dm';
+            try {
                 const reset = await resetGroupSenderKeyMemoryBeforeSend(jid, signalKeyStore, groupSenderKeyRecoveryTargets);
                 if (reset) {
-                    printLog('warning', `[SenderKeyRecovery] refreshed distribution state for configured group ${jid}`);
+                    printLog('warning', '[SenderKeyRecovery] refreshed distribution state type=group');
                 }
-                return originalSendMessage(jid, ...args);
-            };
+                const result = await originalSendMessage(jid, ...args);
+                const messageId = result?.key?.id;
+                if (messageId) {
+                    outboundTrace.set(messageId, { destinationType });
+                    if (outboundTrace.size > 500) outboundTrace.delete(outboundTrace.keys().next().value);
+                    printLog('info', `[Outbound Trace] accepted type=${destinationType} id=${String(messageId).slice(0, 16)}`);
+                } else {
+                    printLog('warning', `[Outbound Trace] send returned without message id type=${destinationType}`);
+                }
+                return result;
+            } catch (error) {
+                printLog('warning', `[Outbound Trace] send failed type=${destinationType} error=${error?.name || 'Error'}`);
+                throw error;
+            }
+        };
+        if (groupSenderKeyRecoveryTargets.size) {
             printLog('warning', `[SenderKeyRecovery] enabled for ${groupSenderKeyRecoveryTargets.size} explicitly configured group(s)`);
         }
         QasimDev.store = store;
@@ -482,15 +503,18 @@ async function startQasimDev() {
         QasimDev.ev.on('messages.update', (updates = []) => {
             for (const item of updates) {
                 if (!item?.key?.fromMe) continue;
+                const messageId = String(item.key.id || 'unknown');
+                const trace = outboundTrace.get(messageId);
+                const context = trace ? ` type=${trace.destinationType}` : '';
                 const status = item?.update?.status;
                 if (status !== undefined) {
-                    printLog('info', `[Outbound ACK] status=${status} id=${String(item.key.id || 'unknown').slice(0, 12)}`);
+                    printLog('info', `[Outbound ACK] status=${status}${context} id=${messageId.slice(0, 16)}`);
                 }
                 const stubParameters = Array.isArray(item?.update?.messageStubParameters)
-                    ? item.update.messageStubParameters.map(value => String(value).slice(0, 120)).join('|')
-                    : '';
+                    ? item.update.messageStubParameters.length
+                    : 0;
                 if (item?.update?.messageStubType !== undefined || stubParameters) {
-                    printLog('warning', `[Outbound ACK] stubType=${item.update.messageStubType ?? 'none'} stubParameters=${stubParameters || 'none'} id=${String(item.key.id || 'unknown').slice(0, 12)}`);
+                    printLog('warning', `[Outbound ACK] stubType=${item.update.messageStubType ?? 'none'} stubParameterCount=${stubParameters}${context} id=${messageId.slice(0, 16)}`);
                 }
             }
         });

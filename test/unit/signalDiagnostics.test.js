@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { isSensitiveSignalDiagnostic, installSignalDiagnosticGuard } from '../../lib/signalDiagnostics.js';
+import { isSensitiveSignalDiagnostic, installSignalDiagnosticGuard, classifySignalDiagnostic } from '../../lib/signalDiagnostics.js';
 
 describe('Signal diagnostic log protection', () => {
     it('suppresses known decryption diagnostics', () => {
@@ -16,6 +16,15 @@ describe('Signal diagnostic log protection', () => {
     it('suppresses nested objects containing cryptographic key fields', () => {
         expect(isSensitiveSignalDiagnostic([{ error: { baseKey: 'must-not-log' } }])).toBe(true);
         expect(isSensitiveSignalDiagnostic([{ record: { remoteIdentityKey: 'must-not-log' } }])).toBe(true);
+    });
+
+
+    it('classifies common Signal failures without returning raw error text', () => {
+        expect(classifySignalDiagnostic(['Bad MAC while decrypting'])).toBe('bad_mac');
+        expect(classifySignalDiagnostic([new Error('Closing stale open session for outgoing prekey bundle')])).toBe('closed_session');
+        expect(classifySignalDiagnostic(['No session found for recipient'])).toBe('no_session');
+        expect(classifySignalDiagnostic(['Invalid PreKey ID'])).toBe('prekey_failure');
+        expect(classifySignalDiagnostic(['Failed to decrypt message with any known session'])).toBe('decrypt_failed');
     });
 
     it('allows ordinary application logs', () => {
