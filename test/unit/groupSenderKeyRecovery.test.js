@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { parseGroupSenderKeyRecoveryTargets, resetGroupSenderKeyMemoryBeforeSend } from '../lib/groupSenderKeyRecovery.js';
+import { parseGroupSenderKeyRecoveryTargets, resetGroupSenderKeyMemoryBeforeSend } from '../../lib/groupSenderKeyRecovery.js';
 
 describe('group Sender Key recovery', () => {
     it('accepts only explicit group JIDs from the configured list', () => {
