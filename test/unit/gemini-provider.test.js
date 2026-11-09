@@ -70,6 +70,17 @@ describe('Forge Guard Gemini provider', () => {
         expect(prompt).not.toContain('conversational WhatsApp personality');
     });
 
+    it('retries one transient Gemini server failure before returning a valid answer', async () => {
+        const unavailable = new Error('temporarily unavailable');
+        unavailable.response = { status: 503 };
+        axios.post
+            .mockRejectedValueOnce(unavailable)
+            .mockResolvedValueOnce(geminiResponse('Davido is a Nigerian singer and songwriter.'));
+
+        await expect(askFastAI('Who is Davido?')).resolves.toContain('Davido');
+        expect(axios.post).toHaveBeenCalledTimes(2);
+    });
+
     it('surfaces a clear provider error code instead of silently returning banter', async () => {
         const error = new Error('rate limited');
         error.response = { status: 429 };
