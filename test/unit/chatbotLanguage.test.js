@@ -9,6 +9,8 @@ describe('Forge Guard language matching', () => {
     ['My girlfriend no wan cook, she say make I drink garri', 'pidgin'],
     ['Abeg explain this matter, wetin e mean?', 'pidgin'],
     ['Omo', 'pidgin'],
+    ['Ebi n pa mi', 'pidgin'],
+    ['I dey hungry', 'pidgin'],
     ['Ẹ jọ̀ọ́, kí ni ìwà ọ̀daràn?', 'yoruba'],
     ['Mo fẹ́ mọ̀ nípa ilé-ẹ̀kọ́ náà', 'yoruba'],
     ['Báwo ni? Ṣé o wà dáadáa?', 'yoruba'],
