@@ -35,12 +35,6 @@ describe('Signal diagnostic log protection', () => {
             table: (...args) => output.push(args),
             trace: (...args) => output.push(args),
             assert: (...args) => output.push(args),
-            info: (...args) => output.push(args),
-            debug: (...args) => output.push(args),
-            dir: (...args) => output.push(args),
-            table: (...args) => output.push(args),
-            trace: (...args) => output.push(args),
-            assert: (...args) => output.push(args),
         };
         const restore = installSignalDiagnosticGuard(fakeConsole);
         fakeConsole.error({ baseKey: 'secret', message: 'Bad MAC' });
