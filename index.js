@@ -1,7 +1,6 @@
 import 'dotenv/config';
 
 import fs, { existsSync, mkdirSync, rmSync } from 'fs';
-import { createHash } from 'crypto';
 import path, { dirname } from 'path';
 import chalk from 'chalk';
 import syntaxerror from 'syntax-error';
@@ -411,28 +410,26 @@ async function startQasimDev() {
         // Trace outbound message acceptance without logging message bodies or raw chat identifiers.
         // The map correlates Baileys message IDs with later server/delivery status updates.
         const outboundTrace = new Map();
-        const destinationFingerprint = jid => createHash('sha256').update(String(jid || 'unknown')).digest('hex').slice(0, 10);
         const originalSendMessage = QasimDev.sendMessage.bind(QasimDev);
         QasimDev.sendMessage = async (jid, ...args) => {
             const destinationType = typeof jid === 'string' && jid.endsWith('@g.us') ? 'group' : 'dm';
-            const destination = destinationFingerprint(jid);
             try {
                 const reset = await resetGroupSenderKeyMemoryBeforeSend(jid, signalKeyStore, groupSenderKeyRecoveryTargets);
                 if (reset) {
-                    printLog('warning', `[SenderKeyRecovery] refreshed distribution state type=group destination=${destination}`);
+                    printLog('warning', '[SenderKeyRecovery] refreshed distribution state type=group');
                 }
                 const result = await originalSendMessage(jid, ...args);
                 const messageId = result?.key?.id;
                 if (messageId) {
-                    outboundTrace.set(messageId, { destinationType, destination });
+                    outboundTrace.set(messageId, { destinationType });
                     if (outboundTrace.size > 500) outboundTrace.delete(outboundTrace.keys().next().value);
-                    printLog('info', `[Outbound Trace] accepted type=${destinationType} destination=${destination} id=${String(messageId).slice(0, 16)}`);
+                    printLog('info', `[Outbound Trace] accepted type=${destinationType} id=${String(messageId).slice(0, 16)}`);
                 } else {
-                    printLog('warning', `[Outbound Trace] send returned without message id type=${destinationType} destination=${destination}`);
+                    printLog('warning', `[Outbound Trace] send returned without message id type=${destinationType}`);
                 }
                 return result;
             } catch (error) {
-                printLog('warning', `[Outbound Trace] send failed type=${destinationType} destination=${destination} error=${error?.name || 'Error'}`);
+                printLog('warning', `[Outbound Trace] send failed type=${destinationType} error=${error?.name || 'Error'}`);
                 throw error;
             }
         };
@@ -508,7 +505,7 @@ async function startQasimDev() {
                 if (!item?.key?.fromMe) continue;
                 const messageId = String(item.key.id || 'unknown');
                 const trace = outboundTrace.get(messageId);
-                const context = trace ? ` type=${trace.destinationType} destination=${trace.destination}` : '';
+                const context = trace ? ` type=${trace.destinationType}` : '';
                 const status = item?.update?.status;
                 if (status !== undefined) {
                     printLog('info', `[Outbound ACK] status=${status}${context} id=${messageId.slice(0, 16)}`);
