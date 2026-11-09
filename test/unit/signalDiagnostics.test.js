@@ -7,7 +7,7 @@ describe('Signal diagnostic log protection', () => {
         expect(isSensitiveSignalDiagnostic(['Bad MAC'])).toBe(true);
     });
 
-    it('suppresses nested objects containing cryptographic key fields', () => {
+    it('suppresses plain-text fragments containing cryptographic key names', () => {\n        expect(isSensitiveSignalDiagnostic(['baseKey: <Buffer redacted>'])).toBe(true);\n        expect(isSensitiveSignalDiagnostic(['    remoteIdentityKey: <Buffer redacted>'])).toBe(true);\n        expect(isSensitiveSignalDiagnostic(['      privKey: <Buffer redacted>'])).toBe(true);\n    });\n\n    it('suppresses nested objects containing cryptographic key fields', () => {
         expect(isSensitiveSignalDiagnostic([{ error: { baseKey: 'must-not-log' } }])).toBe(true);
         expect(isSensitiveSignalDiagnostic([{ record: { remoteIdentityKey: 'must-not-log' } }])).toBe(true);
     });
@@ -22,7 +22,7 @@ describe('Signal diagnostic log protection', () => {
         const fakeConsole = {
             log: (...args) => output.push(args),
             warn: (...args) => output.push(args),
-            error: (...args) => output.push(args),
+            error: (...args) => output.push(args),\n            info: (...args) => output.push(args),\n            debug: (...args) => output.push(args),\n            dir: (...args) => output.push(args),\n            table: (...args) => output.push(args),\n            trace: (...args) => output.push(args),\n            assert: (...args) => output.push(args),
         };
         const restore = installSignalDiagnosticGuard(fakeConsole);
         fakeConsole.error({ baseKey: 'secret', message: 'Bad MAC' });
