@@ -51,6 +51,9 @@ describe('Forge Guard group chatbot follow-up access', () => {
     expect(hasContextualFollowupIntent('guy how far')).toBe(false);
     expect(hasContextualFollowupIntent('My guy how far')).toBe(false);
     expect(hasContextualFollowupIntent("what's popping")).toBe(false);
+    expect(hasContextualFollowupIntent('wetin you mean')).toBe(true);
+    expect(hasContextualFollowupIntent('explain am')).toBe(true);
+    expect(hasContextualFollowupIntent('ṣàlàyé')).toBe(true);
     expect(hasActiveGroupFollowup(recentHistory, now, 10 * 60_000, 'What is marketing?')).toBe(false);
     expect(hasActiveGroupFollowup(recentHistory, now, 10 * 60_000, 'What is photosynthesis?')).toBe(false);
   });
