@@ -5,6 +5,7 @@ import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 import { logWelcome } from './welcomelog.js';
 import { memberLeftMessages, memberRemovedMessages, memberLeftReturnMessages, memberRemovedReturnMessages, pickRotatingMessage, classifyDeparture } from '../data/groupLifecycleMessages.js';
 import { buildWelcomeBatchMessage, isMemberAlreadyActive, mergeWelcomeParticipants } from '../lib/groupWelcomeBatch.js';
+import { WELCOME_PACK_SETTING, normalizeWelcomePackConfig, renderWelcomePackMessage } from '../lib/groupWelcomePack.js';
 
 const PENDING_INTRO_KEY = 'pendingIntros_v2';
 const DEPARTURE_INDEX_KEY = 'groupDepartureMessageIndexes';
@@ -139,22 +140,24 @@ export async function handleNewMember(sock, chatId, participants) {
 
         if (!newMembers.length) return;
 
-        const welcomeBatch = buildWelcomeBatchMessage(newMembers, welcomeMessage);
+        const savedPack = await store.getSetting(chatId, WELCOME_PACK_SETTING);
+        const welcomePack = normalizeWelcomePackConfig(savedPack);
 
-        // One shared welcome pack for the whole join event, not one pack per member.
-        // Every new member in this participant-update batch is mentioned in the same message.
-        await sock.sendMessage(chatId, welcomeBatch);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        await sock.sendMessage(chatId, { text: groupRules });
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        try {
+        if (welcomePack.enabled) {
             const activity = dailyActivities[getLagosDay()];
-            if (activity?.full) {
-                await sock.sendMessage(chatId, { text: `📅 *Today's activity*\n\n${activity.full}` });
-            }
-        } catch (error) {
-            console.error('Activity send error:', error.message);
+            const welcomeBatch = buildWelcomeBatchMessage(newMembers, welcomePack.messages[0]);
+            const thirdMessage = renderWelcomePackMessage(welcomePack.messages[2], activity?.full || '');
+
+            // One shared, independently configurable three-message pack per join batch.
+            // Disabling it does not disable member history, introduction tracking,
+            // reminders, departures, returns, or other group features.
+            await sock.sendMessage(chatId, welcomeBatch);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await sock.sendMessage(chatId, { text: welcomePack.messages[1] });
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await sock.sendMessage(chatId, { text: thirdMessage });
+        } else {
+            console.info(`[Welcome] Three-message welcome pack is OFF for ${chatId}; member tracking remains active.`);
         }
 
         await Promise.all(newMembers.map(userId => logWelcome(chatId, userId).catch(() => {})));
