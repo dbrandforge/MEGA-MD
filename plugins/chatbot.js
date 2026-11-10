@@ -9,7 +9,7 @@ import { getUserGender } from './gender.js';
 import { printLog } from '../lib/print.js';
 import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
 import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
-import { isExplicitlyAddressedInGroup, hasActiveGroupFollowup, jidMatchesAnyBotIdentity, isBotNameTrigger } from '../lib/chatbotAccess.js';
+import { isExplicitlyAddressedInGroup, hasActiveGroupFollowup, jidMatchesAnyBotIdentity, isBotNameTrigger, stripBotNameTrigger } from '../lib/chatbotAccess.js';
 import { createKeyedSerialExecutor, getConversationMemoryKey } from '../lib/chatbotConversationMemory.js';
 import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI } from '../lib/aiService.js';
 import { evaluateArithmetic, evaluateArithmeticFollowup, formatArithmeticAnswer } from '../lib/arithmetic.js';
@@ -227,9 +227,9 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
             || message.message?.imageMessage?.caption
             || message.message?.videoMessage?.caption
             || '';
-        const cleanForHistory = originalText
+        const cleanForHistory = stripBotNameTrigger(originalText
             .replace(botNumber ? new RegExp(`@${botNumber}`, 'g') : /$^/, '')
-            .trim();
+            .trim());
 
         const quotedMessage = contextInfo.quotedMessage || {};
         const quotedText = quotedMessage.conversation
