@@ -4,13 +4,36 @@ import store from '../lib/lightweight_store.js';
 import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 import { logWelcome } from './welcomelog.js';
 import { memberLeftMessages, memberRemovedMessages, memberLeftReturnMessages, memberRemovedReturnMessages, pickRotatingMessage, classifyDeparture } from '../data/groupLifecycleMessages.js';
-import { buildWelcomeBatchMessage, isMemberAlreadyActive } from '../lib/groupWelcomeBatch.js';
+import { buildWelcomeBatchMessage, isMemberAlreadyActive, mergeWelcomeParticipants } from '../lib/groupWelcomeBatch.js';
 
 const PENDING_INTRO_KEY = 'pendingIntros_v2';
 const DEPARTURE_INDEX_KEY = 'groupDepartureMessageIndexes';
 const MEMBER_HISTORY_KEY = 'groupMemberHistory';
 const RETURN_INDEX_KEY = 'groupReturnMessageIndexes';
 const introReminderTimers = new Map();
+const pendingJoinBatches = new Map();
+const JOIN_EVENT_COALESCE_MS = 2500;
+
+function queueNewMemberWelcome(sock, chatId, participants) {
+    let batch = pendingJoinBatches.get(chatId);
+    if (!batch) {
+        batch = { sock, participants: [], timer: null };
+        pendingJoinBatches.set(chatId, batch);
+    }
+    batch.participants = mergeWelcomeParticipants(batch.participants, participants);
+    if (batch.timer) return;
+
+    // WhatsApp may emit a large admission burst as several participant-update
+    // events. Coalesce the burst so it receives one shared welcome pack.
+    batch.timer = setTimeout(async () => {
+        pendingJoinBatches.delete(chatId);
+        try {
+            await handleNewMember(batch.sock, chatId, batch.participants);
+        } catch (error) {
+            console.error('Welcome batch error:', error.message);
+        }
+    }, JOIN_EVENT_COALESCE_MS);
+}
 
 function getLagosDay() {
     const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -203,9 +226,7 @@ export async function processGroupParticipantsUpdate(sock, update) {
         if (!await hasMaturedMindedFeatures(update.id)) return;
         if (update.action === 'add') {
             console.log('[Welcome] Join event:', update.participants);
-            handleNewMember(sock, update.id, update.participants).catch(e =>
-                console.error('Welcome async error:', e.message)
-            );
+            queueNewMemberWelcome(sock, update.id, update.participants);
             return;
         }
         if (update.action === 'remove') {
