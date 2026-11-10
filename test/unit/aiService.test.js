@@ -17,6 +17,11 @@ describe('Gemini automatic-answer relevance checks', () => {
     expect(isUsefulAutomaticAnswer('What is marketing?', 'Interesting, tell me more about what you mean.')).toBe(false);
   });
 
+  it('treats Nigerian conversational greetings as banter, including tagged messages', () => {
+    expect(isUsefulAutomaticAnswer('My guy how far', 'I dey alright, my guy. How body?')).toBe(true);
+    expect(isUsefulAutomaticAnswer('@The BrandForge what\'s popping', 'All good here, my guy. What\'s happening with you?')).toBe(true);
+  });
+
   it('accepts developed answers that explain a factual question semantically', () => {
     const answer = 'Photosynthesis is how green plants make their own food. Their leaves capture light energy and use it to turn water and carbon dioxide into sugar, releasing oxygen in the process.';
     expect(isUsefulAutomaticAnswer('Explain how plants make food?', answer)).toBe(true);
