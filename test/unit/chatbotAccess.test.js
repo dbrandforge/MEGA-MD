@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasActiveGroupFollowup, isExplicitlyAddressedInGroup } from '../../lib/chatbotAccess.js';
+import { hasActiveGroupFollowup, isExplicitlyAddressedInGroup, isBotNameTrigger } from '../../lib/chatbotAccess.js';
 
 describe('Forge Guard group chatbot follow-up access', () => {
   const now = 1_800_000_000_000;
@@ -8,7 +8,7 @@ describe('Forge Guard group chatbot follow-up access', () => {
     { name: 'Forge Bot', text: 'Branding is...', at: now - 30_000 }
   ];
 
-  it('requires an explicit mention or reply to start a group conversation', () => {
+  it('recognizes a leading bot or BOTA vocative without matching ordinary prose', () => {\n    expect(isBotNameTrigger('BOTA')).toBe(true);\n    expect(isBotNameTrigger('bot, explain this')).toBe(true);\n    expect(isBotNameTrigger('I like this bot')).toBe(false);\n  });\n\n  it('requires an explicit mention or reply to start a group conversation', () => {
     expect(isExplicitlyAddressedInGroup({ isMention: true })).toBe(true);
     expect(isExplicitlyAddressedInGroup({ isReplyToBot: true })).toBe(true);
     expect(isExplicitlyAddressedInGroup({})).toBe(false);
