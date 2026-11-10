@@ -1,4 +1,4 @@
-import { welcomeMessage, groupRules, introReminder } from '../data/welcomeData.js';
+import { introReminder } from '../data/welcomeData.js';
 import { dailyActivities } from '../data/dailyActivities.js';
 import store from '../lib/lightweight_store.js';
 import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
