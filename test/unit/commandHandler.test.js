@@ -115,6 +115,17 @@ describe('CommandHandler', () => {
         expect(result).toBeTruthy();
     });
 
+    it('keeps prefixless aliases from intercepting natural-language questions', () => {
+        handler.registerCommand({
+            command: 'aliveprobe', aliases: ['botprobe'], isPrefixless: true,
+            category: 'general', async handler() {}
+        });
+        handler.registerPrefixlessCommand(handler.commands.get('aliveprobe'));
+        expect(handler.getCommand('botprobe', ['.'])?.command).toBe('aliveprobe');
+        expect(handler.getCommand('botprobe what is photosynthesis?', ['.'])).toBeNull();
+        expect(handler.getCommand('botprobe, explain this', ['.'])).toBeNull();
+    });
+
     it('getCommand returns null for unknown command', () => {
         const result = handler.getCommand('.unknowncmd123', ['.']);
         expect(result).toBeNull();
