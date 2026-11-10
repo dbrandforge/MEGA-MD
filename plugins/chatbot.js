@@ -269,7 +269,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
             console.info(`[Chatbot Group] addressing mention=${isMention} name_trigger=${nameTrigger} reply_to_bot=${isReplyToBot} accepted=${explicitlyAddressed}`);
         }
         const activeFollowup = isGroup && !explicitlyAddressed
-            && hasActiveGroupFollowup(history, Date.now(), GROUP_FOLLOWUP_WINDOW_MS);
+            && hasActiveGroupFollowup(history, Date.now(), GROUP_FOLLOWUP_WINDOW_MS, cleanForHistory);
         if (isGroup && !explicitlyAddressed && !activeFollowup) {
             console.info('[Chatbot Group] skipped addressed=false active_followup=false');
             return;
