@@ -9,7 +9,7 @@ import { getUserGender } from './gender.js';
 import { printLog } from '../lib/print.js';
 import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
 import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
-import { isExplicitlyAddressedInGroup } from '../lib/chatbotAccess.js';
+import { isExplicitlyAddressedInGroup, hasActiveGroupFollowup } from '../lib/chatbotAccess.js';
 import { createKeyedSerialExecutor, getConversationMemoryKey } from '../lib/chatbotConversationMemory.js';
 import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI } from '../lib/aiService.js';
 import { evaluateArithmetic, evaluateArithmeticFollowup, formatArithmeticAnswer } from '../lib/arithmetic.js';
@@ -33,6 +33,8 @@ const runLocalMemoryWriteSerial = createKeyedSerialExecutor();
 const MEMORY_SETTING = 'chatbotConversationMemory';
 const MAX_HISTORY_MESSAGES = 30;
 const MAX_HISTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+// A participant may continue their own group conversation without re-tagging for 10 minutes.
+const GROUP_FOLLOWUP_WINDOW_MS = 10 * 60 * 1000;
 
 export function getLagosClockReply(query, now = new Date(), language = 'english') {
     const text = String(query || '').toLowerCase();
@@ -234,18 +236,29 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
             ? `The user is asking you to answer the following quoted message: "${String(quotedText).slice(0, 1500)}". Their instruction: ${cleanForHistory}`
             : cleanForHistory;
 
-        // Only explicitly addressed group turns enter an individual's private transcript.
-        // Ordinary messages from other members are not imported into this person's context.
-        const quotedParticipant = contextInfo.participant || '';
-        const isReplyToBot = Boolean(quotedParticipant && botJids.some(b =>
-            b.split('@')[0].split(':')[0] === quotedParticipant.split('@')[0].split(':')[0]
-        ));
-        if (isGroup && !isExplicitlyAddressedInGroup({ isMention, isReplyToBot, quotedParticipant, botJids })) return;
         if (!cleanForHistory) return;
 
         // Group history is keyed by (group, participant); DM history is keyed by participant.
         // Legacy history is migrated only for one-to-one chats, never from a mixed group log.
         const history = await loadChatHistory(memoryKey, isGroup ? null : chatId);
+
+        // A group conversation starts only with a mention/reply to Forge Guard.
+        // Once started, only that same participant can continue their own transcript
+        // for a short window. The memory key includes both group and sender IDs.
+        const quotedParticipant = contextInfo.participant || '';
+        const isReplyToBot = Boolean(quotedParticipant && botJids.some(b =>
+            b.split('@')[0].split(':')[0] === quotedParticipant.split('@')[0].split(':')[0]
+        ));
+        const explicitlyAddressed = isExplicitlyAddressedInGroup({ isMention, isReplyToBot, quotedParticipant, botJids });
+        const activeFollowup = isGroup && !explicitlyAddressed
+            && hasActiveGroupFollowup(history, Date.now(), GROUP_FOLLOWUP_WINDOW_MS);
+        if (isGroup && !explicitlyAddressed && !activeFollowup) {
+            console.info('[Chatbot Group] skipped addressed=false active_followup=false');
+            return;
+        }
+        if (isGroup) {
+            console.info(`[Chatbot Group] accepted addressed=${explicitlyAddressed} active_followup=${activeFollowup}`);
+        }
         if (!message.key.fromMe) {
             history.push({
                 name: message.pushName || 'You',
