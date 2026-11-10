@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasActiveGroupFollowup, isExplicitlyAddressedInGroup, isBotNameTrigger, jidMatchesAnyBotIdentity } from '../../lib/chatbotAccess.js';
+import { hasActiveGroupFollowup, isExplicitlyAddressedInGroup, isBotNameTrigger, jidMatchesAnyBotIdentity, stripBotNameTrigger } from '../../lib/chatbotAccess.js';
 
 describe('Forge Guard group chatbot follow-up access', () => {
   const now = 1_800_000_000_000;
@@ -12,6 +12,13 @@ describe('Forge Guard group chatbot follow-up access', () => {
     expect(isBotNameTrigger('BOTA')).toBe(true);
     expect(isBotNameTrigger('bot, explain this')).toBe(true);
     expect(isBotNameTrigger('I like this bot')).toBe(false);
+  });
+
+  it('removes the bot vocative before passing the question to Gemini', () => {
+    expect(stripBotNameTrigger('BOTA what is photosynthesis?')).toBe('what is photosynthesis?');
+    expect(stripBotNameTrigger('BOT, how far?')).toBe('how far?');
+    expect(stripBotNameTrigger('BOTA')).toBe('hello');
+    expect(stripBotNameTrigger('What is branding?')).toBe('What is branding?');
   });
 
   it('matches bot reply and mention identities across PN/LID aliases', async () => {
