@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasActiveGroupFollowup, isExplicitlyAddressedInGroup, isBotNameTrigger } from '../../lib/chatbotAccess.js';
+import { hasActiveGroupFollowup, isExplicitlyAddressedInGroup, isBotNameTrigger, jidMatchesAnyBotIdentity } from '../../lib/chatbotAccess.js';
 
 describe('Forge Guard group chatbot follow-up access', () => {
   const now = 1_800_000_000_000;
@@ -12,6 +12,20 @@ describe('Forge Guard group chatbot follow-up access', () => {
     expect(isBotNameTrigger('BOTA')).toBe(true);
     expect(isBotNameTrigger('bot, explain this')).toBe(true);
     expect(isBotNameTrigger('I like this bot')).toBe(false);
+  });
+
+  it('matches bot reply and mention identities across PN/LID aliases', async () => {
+    const sock = {
+      signalRepository: {
+        lidMapping: {
+          getPNForLID: async jid => jid === '90001@lid' ? '2348101268386@s.whatsapp.net' : undefined,
+          getLIDForPN: async jid => jid === '2348101268386@s.whatsapp.net' ? '90001@lid' : undefined
+        }
+      }
+    };
+    expect(await jidMatchesAnyBotIdentity('90001@lid', ['2348101268386@s.whatsapp.net'], sock)).toBe(true);
+    expect(await jidMatchesAnyBotIdentity('2348101268386@s.whatsapp.net', ['90001@lid'], sock)).toBe(true);
+    expect(await jidMatchesAnyBotIdentity('90002@lid', ['2348101268386@s.whatsapp.net'], sock)).toBe(false);
   });
 
   it('requires an explicit mention or reply to start a group conversation', () => {
