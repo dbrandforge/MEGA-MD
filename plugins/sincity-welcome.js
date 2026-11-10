@@ -4,12 +4,36 @@ import store from '../lib/lightweight_store.js';
 import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 import { logWelcome } from './welcomelog.js';
 import { memberLeftMessages, memberRemovedMessages, memberLeftReturnMessages, memberRemovedReturnMessages, pickRotatingMessage, classifyDeparture } from '../data/groupLifecycleMessages.js';
+import { buildWelcomeBatchMessage, isMemberAlreadyActive, mergeWelcomeParticipants } from '../lib/groupWelcomeBatch.js';
 
 const PENDING_INTRO_KEY = 'pendingIntros_v2';
 const DEPARTURE_INDEX_KEY = 'groupDepartureMessageIndexes';
 const MEMBER_HISTORY_KEY = 'groupMemberHistory';
 const RETURN_INDEX_KEY = 'groupReturnMessageIndexes';
 const introReminderTimers = new Map();
+const pendingJoinBatches = new Map();
+const JOIN_EVENT_COALESCE_MS = 2500;
+
+function queueNewMemberWelcome(sock, chatId, participants) {
+    let batch = pendingJoinBatches.get(chatId);
+    if (!batch) {
+        batch = { sock, participants: [], timer: null };
+        pendingJoinBatches.set(chatId, batch);
+    }
+    batch.participants = mergeWelcomeParticipants(batch.participants, participants);
+    if (batch.timer) return;
+
+    // WhatsApp may emit a large admission burst as several participant-update
+    // events. Coalesce the burst so it receives one shared welcome pack.
+    batch.timer = setTimeout(async () => {
+        pendingJoinBatches.delete(chatId);
+        try {
+            await handleNewMember(batch.sock, chatId, batch.participants);
+        } catch (error) {
+            console.error('Welcome batch error:', error.message);
+        }
+    }, JOIN_EVENT_COALESCE_MS);
+}
 
 function getLagosDay() {
     const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -67,6 +91,9 @@ export async function handleNewMember(sock, chatId, participants) {
 
         for (const userId of participantIds) {
             const prior = history[userId] || history[userId.split('@')[0]];
+            // Participant-update retries can repeat an already processed join. Do not
+            // turn an active member into a false "welcome back" announcement.
+            if (isMemberAlreadyActive(prior)) continue;
             const returningType = prior?.everJoined
                 ? (prior.lastDeparture === 'removed' || prior.lastDeparture === 'left' ? prior.lastDeparture : 'unknown')
                 : null;
@@ -112,13 +139,11 @@ export async function handleNewMember(sock, chatId, participants) {
 
         if (!newMembers.length) return;
 
-        const mentionText = newMembers.map(id => `@${id.split('@')[0]}`).join(', ');
-        const welcomeText = welcomeMessage
-            .replace(/@user/g, mentionText)
-            .replace(/\{user\}/g, mentionText);
+        const welcomeBatch = buildWelcomeBatchMessage(newMembers, welcomeMessage);
 
         // One shared welcome pack for the whole join event, not one pack per member.
-        await sock.sendMessage(chatId, { text: welcomeText, mentions: newMembers });
+        // Every new member in this participant-update batch is mentioned in the same message.
+        await sock.sendMessage(chatId, welcomeBatch);
         await new Promise(resolve => setTimeout(resolve, 1000));
         await sock.sendMessage(chatId, { text: groupRules });
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -201,9 +226,7 @@ export async function processGroupParticipantsUpdate(sock, update) {
         if (!await hasMaturedMindedFeatures(update.id)) return;
         if (update.action === 'add') {
             console.log('[Welcome] Join event:', update.participants);
-            handleNewMember(sock, update.id, update.participants).catch(e =>
-                console.error('Welcome async error:', e.message)
-            );
+            queueNewMemberWelcome(sock, update.id, update.participants);
             return;
         }
         if (update.action === 'remove') {
