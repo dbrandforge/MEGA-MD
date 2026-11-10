@@ -4,6 +4,7 @@ import store from '../lib/lightweight_store.js';
 import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 import { logWelcome } from './welcomelog.js';
 import { memberLeftMessages, memberRemovedMessages, memberLeftReturnMessages, memberRemovedReturnMessages, pickRotatingMessage, classifyDeparture } from '../data/groupLifecycleMessages.js';
+import { buildWelcomeBatchMessage, isMemberAlreadyActive } from '../lib/groupWelcomeBatch.js';
 
 const PENDING_INTRO_KEY = 'pendingIntros_v2';
 const DEPARTURE_INDEX_KEY = 'groupDepartureMessageIndexes';
@@ -67,6 +68,9 @@ export async function handleNewMember(sock, chatId, participants) {
 
         for (const userId of participantIds) {
             const prior = history[userId] || history[userId.split('@')[0]];
+            // Participant-update retries can repeat an already processed join. Do not
+            // turn an active member into a false "welcome back" announcement.
+            if (isMemberAlreadyActive(prior)) continue;
             const returningType = prior?.everJoined
                 ? (prior.lastDeparture === 'removed' || prior.lastDeparture === 'left' ? prior.lastDeparture : 'unknown')
                 : null;
@@ -112,13 +116,11 @@ export async function handleNewMember(sock, chatId, participants) {
 
         if (!newMembers.length) return;
 
-        const mentionText = newMembers.map(id => `@${id.split('@')[0]}`).join(', ');
-        const welcomeText = welcomeMessage
-            .replace(/@user/g, mentionText)
-            .replace(/\{user\}/g, mentionText);
+        const welcomeBatch = buildWelcomeBatchMessage(newMembers, welcomeMessage);
 
         // One shared welcome pack for the whole join event, not one pack per member.
-        await sock.sendMessage(chatId, { text: welcomeText, mentions: newMembers });
+        // Every new member in this participant-update batch is mentioned in the same message.
+        await sock.sendMessage(chatId, welcomeBatch);
         await new Promise(resolve => setTimeout(resolve, 1000));
         await sock.sendMessage(chatId, { text: groupRules });
         await new Promise(resolve => setTimeout(resolve, 1000));
