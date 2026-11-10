@@ -9,7 +9,7 @@ import { getUserGender } from './gender.js';
 import { printLog } from '../lib/print.js';
 import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
 import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
-import { isExplicitlyAddressedInGroup, hasActiveGroupFollowup } from '../lib/chatbotAccess.js';
+import { isExplicitlyAddressedInGroup, hasActiveGroupFollowup, jidMatchesAnyBotIdentity, isBotNameTrigger } from '../lib/chatbotAccess.js';
 import { createKeyedSerialExecutor, getConversationMemoryKey } from '../lib/chatbotConversationMemory.js';
 import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI } from '../lib/aiService.js';
 import { evaluateArithmetic, evaluateArithmeticFollowup, formatArithmeticAnswer } from '../lib/arithmetic.js';
@@ -211,10 +211,15 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
             || message.message?.videoMessage?.contextInfo
             || {};
         const mentioned = contextInfo.mentionedJid || [];
-        let isMention = mentioned.some(j => botJids.some(b =>
-            b.split('@')[0].split(':')[0] === j.split('@')[0].split(':')[0]
-        ));
+        let isMention = false;
+        for (const mentionedJid of mentioned) {
+            if (await jidMatchesAnyBotIdentity(mentionedJid, botJids, sock)) {
+                isMention = true;
+                break;
+            }
+        }
         if (!isMention && botNumber) isMention = userMessage.includes(`@${botNumber}`);
+        const nameTrigger = isBotNameTrigger(userMessage);
 
         // Record normal messages as well, so a later mention can refer to the group discussion.
         const originalText = message.message?.conversation
@@ -245,11 +250,24 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         // A group conversation starts only with a mention/reply to Forge Guard.
         // Once started, only that same participant can continue their own transcript
         // for a short window. The memory key includes both group and sender IDs.
-        const quotedParticipant = contextInfo.participant || '';
-        const isReplyToBot = Boolean(quotedParticipant && botJids.some(b =>
-            b.split('@')[0].split(':')[0] === quotedParticipant.split('@')[0].split(':')[0]
-        ));
-        const explicitlyAddressed = isExplicitlyAddressedInGroup({ isMention, isReplyToBot, quotedParticipant, botJids });
+        const quotedParticipant = contextInfo.participant || contextInfo.participantAlt || '';
+        const quotedParticipants = [contextInfo.participant, contextInfo.participantAlt].filter(Boolean);
+        let isReplyToBot = false;
+        for (const quotedJid of quotedParticipants) {
+            if (await jidMatchesAnyBotIdentity(quotedJid, botJids, sock)) {
+                isReplyToBot = true;
+                break;
+            }
+        }
+        const explicitlyAddressed = isExplicitlyAddressedInGroup({
+            isMention: isMention || nameTrigger,
+            isReplyToBot,
+            quotedParticipant,
+            botJids
+        });
+        if (isGroup) {
+            console.info(`[Chatbot Group] addressing mention=${isMention} name_trigger=${nameTrigger} reply_to_bot=${isReplyToBot} accepted=${explicitlyAddressed}`);
+        }
         const activeFollowup = isGroup && !explicitlyAddressed
             && hasActiveGroupFollowup(history, Date.now(), GROUP_FOLLOWUP_WINDOW_MS);
         if (isGroup && !explicitlyAddressed && !activeFollowup) {
