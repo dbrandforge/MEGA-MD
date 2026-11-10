@@ -8,7 +8,13 @@ describe('Forge Guard group chatbot follow-up access', () => {
     { name: 'Forge Bot', text: 'Branding is...', at: now - 30_000 }
   ];
 
-  it('recognizes a leading bot or BOTA vocative without matching ordinary prose', () => {\n    expect(isBotNameTrigger('BOTA')).toBe(true);\n    expect(isBotNameTrigger('bot, explain this')).toBe(true);\n    expect(isBotNameTrigger('I like this bot')).toBe(false);\n  });\n\n  it('requires an explicit mention or reply to start a group conversation', () => {
+  it('recognizes a leading bot or BOTA vocative without matching ordinary prose', () => {
+    expect(isBotNameTrigger('BOTA')).toBe(true);
+    expect(isBotNameTrigger('bot, explain this')).toBe(true);
+    expect(isBotNameTrigger('I like this bot')).toBe(false);
+  });
+
+  it('requires an explicit mention or reply to start a group conversation', () => {
     expect(isExplicitlyAddressedInGroup({ isMention: true })).toBe(true);
     expect(isExplicitlyAddressedInGroup({ isReplyToBot: true })).toBe(true);
     expect(isExplicitlyAddressedInGroup({})).toBe(false);
