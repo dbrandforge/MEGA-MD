@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildWelcomeBatchMessage, isMemberAlreadyActive } from '../../lib/groupWelcomeBatch.js';
+import { buildWelcomeBatchMessage, isMemberAlreadyActive, mergeWelcomeParticipants } from '../../lib/groupWelcomeBatch.js';
 
 describe('shared group welcome batches', () => {
   it('creates one welcome payload that tags every member in a large join batch', () => {
@@ -14,6 +14,14 @@ describe('shared group welcome batches', () => {
     const payload = buildWelcomeBatchMessage(['123@s.whatsapp.net', '123@s.whatsapp.net'], 'Hello @user');
     expect(payload.mentions).toEqual(['123@s.whatsapp.net']);
     expect(payload.text).toBe('Hello @123');
+  });
+
+  it('coalesces multiple participant-update events into one deduplicated join batch', () => {
+    const first = Array.from({ length: 60 }, (_, index) => `234800000${String(index).padStart(4, '0')}@s.whatsapp.net`);
+    const second = Array.from({ length: 65 }, (_, index) => `234800000${String(index + 60).padStart(4, '0')}@s.whatsapp.net`);
+    const merged = mergeWelcomeParticipants(first, [...second, first[0]]);
+    expect(merged).toHaveLength(125);
+    expect(buildWelcomeBatchMessage(merged, 'Welcome @user').mentions).toHaveLength(125);
   });
 
   it('recognizes a participant-update retry for someone already active', () => {
