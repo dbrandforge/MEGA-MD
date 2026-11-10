@@ -1,4 +1,5 @@
 import store from '../lib/lightweight_store.js';
+import isAdmin from '../lib/isAdmin.js';
 import {
   WELCOME_PACK_SETTING,
   DEFAULT_WELCOME_PACK_MESSAGES,
@@ -33,9 +34,14 @@ export default {
   description: 'Manage this group’s independent three-message welcome pack.',
   usage: '.welcomeforge on/off/status/edit/reset',
   groupOnly: true,
-  adminOnly: true,
+  adminOnly: false,
   async handler(sock, message, args, context) {
     const chatId = context.chatId || message.key.remoteJid;
+    const senderId = context.senderId || message.key.participant || chatId;
+    const senderAdmin = context.isSenderAdmin || (await isAdmin(sock, chatId, senderId)).isSenderAdmin;
+    if (!context.isCreatorOrBot && !context.senderIsOwnerOrSudo && !senderAdmin) {
+      return sock.sendMessage(chatId, { text: '🔒 Only this group’s creator or an authorized group admin can manage its welcome pack.' }, { quoted: message });
+    }
     const action = String(args?.[0] || 'status').toLowerCase();
     const saved = await store.getSetting(chatId, WELCOME_PACK_SETTING);
     const config = normalizeWelcomePackConfig(saved);
