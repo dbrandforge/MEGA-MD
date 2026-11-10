@@ -76,13 +76,6 @@ for (const [file, def] of Object.entries(DATA_DEFAULTS)) {
     if (!fs.existsSync(fp))
         fs.writeFileSync(fp, JSON.stringify(def, null, 2));
 }
-let owner = [];
-try {
-    owner = JSON.parse(fs.readFileSync('./data/owner.json', 'utf-8'));
-}
-catch {
-    owner = [];
-}
 global.botname = config.botName || "MEGA-MD";
 global.themeemoji = "•";
 const pairingCode = !process.argv.includes("--qr-code");
@@ -745,12 +738,16 @@ async function startQasimDev() {
                     printLog('error', `Failed to send connection message: ${error.message}`);
                 }
                 await delay(1999);
-                try {
-                    owner = JSON.parse(fs.readFileSync('./data/owner.json', 'utf-8'));
-                }
-                catch (_e) { }
                 printLog('info', `[ ${config.botName || 'MEGA-MD'} ]`);
-                printLog('info', `WA NUMBER  : ${owner[0] || config.ownerNumber || ''}`);
+                // The authenticated WhatsApp identity is authoritative. Keep the
+                // runtime owner number aligned with the active bot account rather
+                // than a stale owner.json / environment fallback.
+                const connectedNumber = String(QasimDev.user?.id || '')
+                    .split('@')[0]
+                    .split(':')[0]
+                    .replace(/\D/g, '');
+                if (connectedNumber) config.ownerNumber = connectedNumber;
+                printLog('info', `WA NUMBER  : ${connectedNumber || config.ownerNumber || ''}`);
                 printLog('success', `Bot Connected Successfully!`);
                 printLog('info', `Plugins   : ${commandHandler.commands.size}`);
                 printLog('info', `Prefixes   : ${config.prefixes.join(', ')}`);
