@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasActiveGroupFollowup, isExplicitlyAddressedInGroup, isBotNameTrigger, jidMatchesAnyBotIdentity, stripBotNameTrigger } from '../../lib/chatbotAccess.js';
+import { hasActiveGroupFollowup, hasContextualFollowupIntent, isExplicitlyAddressedInGroup, isBotNameTrigger, jidMatchesAnyBotIdentity, stripBotNameTrigger } from '../../lib/chatbotAccess.js';
 
 describe('Forge Guard group chatbot follow-up access', () => {
   const now = 1_800_000_000_000;
@@ -41,27 +41,37 @@ describe('Forge Guard group chatbot follow-up access', () => {
     expect(isExplicitlyAddressedInGroup({})).toBe(false);
   });
 
-  it('allows the same participant to follow up while their own bot reply is recent', () => {
-    expect(hasActiveGroupFollowup(recentHistory, now, 10 * 60_000)).toBe(true);
+  it('allows context-dependent follow-ups while the same participant has a recent bot reply', () => {
+    expect(hasActiveGroupFollowup(recentHistory, now, 10 * 60_000, 'Explain that in simpler terms')).toBe(true);
+    expect(hasActiveGroupFollowup(recentHistory, now, 10 * 60_000, 'Give me another example')).toBe(true);
+    expect(hasActiveGroupFollowup(recentHistory, now, 10 * 60_000, 'Example of plants that benefit from this are?')).toBe(true);
+  });
+
+  it('does not treat ordinary greetings or unrelated new questions as follow-ups', () => {
+    expect(hasContextualFollowupIntent('guy how far')).toBe(false);
+    expect(hasContextualFollowupIntent('My guy how far')).toBe(false);
+    expect(hasContextualFollowupIntent("what's popping")).toBe(false);
+    expect(hasActiveGroupFollowup(recentHistory, now, 10 * 60_000, 'What is marketing?')).toBe(false);
+    expect(hasActiveGroupFollowup(recentHistory, now, 10 * 60_000, 'What is photosynthesis?')).toBe(false);
   });
 
   it('expires follow-up access after ten minutes', () => {
     const oldHistory = [{ name: 'Forge Bot', text: 'Earlier answer', at: now - 10 * 60_000 - 1 }];
-    expect(hasActiveGroupFollowup(oldHistory, now, 10 * 60_000)).toBe(false);
+    expect(hasActiveGroupFollowup(oldHistory, now, 10 * 60_000, 'Explain that again')).toBe(false);
   });
 
   it('does not activate without a previous bot reply', () => {
-    expect(hasActiveGroupFollowup([{ name: 'Member', text: 'Hello', at: now }], now)).toBe(false);
+    expect(hasActiveGroupFollowup([{ name: 'Member', text: 'Hello', at: now }], now, 10 * 60_000, 'Explain that again')).toBe(false);
   });
 
   it('does not activate for malformed, future-dated, or missing timestamps', () => {
-    expect(hasActiveGroupFollowup(null, now)).toBe(false);
-    expect(hasActiveGroupFollowup([{ name: 'Forge Bot', text: 'Hi', at: now + 1 }], now)).toBe(false);
-    expect(hasActiveGroupFollowup([{ name: 'Forge Bot', text: 'Hi' }], now)).toBe(false);
+    expect(hasActiveGroupFollowup(null, now, 10 * 60_000, 'Explain that again')).toBe(false);
+    expect(hasActiveGroupFollowup([{ name: 'Forge Bot', text: 'Hi', at: now + 1 }], now, 10 * 60_000, 'Explain that again')).toBe(false);
+    expect(hasActiveGroupFollowup([{ name: 'Forge Bot', text: 'Hi' }], now, 10 * 60_000, 'Explain that again')).toBe(false);
   });
 
   it('keeps follow-up eligibility dependent on the caller-provided individual transcript', () => {
     const anotherMembersHistory = [{ name: 'Member', text: 'Hello', at: now - 1000 }];
-    expect(hasActiveGroupFollowup(anotherMembersHistory, now)).toBe(false);
+    expect(hasActiveGroupFollowup(anotherMembersHistory, now, 10 * 60_000, 'Explain that again')).toBe(false);
   });
 });
