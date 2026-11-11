@@ -28,6 +28,7 @@ async function saveBypasses(chatId, data) {
   if (!saved) throw new Error('Game bypass state could not be persisted.');
 }
 const MANUAL_LOCK_KEY = 'manualGameLocks';
+const GLOBAL_GAME_LOCK_KEY = 'allGamesLocked';
 const MANUAL_GAMES = {
   math: 'Maths Arena',
   hangman: 'Hangman',
@@ -47,6 +48,18 @@ export function getManualLockableGames() {
 export async function getManualGameLocks(chatId) {
   return (await store.getSetting(chatId, MANUAL_LOCK_KEY)) || {};
 }
+export async function getGlobalGameLock(chatId) {
+  const state = await store.getSetting(chatId, GLOBAL_GAME_LOCK_KEY);
+  return state?.locked === true;
+}
+export async function setGlobalGameLock(chatId, locked) {
+  const state = { locked: Boolean(locked), updatedAt: Date.now() };
+  if (!await store.saveSettingVerified(chatId, GLOBAL_GAME_LOCK_KEY, state)) {
+    throw new Error('Global game-lock state could not be persisted.');
+  }
+  return state;
+}
+
 export async function setManualGameLock(chatId, gameKey, locked) {
   if (!Object.hasOwn(MANUAL_GAMES, gameKey)) throw new Error('This game is not eligible for a manual lock.');
   const locks = await getManualGameLocks(chatId);
@@ -58,6 +71,14 @@ export async function setManualGameLock(chatId, gameKey, locked) {
 }
 
 export async function isGameAllowed(chatId, gameKey) {
+  if (await getGlobalGameLock(chatId)) {
+    return {
+      ok: false,
+      locked: true,
+      globalLock: true,
+      msg: '🔒 *All games are currently locked by an admin.*\n\nAn admin can reopen the games with *.gamelock off*.'
+    };
+  }
   const locks = await getManualGameLocks(chatId);
   if (locks[gameKey]?.locked) {
     return {

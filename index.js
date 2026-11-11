@@ -705,6 +705,12 @@ async function startQasimDev() {
                 for (const groupId of FEATURE_GROUPS) trackGroup(groupId);
                 startSchedulerEngine(QasimDev);
                 try {
+                    const welcomeModule = await import('./plugins/sincity-welcome.js');
+                    if (typeof welcomeModule.restoreWelcomeJobs === 'function') await welcomeModule.restoreWelcomeJobs(QasimDev);
+                } catch (error) {
+                    printLog('error', `Failed to restore pending welcome jobs: ${error.message}`);
+                }
+                try {
                     const setbioModule = await import('./plugins/setbio.js');
                     const startAutoBio = setbioModule.startAutoBio || setbioModule.default?.startAutoBio;
                     if (typeof startAutoBio === 'function')
