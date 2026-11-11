@@ -18,7 +18,7 @@ export default {
       const locks = await getManualGameLocks(chatId);
       const globalLocked = await getGlobalGameLock(chatId);
       const lines = Object.entries(games).map(([key, name]) =>
-        `${locks[key]?.locked ? '🔒 INDIVIDUALLY LOCKED' : '🟢 INDIVIDUAL OPEN'} — ${name} (`.gamelock ${key} ${locks[key]?.locked ? 'off' : 'on'}`)`
+        `${locks[key]?.locked ? '🔒 INDIVIDUALLY LOCKED' : '🟢 INDIVIDUAL OPEN'} — ${name} (.gamelock ${key} ${locks[key]?.locked ? 'off' : 'on'})``
       );
       return sock.sendMessage(chatId, {
         text: `🎮 *GAME ACCESS STATUS*\n\nGlobal lock: ${globalLocked ? '🔒 ON — ALL GAMES LOCKED' : '🟢 OFF'}\nGlobal control: *.gamelock ${globalLocked ? 'off' : 'on'}*\n\n${lines.join('\n')}\n\nScheduled games keep their normal day restrictions. Individual settings are preserved while the global lock is active.`,

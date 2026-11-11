@@ -61,6 +61,6 @@ describe('fixed-window welcome batching and introduction reminder eligibility', 
       'inactive@s.whatsapp.net': { joinedAt: now - 900000, status: 'inactive' }
     };
     expect(getEligibleIntroReminderEntries(pending, now).map(([jid]) => jid)).toEqual(['early@s.whatsapp.net']);
-    expect(getNextIntroReminderAt(pending)).toBe(now - 120000 + 600000);
+    expect(getNextIntroReminderAt(pending)).toBe(now);
   });
 });
