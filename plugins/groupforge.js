@@ -48,13 +48,26 @@ export default {
   aliases: ['groupregister', 'groupsetup', 'forgegroup'],
   category: 'owner',
   description: 'Apply the Matured Minded-exclusive and/or general Forge Guard group feature package.',
-  usage: '.groupforge setup [all|matured|general] | .groupforge off [all|matured|general] | .groupforge status',
+  usage: '.groupforge setup | .groupforge mature minded on|off | .groupforge general on|off | .groupforge off all | .groupforge status',
   groupOnly: true,
   strictOwnerOnly: true,
   async handler(sock, message, args, context) {
     const chatId = context.chatId || message.key.remoteJid;
-    const action = String(args?.[0] || 'setup').toLowerCase();
-    const requestedSet = String(args?.[1] || 'all').toLowerCase();
+    let action = String(args?.[0] || 'setup').toLowerCase();
+    let requestedSet = String(args?.[1] || 'all').toLowerCase();
+    // Friendly package controls; legacy setup/off syntax remains supported.
+    if (action === 'mature' || action === 'matured') {
+      const hasMinded = String(args?.[1] || '').toLowerCase() === 'minded';
+      const state = hasMinded ? String(args?.[2] || 'on').toLowerCase() : requestedSet;
+      if (hasMinded || action === 'matured') {
+        requestedSet = 'matured';
+        action = state === 'off' ? 'off' : 'setup';
+      }
+    } else if (action === 'general') {
+      const state = String(args?.[1] || 'on').toLowerCase();
+      requestedSet = 'general';
+      action = state === 'off' ? 'off' : 'setup';
+    }
     if (!chatId?.endsWith('@g.us')) {
       return sock.sendMessage(chatId, { text: 'Run this command inside the group you want to configure.' }, { quoted: message });
     }

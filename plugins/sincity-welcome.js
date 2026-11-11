@@ -13,27 +13,74 @@ const MEMBER_HISTORY_KEY = 'groupMemberHistory';
 const RETURN_INDEX_KEY = 'groupReturnMessageIndexes';
 const introReminderTimers = new Map();
 const pendingJoinBatches = new Map();
-const JOIN_EVENT_COALESCE_MS = 2500;
+const JOIN_BATCH_KEY = 'pendingWelcomeJoinBatch_v1';
+const JOIN_BATCH_INDEX_KEY = 'pendingWelcomeJoinBatchGroups_v1';
+const JOIN_BATCH_WINDOW_MS = 3 * 60 * 1000;
+const INTRO_REMINDER_DELAY_MS = 10 * 60 * 1000;
 
-function queueNewMemberWelcome(sock, chatId, participants) {
-    let batch = pendingJoinBatches.get(chatId);
-    if (!batch) {
-        batch = { sock, participants: [], timer: null };
-        pendingJoinBatches.set(chatId, batch);
+async function saveJoinBatchIndex(chatId, add) {
+    const current = await store.getSetting('global', JOIN_BATCH_INDEX_KEY);
+    const groups = new Set(Array.isArray(current) ? current : []);
+    if (add) groups.add(chatId); else groups.delete(chatId);
+    if (!await store.saveSettingVerified('global', JOIN_BATCH_INDEX_KEY, [...groups])) {
+        throw new Error('Pending welcome batch index could not be persisted.');
     }
-    batch.participants = mergeWelcomeParticipants(batch.participants, participants);
-    if (batch.timer) return;
+}
 
-    // WhatsApp may emit a large admission burst as several participant-update
-    // events. Coalesce the burst so it receives one shared welcome pack.
-    batch.timer = setTimeout(async () => {
-        pendingJoinBatches.delete(chatId);
+function scheduleJoinBatchFlush(sock, chatId, batch) {
+    const existing = pendingJoinBatches.get(chatId);
+    if (existing?.timer) clearTimeout(existing.timer);
+    const timer = setTimeout(async () => {
         try {
-            await handleNewMember(batch.sock, chatId, batch.participants);
+            const persisted = await store.getSetting(chatId, JOIN_BATCH_KEY);
+            if (!persisted || persisted.batchId !== batch.batchId) return;
+            if (!await store.saveSettingVerified(chatId, JOIN_BATCH_KEY, null)) {
+                throw new Error('Pending welcome batch could not be cleared.');
+            }
+            await saveJoinBatchIndex(chatId, false);
+            pendingJoinBatches.delete(chatId);
+            await handleNewMember(sock, chatId, persisted.participants || []);
         } catch (error) {
-            console.error('Welcome batch error:', error.message);
+            console.error('Welcome batch flush error:', error.message);
         }
-    }, JOIN_EVENT_COALESCE_MS);
+    }, Math.max(0, Number(batch.flushAt) - Date.now()));
+    pendingJoinBatches.set(chatId, { ...batch, timer });
+}
+
+async function queueNewMemberWelcome(sock, chatId, participants) {
+    const now = Date.now();
+    const saved = await store.getSetting(chatId, JOIN_BATCH_KEY);
+    const active = saved && Number(saved.flushAt) > now ? saved : null;
+    const batch = active
+        ? { ...active, participants: mergeWelcomeParticipants(active.participants, participants) }
+        : {
+            batchId: `${now}-${Math.random().toString(36).slice(2, 8)}`,
+            startedAt: now,
+            flushAt: now + JOIN_BATCH_WINDOW_MS,
+            participants: mergeWelcomeParticipants([], participants)
+        };
+    if (!await store.saveSettingVerified(chatId, JOIN_BATCH_KEY, batch)) {
+        throw new Error('Pending welcome batch could not be persisted.');
+    }
+    await saveJoinBatchIndex(chatId, true);
+    scheduleJoinBatchFlush(sock, chatId, batch);
+}
+
+export async function restoreWelcomeJobs(sock) {
+    const indexed = await store.getSetting('global', JOIN_BATCH_INDEX_KEY);
+    const tracked = await store.getSetting('global', 'forgeGuardTrackedGroups');
+    const groups = new Set([
+        ...(Array.isArray(indexed) ? indexed : []),
+        ...(Array.isArray(tracked) ? tracked : [])
+    ]);
+    for (const chatId of groups) {
+        if (!chatId?.endsWith('@g.us')) continue;
+        const batch = await store.getSetting(chatId, JOIN_BATCH_KEY);
+        if (batch?.flushAt && Array.isArray(batch.participants) && batch.participants.length) {
+            scheduleJoinBatchFlush(sock, chatId, batch);
+        }
+        scheduleGroupIntroReminder(sock, chatId);
+    }
 }
 
 function getLagosDay() {
@@ -50,28 +97,43 @@ async function savePendingIntros(chatId, data) {
 }
 
 function scheduleGroupIntroReminder(sock, chatId) {
-    if (introReminderTimers.has(chatId)) return;
-    const timer = setTimeout(async () => {
-        introReminderTimers.delete(chatId);
-        try {
-            const pending = await getPendingIntros(chatId);
-            const entries = Object.entries(pending).filter(([, record]) =>
-                record && record.introduced !== true && record.status !== 'inactive' && !record.reminded
-            );
-            if (!entries.length) return;
-            const mentions = entries.map(([jid]) => jid);
-            const mentionText = mentions.map(jid => `@${jid.split('@')[0]}`).join(', ');
-            const reminder = introReminder.replace(/@?\{user\}/g, mentionText);
-            await sock.sendMessage(chatId, { text: reminder, mentions });
-            for (const [jid] of entries) {
-                if (pending[jid]) pending[jid].reminded = true;
-            }
-            await savePendingIntros(chatId, pending);
-        } catch (error) {
-            console.error('Group intro reminder error:', error.message);
+    const existing = introReminderTimers.get(chatId);
+    if (existing) clearTimeout(existing);
+    getPendingIntros(chatId).then(pending => {
+        const dueAt = Object.values(pending).reduce((earliest, record) => {
+            if (!record || record.introduced === true || record.status === 'inactive' || record.reminded) return earliest;
+            const eligibleAt = Number(record.joinedAt || 0) + INTRO_REMINDER_DELAY_MS;
+            return eligibleAt < earliest ? eligibleAt : earliest;
+        }, Infinity);
+        if (!Number.isFinite(dueAt)) {
+            introReminderTimers.delete(chatId);
+            return;
         }
-    }, 10 * 60 * 1000);
-    introReminderTimers.set(chatId, timer);
+        const timer = setTimeout(async () => {
+            introReminderTimers.delete(chatId);
+            try {
+                const latest = await getPendingIntros(chatId);
+                const now = Date.now();
+                const entries = Object.entries(latest).filter(([, record]) =>
+                    record && record.introduced !== true && record.status !== 'inactive' &&
+                    !record.reminded && Number(record.joinedAt || 0) + INTRO_REMINDER_DELAY_MS <= now
+                );
+                if (entries.length) {
+                    const mentions = entries.map(([jid]) => jid);
+                    const mentionText = mentions.map(jid => `@${jid.split('@')[0]}`).join(', ');
+                    const reminder = introReminder.replace(/@?\\{user\\}/g, mentionText);
+                    await sock.sendMessage(chatId, { text: reminder, mentions });
+                    for (const [jid] of entries) if (latest[jid]) latest[jid].reminded = true;
+                    await savePendingIntros(chatId, latest);
+                }
+                scheduleGroupIntroReminder(sock, chatId);
+            } catch (error) {
+                console.error('Group intro reminder error:', error.message);
+                scheduleGroupIntroReminder(sock, chatId);
+            }
+        }, Math.max(0, dueAt - Date.now()));
+        introReminderTimers.set(chatId, timer);
+    }).catch(error => console.error('Could not schedule group intro reminder:', error.message));
 }
 
 export async function handleNewMember(sock, chatId, participants) {
@@ -229,7 +291,7 @@ export async function processGroupParticipantsUpdate(sock, update) {
         if (!await hasMaturedMindedFeatures(update.id)) return;
         if (update.action === 'add') {
             console.log('[Welcome] Join event:', update.participants);
-            queueNewMemberWelcome(sock, update.id, update.participants);
+            await queueNewMemberWelcome(sock, update.id, update.participants);
             return;
         }
         if (update.action === 'remove') {

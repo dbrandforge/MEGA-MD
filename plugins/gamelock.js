@@ -1,4 +1,4 @@
-import { getManualLockableGames, getManualGameLocks, setManualGameLock } from './daylock.js';
+import { getManualLockableGames, getManualGameLocks, setManualGameLock, getGlobalGameLock, setGlobalGameLock } from './daylock.js';
 import { resumeHotSeatSession } from './hotseat.js';
 
 export default {
@@ -6,7 +6,7 @@ export default {
   aliases: ['lockgame'],
   category: 'admin',
   description: 'Admin controls for locking or unlocking any group game.',
-  usage: '.gamelock list | .gamelock <game> on|off',
+  usage: '.gamelock on|off | .gamelock <game> on|off | .gamelock status',
   groupOnly: true,
   adminOnly: true,
   async handler(sock, message, args, context) {
@@ -16,11 +16,28 @@ export default {
 
     if (!action || action === 'list' || action === 'status') {
       const locks = await getManualGameLocks(chatId);
+      const globalLocked = await getGlobalGameLock(chatId);
       const lines = Object.entries(games).map(([key, name]) =>
-        `${locks[key]?.locked ? '🔒 LOCKED' : '🟢 OPEN'} — ${name} (\`.gamelock ${key} ${locks[key]?.locked ? 'off' : 'on'}\`)`
+        `${locks[key]?.locked ? '🔒 INDIVIDUALLY LOCKED' : '🟢 INDIVIDUAL OPEN'} — ${name} (`.gamelock ${key} ${locks[key]?.locked ? 'off' : 'on'}`)`
       );
       return sock.sendMessage(chatId, {
-        text: `🎮 *MANUAL GAME ACCESS*\n\n${lines.join('\n')}\n\nScheduled games keep their existing day restrictions. When a day-locked game is unlocked here, its normal scheduled day restriction still applies.`,
+        text: `🎮 *GAME ACCESS STATUS*\\n\\nGlobal lock: ${globalLocked ? '🔒 ON — ALL GAMES LOCKED' : '🟢 OFF'}\\nGlobal control: *.gamelock ${globalLocked ? 'off' : 'on'}*\\n\\n${lines.join('\\n')}\\n\\nScheduled games keep their normal day restrictions. Individual settings are preserved while the global lock is active.`,
+        ...channelInfo
+      }, { quoted: message });
+    }
+
+    if (action === 'on' || action === 'off') {
+      const locked = action === 'on';
+      try {
+        await setGlobalGameLock(chatId, locked);
+      } catch (error) {
+        console.error('[GAMELOCK] Could not persist global game lock:', error.message);
+        return sock.sendMessage(chatId, { text: '❌ The global game-lock change could not be saved. No success was reported.', ...channelInfo }, { quoted: message });
+      }
+      return sock.sendMessage(chatId, {
+        text: locked
+          ? '🔒 *GLOBAL GAME LOCK ENABLED.* Every game in this group is now locked. Individual game settings have been preserved.'
+          : '🟢 *GLOBAL GAME LOCK DISABLED.* Games are available again according to their individual locks and normal scheduled-day restrictions.',
         ...channelInfo
       }, { quoted: message });
     }
@@ -29,7 +46,7 @@ export default {
     const state = (args[1] || '').toLowerCase();
     if (!Object.hasOwn(games, game) || !['on', 'off', 'lock', 'unlock'].includes(state)) {
       return sock.sendMessage(chatId, {
-        text: `Usage: *.gamelock list* or *.gamelock <game> on|off*\n\nGames: ${Object.keys(games).join(' | ')}\n\nUse *on* to lock and *off* to unlock.`,
+        text: `Usage: *.gamelock on|off*, *.gamelock status*, or *.gamelock <game> on|off*\n\nGames: ${Object.keys(games).join(' | ')}\n\nUse *on* to lock and *off* to unlock.`,
         ...channelInfo
       }, { quoted: message });
     }
