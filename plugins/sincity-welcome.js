@@ -4,7 +4,7 @@ import store from '../lib/lightweight_store.js';
 import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 import { logWelcome } from './welcomelog.js';
 import { memberLeftMessages, memberRemovedMessages, memberLeftReturnMessages, memberRemovedReturnMessages, pickRotatingMessage, classifyDeparture } from '../data/groupLifecycleMessages.js';
-import { buildWelcomeBatchMessage, isMemberAlreadyActive, mergeWelcomeParticipants } from '../lib/groupWelcomeBatch.js';
+import { buildWelcomeBatchMessage, isMemberAlreadyActive, mergeWelcomeParticipants, createOrExtendWelcomeBatch, getEligibleIntroReminderEntries, getNextIntroReminderAt } from '../lib/groupWelcomeBatch.js';
 import { WELCOME_PACK_SETTING, normalizeWelcomePackConfig, renderWelcomePackMessage } from '../lib/groupWelcomePack.js';
 
 const PENDING_INTRO_KEY = 'pendingIntros_v2';
@@ -50,15 +50,13 @@ function scheduleJoinBatchFlush(sock, chatId, batch) {
 async function queueNewMemberWelcome(sock, chatId, participants) {
     const now = Date.now();
     const saved = await store.getSetting(chatId, JOIN_BATCH_KEY);
-    const active = saved && Number(saved.flushAt) > now ? saved : null;
-    const batch = active
-        ? { ...active, participants: mergeWelcomeParticipants(active.participants, participants) }
-        : {
-            batchId: `${now}-${Math.random().toString(36).slice(2, 8)}`,
-            startedAt: now,
-            flushAt: now + JOIN_BATCH_WINDOW_MS,
-            participants: mergeWelcomeParticipants([], participants)
-        };
+    const batch = createOrExtendWelcomeBatch(
+        saved,
+        participants,
+        now,
+        JOIN_BATCH_WINDOW_MS,
+        `${now}-${Math.random().toString(36).slice(2, 8)}`
+    );
     if (!await store.saveSettingVerified(chatId, JOIN_BATCH_KEY, batch)) {
         throw new Error('Pending welcome batch could not be persisted.');
     }
@@ -100,11 +98,7 @@ function scheduleGroupIntroReminder(sock, chatId) {
     const existing = introReminderTimers.get(chatId);
     if (existing) clearTimeout(existing);
     getPendingIntros(chatId).then(pending => {
-        const dueAt = Object.values(pending).reduce((earliest, record) => {
-            if (!record || record.introduced === true || record.status === 'inactive' || record.reminded) return earliest;
-            const eligibleAt = Number(record.joinedAt || 0) + INTRO_REMINDER_DELAY_MS;
-            return eligibleAt < earliest ? eligibleAt : earliest;
-        }, Infinity);
+        const dueAt = getNextIntroReminderAt(pending, INTRO_REMINDER_DELAY_MS);
         if (!Number.isFinite(dueAt)) {
             introReminderTimers.delete(chatId);
             return;
@@ -114,14 +108,11 @@ function scheduleGroupIntroReminder(sock, chatId) {
             try {
                 const latest = await getPendingIntros(chatId);
                 const now = Date.now();
-                const entries = Object.entries(latest).filter(([, record]) =>
-                    record && record.introduced !== true && record.status !== 'inactive' &&
-                    !record.reminded && Number(record.joinedAt || 0) + INTRO_REMINDER_DELAY_MS <= now
-                );
+                const entries = getEligibleIntroReminderEntries(latest, now, INTRO_REMINDER_DELAY_MS);
                 if (entries.length) {
                     const mentions = entries.map(([jid]) => jid);
                     const mentionText = mentions.map(jid => `@${jid.split('@')[0]}`).join(', ');
-                    const reminder = introReminder.replace(/@?\\{user\\}/g, mentionText);
+                    const reminder = introReminder.replace(/@?\{user\}/g, mentionText);
                     await sock.sendMessage(chatId, { text: reminder, mentions });
                     for (const [jid] of entries) if (latest[jid]) latest[jid].reminded = true;
                     await savePendingIntros(chatId, latest);

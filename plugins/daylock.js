@@ -76,7 +76,7 @@ export async function isGameAllowed(chatId, gameKey) {
       ok: false,
       locked: true,
       globalLock: true,
-      msg: '🔒 *All games are currently locked by an admin.*\\n\\nAn admin can reopen the games with *.gamelock off*.'
+      msg: '🔒 *All games are currently locked by an admin.*\n\nAn admin can reopen the games with *.gamelock off*.'
     };
   }
   const locks = await getManualGameLocks(chatId);

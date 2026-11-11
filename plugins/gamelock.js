@@ -21,7 +21,7 @@ export default {
         `${locks[key]?.locked ? '🔒 INDIVIDUALLY LOCKED' : '🟢 INDIVIDUAL OPEN'} — ${name} (`.gamelock ${key} ${locks[key]?.locked ? 'off' : 'on'}`)`
       );
       return sock.sendMessage(chatId, {
-        text: `🎮 *GAME ACCESS STATUS*\\n\\nGlobal lock: ${globalLocked ? '🔒 ON — ALL GAMES LOCKED' : '🟢 OFF'}\\nGlobal control: *.gamelock ${globalLocked ? 'off' : 'on'}*\\n\\n${lines.join('\\n')}\\n\\nScheduled games keep their normal day restrictions. Individual settings are preserved while the global lock is active.`,
+        text: `🎮 *GAME ACCESS STATUS*\n\nGlobal lock: ${globalLocked ? '🔒 ON — ALL GAMES LOCKED' : '🟢 OFF'}\nGlobal control: *.gamelock ${globalLocked ? 'off' : 'on'}*\n\n${lines.join('\n')}\n\nScheduled games keep their normal day restrictions. Individual settings are preserved while the global lock is active.`,
         ...channelInfo
       }, { quoted: message });
     }
