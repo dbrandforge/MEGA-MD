@@ -34,14 +34,22 @@ function scheduleJoinBatchFlush(sock, chatId, batch) {
         try {
             const persisted = await store.getSetting(chatId, JOIN_BATCH_KEY);
             if (!persisted || persisted.batchId !== batch.batchId) return;
+            await handleNewMember(sock, chatId, persisted.participants || []);
             if (!await store.saveSettingVerified(chatId, JOIN_BATCH_KEY, null)) {
                 throw new Error('Pending welcome batch could not be cleared.');
             }
             await saveJoinBatchIndex(chatId, false);
             pendingJoinBatches.delete(chatId);
-            await handleNewMember(sock, chatId, persisted.participants || []);
         } catch (error) {
             console.error('Welcome batch flush error:', error.message);
+            // Keep the durable batch and retry rather than silently dropping arrivals.
+            const retry = { ...batch, flushAt: Date.now() + 30_000 };
+            try {
+                await store.saveSettingVerified(chatId, JOIN_BATCH_KEY, retry);
+                scheduleJoinBatchFlush(sock, chatId, retry);
+            } catch (retryError) {
+                console.error('Welcome batch retry could not be scheduled:', retryError.message);
+            }
         }
     }, Math.max(0, Number(batch.flushAt) - Date.now()));
     pendingJoinBatches.set(chatId, { ...batch, timer });
