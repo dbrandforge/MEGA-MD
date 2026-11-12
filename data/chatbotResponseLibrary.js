@@ -223,15 +223,15 @@ export const intentRules = [
   { intent: 'thanks', patterns: [/\b(thank(s| you)|appreciate it|grateful)\b/i] },
   { intent: 'apology', patterns: [/\b(sorry|my bad|apolog(y|ise|ize)|i apologise|i apologize)\b/i] },
   { intent: 'agreement', patterns: [/\b(i agree|exactly|true|facts|correct|you are right|na so)\b/i] },
-  { intent: 'wellbeing', patterns: [/\bhow are you\b/i, /\bhow you dey\b/i, /\bhow body\b/i, /\bhow far\b/i, /\bhow is your day\b/i] },
+  { intent: 'wellbeing', patterns: [/\bhow are you\b/i, /\bhow you dey\b/i, /\bhow body\b/i, /\bhow far\b/i, /\bhow is your day\b/i, /\b(?:came to check|checking) if (?:you are|you’re|you're|u are|u're) (?:still )?alive\b/i] },
   { intent: 'greeting', patterns: [/^\s*(hi|hello|hey|yo|good morning|good afternoon|good evening|good night)\b/i, /\bbawo ni\b/i, /\bwhat'?s (popping|good|up)\b/i] },
   { intent: 'clarification', patterns: [/\bwhat do you mean\b/i, /\bexplain\b/i, /\bclarify\b/i, /\bi don't understand\b/i, /\bwhat does that mean\b/i] },
   { intent: 'followup', patterns: [/\bwhy did you say\b/i, /\bwhy\b/i, /\bare you serious\b/i, /\bwhat happened next\b/i, /\bhow come\b/i] },
   { intent: 'boredom', patterns: [/\b(bored|boring|nothing to do|i'm idle|i am idle)\b/i] },
   { intent: 'group', patterns: [/\b(group|everybody|everyone|hot seat|truth or dare|who is online)\b/i] },
-  { intent: 'yoruba', patterns: [/\b(mo n|bawo|kilode|soro|o ti|se o)\b/i] },
+  { intent: 'yoruba', patterns: [/\b(mo n|bawo|kilode|soro|o ti|se o|o ti sun mi|ori e ti yi|ori re ti yi|o ti ya mi|toor|oloshi|egbon e|egbon mi|sebi)\b/i] },
   { intent: 'pidgin', patterns: [/\b(abeg|wetin|dey|na so|omo|yarn|wahala|e choke)\b/i, /\byou dey go (now|naw)\b/i] },
-  { intent: 'teasing', patterns: [/\b(you are funny|you sef|you no get|see this one|you dey craze|werey|wery|mumu|ode|you mad|mad bot)\b/i] }
+  { intent: 'teasing', patterns: [/\b(you are funny|you sef|you no get|see this one|you dey craze|you are crazy|you're crazy|you crazy|werey|wery|mumu|ode|you mad|mad bot)\b/i] }
 ];
 
 

@@ -7,7 +7,7 @@ import {
 } from '../../lib/identity.js';
 
 const identities = {
-    creatorNumber: '2349034451454',
+    creatorNumber: '2348000000001',
     creatorName: 'Forge dcreative',
     creatorFullName: 'Abraham Oyetunji',
     queenNumber: '2348126885208',
@@ -20,12 +20,12 @@ const identities = {
 
 describe('Forge Guard identity recognition and privacy', () => {
     it('normalizes phone JIDs and device-qualified JIDs', () => {
-        expect(normalizeIdentityNumber('2349034451454@s.whatsapp.net')).toBe('2349034451454');
-        expect(normalizeIdentityNumber('2349034451454:12@s.whatsapp.net')).toBe('2349034451454');
+        expect(normalizeIdentityNumber('2348000000001@s.whatsapp.net')).toBe('2348000000001');
+        expect(normalizeIdentityNumber('2348000000001:12@s.whatsapp.net')).toBe('2348000000001');
     });
 
     it('recognises the Creator without placing the private surname in the resolved identity', () => {
-        const creator = resolveIdentity('2349034451454@s.whatsapp.net', identities);
+        const creator = resolveIdentity('2348000000001@s.whatsapp.net', identities);
         expect(creator).toMatchObject({ role: 'creator', name: 'Forge dcreative', alias: 'Forge' });
         expect(creator).not.toHaveProperty('fullName');
         expect(JSON.stringify(creator)).not.toContain('Oyetunji');
@@ -43,7 +43,7 @@ describe('Forge Guard identity recognition and privacy', () => {
     });
 
     it('never reveals the Creator surname in identity replies', () => {
-        const creator = resolveIdentity('2349034451454', identities);
+        const creator = resolveIdentity('2348000000001', identities);
         for (const question of [
             'Who am I?',
             'What is my name?',
@@ -112,7 +112,7 @@ describe('Forge Guard identity recognition and privacy', () => {
     });
 
     it('answers personal-name questions for the recognised Creator without exposing the surname', () => {
-        const creator = resolveIdentity('2349034451454', identities);
+        const creator = resolveIdentity('2348000000001', identities);
         for (const question of ['What is my name?', "What's my name?", 'Tell me my name']) {
             const answer = getIdentityReply(question, identities, creator);
             expect(answer).toContain('Forge');
@@ -122,7 +122,7 @@ describe('Forge Guard identity recognition and privacy', () => {
     });
 
     it('answers who am I according to the recognised sender', () => {
-        const creator = resolveIdentity('2349034451454', identities);
+        const creator = resolveIdentity('2348000000001', identities);
         const queen = resolveIdentity('2348126885208', identities);
         expect(getIdentityReply('Who am I?', identities, creator)).toContain('Forge');
         expect(getIdentityReply('Who am I?', identities, creator)).not.toContain('Oyetunji');
@@ -134,9 +134,9 @@ describe('Forge Guard identity recognition and privacy', () => {
     });
 
     it('uses distinct Creator and Queen greeting styles', () => {
-        expect(getIdentityGreeting('hello', resolveIdentity('2349034451454', identities))).toMatch(/Creator|Forge|architect|Chief/);
+        expect(getIdentityGreeting('hello', resolveIdentity('2348000000001', identities))).toMatch(/Creator|Forge|architect|Chief/);
         expect(getIdentityGreeting('hello', resolveIdentity('2348126885208', identities))).toMatch(/Queen|Majesty/);
-        const creator = resolveIdentity('2349034451454', identities);
+        const creator = resolveIdentity('2348000000001', identities);
         expect(getIdentityGreeting('Forge', creator)).toMatch(/Creator|Forge|architect|Chief/);
         expect(getIdentityGreeting('Bot who am I?', resolveIdentity('2348126885208', identities))).toBeNull();
     });

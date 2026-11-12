@@ -32,6 +32,15 @@ describe('Forge Bot response library', () => {
     expect(classifyIntent('Error')).toBe('error');
   });
 
+  it('recognises colloquial Yoruba expressions and alive-check banter', () => {
+    expect(classifyIntent('O ti sun mi')).toBe('yoruba');
+    expect(classifyIntent('Ori e ti yi')).toBe('yoruba');
+    expect(classifyIntent('Toor')).toBe('yoruba');
+    expect(classifyIntent('Oloshi')).toBe('yoruba');
+    expect(classifyIntent('I came to check if you are still alive')).toBe('wellbeing');
+    expect(classifyIntent("You're crazy")).toBe('teasing');
+  });
+
   it('recognises direct definitions, slang and activity questions', () => {
     expect(classifyIntent('What is love?')).toBe('definition');
     expect(classifyIntent("What's the meaning of fra?")).toBe('slangDefinition');

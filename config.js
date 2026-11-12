@@ -7,6 +7,8 @@ const config = {
     ownerNumber: process.env.OWNER_NUMBER || '2348087404020',
     // Personal identity registry; phone numbers are supplied privately through Render env vars.
     creatorNumber: process.env.CREATOR_NUMBER || process.env.OWNER_NUMBER || '',
+    // Separate verified contact field: never expose the legacy owner fallback as the creator's public contact.
+    creatorContactNumber: process.env.CREATOR_CONTACT_NUMBER || process.env.CREATOR_NUMBER || '',
     creatorName: process.env.CREATOR_NAME || 'Forge dcreative',
     creatorAlias: process.env.CREATOR_ALIAS || 'Forge',
     creatorFullName: process.env.CREATOR_FULL_NAME || 'Abraham Oyetunji',

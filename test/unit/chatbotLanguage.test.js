@@ -19,6 +19,13 @@ describe('Forge Guard language matching', () => {
     expect(detectMessageLanguage(message)).toBe(expected);
   });
 
+  it('recognises common unaccented Yoruba expressions used in casual chat', () => {
+    expect(detectMessageLanguage('O ti sun mi')).toBe('yoruba');
+    expect(detectMessageLanguage('Ori e ti yi')).toBe('yoruba');
+    expect(detectMessageLanguage('Toor')).toBe('yoruba');
+    expect(detectMessageLanguage('Oloshi')).toBe('yoruba');
+  });
+
   it('inherits the last clear language for short contextual replies', () => {
     expect(detectMessageLanguage('ẹ ṣe', [{ name: 'User', text: 'Ẹ jọ̀ọ́, ṣàlàyé rẹ̀ fún mi' }])).toBe('yoruba');
     expect(detectMessageLanguage('na so?', [{ name: 'User', text: 'Abeg explain wetin happen' }])).toBe('pidgin');

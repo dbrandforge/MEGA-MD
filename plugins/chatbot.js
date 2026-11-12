@@ -13,9 +13,11 @@ import { isExplicitlyAddressedInGroup, hasActiveGroupFollowup, jidMatchesAnyBotI
 import { createKeyedSerialExecutor, getConversationMemoryKey } from '../lib/chatbotConversationMemory.js';
 import { updateUserProfileFromMessage, buildUserProfileContext, buildUserIdentityReply } from '../lib/chatbotUserProfile.js';
 import { recordGroupInteraction, buildGroupContinuityContext } from '../lib/chatbotGroupMemory.js';
+import { buildForgeKnowledgeContext, buildGroupConversationModeContext, getForgeKnowledgeReply } from '../lib/forgeKnowledge.js';
+import { getChatbotFailureFallback } from '../lib/chatbotFailureFallback.js';
 import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI } from '../lib/aiService.js';
 import { evaluateArithmetic, evaluateArithmeticFollowup, formatArithmeticAnswer } from '../lib/arithmetic.js';
-import { detectMessageLanguage, getLocalizedAnswerPrefix, getLocalizedFailureReply, getLocalizedSourceSummaryFailure } from '../lib/chatbotLanguage.js';
+import { detectMessageLanguage, getLocalizedAnswerPrefix, getLocalizedSourceSummaryFailure } from '../lib/chatbotLanguage.js';
 import { isTimeSensitiveQuestion, searchLiveKnowledge, buildLiveKnowledgeContext, formatLiveKnowledgeSources, formatLiveKnowledgeEvidenceSummary, formatLiveKnowledgeUnavailable, resolveContextualBusinessFollowup } from '../lib/liveKnowledge.js';
 
 const CHATBOT_AI_ENABLED = process.env.CHATBOT_AI_ENABLED === 'true';
@@ -298,7 +300,10 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         const groupContinuityContext = isGroup
             ? await buildGroupContinuityContext(chatId, senderId, chatbotQuery, mentioned)
             : '';
-        const combinedProfileContext = [userProfileContext, groupContinuityContext].filter(Boolean).join(String.fromCharCode(10, 10));
+        const groupProfile = isGroup ? await store.getSetting(chatId, 'forgeGuardGroupProfile').catch(() => null) : null;
+        const conversationModeContext = buildGroupConversationModeContext(groupProfile, chatId);
+        const forgeKnowledgeContext = buildForgeKnowledgeContext(chatbotQuery, identity);
+        const combinedProfileContext = [userProfileContext, groupContinuityContext, conversationModeContext, forgeKnowledgeContext].filter(Boolean).join(String.fromCharCode(10, 10));
         if (!message.key.fromMe) {
             history.push({
                 name: message.pushName || 'You',
@@ -322,12 +327,16 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         // Creator/VIP recognition never grants permissions; authorization remains in the command handler.
         const previousBotTurn = [...history].reverse().find(item => item.name === 'Forge Bot') || null;
         const previousBotReply = previousBotTurn?.text || '';
-        const displayName = String(message.pushName || sock.store?.contacts?.[senderId]?.name || '').trim().slice(0, 60);
+        const rawDisplayName = String(message.pushName || sock.store?.contacts?.[senderId]?.name || '').trim().slice(0, 60);
+        const rememberedBusinesses = (userProfile?.businesses || []).map(item => String(item?.value || item?.name || item).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim());
+        const normalizedDisplayName = rawDisplayName.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+        const displayName = userProfile?.preferredName || (normalizedDisplayName && rememberedBusinesses.includes(normalizedDisplayName) ? '' : rawDisplayName);
         const asksWhoAmI = /\bwho am i\b|\bwhat do you know about me\b|\bdescribe me\b/i.test(cleanForHistory);
         const profileIdentityReply = asksWhoAmI && !identity ? buildUserIdentityReply(userProfile, displayName) : null;
+        const forgeKnowledgeReply = getForgeKnowledgeReply(chatbotQuery);
         let registeredGender = null;
         try { registeredGender = await getUserGender(senderId); } catch {}
-        let response = arithmeticReply || clockReply || identityReply || identityGreeting || profileIdentityReply;
+        let response = arithmeticReply || clockReply || identityReply || identityGreeting || profileIdentityReply || forgeKnowledgeReply;
         if (!response) {
             // Current facts must be grounded in fresh search evidence, never a dated local answer bank.
             const contextualLiveQuery = resolveContextualBusinessFollowup(chatbotQuery, history.slice(0, -1));
@@ -396,12 +405,12 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                         }), chatbotQuery);
                         console.info(`[Chatbot AI] outcome=success latency_ms=${Date.now() - aiStartedAt}`);
                     } catch (error) {
-                        response = getLocalizedFailureReply(responseLanguage);
+                        response = getChatbotFailureFallback(chatbotQuery, { language: responseLanguage, intent, chatId, previousReply: previousBotTurn?.text, gender: registeredGender });
                         const reason = String(error?.code || error?.message || 'unknown').slice(0, 100).replaceAll(String.fromCharCode(10), ' ').replaceAll(String.fromCharCode(13), ' ');
                         console.warn(`[Chatbot AI] outcome=unavailable latency_ms=${Date.now() - aiStartedAt} reason=${reason}`);
                     }
                 } else {
-                    response = getLocalizedFailureReply(responseLanguage);
+                    response = getChatbotFailureFallback(chatbotQuery, { language: responseLanguage, intent, chatId, previousReply: previousBotTurn?.text, gender: registeredGender });
                 }
             }
 
@@ -415,8 +424,9 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         // Enforce clean output for every chatbot source: AI, curated banks and identity replies.
         response = sanitizeChatbotReply(response);
         const freshBotSession = !previousBotTurn || (previousBotTurn.at && Date.now() - previousBotTurn.at > GROUP_FOLLOWUP_WINDOW_MS);
-        if ((isMention || nameTrigger) && freshBotSession && displayName && !identity) {
-            response = sanitizeChatbotReply(`${displayName}, you’re live. Welcome aboard. ${response}`);
+        if ((isMention || nameTrigger) && freshBotSession && !identity) {
+            const greeting = displayName ? `${displayName}, you’re live. Welcome aboard.` : 'You’re live. Welcome aboard.';
+            response = sanitizeChatbotReply(`${greeting} ${response}`);
         }
         console.info(`[Chatbot] Reply (intent: ${classifyIntent(cleanForHistory)}, identity: ${identity?.role || 'standard'}, gender: ${registeredGender || 'unregistered'}).`);
 
