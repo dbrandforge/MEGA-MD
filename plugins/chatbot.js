@@ -250,18 +250,20 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         const history = await loadChatHistory(memoryKey, isGroup ? null : chatId);
         // Profile facts use a private DM scope or this group's own scope; group replies
         // must never expose details that the same participant shared only in a DM.
+        const profileLanguage = detectMessageLanguage(cleanForHistory, history);
+        // Capture ordinary group messages before address filtering so a member's own
+        // recent public statements can seed only that member's group-scoped profile.
+        const groupMemberSnapshot = isGroup && !message.key.fromMe
+            ? await recordGroupInteraction(chatId, senderId, message.pushName, cleanForHistory, profileLanguage)
+            : null;
         const profileSourceText = [
             cleanForHistory,
-            ...history.filter(item => item.name !== 'Forge Bot').map(item => item.text)
+            ...history.filter(item => item.name !== 'Forge Bot').map(item => item.text),
+            ...(groupMemberSnapshot?.messages || []).map(item => item.text)
         ].join(String.fromCharCode(10));
-        const profileLanguage = detectMessageLanguage(cleanForHistory, history);
         const userProfile = message.key.fromMe ? null
             : await updateUserProfileFromMessage(senderId, profileSourceText, { language: profileLanguage, scopeChatId: isGroup ? chatId : null });
         const userProfileContext = buildUserProfileContext(userProfile);
-        // Group-local interaction memory is deliberately separate from private profile memory.
-        if (isGroup && !message.key.fromMe) {
-            await recordGroupInteraction(chatId, senderId, message.pushName, cleanForHistory, profileLanguage);
-        }
 
         // A group conversation starts only with a mention/reply to Forge Guard.
         // Once started, only that same participant can continue their own transcript
