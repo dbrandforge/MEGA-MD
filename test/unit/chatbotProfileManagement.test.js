@@ -36,6 +36,15 @@ describe('Forge Guard user-controlled profile facts', () => {
         expect(facts.offerings).toContain('bridal makeup');
     });
 
+    it('does not mistake a negative preference for a service offering', () => {
+        expect(extractUserFacts('I do not like spam messages.').offerings).toEqual([]);
+    });
+
+    it('captures Pidgin and Yoruba descriptions of what a member does', () => {
+        expect(extractUserFacts('I dey sell wigs.').offerings).toContain('wigs');
+        expect(extractUserFacts('Mo n ta aso.').offerings).toContain('aso');
+    });
+
     it('removes only the selected fact when a value is supplied', async () => {
         settings.set('user:2348011111111@s.whatsapp.net:chatbotUserProfile', {
             businesses: [{ value: 'Ray’s Glitz & Glam' }],
