@@ -21,6 +21,10 @@ describe('Forge Guard verified knowledge and group-aware conversation context', 
         expect(reply).not.toMatch(/234\d{10}/);
     });
 
+    it('does not attach group conversation mode to private chats', () => {
+        expect(buildGroupConversationModeContext(null, '2348000000000@s.whatsapp.net')).toBe('');
+    });
+
     it('keeps adult-oriented group culture scoped to the configured Matured Minded package', () => {
         const mature = buildGroupConversationModeContext({ featureSets: { maturedMinded: true } }, 'some-group@g.us');
         expect(mature).toContain('MATURED MINDED');
