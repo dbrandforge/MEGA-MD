@@ -35,6 +35,26 @@ describe('Forge Guard group-local member continuity', () => {
         expect(context).toContain('GROUP-LOCAL CONTINUITY');
     });
 
+    it('uses private profile facts in a group only after the member opts in', async () => {
+        await recordGroupInteraction(group, member, 'Adunni', 'I joined the discussion', 'english');
+        settings.set('user:2348011111111@s.whatsapp.net:chatbotUserProfile', {
+            businesses: [{ value: 'Ray’s Glitz & Glam' }],
+            sharing: { groupContext: true }
+        });
+        const context = await buildGroupContinuityContext(group, askingMember, 'What does Adunni do?');
+        expect(context).toContain('Ray’s Glitz & Glam');
+    });
+
+    it('keeps private profile facts out of groups when sharing is disabled', async () => {
+        await recordGroupInteraction(group, member, 'Adunni', 'I joined the discussion', 'english');
+        settings.set('user:2348011111111@s.whatsapp.net:chatbotUserProfile', {
+            businesses: [{ value: 'Ray’s Glitz & Glam' }],
+            sharing: { groupContext: false }
+        });
+        const context = await buildGroupContinuityContext(group, askingMember, 'What does Adunni do?');
+        expect(context).not.toContain('Ray’s Glitz & Glam');
+    });
+
     it('does not expose another group’s member history', async () => {
         await recordGroupInteraction(group, member, 'Adunni', 'A group-only update', 'pidgin');
         const context = await buildGroupContinuityContext('another-group@g.us', askingMember, 'Adunni');
