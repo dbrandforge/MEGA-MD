@@ -9,6 +9,11 @@ describe('Forge Guard verified knowledge and group-aware conversation context', 
         expect(reply).toContain('Your brand should be hard to forget');
     });
 
+    it('returns official channels when someone simply asks for your socials', () => {
+        expect(getForgeKnowledgeReply('What are your socials?')).toContain('@dbrandforge');
+        expect(getForgeKnowledgeReply('What is your founder’s LinkedIn?')).toContain('linkedin.com/in/abraham-oyetunji');
+    });
+
     it('answers direct questions about the founder with verified professional facts', () => {
         const reply = getForgeKnowledgeReply('Tell me about Forge');
         expect(reply).toContain('Creative Director');
