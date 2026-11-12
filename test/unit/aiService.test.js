@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { isUsefulAutomaticAnswer, buildConversationPrompt } from '../../lib/aiService.js';
+import { buildUserProfileContext } from '../../lib/chatbotUserProfile.js';
 
 describe('Forge Guard conversation style instructions', () => {
   it('does not steer casual conversations toward business by default', () => {
     const prompt = buildConversationPrompt('I came to check if you are alive');
     expect(prompt).toContain('Do not assume every conversation is about business');
     expect(prompt).toContain('Do not end every reply with a question');
+  });
+
+  it('does not present an observed language as a complete personal profile', () => {
+    expect(buildUserProfileContext({ lastObservedLanguage: 'english', languageCounts: { english: 4 } })).toBe('');
   });
 
   it('uses individual preferences and keeps group context scoped', () => {
