@@ -17,12 +17,8 @@ vi.mock('../../lib/lightweight_store.js', () => ({
     }
 }));
 
-import {
-    getChatbotMediaModes,
-    normalizeVoiceMimeType,
-    reserveMediaSlot,
-    setChatbotMediaMode
-} from '../../lib/chatbotMedia.js';
+import { getChatbotMediaModes, setChatbotMediaMode } from '../../lib/chatbotMediaSettings.js';
+import { normalizeVoiceMimeType, reserveMediaSlot } from '../../lib/chatbotMedia.js';
 
 describe('chatbot media settings and audio handling', () => {
     let testDay = 0;
