@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
     buildUserProfileContext,
+    buildUserIdentityReply,
     extractBusinessNames,
     extractUserFacts,
     getUserProfileKey
