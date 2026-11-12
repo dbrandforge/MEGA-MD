@@ -248,8 +248,8 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         // Group history is keyed by (group, participant); DM history is keyed by participant.
         // Legacy history is migrated only for one-to-one chats, never from a mixed group log.
         const history = await loadChatHistory(memoryKey, isGroup ? null : chatId);
-        // Long-term profile facts are stored per sender, shared across that sender's
-        // DMs and groups, and never keyed by a group transcript.
+        // Profile facts use a private DM scope or this group's own scope; group replies
+        // must never expose details that the same participant shared only in a DM.
         const profileSourceText = [
             cleanForHistory,
             ...history.filter(item => item.name !== 'Forge Bot').map(item => item.text)
