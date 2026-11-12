@@ -64,6 +64,11 @@ describe('Forge Guard sender-specific long-term profile memory', () => {
         expect(reply).toContain('not assumptions');
     });
 
+    it('recognises concise and detailed communication preferences', () => {
+        expect(extractUserFacts('I prefer detailed explanations.').communicationStyles).toContain('detailed');
+        expect(extractUserFacts('I prefer short answers.').communicationStyles).toContain('short');
+    });
+
     it('captures an explicitly requested language separately from observed language', () => {
         expect(extractUserFacts('Please speak to me in Yoruba.').preferredLanguage).toBe('yoruba');
     });
