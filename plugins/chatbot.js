@@ -258,8 +258,8 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
             || '';
         const mediaContext = String(message?.mediaContext || '').trim().slice(0, 1200);
         const chatbotQuery = mediaContext
-            ? `${cleanForHistory}\\n${mediaContext}`
-            : (quotedText && /^(answer this|answer|explain this|tell me about this|what about this|help me with this)[.!?\\s👇]*$/i.test(cleanForHistory)
+            ? `${cleanForHistory}\n${mediaContext}`
+            : (quotedText && /^(answer this|answer|explain this|tell me about this|what about this|help me with this)[.!?\s👇]*$/i.test(cleanForHistory)
                 ? `The user is asking you to answer the following quoted message: "${String(quotedText).slice(0, 1500)}". Their instruction: ${cleanForHistory}`
                 : cleanForHistory);
 
