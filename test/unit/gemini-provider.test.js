@@ -26,7 +26,7 @@ describe('Forge Guard Gemini provider', () => {
     beforeEach(() => {
         vi.stubEnv('GEMINI_API_KEY', 'test-gemini-key');
         vi.stubEnv('GEMINI_MODEL', '');
-        vi.clearAllMocks();
+        vi.resetAllMocks();
     });
 
     afterEach(() => {
@@ -70,7 +70,7 @@ describe('Forge Guard Gemini provider', () => {
         expect(prompt).not.toContain('conversational WhatsApp personality');
     });
 
-    it('retries one transient Gemini server failure before returning a valid answer', async () => {
+    it('retries a fast transient Gemini server failure before returning a valid answer', async () => {
         const unavailable = new Error('temporarily unavailable');
         unavailable.response = { status: 503 };
         axios.post
@@ -79,6 +79,17 @@ describe('Forge Guard Gemini provider', () => {
 
         await expect(askFastAI('Who is Davido?')).resolves.toContain('Davido');
         expect(axios.post).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not retry a timed-out Gemini request and therefore avoids a second full wait', async () => {
+        const timeout = new Error('request timed out');
+        timeout.code = 'ECONNABORTED';
+        axios.post.mockRejectedValue(timeout);
+
+        await expect(askFastAI('Who is Davido?')).rejects.toMatchObject({
+            code: 'GEMINI_TIMEOUT'
+        });
+        expect(axios.post).toHaveBeenCalledTimes(1);
     });
 
     it('surfaces a clear provider error code instead of silently returning banter', async () => {
