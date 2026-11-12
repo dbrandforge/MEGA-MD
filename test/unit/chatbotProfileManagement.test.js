@@ -36,6 +36,11 @@ describe('Forge Guard user-controlled profile facts', () => {
         expect(facts.offerings).toContain('bridal makeup');
     });
 
+    it('captures a member’s explicit preferred language', () => {
+        expect(extractUserFacts('I prefer Yoruba').preferredLanguage).toBe('yoruba');
+        expect(extractUserFacts('My preferred language is Pidgin').preferredLanguage).toBe('pidgin');
+    });
+
     it('does not mistake a negative preference for a service offering', () => {
         expect(extractUserFacts('I do not like spam messages.').offerings).toEqual([]);
     });
