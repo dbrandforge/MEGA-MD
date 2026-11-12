@@ -249,8 +249,12 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         const history = await loadChatHistory(memoryKey, isGroup ? null : chatId);
         // Long-term profile facts are stored per sender, shared across that sender's
         // DMs and groups, and never keyed by a group transcript.
+        const profileSourceText = [
+            cleanForHistory,
+            ...history.filter(item => item.name !== 'Forge Bot').map(item => item.text)
+        ].join(String.fromCharCode(10));
         const userProfile = message.key.fromMe ? null
-            : await updateUserProfileFromMessage(senderId, cleanForHistory);
+            : await updateUserProfileFromMessage(senderId, profileSourceText);
         const userProfileContext = buildUserProfileContext(userProfile);
 
         // A group conversation starts only with a mention/reply to Forge Guard.
