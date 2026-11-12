@@ -87,6 +87,7 @@ function formatTimeLeft(ms) {
 let _engineStarted = false;
 let _engineTimer = null;
 let _lastBirthdayCheckMinute = null;
+let _birthdayCheckInProgress = false;
 let _activeSocket = null;
 let _trackedGroups = new Set();
 const TRACKED_GROUPS_KEY = 'forgeGuardTrackedGroups';
@@ -160,8 +161,9 @@ export function startSchedulerEngine(sock) {
             // Birthday delivery shares the existing scheduler; one check per minute
             // avoids creating another timer or adding per-member jobs.
             const birthdayMinute = Math.floor(Date.now() / 60000);
-            if (_lastBirthdayCheckMinute !== birthdayMinute) {
+            if (_lastBirthdayCheckMinute !== birthdayMinute && !_birthdayCheckInProgress) {
                 _lastBirthdayCheckMinute = birthdayMinute;
+                _birthdayCheckInProgress = true;
                 try {
                     const result = await checkBirthdayGreetings(activeSocket);
                     if (result?.groupsSent || result?.dmsSent) {
@@ -169,6 +171,8 @@ export function startSchedulerEngine(sock) {
                     }
                 } catch (error) {
                     console.error('[BIRTHDAY] Scheduler check failed:', error.message);
+                } finally {
+                    _birthdayCheckInProgress = false;
                 }
             }
             // Restore group registrations after a process restart.
