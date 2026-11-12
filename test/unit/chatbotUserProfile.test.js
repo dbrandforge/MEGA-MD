@@ -26,6 +26,8 @@ describe('Forge Guard sender-specific long-term profile memory', () => {
     it('keys long-term profiles by normalized sender identity, not group identity', () => {
         expect(getUserProfileKey('2348011111111:7@s.whatsapp.net'))
             .toBe('user:2348011111111@s.whatsapp.net');
+        expect(getUserProfileKey('2348011111111@s.whatsapp.net', '120363000000000000@g.us'))
+            .toBe('group:120363000000000000@g.us:user:2348011111111@s.whatsapp.net');
         expect(getUserProfileKey('')).toBeNull();
     });
 
@@ -47,6 +49,18 @@ describe('Forge Guard sender-specific long-term profile memory', () => {
         expect(facts.preferences).toContain('concise answers');
         expect(facts.communicationStyles).toContain('concise');
         expect(facts.preferredName).toBe('Forge');
+    });
+
+    it('answers who-am-I from saved facts without inventing details', () => {
+        const reply = buildUserIdentityReply({
+            preferredName: 'Forge',
+            professions: [{ value: 'creative director' }],
+            interests: [{ value: 'brand strategy' }]
+        });
+        expect(reply).toContain('You’re Forge');
+        expect(reply).toContain('creative director');
+        expect(reply).toContain('brand strategy');
+        expect(reply).toContain('not assumptions');
     });
 
     it('captures an explicitly requested language separately from observed language', () => {
