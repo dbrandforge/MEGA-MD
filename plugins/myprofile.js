@@ -1,3 +1,5 @@
+import { resolveIdentity } from '../lib/identity.js';
+import { getVerifiedCreatorProfile } from '../lib/forgeKnowledge.js';
 import {
     getUserProfile,
     updateUserProfileFromMessage,
@@ -7,7 +9,7 @@ import {
     extractUserFacts
 } from '../lib/chatbotUserProfile.js';
 
-function profileSummary(profile) {
+function profileSummary(profile, identity = null) {
     const lines = [];
     const fields = [
         ['Businesses / brands', 'businesses'],
@@ -24,11 +26,26 @@ function profileSummary(profile) {
     }
     if (profile?.preferredName) lines.push('*Preferred name:* ' + profile.preferredName);
     if (profile?.preferredLanguage) lines.push('*Preferred language:* ' + profile.preferredLanguage);
+    const hasExplicitProfileFacts = lines.length > 0;
+    if (identity?.role === 'creator') {
+        const creator = getVerifiedCreatorProfile();
+        lines.unshift('*Verified identity:* ' + creator.publicIdentity);
+        lines.push('*Professional roles:* ' + creator.roles.join('; '));
+        lines.push('*Professional focus:* ' + creator.professionalFocus.join('; '));
+        lines.push('*BrandForge and active work:* ' + creator.activeEcosystem.join('; '));
+        lines.push('*Known brand and client/project work discussed:* ' + creator.knownBrandAndClientWork.join('; '));
+        lines.push('*Creative direction:* ' + creator.creativePrinciples.join('; '));
+        lines.push('*Working preferences:* ' + creator.workingPreferences.join('; '));
+        lines.push('*Avoid:* ' + creator.avoid.join('; '));
+    }
     const observed = profile?.lastObservedLanguage;
-    if (observed) lines.push('*Recently observed language:* ' + observed + ' (observation, not a permanent preference)');
+    // Language is a conversational observation, not a meaningful personal profile by itself.
+    if (observed && (hasExplicitProfileFacts || identity?.role === 'creator')) {
+        lines.push('*Recently observed language:* ' + observed + ' (observation, not a permanent preference)');
+    }
     if (profile?.sharing?.groupContext === true) lines.push('*Profile sharing:* You allowed your private profile facts to be used in group conversations.');
     else lines.push('*Profile sharing:* Private by default; DM facts are not used in groups.');
-    if (lines.length === 1 && lines[0].startsWith('*Profile sharing:*')) lines.unshift('No personal profile facts are saved yet.');
+    if (!hasExplicitProfileFacts && identity?.role !== 'creator') lines.unshift('No personal profile facts are saved yet.');
     return lines.length ? lines.join('\n') : 'I don’t have much saved about you yet. You can add details with .myprofile update followed by what you want me to remember.';
 }
 
@@ -44,6 +61,7 @@ export default {
         const senderId = context.senderId || message.key.participant || chatId;
         const scopeChatId = isGroup ? chatId : null;
         const action = String(args?.[0] || 'view').toLowerCase();
+        const identity = resolveIdentity(senderId);
 
         if (action === 'privacy') {
             if (isGroup) {
@@ -52,11 +70,11 @@ export default {
             const choice = String(args?.[1] || 'status').toLowerCase();
             if (['groups', 'group', 'on', 'share'].includes(choice)) {
                 const updated = await setUserProfileGroupSharing(senderId, true);
-                return sock.sendMessage(chatId, { text: 'Your private profile facts may now be used in group conversations when relevant. You can reverse this with .myprofile privacy private.\n\n' + profileSummary(updated) }, { quoted: message });
+                return sock.sendMessage(chatId, { text: 'Your private profile facts may now be used in group conversations when relevant. You can reverse this with .myprofile privacy private.\n\n' + profileSummary(updated, identity) }, { quoted: message });
             }
             if (['private', 'off', 'none'].includes(choice)) {
                 const updated = await setUserProfileGroupSharing(senderId, false);
-                return sock.sendMessage(chatId, { text: 'Your profile is private again. DM facts will not be used in group conversations.\n\n' + profileSummary(updated) }, { quoted: message });
+                return sock.sendMessage(chatId, { text: 'Your profile is private again. DM facts will not be used in group conversations.\n\n' + profileSummary(updated, identity) }, { quoted: message });
             }
             const profile = await getUserProfile(senderId, null);
             return sock.sendMessage(chatId, { text: 'Profile sharing: ' + (profile?.sharing?.groupContext ? 'GROUPS ENABLED' : 'PRIVATE') + '\nUse .myprofile privacy groups or .myprofile privacy private.' }, { quoted: message });
@@ -74,7 +92,7 @@ export default {
                 return sock.sendMessage(chatId, { text: 'I couldn’t identify a clear profile fact in that update. Use explicit wording such as “My business is…”, “I work as…”, “I enjoy…”, “I’m building…”, or “I prefer…”.' }, { quoted: message });
             }
             const updated = await updateUserProfileFromMessage(senderId, details, { scopeChatId });
-            return sock.sendMessage(chatId, { text: '🧠 I’ve updated the profile information you explicitly shared. It will be kept in this ' + (isGroup ? 'group' : 'private chat') + ' scope.\n\n' + profileSummary(updated) }, { quoted: message });
+            return sock.sendMessage(chatId, { text: '🧠 I’ve updated the profile information you explicitly shared. It will be kept in this ' + (isGroup ? 'group' : 'private chat') + ' scope.\n\n' + profileSummary(updated, identity) }, { quoted: message });
         }
 
         if (action === 'remove') {
@@ -87,7 +105,7 @@ export default {
             if (!updated) {
                 return sock.sendMessage(chatId, { text: 'I couldn’t match that profile field. Try businesses, profession, offerings, interests, projects, preferences, communication, name or language.' }, { quoted: message });
             }
-            return sock.sendMessage(chatId, { text: 'Updated. Here is what remains in your profile:\n\n' + profileSummary(updated) }, { quoted: message });
+            return sock.sendMessage(chatId, { text: 'Updated. Here is what remains in your profile:\n\n' + profileSummary(updated, identity) }, { quoted: message });
         }
 
         if (action === 'clear') {
@@ -99,6 +117,6 @@ export default {
             return sock.sendMessage(chatId, { text: 'Usage: .myprofile | .myprofile update <facts> | .myprofile remove <field> [value] | .myprofile privacy private|groups | .myprofile clear' }, { quoted: message });
         }
         const profile = await getUserProfile(senderId, scopeChatId);
-        return sock.sendMessage(chatId, { text: '*WHAT I REMEMBER ABOUT YOU*\n\n' + profileSummary(profile) + '\n\nUse .myprofile update, remove or clear to manage this information.' }, { quoted: message });
+        return sock.sendMessage(chatId, { text: '*WHAT I REMEMBER ABOUT YOU*\n\n' + profileSummary(profile, identity) + '\n\nUse .myprofile update, remove or clear to manage this information.' }, { quoted: message });
     }
 };

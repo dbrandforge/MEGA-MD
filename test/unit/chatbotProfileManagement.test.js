@@ -11,6 +11,7 @@ import store from '../../lib/lightweight_store.js';
 import {
     extractUserFacts,
     getUserProfile,
+    buildUserProfileContext,
     removeUserProfileFact,
     clearUserProfile,
     setUserProfileGroupSharing
@@ -34,6 +35,10 @@ describe('Forge Guard user-controlled profile facts', () => {
         const facts = extractUserFacts('My business is Ray’s Glitz & Glam. I specialize in bridal makeup.');
         expect(facts.businesses).toContain('Ray’s Glitz & Glam');
         expect(facts.offerings).toContain('bridal makeup');
+    });
+
+    it('does not treat observed language alone as a personal profile', () => {
+        expect(buildUserProfileContext({ lastObservedLanguage: 'english', languageCounts: { english: 3 } })).toBe('');
     });
 
     it('captures a member’s explicit preferred language', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildForgeKnowledgeContext, buildGroupConversationModeContext, getForgeKnowledgeReply } from '../../lib/forgeKnowledge.js';
+import { buildForgeKnowledgeContext, buildGroupConversationModeContext, getForgeKnowledgeReply, getVerifiedCreatorProfile } from '../../lib/forgeKnowledge.js';
 
 describe('Forge Guard verified knowledge and group-aware conversation context', () => {
     it('answers BrandForge questions from verified positioning and services', () => {
@@ -8,6 +8,35 @@ describe('Forge Guard verified knowledge and group-aware conversation context', 
         expect(reply).toContain('premium, strategy-led branding');
         expect(reply).toContain('Forging Brands | Fueling Growth');
         expect(reply).toContain('Your brand should be hard to forget');
+    });
+
+    it('routes BrandForge company questions to the company answer, not the founder biography', () => {
+        for (const question of [
+            'Tell me about The BrandForge',
+            'Tell me about the company',
+            'Tell.me about the company',
+            'Tell me about your creators marketing agency',
+            'Tell me about your branding agency'
+        ]) {
+            const reply = getForgeKnowledgeReply(question);
+            expect(reply).toContain('The BrandForge operates under AB BRANDFORGE ENTERPRISE');
+            expect(reply).toContain('premium, strategy-led branding');
+            expect(reply).not.toBe('Forge dcreative (Abraham) is a Creative Director and the founder of The BrandForge.');
+        }
+    });
+
+    it('keeps explicit founder questions routed to the founder profile', () => {
+        expect(getForgeKnowledgeReply('Tell me about Forge')).toContain('Creative Director, business owner');
+        expect(getForgeKnowledgeReply('Tell me about Abraham')).toContain('Creative Director');
+    });
+
+    it('provides a verified creator profile for preloaded personal context', () => {
+        const profile = getVerifiedCreatorProfile();
+        expect(profile.roles).toContain('Creative Director');
+        expect(profile.professionalFocus).toContain('brand strategy and positioning');
+        expect(profile.knownBrandAndClientWork).toContain('AA Yogurt');
+        expect(profile.avoid).toContain('generic AI-looking design');
+        expect(profile.publicIdentity).not.toContain('Oyetunji');
     });
 
     it('returns official channels when someone simply asks for your socials', () => {
@@ -54,9 +83,11 @@ describe('Forge Guard verified knowledge and group-aware conversation context', 
         expect(general).not.toContain('adult-oriented conversational culture');
     });
 
-    it('does not infer business ownership from a mention and treats creator context as identity-only', () => {
+    it('loads the verified creator profile only for the verified creator identity', () => {
         const context = buildForgeKnowledgeContext('hello', { role: 'creator' });
         expect(context).toContain('a person’s business or employer is not their personal name');
         expect(context).toContain('verified Creator and Founder Forge');
+        expect(context).toContain('premium, modern, editorial and human-centered');
+        expect(context).toContain('generic AI-looking design');
     });
 });
