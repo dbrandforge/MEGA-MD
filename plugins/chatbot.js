@@ -11,6 +11,7 @@ import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAckn
 import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
 import { isExplicitlyAddressedInGroup, hasActiveGroupFollowup, jidMatchesAnyBotIdentity, isBotNameTrigger, stripBotNameTrigger } from '../lib/chatbotAccess.js';
 import { createKeyedSerialExecutor, getConversationMemoryKey } from '../lib/chatbotConversationMemory.js';
+import { updateUserProfileFromMessage, buildUserProfileContext } from '../lib/chatbotUserProfile.js';
 import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI } from '../lib/aiService.js';
 import { evaluateArithmetic, evaluateArithmeticFollowup, formatArithmeticAnswer } from '../lib/arithmetic.js';
 import { detectMessageLanguage, getLocalizedAnswerPrefix, getLocalizedFailureReply, getLocalizedSourceSummaryFailure } from '../lib/chatbotLanguage.js';
@@ -246,6 +247,11 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         // Group history is keyed by (group, participant); DM history is keyed by participant.
         // Legacy history is migrated only for one-to-one chats, never from a mixed group log.
         const history = await loadChatHistory(memoryKey, isGroup ? null : chatId);
+        // Long-term profile facts are stored per sender, shared across that sender's
+        // DMs and groups, and never keyed by a group transcript.
+        const userProfile = message.key.fromMe ? null
+            : await updateUserProfileFromMessage(senderId, cleanForHistory);
+        const userProfileContext = buildUserProfileContext(userProfile);
 
         // A group conversation starts only with a mention/reply to Forge Guard.
         // Once started, only that same participant can continue their own transcript
@@ -316,7 +322,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                         const liveReply = await askFastAI(chatbotQuery, {
                             timeoutMs: 10000,
                             history: history.slice(0, -1).slice(-8),
-                            liveContext: buildLiveKnowledgeContext(liveResult),
+                            liveContext: [buildLiveKnowledgeContext(liveResult), userProfileContext].filter(Boolean).join('\\n\\n'),
                             language: responseLanguage
                         });
                         response = sanitizeAIResponse(liveReply, chatbotQuery) + formatLiveKnowledgeSources(liveResult, new Date(), responseLanguage);
@@ -365,6 +371,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                         response = sanitizeAIResponse(await askFastAI(chatbotQuery, {
                             timeoutMs: 8000,
                             history: priorTurns,
+                            liveContext: userProfileContext,
                             language: responseLanguage
                         }), chatbotQuery);
                         console.info(`[Chatbot AI] outcome=success latency_ms=${Date.now() - aiStartedAt}`);
