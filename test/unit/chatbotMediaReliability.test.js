@@ -77,6 +77,7 @@ describe('chatbot media provider reliability', () => {
             .mockResolvedValueOnce({ data: { candidates: [{ content: { parts: [{ text: 'Recovered' }] } }] } });
 
         const pending = postGeminiWithRetry('https://example.test/generateContent', {}, {}, 'voice_transcription');
+        await vi.waitFor(() => expect(axiosPost).toHaveBeenCalledTimes(1));
         await vi.advanceTimersByTimeAsync(700);
 
         await expect(pending).resolves.toMatchObject({ data: { candidates: [{ content: { parts: [{ text: 'Recovered' }] } }] } });
