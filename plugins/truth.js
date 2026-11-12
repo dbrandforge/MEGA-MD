@@ -1,6 +1,7 @@
 import { getUserGender } from './gender.js';
 import { getTruths, randomFrom } from '../data/todLists.js';
 import { isGameAllowed } from './daylock.js';
+import { savePendingGenderGame } from '../lib/genderGameContinuation.js';
 import { startSoloSession, setSoloQuestionMessage, endSoloSession } from './truth-continue.js';
 
 export default {
