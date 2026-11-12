@@ -3,6 +3,7 @@ import {
     updateUserProfileFromMessage,
     removeUserProfileFact,
     clearUserProfile,
+    setUserProfileGroupSharing,
     extractUserFacts
 } from '../lib/chatbotUserProfile.js';
 
@@ -25,6 +26,8 @@ function profileSummary(profile) {
     if (profile?.preferredLanguage) lines.push('*Preferred language:* ' + profile.preferredLanguage);
     const observed = profile?.lastObservedLanguage;
     if (observed) lines.push('*Recently observed language:* ' + observed + ' (observation, not a permanent preference)');
+    if (profile?.sharing?.groupContext === true) lines.push('*Profile sharing:* You allowed your private profile facts to be used in group conversations.');
+    else lines.push('*Profile sharing:* Private by default; DM facts are not used in groups.');
     return lines.length ? lines.join('\n') : 'I don’t have much saved about you yet. You can add details with .myprofile update followed by what you want me to remember.';
 }
 
@@ -33,13 +36,30 @@ export default {
     aliases: ['myinfo', 'mybotprofile'],
     category: 'general',
     description: 'View and manage the information Forge Guard remembers about you.',
-    usage: '.myprofile | .myprofile update <facts> | .myprofile remove <field> [value] | .myprofile clear',
+    usage: '.myprofile | .myprofile update <facts> | .myprofile remove <field> [value] | .myprofile privacy private|groups | .myprofile clear',
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
         const isGroup = context.isGroup ?? chatId.endsWith('@g.us');
         const senderId = context.senderId || message.key.participant || chatId;
         const scopeChatId = isGroup ? chatId : null;
         const action = String(args?.[0] || 'view').toLowerCase();
+
+        if (action === 'privacy') {
+            if (isGroup) {
+                return sock.sendMessage(chatId, { text: 'Change your profile-sharing preference in a private chat with me: .myprofile privacy private or .myprofile privacy groups.' }, { quoted: message });
+            }
+            const choice = String(args?.[1] || 'status').toLowerCase();
+            if (['groups', 'group', 'on', 'share'].includes(choice)) {
+                const updated = await setUserProfileGroupSharing(senderId, true);
+                return sock.sendMessage(chatId, { text: 'Your private profile facts may now be used in group conversations when relevant. You can reverse this with .myprofile privacy private.\n\n' + profileSummary(updated) }, { quoted: message });
+            }
+            if (['private', 'off', 'none'].includes(choice)) {
+                const updated = await setUserProfileGroupSharing(senderId, false);
+                return sock.sendMessage(chatId, { text: 'Your profile is private again. DM facts will not be used in group conversations.\n\n' + profileSummary(updated) }, { quoted: message });
+            }
+            const profile = await getUserProfile(senderId, null);
+            return sock.sendMessage(chatId, { text: 'Profile sharing: ' + (profile?.sharing?.groupContext ? 'GROUPS ENABLED' : 'PRIVATE') + '\nUse .myprofile privacy groups or .myprofile privacy private.' }, { quoted: message });
+        }
 
         if (action === 'update') {
             const details = args.slice(1).join(' ').trim();
@@ -75,7 +95,7 @@ export default {
         }
 
         if (action !== 'view' && action !== 'status') {
-            return sock.sendMessage(chatId, { text: 'Usage: .myprofile | .myprofile update <facts> | .myprofile remove <field> [value] | .myprofile clear' }, { quoted: message });
+            return sock.sendMessage(chatId, { text: 'Usage: .myprofile | .myprofile update <facts> | .myprofile remove <field> [value] | .myprofile privacy private|groups | .myprofile clear' }, { quoted: message });
         }
         const profile = await getUserProfile(senderId, scopeChatId);
         return sock.sendMessage(chatId, { text: '*WHAT I REMEMBER ABOUT YOU*\n\n' + profileSummary(profile) + '\n\nUse .myprofile update, remove or clear to manage this information.' }, { quoted: message });
