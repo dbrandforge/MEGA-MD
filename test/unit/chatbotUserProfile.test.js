@@ -37,4 +37,20 @@ describe('Forge Guard sender-specific long-term profile memory', () => {
         expect(context).toContain('this sender, not other group members');
         expect(buildUserProfileContext({ businesses: [] })).toBe('');
     });
+    it('extracts additional profile categories from explicit statements', () => {
+        const facts = extractUserFacts(
+            "I'm a creative director. I'm interested in brand strategy. I'm building a new training platform. I prefer concise answers. Call me Forge."
+        );
+        expect(facts.professions).toContain('creative director');
+        expect(facts.interests).toContain('brand strategy');
+        expect(facts.projects).toContain('a new training platform');
+        expect(facts.preferences).toContain('concise answers');
+        expect(facts.communicationStyles).toContain('concise');
+        expect(facts.preferredName).toBe('Forge');
+    });
+
+    it('captures an explicitly requested language separately from observed language', () => {
+        expect(extractUserFacts('Please speak to me in Yoruba.').preferredLanguage).toBe('yoruba');
+    });
+
 });
