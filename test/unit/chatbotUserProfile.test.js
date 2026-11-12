@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     buildUserProfileContext,
     extractBusinessNames,
+    extractUserFacts,
     getUserProfileKey
 } from '../../lib/chatbotUserProfile.js';
 
