@@ -9,6 +9,10 @@ vi.mock('../../lib/lightweight_store.js', () => ({
         },
         async saveSetting(chatId, key, value) {
             settings.set(`${chatId}:${key}`, structuredClone(value));
+        },
+        async saveSettingVerified(chatId, key, value) {
+            settings.set(`${chatId}:${key}`, structuredClone(value));
+            return true;
         }
     }
 }));
@@ -16,6 +20,7 @@ vi.mock('../../lib/lightweight_store.js', () => ({
 import {
     getChatbotMediaModes,
     normalizeVoiceMimeType,
+    reserveMediaSlot,
     setChatbotMediaMode
 } from '../../lib/chatbotMedia.js';
 
@@ -44,6 +49,18 @@ describe('chatbot media settings and audio handling', () => {
             stickers: false,
             voiceNotes: false
         });
+    });
+
+    it('enforces persisted global and per-chat voice-note ceilings', async () => {
+        for (let i = 0; i < 5; i++) {
+            await expect(reserveMediaSlot('group-a', `member-${i}`, 'voice')).resolves.toBe(true);
+        }
+        await expect(reserveMediaSlot('group-a', 'member-overflow', 'voice')).resolves.toBe(false);
+
+        for (let i = 0; i < 5; i++) {
+            await expect(reserveMediaSlot(`group-${i + 1}`, `member-${i + 5}`, 'voice')).resolves.toBe(true);
+        }
+        await expect(reserveMediaSlot('group-global-overflow', 'member-global-overflow', 'voice')).resolves.toBe(false);
     });
 
     it('rejects unknown media settings', async () => {
