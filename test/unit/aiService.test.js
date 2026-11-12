@@ -11,6 +11,7 @@ describe('Forge Guard conversation style instructions', () => {
   it('uses individual preferences and keeps group context scoped', () => {
     const prompt = buildConversationPrompt('How far?', [], 'GROUP CONVERSATION MODE: MATURED MINDED.');
     expect(prompt).toContain('Adapt to the individual using confirmed profile preferences');
+    expect(prompt).toContain('Do not infer personality, sexual interests or comfort from gender or stereotypes');
     expect(prompt).toContain('Matured Minded is adult-oriented');
   });
 });
