@@ -14,6 +14,7 @@ import { createKeyedSerialExecutor, getConversationMemoryKey } from '../lib/chat
 import { updateUserProfileFromMessage, buildUserProfileContext, buildUserIdentityReply } from '../lib/chatbotUserProfile.js';
 import { recordGroupInteraction, buildGroupContinuityContext } from '../lib/chatbotGroupMemory.js';
 import { buildForgeKnowledgeContext, buildGroupConversationModeContext, getForgeKnowledgeReply } from '../lib/forgeKnowledge.js';
+import { getChatbotFailureFallback } from '../lib/chatbotFailureFallback.js';
 import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI } from '../lib/aiService.js';
 import { evaluateArithmetic, evaluateArithmeticFollowup, formatArithmeticAnswer } from '../lib/arithmetic.js';
 import { detectMessageLanguage, getLocalizedAnswerPrefix, getLocalizedFailureReply, getLocalizedSourceSummaryFailure } from '../lib/chatbotLanguage.js';
@@ -404,7 +405,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                         }), chatbotQuery);
                         console.info(`[Chatbot AI] outcome=success latency_ms=${Date.now() - aiStartedAt}`);
                     } catch (error) {
-                        response = getLocalizedFailureReply(responseLanguage);
+                        response = getChatbotFailureFallback(chatbotQuery, { language: responseLanguage, intent, chatId, previousReply: previousBotTurn?.text, gender: registeredGender });
                         const reason = String(error?.code || error?.message || 'unknown').slice(0, 100).replaceAll(String.fromCharCode(10), ' ').replaceAll(String.fromCharCode(13), ' ');
                         console.warn(`[Chatbot AI] outcome=unavailable latency_ms=${Date.now() - aiStartedAt} reason=${reason}`);
                     }
