@@ -349,7 +349,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                 } else {
                     try {
                         const liveReply = await askFastAI(chatbotQuery, {
-                            timeoutMs: 10000,
+                            timeoutMs: 6500,
                             history: history.slice(0, -1).slice(-8),
                             liveContext: [buildLiveKnowledgeContext(liveResult), combinedProfileContext].filter(Boolean).join(String.fromCharCode(10, 10)),
                             language: responseLanguage
@@ -398,7 +398,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                     const aiStartedAt = Date.now();
                     try {
                         response = sanitizeAIResponse(await askFastAI(chatbotQuery, {
-                            timeoutMs: 8000,
+                            timeoutMs: 5000,
                             history: priorTurns,
                             liveContext: combinedProfileContext,
                             language: responseLanguage
