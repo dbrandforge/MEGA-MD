@@ -321,7 +321,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         const previousBotTurn = [...history].reverse().find(item => item.name === 'Forge Bot') || null;
         const previousBotReply = previousBotTurn?.text || '';
         const displayName = String(message.pushName || sock.store?.contacts?.[senderId]?.name || '').trim().slice(0, 60);
-        const asksWhoAmI = /\\bwho am i\\b|\\bwhat do you know about me\\b|\\bdescribe me\\b/i.test(cleanForHistory);
+        const asksWhoAmI = /\bwho am i\b|\bwhat do you know about me\b|\bdescribe me\b/i.test(cleanForHistory);
         const profileIdentityReply = asksWhoAmI && !identity ? buildUserIdentityReply(userProfile, displayName) : null;
         let registeredGender = null;
         try { registeredGender = await getUserGender(senderId); } catch {}
