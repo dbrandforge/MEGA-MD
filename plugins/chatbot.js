@@ -101,6 +101,21 @@ export async function saveUserGroupData(data) {
     }
 }
 
+export async function isChatbotEnabledForMessage(chatId, senderId) {
+    const data = await loadUserGroupData();
+    if (!data.chatbot || typeof data.chatbot !== 'object') data.chatbot = {};
+    if (String(chatId || '').endsWith('@g.us')) {
+        const TARGET = '120363405434471171@g.us';
+        if (chatId === TARGET && data.chatbot[chatId] === undefined) {
+            data.chatbot[chatId] = true;
+            await saveUserGroupData(data);
+        }
+        return data.chatbot[chatId] === true;
+    }
+    return getDMChatbotPermission(data, senderId, chatId);
+}
+
+
 async function loadChatHistory(memoryKey, legacyDirectChatId = null) {
     if (chatMemory.loaded.has(memoryKey)) return chatMemory.messages.get(memoryKey) || [];
     try {
@@ -241,9 +256,12 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
             || quotedMessage.imageMessage?.caption
             || quotedMessage.videoMessage?.caption
             || '';
-        const chatbotQuery = quotedText && /^(answer this|answer|explain this|tell me about this|what about this|help me with this)[.!?\s👇]*$/i.test(cleanForHistory)
-            ? `The user is asking you to answer the following quoted message: "${String(quotedText).slice(0, 1500)}". Their instruction: ${cleanForHistory}`
-            : cleanForHistory;
+        const mediaContext = String(message?.mediaContext || '').trim().slice(0, 1200);
+        const chatbotQuery = mediaContext
+            ? `${cleanForHistory}\\n${mediaContext}`
+            : (quotedText && /^(answer this|answer|explain this|tell me about this|what about this|help me with this)[.!?\\s👇]*$/i.test(cleanForHistory)
+                ? `The user is asking you to answer the following quoted message: "${String(quotedText).slice(0, 1500)}". Their instruction: ${cleanForHistory}`
+                : cleanForHistory);
 
         if (!cleanForHistory) return;
 
