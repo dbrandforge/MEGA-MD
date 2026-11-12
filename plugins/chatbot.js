@@ -256,7 +256,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         ].join(String.fromCharCode(10));
         const profileLanguage = detectMessageLanguage(cleanForHistory, history);
         const userProfile = message.key.fromMe ? null
-            : await updateUserProfileFromMessage(senderId, profileSourceText, { language: profileLanguage });
+            : await updateUserProfileFromMessage(senderId, profileSourceText, { language: profileLanguage, scopeChatId: isGroup ? chatId : null });
         const userProfileContext = buildUserProfileContext(userProfile);
         // Group-local interaction memory is deliberately separate from private profile memory.
         if (isGroup && !message.key.fromMe) {
