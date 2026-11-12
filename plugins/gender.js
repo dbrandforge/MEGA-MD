@@ -111,5 +111,7 @@ export default {
                 : `✅ Gender set to *${arg0}*.\nGames will use the correct list for you.`,
             ...channelInfo
         }, { quoted: message });
+        try { const { resumeHotSeatPlayer } = await import('./hotseat.js'); await resumeHotSeatPlayer(sock, chatId, senderId); } catch (error) { console.error('Hot Seat gender resume failed:', error.message); }
+        try { await resumePendingGenderGame(sock, chatId, senderId, message, channelInfo); } catch (error) { console.error('Pending gender-game resume failed:', error.message); }
     }
 };
