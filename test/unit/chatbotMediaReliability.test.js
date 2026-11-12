@@ -34,6 +34,7 @@ vi.mock('../../lib/print.js', () => ({ printLog: vi.fn() }));
 
 import {
     createGeminiMediaPayload,
+    postGeminiWithRetry,
     getSafeGeminiErrorDetail,
     releaseMediaSlot,
     reserveMediaSlot,
@@ -44,6 +45,7 @@ describe('chatbot media provider reliability', () => {
     beforeEach(() => {
         settings.clear();
         axiosPost.mockReset();
+        vi.useRealTimers();
     });
 
     it('builds Gemini generateContent payloads using REST camelCase inlineData', () => {
@@ -66,6 +68,20 @@ describe('chatbot media provider reliability', () => {
         expect(shouldRetryGeminiRequest({ code: 'ECONNABORTED' })).toBe(true);
         expect(shouldRetryGeminiRequest({ response: { status: 400 } })).toBe(false);
         expect(shouldRetryGeminiRequest({ response: { status: 401 } })).toBe(false);
+    });
+
+    it('retries a transient 503 once and returns the recovered Gemini response', async () => {
+        vi.useFakeTimers();
+        axiosPost
+            .mockRejectedValueOnce({ response: { status: 503 } })
+            .mockResolvedValueOnce({ data: { candidates: [{ content: { parts: [{ text: 'Recovered' }] } }] } });
+
+        const pending = postGeminiWithRetry('https://example.test/generateContent', {}, {}, 'voice_transcription');
+        await vi.advanceTimersByTimeAsync(700);
+
+        await expect(pending).resolves.toMatchObject({ data: { candidates: [{ content: { parts: [{ text: 'Recovered' }] } }] } });
+        expect(axiosPost).toHaveBeenCalledTimes(2);
+        expect(axiosPost.mock.calls[0][2].timeout).toBe(45_000);
     });
 
     it('extracts bounded provider diagnostics without exposing credential-like values', () => {
