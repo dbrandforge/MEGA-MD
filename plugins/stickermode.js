@@ -19,7 +19,7 @@ export default {
         }
         const modes = await getChatbotMediaModes(chatId);
         return sock.sendMessage(chatId, {
-            text: `🖼️ *STICKER CHATBOT MODE*\n\nStatus: ${modes.stickers ? '🟢 ON' : '🔴 OFF'}\n\n${action === 'status' ? 'No setting changed.' : `Sticker replies switched ${action.toUpperCase()} for this chat.`}\n\nDaily caps: 5 per sender, 10 per chat, and 25 across the bot. The chatbot must also be enabled. In groups, Forge Guard only processes stickers when directly addressed.`
+            text: `🖼️ *STICKER CHATBOT MODE*\n\nStatus: ${modes.stickers ? '🟢 ON' : '🔴 OFF'}\n\n${action === 'status' ? 'No setting changed.' : `Sticker replies switched ${action.toUpperCase()} for this chat.`}\n\nDaily caps: 5 per sender, 10 per chat, and 20 across the bot. The chatbot must also be enabled. In groups, Forge Guard only processes stickers when directly addressed.`
         }, { quoted: message });
     }
 };
