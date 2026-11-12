@@ -141,7 +141,7 @@ export default {
             const gender = await getUserGender(senderId);
             if (!gender) {
                 await savePendingGenderGame(chatId, senderId, { command: 'basket', args: args || [], requester: senderId, pushName: message.pushName });
-                return sock.sendMessage(chatId, { text: `${GENDER_PROMPT}\\n\\nYour Basket request will resume automatically after registration.`, ...channelInfo }, { quoted: message });
+                return sock.sendMessage(chatId, { text: `${GENDER_PROMPT}\n\nYour Basket request will resume automatically after registration.`, ...channelInfo }, { quoted: message });
             }
 
             const pool = poolFor(gender);
