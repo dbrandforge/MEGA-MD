@@ -2,6 +2,7 @@ import store from '../lib/lightweight_store.js';
 import { getUserGender } from './gender.js';
 import { getTruths, getDares, randomFrom } from '../data/todLists.js';
 import { isGameAllowed } from './daylock.js';
+import { savePendingGenderGame } from '../lib/genderGameContinuation.js';
 
 const SESSIONS_KEY = 'todSessions';
 const TIMEOUT_MS = 10 * 60 * 1000;
