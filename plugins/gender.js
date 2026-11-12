@@ -3,6 +3,7 @@
  * Members can set ONCE. After that only admins can change.
  */
 import store from '../lib/lightweight_store.js';
+import { resumePendingGenderGame } from '../lib/genderGameContinuation.js';
 
 const GENDER_KEY = 'userGenders';
 
@@ -64,12 +65,14 @@ export default {
             const target = mentioned[0];
             const g = (arg1 === 'guy' || arg1 === 'lady') ? arg1 : arg0;
             await setUserGender(target, g);
-            try { const { resumeHotSeatPlayer } = await import('./hotseat.js'); await resumeHotSeatPlayer(sock, chatId, target); } catch (error) { console.error('Hot Seat gender resume failed:', error.message); }
-            return sock.sendMessage(chatId, {
+            await sock.sendMessage(chatId, {
                 text: `✅ Gender for @${target.split('@')[0]} set to *${g}* (admin).`,
                 mentions: [target],
                 ...channelInfo
             }, { quoted: message });
+            try { const { resumeHotSeatPlayer } = await import('./hotseat.js'); await resumeHotSeatPlayer(sock, chatId, target); } catch (error) { console.error('Hot Seat gender resume failed:', error.message); }
+            try { await resumePendingGenderGame(sock, chatId, target, message, channelInfo); } catch (error) { console.error('Pending gender-game resume failed:', error.message); }
+            return;
         }
 
         if (!arg0) {
@@ -102,12 +105,13 @@ export default {
         }
 
         await setUserGender(senderId, arg0);
-        try { const { resumeHotSeatPlayer } = await import('./hotseat.js'); await resumeHotSeatPlayer(sock, chatId, senderId); } catch (error) { console.error('Hot Seat gender resume failed:', error.message); }
         await sock.sendMessage(chatId, {
             text: existing && isAdmin
                 ? `✅ Gender updated to *${arg0}* (admin).`
                 : `✅ Gender set to *${arg0}*.\nGames will use the correct list for you.`,
             ...channelInfo
         }, { quoted: message });
+        try { const { resumeHotSeatPlayer } = await import('./hotseat.js'); await resumeHotSeatPlayer(sock, chatId, senderId); } catch (error) { console.error('Hot Seat gender resume failed:', error.message); }
+        try { await resumePendingGenderGame(sock, chatId, senderId, message, channelInfo); } catch (error) { console.error('Pending gender-game resume failed:', error.message); }
     }
 };

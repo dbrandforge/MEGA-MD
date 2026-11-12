@@ -1,6 +1,7 @@
 import { getUserGender } from './gender.js';
 import { getDares, randomFrom } from '../data/todLists.js';
 import { isGameAllowed } from './daylock.js';
+import { savePendingGenderGame } from '../lib/genderGameContinuation.js';
 import { startSoloSession, setSoloQuestionMessage } from './truth-continue.js';
 
 export default {
@@ -21,8 +22,9 @@ export default {
 
         const gender = await getUserGender(senderId);
         if (!gender) {
+            await savePendingGenderGame(chatId, senderId, { command: 'dare', args: [], requester: senderId, pushName: message.pushName });
             return sock.sendMessage(chatId, {
-                text: `You need to set your gender first before Truth & Dare.\n\nType:\n.gender guy\nor\n.gender lady\n\n(You can only set this once. After that only an admin can change it.)`,
+                text: `You need to set your gender first before Dare.\n\nType:\n.gender guy\nor\n.gender lady\n\nYour Dare game will resume automatically after registration.`,
                 ...channelInfo
             }, { quoted: message });
         }

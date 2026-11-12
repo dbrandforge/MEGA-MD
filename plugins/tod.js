@@ -2,6 +2,7 @@ import store from '../lib/lightweight_store.js';
 import { getUserGender } from './gender.js';
 import { getTruths, getDares, randomFrom } from '../data/todLists.js';
 import { isGameAllowed } from './daylock.js';
+import { savePendingGenderGame } from '../lib/genderGameContinuation.js';
 
 const SESSIONS_KEY = 'todSessions';
 const TIMEOUT_MS = 10 * 60 * 1000;
@@ -240,8 +241,9 @@ export default {
 
         const gender = await getUserGender(senderId);
         if (!gender) {
+            await savePendingGenderGame(chatId, senderId, { command: 'tod', args: Array.isArray(args) ? args : [], requester: senderId, mentionedJids: message.message?.extendedTextMessage?.contextInfo?.mentionedJid || [], pushName: message.pushName });
             return sock.sendMessage(chatId, {
-                text: `Set your gender first:\n*.gender guy*\n*.gender lady*`,
+                text: `Set your gender first:\n*.gender guy*\n*.gender lady*\n\nYour Truth or Dare request will resume automatically after registration.`,
                 ...channelInfo
             }, { quoted: message });
         }
@@ -275,8 +277,9 @@ export default {
             }
             const partnerGender = await getUserGender(partner);
             if (!partnerGender) {
+                await savePendingGenderGame(chatId, partner, { command: 'tod', args: Array.isArray(args) ? args : ['paired'], requester: senderId, mentionedJids: [partner], pushName: message.pushName });
                 return sock.sendMessage(chatId, {
-                    text: `Your tagged partner must set their gender first:\\n*.gender guy*\\n*.gender lady*\\n\\nAsk them to set it, then start the paired game again.`,
+                    text: `Your tagged partner must set their gender first:\n*.gender guy*\n*.gender lady*\n\nThe paired game will start automatically once they register.`,
                     ...channelInfo
                 }, { quoted: message });
             }
