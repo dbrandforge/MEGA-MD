@@ -9,6 +9,13 @@ describe('Forge Guard verified knowledge and group-aware conversation context', 
         expect(reply).toContain('Your brand should be hard to forget');
     });
 
+    it('answers direct questions about the founder with verified professional facts', () => {
+        const reply = getForgeKnowledgeReply('Tell me about Forge');
+        expect(reply).toContain('Creative Director');
+        expect(reply).toContain('founder of The BrandForge');
+        expect(reply).toContain('linkedin.com/in/abraham-oyetunji');
+    });
+
     it('returns the official BrandForge social handles without inventing separate account names', () => {
         const reply = getForgeKnowledgeReply('What are The BrandForge socials?');
         expect(reply).toContain('@dbrandforge');
