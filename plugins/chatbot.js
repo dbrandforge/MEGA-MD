@@ -322,7 +322,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                         const liveReply = await askFastAI(chatbotQuery, {
                             timeoutMs: 10000,
                             history: history.slice(0, -1).slice(-8),
-                            liveContext: [buildLiveKnowledgeContext(liveResult), userProfileContext].filter(Boolean).join('\n\n'),
+                            liveContext: [buildLiveKnowledgeContext(liveResult), userProfileContext].filter(Boolean).join(String.fromCharCode(10, 10)),
                             language: responseLanguage
                         });
                         response = sanitizeAIResponse(liveReply, chatbotQuery) + formatLiveKnowledgeSources(liveResult, new Date(), responseLanguage);
