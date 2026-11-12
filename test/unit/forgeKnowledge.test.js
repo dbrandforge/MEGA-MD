@@ -4,6 +4,7 @@ import { buildForgeKnowledgeContext, buildGroupConversationModeContext, getForge
 describe('Forge Guard verified knowledge and group-aware conversation context', () => {
     it('answers BrandForge questions from verified positioning and services', () => {
         const reply = getForgeKnowledgeReply('What do you remember about The BrandForge?');
+        expect(reply).toContain('AB BRANDFORGE ENTERPRISE');
         expect(reply).toContain('premium, strategy-led branding');
         expect(reply).toContain('Forging Brands | Fueling Growth');
         expect(reply).toContain('Your brand should be hard to forget');
@@ -16,6 +17,7 @@ describe('Forge Guard verified knowledge and group-aware conversation context', 
 
     it('answers direct questions about the founder with verified professional facts', () => {
         const reply = getForgeKnowledgeReply('Tell me about Forge');
+        expect(reply).toContain('Abraham');
         expect(reply).toContain('Creative Director');
         expect(reply).toContain('founder of The BrandForge');
         expect(reply).toContain('linkedin.com/in/abraham-oyetunji');
@@ -43,6 +45,7 @@ describe('Forge Guard verified knowledge and group-aware conversation context', 
         const mature = buildGroupConversationModeContext({ featureSets: { maturedMinded: true } }, 'some-group@g.us');
         expect(mature).toContain('MATURED MINDED');
         expect(mature).toContain('consenting adults');
+        expect(mature).toContain('Do not assume someone is an adult');
         expect(mature).toContain('Do not force mature topics');
         const general = buildGroupConversationModeContext({ featureSets: { general: true } }, 'another-group@g.us');
         expect(general).toContain('GENERAL');
