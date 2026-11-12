@@ -28,6 +28,7 @@ function profileSummary(profile) {
     if (observed) lines.push('*Recently observed language:* ' + observed + ' (observation, not a permanent preference)');
     if (profile?.sharing?.groupContext === true) lines.push('*Profile sharing:* You allowed your private profile facts to be used in group conversations.');
     else lines.push('*Profile sharing:* Private by default; DM facts are not used in groups.');
+    if (lines.length === 1 && lines[0].startsWith('*Profile sharing:*')) lines.unshift('No personal profile facts are saved yet.');
     return lines.length ? lines.join('\n') : 'I don’t have much saved about you yet. You can add details with .myprofile update followed by what you want me to remember.';
 }
 
