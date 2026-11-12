@@ -7,10 +7,9 @@ vi.mock('../../lib/lightweight_store.js', () => ({
     }
 }));
 
-const todHandler = vi.fn();
-const truthHandler = vi.fn();
-const dareHandler = vi.fn();
-const basketHandler = vi.fn();
+const { todHandler, truthHandler, dareHandler, basketHandler } = vi.hoisted(() => ({
+    todHandler: vi.fn(), truthHandler: vi.fn(), dareHandler: vi.fn(), basketHandler: vi.fn()
+}));
 
 vi.mock('../../plugins/tod.js', () => ({ default: { handler: todHandler } }));
 vi.mock('../../plugins/truth.js', () => ({ default: { handler: truthHandler } }));
