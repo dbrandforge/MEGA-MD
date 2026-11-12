@@ -19,7 +19,7 @@ export default {
         }
         const modes = await getChatbotMediaModes(chatId);
         return sock.sendMessage(chatId, {
-            text: `🎙️ *VOICE NOTE CHATBOT MODE*\n\nStatus: ${modes.voiceNotes ? '🟢 ON' : '🔴 OFF'}\n\n${action === 'status' ? 'No setting changed.' : `Voice-note replies switched ${action.toUpperCase()} for this chat.`}\n\nMaximum length: 45 seconds. Daily processing cap: 8 voice notes per sender. The chatbot must also be enabled. In groups, Forge Guard only processes voice notes when directly addressed.`
+            text: `🎙️ *VOICE NOTE CHATBOT MODE*\n\nStatus: ${modes.voiceNotes ? '🟢 ON' : '🔴 OFF'}\n\n${action === 'status' ? 'No setting changed.' : `Voice-note replies switched ${action.toUpperCase()} for this chat.`}\n\nMaximum length: 60 seconds, 2 MB. Daily caps: 3 per sender, 5 per chat, and 10 across the bot. The chatbot must also be enabled. In groups, Forge Guard only processes voice notes when directly addressed.`
         }, { quoted: message });
     }
 };
