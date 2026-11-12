@@ -11,7 +11,8 @@ import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAckn
 import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
 import { isExplicitlyAddressedInGroup, hasActiveGroupFollowup, jidMatchesAnyBotIdentity, isBotNameTrigger, stripBotNameTrigger } from '../lib/chatbotAccess.js';
 import { createKeyedSerialExecutor, getConversationMemoryKey } from '../lib/chatbotConversationMemory.js';
-import { updateUserProfileFromMessage, buildUserProfileContext } from '../lib/chatbotUserProfile.js';
+import { updateUserProfileFromMessage, buildUserProfileContext, buildUserIdentityReply } from '../lib/chatbotUserProfile.js';
+import { recordGroupInteraction, buildGroupContinuityContext } from '../lib/chatbotGroupMemory.js';
 import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI } from '../lib/aiService.js';
 import { evaluateArithmetic, evaluateArithmeticFollowup, formatArithmeticAnswer } from '../lib/arithmetic.js';
 import { detectMessageLanguage, getLocalizedAnswerPrefix, getLocalizedFailureReply, getLocalizedSourceSummaryFailure } from '../lib/chatbotLanguage.js';
@@ -253,9 +254,14 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
             cleanForHistory,
             ...history.filter(item => item.name !== 'Forge Bot').map(item => item.text)
         ].join(String.fromCharCode(10));
+        const profileLanguage = detectMessageLanguage(cleanForHistory, history);
         const userProfile = message.key.fromMe ? null
-            : await updateUserProfileFromMessage(senderId, profileSourceText);
+            : await updateUserProfileFromMessage(senderId, profileSourceText, { language: profileLanguage });
         const userProfileContext = buildUserProfileContext(userProfile);
+        // Group-local interaction memory is deliberately separate from private profile memory.
+        if (isGroup && !message.key.fromMe) {
+            await recordGroupInteraction(chatId, senderId, message.pushName, cleanForHistory, profileLanguage);
+        }
 
         // A group conversation starts only with a mention/reply to Forge Guard.
         // Once started, only that same participant can continue their own transcript
@@ -287,6 +293,10 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         if (isGroup) {
             console.info(`[Chatbot Group] accepted addressed=${explicitlyAddressed} active_followup=${activeFollowup}`);
         }
+        const groupContinuityContext = isGroup
+            ? await buildGroupContinuityContext(chatId, senderId, chatbotQuery, mentioned)
+            : '';
+        const combinedProfileContext = [userProfileContext, groupContinuityContext].filter(Boolean).join(String.fromCharCode(10, 10));
         if (!message.key.fromMe) {
             history.push({
                 name: message.pushName || 'You',
@@ -308,10 +318,14 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
 
         // Identity-specific replies take priority over the general personality bank.
         // Creator/VIP recognition never grants permissions; authorization remains in the command handler.
-        const previousBotReply = [...history].reverse().find(item => item.name === 'Forge Bot')?.text || '';
+        const previousBotTurn = [...history].reverse().find(item => item.name === 'Forge Bot') || null;
+        const previousBotReply = previousBotTurn?.text || '';
+        const displayName = String(message.pushName || sock.store?.contacts?.[senderId]?.name || '').trim().slice(0, 60);
+        const asksWhoAmI = /\\bwho am i\\b|\\bwhat do you know about me\\b|\\bdescribe me\\b/i.test(cleanForHistory);
+        const profileIdentityReply = asksWhoAmI && !identity ? buildUserIdentityReply(userProfile, displayName) : null;
         let registeredGender = null;
         try { registeredGender = await getUserGender(senderId); } catch {}
-        let response = arithmeticReply || clockReply || identityReply || identityGreeting;
+        let response = arithmeticReply || clockReply || identityReply || identityGreeting || profileIdentityReply;
         if (!response) {
             // Current facts must be grounded in fresh search evidence, never a dated local answer bank.
             const contextualLiveQuery = resolveContextualBusinessFollowup(chatbotQuery, history.slice(0, -1));
@@ -326,7 +340,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                         const liveReply = await askFastAI(chatbotQuery, {
                             timeoutMs: 10000,
                             history: history.slice(0, -1).slice(-8),
-                            liveContext: [buildLiveKnowledgeContext(liveResult), userProfileContext].filter(Boolean).join(String.fromCharCode(10, 10)),
+                            liveContext: [buildLiveKnowledgeContext(liveResult), combinedProfileContext].filter(Boolean).join(String.fromCharCode(10, 10)),
                             language: responseLanguage
                         });
                         response = sanitizeAIResponse(liveReply, chatbotQuery) + formatLiveKnowledgeSources(liveResult, new Date(), responseLanguage);
@@ -375,7 +389,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                         response = sanitizeAIResponse(await askFastAI(chatbotQuery, {
                             timeoutMs: 8000,
                             history: priorTurns,
-                            liveContext: userProfileContext,
+                            liveContext: combinedProfileContext,
                             language: responseLanguage
                         }), chatbotQuery);
                         console.info(`[Chatbot AI] outcome=success latency_ms=${Date.now() - aiStartedAt}`);
@@ -398,6 +412,10 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         }
         // Enforce clean output for every chatbot source: AI, curated banks and identity replies.
         response = sanitizeChatbotReply(response);
+        const freshBotSession = !previousBotTurn || (previousBotTurn.at && Date.now() - previousBotTurn.at > GROUP_FOLLOWUP_WINDOW_MS);
+        if ((isMention || nameTrigger) && freshBotSession && displayName && !identity) {
+            response = sanitizeChatbotReply(`${displayName}, you’re live. Welcome aboard. ${response}`);
+        }
         console.info(`[Chatbot] Reply (intent: ${classifyIntent(cleanForHistory)}, identity: ${identity?.role || 'standard'}, gender: ${registeredGender || 'unregistered'}).`);
 
         printLog('info', `[Chatbot DM] Attempting reply via destinationType=${chatId.endsWith('@lid') ? 'LID' : 'PN_or_group'}`);
