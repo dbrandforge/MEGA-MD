@@ -3,7 +3,7 @@ import {
     updateUserProfileFromMessage,
     removeUserProfileFact,
     clearUserProfile,
-    buildUserIdentityReply
+    extractUserFacts
 } from '../lib/chatbotUserProfile.js';
 
 function profileSummary(profile) {
@@ -11,7 +11,8 @@ function profileSummary(profile) {
     const fields = [
         ['Businesses / brands', 'businesses'],
         ['Profession / role', 'professions'],
-        ['Interests', 'interests'],
+        ['Products / services', 'offerings'],
+        ['Interests', 'interests']
         ['Projects', 'projects'],
         ['Preferences', 'preferences'],
         ['Communication style', 'communicationStyles']
@@ -45,12 +46,13 @@ export default {
             if (!details) {
                 return sock.sendMessage(chatId, { text: 'Tell me what to add. Example: .myprofile update My business is Ray’s Glitz & Glam. I specialize in bridal makeup.' }, { quoted: message });
             }
-            const updated = await updateUserProfileFromMessage(senderId, details, { scopeChatId });
-            const recognized = ['businesses', 'professions', 'interests', 'projects', 'preferences', 'communicationStyles']
-                .some(field => (updated?.[field] || []).length);
-            if (!recognized && !updated?.preferredName && !updated?.preferredLanguage) {
+            const facts = extractUserFacts(details);
+            const recognized = ['businesses', 'professions', 'offerings', 'interests', 'projects', 'preferences', 'communicationStyles']
+                .some(field => (facts[field] || []).length) || Boolean(facts.preferredName || facts.preferredLanguage);
+            if (!recognized) {
                 return sock.sendMessage(chatId, { text: 'I couldn’t identify a clear profile fact in that update. Use explicit wording such as “My business is…”, “I work as…”, “I enjoy…”, “I’m building…”, or “I prefer…”.' }, { quoted: message });
             }
+            const updated = await updateUserProfileFromMessage(senderId, details, { scopeChatId });
             return sock.sendMessage(chatId, { text: '🧠 I’ve updated the profile information you explicitly shared. It will be kept in this ' + (isGroup ? 'group' : 'private chat') + ' scope.\n\n' + profileSummary(updated) }, { quoted: message });
         }
 
