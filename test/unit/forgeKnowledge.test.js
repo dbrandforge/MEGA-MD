@@ -17,7 +17,9 @@ describe('Forge Guard verified knowledge and group-aware conversation context', 
 
     it('does not guess or expose a phone number when no verified contact is configured', () => {
         const reply = getForgeKnowledgeReply('How can I contact your creator?');
+        const personalNumberReply = getForgeKnowledgeReply('What is your personal number?');
         expect(reply).toContain('not configured');
+        expect(personalNumberReply).toContain('not configured');
         expect(reply).not.toMatch(/234\d{10}/);
     });
 
