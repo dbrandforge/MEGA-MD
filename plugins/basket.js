@@ -4,6 +4,7 @@ import { getUserGender } from './gender.js';
 import { isGameAllowed } from './daylock.js';
 import config from '../config.js';
 import isAdmin from '../lib/isAdmin.js';
+import { savePendingGenderGame } from '../lib/genderGameContinuation.js';
 
 const USED_KEY = 'devilsBasketUsed';
 const SESSION_KEY = 'devilsBasketSessions';
@@ -138,7 +139,10 @@ export default {
             if (!allowed.ok) return sock.sendMessage(chatId, { text: allowed.msg, ...channelInfo }, { quoted: message });
 
             const gender = await getUserGender(senderId);
-            if (!gender) return sock.sendMessage(chatId, { text: GENDER_PROMPT, ...channelInfo }, { quoted: message });
+            if (!gender) {
+                await savePendingGenderGame(chatId, senderId, { command: 'basket', args: args || [], requester: senderId, pushName: message.pushName });
+                return sock.sendMessage(chatId, { text: `${GENDER_PROMPT}\\n\\nYour Basket request will resume automatically after registration.`, ...channelInfo }, { quoted: message });
+            }
 
             const pool = poolFor(gender);
             const key = usedKey(gender);
