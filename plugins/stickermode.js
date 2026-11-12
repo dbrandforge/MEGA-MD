@@ -1,4 +1,4 @@
-import { getChatbotMediaModes, setChatbotMediaMode } from '../lib/chatbotMedia.js';
+import { getChatbotMediaModes, setChatbotMediaMode } from '../lib/chatbotMediaSettings.js';
 
 export default {
     command: 'stickermode',
