@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { isUsefulAutomaticAnswer } from '../../lib/aiService.js';
+import { isUsefulAutomaticAnswer, buildConversationPrompt } from '../../lib/aiService.js';
+
+describe('Forge Guard conversation style instructions', () => {
+  it('does not steer casual conversations toward business by default', () => {
+    const prompt = buildConversationPrompt('I came to check if you are alive');
+    expect(prompt).toContain('Do not assume every conversation is about business');
+    expect(prompt).toContain('Do not end every reply with a question');
+  });
+
+  it('uses individual preferences and keeps group context scoped', () => {
+    const prompt = buildConversationPrompt('How far?', [], 'GROUP CONVERSATION MODE: MATURED MINDED.');
+    expect(prompt).toContain('Adapt to the individual using confirmed profile preferences');
+    expect(prompt).toContain('Matured Minded is adult-oriented');
+  });
+});
 
 describe('Gemini automatic-answer relevance checks', () => {
   it('accepts an examples answer even when the first word of the question is not repeated', () => {
