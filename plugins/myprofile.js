@@ -12,7 +12,7 @@ function profileSummary(profile) {
         ['Businesses / brands', 'businesses'],
         ['Profession / role', 'professions'],
         ['Products / services', 'offerings'],
-        ['Interests', 'interests']
+        ['Interests', 'interests'],
         ['Projects', 'projects'],
         ['Preferences', 'preferences'],
         ['Communication style', 'communicationStyles']
@@ -64,7 +64,7 @@ export default {
             }
             const updated = await removeUserProfileFact(senderId, field, value, { scopeChatId });
             if (!updated) {
-                return sock.sendMessage(chatId, { text: 'I couldn’t match that profile field. Try businesses, profession, interests, projects, preferences, communication, name or language.' }, { quoted: message });
+                return sock.sendMessage(chatId, { text: 'I couldn’t match that profile field. Try businesses, profession, offerings, interests, projects, preferences, communication, name or language.' }, { quoted: message });
             }
             return sock.sendMessage(chatId, { text: 'Updated. Here is what remains in your profile:\n\n' + profileSummary(updated) }, { quoted: message });
         }
