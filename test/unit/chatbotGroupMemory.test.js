@@ -39,10 +39,14 @@ describe('Forge Guard group-local member continuity', () => {
         await recordGroupInteraction(group, member, 'Adunni', 'I joined the discussion', 'english');
         settings.set('user:2348011111111@s.whatsapp.net:chatbotUserProfile', {
             businesses: [{ value: 'Ray’s Glitz & Glam' }],
+            preferences: [{ value: 'avoid explicit topics unless I opt in' }],
+            communicationStyles: [{ value: 'prefer playful Pidgin' }],
             sharing: { groupContext: true }
         });
         const context = await buildGroupContinuityContext(group, askingMember, 'What does Adunni do?');
         expect(context).toContain('Ray’s Glitz & Glam');
+        expect(context).toContain('avoid explicit topics unless I opt in');
+        expect(context).toContain('prefer playful Pidgin');
     });
 
     it('keeps private profile facts out of groups when sharing is disabled', async () => {
