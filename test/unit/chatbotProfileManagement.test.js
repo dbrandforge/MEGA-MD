@@ -12,7 +12,8 @@ import {
     extractUserFacts,
     getUserProfile,
     removeUserProfileFact,
-    clearUserProfile
+    clearUserProfile,
+    setUserProfileGroupSharing
 } from '../../lib/chatbotUserProfile.js';
 
 const sender = '2348011111111@s.whatsapp.net';
@@ -53,6 +54,13 @@ describe('Forge Guard user-controlled profile facts', () => {
         const updated = await removeUserProfileFact(sender, 'interests');
         expect(updated.interests).toEqual([]);
         expect(updated.projects).toHaveLength(1);
+    });
+
+    it('lets a member explicitly opt private facts into group context', async () => {
+        const updated = await setUserProfileGroupSharing(sender, true);
+        expect(updated.sharing.groupContext).toBe(true);
+        const privateAgain = await setUserProfileGroupSharing(sender, false);
+        expect(privateAgain.sharing.groupContext).toBe(false);
     });
 
     it('clears only the requesting sender profile', async () => {
