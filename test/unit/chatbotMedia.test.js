@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { settings } = vi.hoisted(() => ({ settings: new Map() }));
 
@@ -25,7 +25,14 @@ import {
 } from '../../lib/chatbotMedia.js';
 
 describe('chatbot media settings and audio handling', () => {
-    beforeEach(() => settings.clear());
+    let testDay = 0;
+    beforeEach(() => {
+        settings.clear();
+        testDay++;
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date(Date.UTC(2026, 10, 12 + testDay, 12, 0, 0)));
+    });
+    afterEach(() => vi.useRealTimers());
 
     it('keeps both media features disabled by default', async () => {
         await expect(getChatbotMediaModes('120363000000000000@g.us')).resolves.toEqual({
