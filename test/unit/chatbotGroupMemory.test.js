@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../../lib/lightweight_store.js', () => ({
     default: {
         getSetting: vi.fn(),
-        saveSetting: vi.fn()
+        saveSetting: vi.fn(),
+        saveSettingVerified: vi.fn()
     }
 }));
 
@@ -20,7 +21,7 @@ describe('Forge Guard group-local member continuity', () => {
         settings = new Map();
         vi.clearAllMocks();
         store.getSetting.mockImplementation(async (chatId, key) => settings.get(`${chatId}:${key}`) || null);
-        store.saveSetting.mockImplementation(async (chatId, key, value) => {
+        store.saveSettingVerified.mockImplementation(async (chatId, key, value) => {
             settings.set(`${chatId}:${key}`, value);
             return true;
         });
