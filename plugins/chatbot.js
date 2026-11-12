@@ -17,7 +17,7 @@ import { buildForgeKnowledgeContext, buildGroupConversationModeContext, getForge
 import { getChatbotFailureFallback } from '../lib/chatbotFailureFallback.js';
 import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI } from '../lib/aiService.js';
 import { evaluateArithmetic, evaluateArithmeticFollowup, formatArithmeticAnswer } from '../lib/arithmetic.js';
-import { detectMessageLanguage, getLocalizedAnswerPrefix, getLocalizedFailureReply, getLocalizedSourceSummaryFailure } from '../lib/chatbotLanguage.js';
+import { detectMessageLanguage, getLocalizedAnswerPrefix, getLocalizedSourceSummaryFailure } from '../lib/chatbotLanguage.js';
 import { isTimeSensitiveQuestion, searchLiveKnowledge, buildLiveKnowledgeContext, formatLiveKnowledgeSources, formatLiveKnowledgeEvidenceSummary, formatLiveKnowledgeUnavailable, resolveContextualBusinessFollowup } from '../lib/liveKnowledge.js';
 
 const CHATBOT_AI_ENABLED = process.env.CHATBOT_AI_ENABLED === 'true';
