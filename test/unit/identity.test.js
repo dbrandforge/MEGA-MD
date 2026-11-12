@@ -14,7 +14,8 @@ const identities = {
     queenTitle: 'The Queen',
     queenAlias: 'Empire',
     queenRealName: 'Tessy',
-    creatorAlias: 'Forge'
+    creatorAlias: 'Forge',
+    botOwner: 'Forge'
 };
 
 describe('Forge Guard identity recognition and privacy', () => {
@@ -59,6 +60,28 @@ describe('Forge Guard identity recognition and privacy', () => {
             expect(JSON.stringify(answer)).not.toContain('Oyetunji');
             expect(JSON.stringify(answer)).toMatch(/Forge|Abraham/);
         }
+    });
+
+
+    it('recognises contracted owner and creator questions deterministically', () => {
+        for (const question of [
+            "Who's your owner?",
+            "Who's your owner first?",
+            'Who is your owner?',
+            'Who owns you?',
+            "Who's your creator?",
+            'Who is your creator?',
+            'Who created you?'
+        ]) {
+            const answer = getIdentityReply(question, identities);
+            expect(answer).toBeTruthy();
+            expect(answer).not.toMatch(/couldn't produce|try again/i);
+        }
+
+        expect(getIdentityReply("Who's your owner first?", identities))
+            .toContain('My owner is Forge');
+        expect(getIdentityReply("Who's your creator?", identities))
+            .toContain('I was created by Forge dcreative');
     });
 
     it('recognises the Creator partner and Empire/Tessy aliases', () => {
