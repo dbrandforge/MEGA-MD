@@ -104,7 +104,7 @@ export default {
             if (!ownRecord?.birthday) {
                 return sock.sendMessage(chatId, { text: 'You have no saved birthday yet. Register with *.birthday 24/09* first.', ...context.channelInfo }, { quoted: message });
             }
-            ownRecord.groups ||= {};
+            if (!ownRecord.groups) ownRecord.groups = {};
             ownRecord.groups[chatId] = message.key?.participant || senderId;
             await saveBirthdayRegistry(registry);
             return sock.sendMessage(chatId, { text: `✅ Your birthday is now shared with this group: *${formatBirthdayDate(ownRecord.birthday)}*.`, ...context.channelInfo }, { quoted: message });
@@ -141,7 +141,7 @@ export default {
             const targetKey = normalizeBirthdayUserId(targetJid);
             const record = registry.users[targetKey] || { userId: targetKey, name: cleanName('', targetKey), groups: {}, deliveries: {} };
             record.birthday = parsed;
-            record.groups ||= {};
+            if (!record.groups) record.groups = {};
             if (isGroup) record.groups[chatId] = targetJid;
             registry.users[targetKey] = record;
             await saveBirthdayRegistry(registry);
@@ -158,7 +158,7 @@ export default {
         const record = ownRecord || { userId: ownKey, birthday: null, name: cleanName(message.pushName, ownKey), groups: {}, deliveries: {} };
         record.birthday = parsed;
         record.name = record.name || cleanName(message.pushName, ownKey);
-        record.groups ||= {};
+        if (!record.groups) record.groups = {};
         if (isGroup) record.groups[chatId] = message.key?.participant || senderId;
         registry.users[ownKey] = record;
         await saveBirthdayRegistry(registry);
