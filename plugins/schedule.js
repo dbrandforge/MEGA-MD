@@ -4,6 +4,7 @@ import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
 import { FEATURE_GROUPS, loadFeatureGroups } from '../lib/featureGroups.js';
 import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
+import { checkBirthdayGreetings } from '../lib/birthdayService.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -85,6 +86,7 @@ function formatTimeLeft(ms) {
 // ── Scheduler Engine ───────────────────────────────────────────────────────
 let _engineStarted = false;
 let _engineTimer = null;
+let _lastBirthdayCheckMinute = null;
 let _activeSocket = null;
 let _trackedGroups = new Set();
 const TRACKED_GROUPS_KEY = 'forgeGuardTrackedGroups';
@@ -155,6 +157,20 @@ export function startSchedulerEngine(sock) {
         }
         try {
             await loadFeatureGroups();
+            // Birthday delivery shares the existing scheduler; one check per minute
+            // avoids creating another timer or adding per-member jobs.
+            const birthdayMinute = Math.floor(Date.now() / 60000);
+            if (_lastBirthdayCheckMinute !== birthdayMinute) {
+                _lastBirthdayCheckMinute = birthdayMinute;
+                try {
+                    const result = await checkBirthdayGreetings(activeSocket);
+                    if (result?.groupsSent || result?.dmsSent) {
+                        console.log(`[BIRTHDAY] Delivered ${result.groupsSent || 0} group greeting(s) and ${result.dmsSent || 0} private greeting(s)`);
+                    }
+                } catch (error) {
+                    console.error('[BIRTHDAY] Scheduler check failed:', error.message);
+                }
+            }
             // Restore group registrations after a process restart.
             const persistedGroups = await store.getSetting('global', TRACKED_GROUPS_KEY);
             if (Array.isArray(persistedGroups)) persistedGroups.forEach(id => { if (id?.endsWith('@g.us')) _trackedGroups.add(id); });
