@@ -83,9 +83,11 @@ describe('Forge Guard verified knowledge and group-aware conversation context', 
         expect(general).not.toContain('adult-oriented conversational culture');
     });
 
-    it('does not infer business ownership from a mention and treats creator context as identity-only', () => {
+    it('loads the verified creator profile only for the verified creator identity', () => {
         const context = buildForgeKnowledgeContext('hello', { role: 'creator' });
         expect(context).toContain('a person’s business or employer is not their personal name');
         expect(context).toContain('verified Creator and Founder Forge');
+        expect(context).toContain('premium, modern, editorial and human-centered');
+        expect(context).toContain('generic AI-looking design');
     });
 });
