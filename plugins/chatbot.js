@@ -15,7 +15,7 @@ import { updateUserProfileFromMessage, buildUserProfileContext, buildUserIdentit
 import { recordGroupInteraction, buildGroupContinuityContext } from '../lib/chatbotGroupMemory.js';
 import { buildForgeKnowledgeContext, buildGroupConversationModeContext, getForgeKnowledgeReply } from '../lib/forgeKnowledge.js';
 import { getChatbotFailureFallback } from '../lib/chatbotFailureFallback.js';
-import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI } from '../lib/aiService.js';
+import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI, shouldUseLiveSearchForMessage } from '../lib/aiService.js';
 import { evaluateArithmetic, evaluateArithmeticFollowup, formatArithmeticAnswer } from '../lib/arithmetic.js';
 import { detectMessageLanguage, getLocalizedAnswerPrefix, getLocalizedSourceSummaryFailure } from '../lib/chatbotLanguage.js';
 import { isTimeSensitiveQuestion, searchLiveKnowledge, buildLiveKnowledgeContext, formatLiveKnowledgeSources, formatLiveKnowledgeEvidenceSummary, formatLiveKnowledgeUnavailable, resolveContextualBusinessFollowup } from '../lib/liveKnowledge.js';
@@ -359,7 +359,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         if (!response) {
             // Current facts must be grounded in fresh search evidence, never a dated local answer bank.
             const contextualLiveQuery = resolveContextualBusinessFollowup(chatbotQuery, history.slice(0, -1));
-            if (!isStickerMedia && CHATBOT_AI_ENABLED && (isTimeSensitiveQuestion(chatbotQuery) || contextualLiveQuery)) {
+            if (shouldUseLiveSearchForMessage(message) && CHATBOT_AI_ENABLED && (isTimeSensitiveQuestion(chatbotQuery) || contextualLiveQuery)) {
                 const liveStartedAt = Date.now();
                 const liveResult = await searchLiveKnowledge(contextualLiveQuery || chatbotQuery, { timeoutMs: 5000 });
                 if (!liveResult.ok) {
