@@ -67,6 +67,8 @@ describe('Forge Guard user-controlled profile facts', () => {
     it('captures Pidgin and Yoruba descriptions of what a member does', () => {
         expect(extractUserFacts('I dey sell wigs.').offerings).toContain('wigs');
         expect(extractUserFacts('Mo n ta aso.').offerings).toContain('aso');
+        expect(extractUserFacts('We provide branding, strategy and design.').offerings)
+            .toEqual(['branding', 'strategy', 'design']);
     });
 
     it('removes only the selected fact when a value is supplied', async () => {
