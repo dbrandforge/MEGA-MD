@@ -90,6 +90,15 @@ describe('Forge Guard tagged third-party context', () => {
         expect(context).toContain('treat the tag as the answer');
     });
 
+    it('resolves a tagged LID through the saved contact mapping', () => {
+        const context = buildTaggedPeopleContext(
+            ['member-lid@lid'],
+            { '2348000000002@s.whatsapp.net': { lid: 'member-lid@lid', name: "Ray's Glitz & Glam" } },
+            '2348000000001@s.whatsapp.net'
+        );
+        expect(context).toContain("Ray's Glitz & Glam");
+    });
+
     it('does not add the sender or the bot as tagged third parties', () => {
         expect(buildTaggedPeopleContext(
             ['2348000000001@s.whatsapp.net', '2348999999999@s.whatsapp.net'],
