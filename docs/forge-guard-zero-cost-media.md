@@ -29,7 +29,7 @@ No new npm dependency is required; the project already includes `axios` and `for
 ## Existing safeguards retained
 
 - Voice notes are processed only when sent as WhatsApp push-to-talk (`ptt`) audio; ordinary audio attachments are not treated as voice notes.
-- Voice note: maximum 60 seconds and 2 MB. The supported MIME types are OGG/Opus, MP3, WAV, AAC, and FLAC; unsupported formats are skipped.
+- Voice note: maximum 60 seconds and 2 MB. The supported MIME types are OGG/Opus, MP3/MPEG, WAV, M4A/MP4, WebM, and FLAC; unsupported formats are skipped.
 - Sticker download: maximum 1.5 MB; the image is resized/re-encoded to a maximum 300 KB vision payload. Animated stickers are processed as a static frame, not as animation.
 - Two concurrent media jobs maximum, with a 12-second per-sender/per-chat/type cooldown.
 - Daily application caps: voice notes 2 per sender, 3 per chat, 5 bot-wide; stickers 5 per sender, 10 per chat, 20 bot-wide. Counters are persisted and failed processing attempts are refunded where possible.
