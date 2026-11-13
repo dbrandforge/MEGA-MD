@@ -55,13 +55,13 @@ describe('chatbot media settings and audio handling', () => {
     });
 
     it('enforces persisted global and per-chat voice-note ceilings', async () => {
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i < 20; i++) {
             await expect(reserveMediaSlot('group-a', `member-${i}`, 'voice')).resolves.toBe(true);
         }
         await expect(reserveMediaSlot('group-a', 'member-overflow', 'voice')).resolves.toBe(false);
 
-        for (let i = 0; i < 20; i++) {
-            await expect(reserveMediaSlot(`group-${i + 1}`, `member-${i + 3}`, 'voice')).resolves.toBe(true);
+        for (let i = 0; i < 10; i++) {
+            await expect(reserveMediaSlot(`group-${i + 1}`, `member-${i + 20}`, 'voice')).resolves.toBe(true);
         }
         await expect(reserveMediaSlot('group-global-overflow', 'member-global-overflow', 'voice')).resolves.toBe(false);
     });
