@@ -33,60 +33,111 @@ vi.mock('../../lib/chatbotAccess.js', () => ({
 vi.mock('../../lib/print.js', () => ({ printLog: vi.fn() }));
 
 import {
-    createGeminiMediaPayload,
-    postGeminiWithRetry,
-    getSafeGeminiErrorDetail,
+    createGroqVisionPayload,
+    createGroqAudioForm,
+    postGroqAudioWithRetry,
+    postGroqJsonWithRetry,
+    getSafeGroqErrorDetail,
     releaseMediaSlot,
     reserveMediaSlot,
-    shouldRetryGeminiRequest
+    shouldRetryGroqRequest,
+    isUnclearVoiceTranscript,
+    normalizeVoiceMimeType
 } from '../../lib/chatbotMedia.js';
 
-describe('chatbot media provider reliability', () => {
+describe('zero-cost Groq media provider', () => {
     beforeEach(() => {
         settings.clear();
         axiosPost.mockReset();
         vi.useRealTimers();
     });
 
-    it('builds Gemini generateContent payloads using REST camelCase inlineData', () => {
-        const payload = createGeminiMediaPayload({
-            prompt: 'Transcribe exactly',
-            mimeType: 'audio/ogg',
-            data: 'base64-audio',
-            maxOutputTokens: 1200
+    it('builds a Qwen vision request with a bounded base64 image payload', () => {
+        const payload = createGroqVisionPayload({ prompt: 'Describe this sticker', data: 'base64-image' });
+        expect(payload.model).toBe('qwen/qwen3.8-27b');
+        expect(payload.messages[0].content[1]).toEqual({
+            type: 'image_url',
+            image_url: { url: 'data:image/jpeg;base64,base64-image' }
         });
-
-        expect(payload.contents[0].parts[1]).toEqual({
-            inlineData: { mimeType: 'audio/ogg', data: 'base64-audio' }
-        });
-        expect(payload.generationConfig.maxOutputTokens).toBe(1200);
+        expect(payload.max_completion_tokens).toBe(160);
     });
 
-    it('retries transient Gemini service and network failures only', () => {
-        expect(shouldRetryGeminiRequest({ response: { status: 503 } })).toBe(true);
-        expect(shouldRetryGeminiRequest({ response: { status: 429 } })).toBe(true);
-        expect(shouldRetryGeminiRequest({ code: 'ECONNABORTED' })).toBe(true);
-        expect(shouldRetryGeminiRequest({ response: { status: 400 } })).toBe(false);
-        expect(shouldRetryGeminiRequest({ response: { status: 401 } })).toBe(false);
+    it('normalizes only audio formats supported by Groq transcription', () => {
+        expect(normalizeVoiceMimeType('audio/ogg; codecs=opus')).toBe('audio/ogg');
+        expect(normalizeVoiceMimeType('audio/mpeg')).toBe('audio/mpeg');
+        expect(normalizeVoiceMimeType('audio/mp4')).toBe('audio/mp4');
+        expect(normalizeVoiceMimeType('audio/x-m4a')).toBe('audio/mp4');
+        expect(normalizeVoiceMimeType('audio/webm')).toBe('audio/webm');
+        expect(normalizeVoiceMimeType('audio/x-wav')).toBe('audio/wav');
+        expect(normalizeVoiceMimeType('audio/aac')).toBe(null);
     });
 
-    it('retries a transient 503 once and returns the recovered Gemini response', async () => {
+    it('recognizes empty and explicit unclear transcripts without rejecting ordinary bracketed text', () => {
+        expect(isUnclearVoiceTranscript('')).toBe(true);
+        expect(isUnclearVoiceTranscript('  [unclear]  ')).toBe(true);
+        expect(isUnclearVoiceTranscript('[UNCLEAR]')).toBe(true);
+        expect(isUnclearVoiceTranscript('I dey come')).toBe(false);
+        expect(isUnclearVoiceTranscript('[unclear meaning]')).toBe(false);
+    });
+
+    it('builds a multipart Whisper request without sending media to a paid provider', () => {
+        const form = createGroqAudioForm(Buffer.from('audio-bytes'), 'audio/ogg');
+        expect(form.getHeaders()['content-type']).toContain('multipart/form-data');
+        const body = form.getBuffer().toString();
+        expect(body).toContain('whisper-large-v3-turbo');
+        expect(body).toContain('forge-guard-voice-note.ogg');
+        expect(body).toContain('Transcribe verbatim');
+    });
+
+    it('rebuilds the multipart body for one transient voice transcription retry', async () => {
         vi.useFakeTimers();
         axiosPost
             .mockRejectedValueOnce({ response: { status: 503 } })
-            .mockResolvedValueOnce({ data: { candidates: [{ content: { parts: [{ text: 'Recovered' }] } }] } });
+            .mockResolvedValueOnce({ data: { text: 'I dey come' } });
 
-        const pending = postGeminiWithRetry('https://example.test/generateContent', {}, {}, 'voice_transcription');
+        const pending = postGroqAudioWithRetry(Buffer.from('audio-bytes'), 'audio/ogg', 'test-groq-key');
         await vi.waitFor(() => expect(axiosPost).toHaveBeenCalledTimes(1));
-        await vi.advanceTimersByTimeAsync(700);
+        await vi.advanceTimersByTimeAsync(750);
 
-        await expect(pending).resolves.toMatchObject({ data: { candidates: [{ content: { parts: [{ text: 'Recovered' }] } }] } });
+        await expect(pending).resolves.toMatchObject({ data: { text: 'I dey come' } });
+        expect(axiosPost).toHaveBeenCalledTimes(2);
+        expect(axiosPost.mock.calls[0][1]).not.toBe(axiosPost.mock.calls[1][1]);
+        expect(axiosPost.mock.calls[0][2].headers.Authorization).toBe('Bearer test-groq-key');
+    });
+
+    it('retries transient server and network failures, but never retries free-tier quota errors', () => {
+        expect(shouldRetryGroqRequest({ response: { status: 503 } })).toBe(true);
+        expect(shouldRetryGroqRequest({ response: { status: 502 } })).toBe(true);
+        expect(shouldRetryGroqRequest({ code: 'ECONNABORTED' })).toBe(true);
+        expect(shouldRetryGroqRequest({ response: { status: 429 } })).toBe(false);
+        expect(shouldRetryGroqRequest({ response: { status: 400 } })).toBe(false);
+        expect(shouldRetryGroqRequest({ response: { status: 401 } })).toBe(false);
+    });
+
+    it('retries one transient 503 and returns the recovered response', async () => {
+        vi.useFakeTimers();
+        axiosPost
+            .mockRejectedValueOnce({ response: { status: 503 } })
+            .mockResolvedValueOnce({ data: { choices: [{ message: { content: 'Recovered' } }] } });
+
+        const pending = postGroqJsonWithRetry('https://api.groq.com/openai/v1/chat/completions', {}, {}, 'sticker_vision');
+        await vi.waitFor(() => expect(axiosPost).toHaveBeenCalledTimes(1));
+        await vi.advanceTimersByTimeAsync(750);
+
+        await expect(pending).resolves.toMatchObject({ data: { choices: [{ message: { content: 'Recovered' } }] } });
         expect(axiosPost).toHaveBeenCalledTimes(2);
         expect(axiosPost.mock.calls[0][2].timeout).toBe(45_000);
     });
 
-    it('extracts bounded provider diagnostics without exposing credential-like values', () => {
-        const result = getSafeGeminiErrorDetail({
+    it('does not retry a 429 free-tier rate-limit response', async () => {
+        axiosPost.mockRejectedValue({ response: { status: 429, data: { error: { message: 'rate limit reached' } } } });
+        await expect(postGroqJsonWithRetry('https://api.groq.com/openai/v1/chat/completions', {}, {}, 'sticker_vision'))
+            .rejects.toMatchObject({ response: { status: 429 } });
+        expect(axiosPost).toHaveBeenCalledTimes(1);
+    });
+
+    it('sanitizes provider diagnostics and bounds logged error details', () => {
+        const result = getSafeGroqErrorDetail({
             code: 'ERR_BAD_RESPONSE',
             response: {
                 status: 503,
@@ -101,7 +152,7 @@ describe('chatbot media provider reliability', () => {
         expect(result.detail.length).toBeLessThanOrEqual(180);
     });
 
-    it('releases the reserved daily allowance after a failed provider attempt', async () => {
+    it('releases reserved daily usage after a failed provider attempt', async () => {
         const chatId = 'media-refund-test@g.us';
         const senderId = 'sender-refund-test@s.whatsapp.net';
 

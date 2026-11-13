@@ -74,16 +74,20 @@ describe('chatbot media settings and audio handling', () => {
         expect(normalizeVoiceMimeType('audio/ogg; codecs=opus')).toBe('audio/ogg');
     });
 
-    it('accepts supported audio MIME types', () => {
-        expect(normalizeVoiceMimeType('audio/mp3')).toBe('audio/mp3');
-        expect(normalizeVoiceMimeType('audio/mpeg')).toBe('audio/mp3');
+    it('normalizes Groq-supported audio MIME types to provider-compatible values', () => {
+        expect(normalizeVoiceMimeType('audio/mp3')).toBe('audio/mpeg');
+        expect(normalizeVoiceMimeType('audio/mpeg')).toBe('audio/mpeg');
+        expect(normalizeVoiceMimeType('audio/mpga')).toBe('audio/mpeg');
         expect(normalizeVoiceMimeType('audio/wav')).toBe('audio/wav');
-        expect(normalizeVoiceMimeType('audio/aac')).toBe('audio/aac');
+        expect(normalizeVoiceMimeType('audio/x-wav')).toBe('audio/wav');
+        expect(normalizeVoiceMimeType('audio/mp4')).toBe('audio/mp4');
+        expect(normalizeVoiceMimeType('audio/m4a')).toBe('audio/mp4');
+        expect(normalizeVoiceMimeType('audio/webm')).toBe('audio/webm');
         expect(normalizeVoiceMimeType('audio/flac')).toBe('audio/flac');
     });
 
     it('rejects unsupported or non-audio MIME types instead of guessing', () => {
-        expect(normalizeVoiceMimeType('audio/webm')).toBeNull();
+        expect(normalizeVoiceMimeType('audio/aac')).toBeNull();
         expect(normalizeVoiceMimeType('video/mp4')).toBeNull();
         expect(normalizeVoiceMimeType('')).toBeNull();
     });
