@@ -28,11 +28,14 @@ No new npm dependency is required; the project already includes `axios` and `for
 
 ## Existing safeguards retained
 
-- Voice note: maximum 60 seconds and 2 MB.
-- Sticker download: maximum 1.5 MB; resized vision payload: maximum 300 KB.
-- Two concurrent media jobs maximum.
-- Per-sender, per-chat, and bot-wide daily limits remain enforced and persisted.
-- Existing group-addressing rules and per-chat opt-in switches remain unchanged.
+- Voice notes are processed only when sent as WhatsApp push-to-talk (`ptt`) audio; ordinary audio attachments are not treated as voice notes.
+- Voice note: maximum 60 seconds and 2 MB. The supported MIME types are OGG/Opus, MP3, WAV, AAC, and FLAC; unsupported formats are skipped.
+- Sticker download: maximum 1.5 MB; the image is resized/re-encoded to a maximum 300 KB vision payload. Animated stickers are processed as a static frame, not as animation.
+- Two concurrent media jobs maximum, with a 12-second per-sender/per-chat/type cooldown.
+- Daily application caps: voice notes 2 per sender, 3 per chat, 5 bot-wide; stickers 5 per sender, 10 per chat, 20 bot-wide. Counters are persisted and failed processing attempts are refunded where possible.
+- Both features default OFF in every chat and must be explicitly enabled per chat. In groups, the media must also explicitly address the bot under the existing mention/reply rules.
+- A missing `GROQ_API_KEY` is detected before downloading the WhatsApp media.
+- Existing group-addressing rules and chatbot access checks remain unchanged.
 - A free-tier 429 does not trigger repeated requests or a paid-provider fallback.
 - Normal chatbot requests continue through the existing chatbot path.
 
@@ -40,4 +43,4 @@ No new npm dependency is required; the project already includes `axios` and `for
 
 Groq API calls still use outbound Render bandwidth: WhatsApp media must be downloaded by the bot and then uploaded to Groq. This integration avoids a paid API bill, but it does not make media traffic bandwidth-free. The existing small media limits and daily caps are retained to protect the Render allowance.
 
-The Free Plan is rate-limited, not unlimited. If its quota is exhausted, the affected media request fails gracefully; ordinary text chatbot operation remains separate.
+The Free Plan is rate-limited, not unlimited. The published rate table currently lists Qwen 3.8 27B at 30 requests/minute, 1,000 requests/day, 8,000 tokens/minute, and 200,000 tokens/day per organization; Whisper Large V3 Turbo at 20 requests/minute, 2,000 requests/day, 7,200 audio seconds/hour, and 28,800 audio seconds/day. These provider limits are shared at the Groq organization level, may change, and are separate from Forge Guard's much lower application caps. Check the live Groq Console for the exact limits on your account. If Groq returns HTTP 429, the affected media request fails gracefully without retry or fallback; ordinary text chatbot operation remains separate.
