@@ -41,7 +41,7 @@ describe('Forge Guard user-controlled profile facts', () => {
         settings.set('user:2348011111111@s.whatsapp.net:chatbotUserProfile', {
             professions: [{ value: 'fine baby what about you' }],
             interests: [{ value: 'you right' }],
-            preferences: [{ value: 'you to have that stored as my professional role' }],
+            preferences: [{ value: 'you to have that stored as my professional role and my preferred language is English' }],
             offerings: [{ value: 'branding' }]
         });
         const profile = await getUserProfile(sender);
