@@ -37,6 +37,20 @@ describe('Forge Guard user-controlled profile facts', () => {
         expect(facts.offerings).toContain('bridal makeup');
     });
 
+    it('filters old conversational noise from stored profile facts on read', async () => {
+        settings.set('user:2348011111111@s.whatsapp.net:chatbotUserProfile', {
+            professions: [{ value: 'fine baby what about you' }],
+            interests: [{ value: 'you right' }],
+            preferences: [{ value: 'you to have that stored as my professional role' }],
+            offerings: [{ value: 'branding' }]
+        });
+        const profile = await getUserProfile(sender);
+        expect(profile.professions).toEqual([]);
+        expect(profile.interests).toEqual([]);
+        expect(profile.preferences).toEqual([]);
+        expect(profile.offerings.map(item => item.value)).toEqual(['branding']);
+    });
+
     it('does not treat observed language alone as a personal profile', () => {
         expect(buildUserProfileContext({ lastObservedLanguage: 'english', languageCounts: { english: 3 } })).toBe('');
     });
