@@ -54,7 +54,7 @@ describe('Forge Guard gender-aware conversational context', () => {
         expect(context).toContain('baby girl');
         expect(context).toContain('fine girl');
         expect(context).toContain('sweetheart');
-        expect(context).toContain('Do not address this sender as chairman');
+        expect(context).toContain('Do not address this sender as chairman, boss');
         expect(context).toMatch(/reciprocal flirtation/i);
     });
 
@@ -62,7 +62,7 @@ describe('Forge Guard gender-aware conversational context', () => {
         const context = buildGenderInteractionContext('guy');
         expect(context).toContain('chairman');
         expect(context).toContain('my guy');
-        expect(context).toContain('Do not address this sender with feminine-coded terms');
+        expect(context).toContain('Do not address this sender with feminine-coded terms such as baby girl, fine girl, sweetheart, love');
         expect(context).toMatch(/reciprocal flirtation/i);
     });
 
