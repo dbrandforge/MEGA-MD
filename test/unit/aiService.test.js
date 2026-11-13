@@ -55,7 +55,7 @@ describe('Sticker reaction mode', () => {
     expect(prompt).toContain('STICKER REACTION MODE (MANDATORY)');
     expect(prompt).toContain('React naturally to the sticker');
     expect(prompt).toContain('Do not perform web research');
-    expect(prompt).toContain('do not include URLs');
+    expect(prompt).toContain('or include URLs');
     expect(prompt).toContain('usually one sentence');
   });
 
