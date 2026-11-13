@@ -40,7 +40,8 @@ import {
     getSafeGroqErrorDetail,
     releaseMediaSlot,
     reserveMediaSlot,
-    shouldRetryGroqRequest
+    shouldRetryGroqRequest,
+    isUnclearVoiceTranscript
 } from '../../lib/chatbotMedia.js';
 
 describe('zero-cost Groq media provider', () => {
@@ -58,6 +59,14 @@ describe('zero-cost Groq media provider', () => {
             image_url: { url: 'data:image/jpeg;base64,base64-image' }
         });
         expect(payload.max_completion_tokens).toBe(160);
+    });
+
+    it('recognizes empty and explicit unclear transcripts without rejecting ordinary bracketed text', () => {
+        expect(isUnclearVoiceTranscript('')).toBe(true);
+        expect(isUnclearVoiceTranscript('  [unclear]  ')).toBe(true);
+        expect(isUnclearVoiceTranscript('[UNCLEAR]')).toBe(true);
+        expect(isUnclearVoiceTranscript('I dey come')).toBe(false);
+        expect(isUnclearVoiceTranscript('[unclear meaning]')).toBe(false);
     });
 
     it('builds a multipart Whisper request without sending media to a paid provider', () => {
