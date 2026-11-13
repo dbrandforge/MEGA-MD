@@ -66,6 +66,18 @@ describe('chatbot media settings and audio handling', () => {
         await expect(reserveMediaSlot('group-global-overflow', 'member-global-overflow', 'voice')).resolves.toBe(false);
     });
 
+    it('enforces the expanded sticker sender, chat, and global ceilings', async () => {
+        for (let i = 0; i < 30; i++) {
+            await expect(reserveMediaSlot('sticker-group-a', `member-${i}`, 'sticker')).resolves.toBe(true);
+        }
+        await expect(reserveMediaSlot('sticker-group-a', 'member-overflow', 'sticker')).resolves.toBe(false);
+
+        for (let i = 0; i < 20; i++) {
+            await expect(reserveMediaSlot(`sticker-group-${i + 1}`, `sticker-member-${i}`, 'sticker')).resolves.toBe(true);
+        }
+        await expect(reserveMediaSlot('sticker-global-overflow', 'sticker-global-overflow', 'sticker')).resolves.toBe(false);
+    });
+
     it('rejects unknown media settings', async () => {
         await expect(setChatbotMediaMode('chat', 'video', true)).resolves.toBe(false);
     });
