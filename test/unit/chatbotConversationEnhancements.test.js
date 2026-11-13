@@ -15,7 +15,7 @@ describe('Forge Guard verified identity claims', () => {
         ['I be your oga', 'creator'],
         ["I am your creator's babe", 'queen'],
         ["I'm the creator's woman", 'queen'],
-        ["Na me be your boss babe", 'queen']
+        ["Na me be your boss's babe", 'queen']
     ])('classifies explicit claim: %s', (text, expected) => {
         expect(classifyIdentityClaim(text)).toBe(expected);
     });
