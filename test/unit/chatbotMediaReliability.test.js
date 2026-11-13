@@ -33,60 +33,64 @@ vi.mock('../../lib/chatbotAccess.js', () => ({
 vi.mock('../../lib/print.js', () => ({ printLog: vi.fn() }));
 
 import {
-    createGeminiMediaPayload,
-    postGeminiWithRetry,
-    getSafeGeminiErrorDetail,
+    createGroqVisionPayload,
+    postGroqJsonWithRetry,
+    getSafeGroqErrorDetail,
     releaseMediaSlot,
     reserveMediaSlot,
-    shouldRetryGeminiRequest
+    shouldRetryGroqRequest
 } from '../../lib/chatbotMedia.js';
 
-describe('chatbot media provider reliability', () => {
+describe('zero-cost Groq media provider', () => {
     beforeEach(() => {
         settings.clear();
         axiosPost.mockReset();
         vi.useRealTimers();
     });
 
-    it('builds Gemini generateContent payloads using REST camelCase inlineData', () => {
-        const payload = createGeminiMediaPayload({
-            prompt: 'Transcribe exactly',
-            mimeType: 'audio/ogg',
-            data: 'base64-audio',
-            maxOutputTokens: 1200
+    it('builds a Qwen vision request with a bounded base64 image payload', () => {
+        const payload = createGroqVisionPayload({ prompt: 'Describe this sticker', data: 'base64-image' });
+        expect(payload.model).toBe('qwen/qwen3.8-27b');
+        expect(payload.messages[0].content[1]).toEqual({
+            type: 'image_url',
+            image_url: { url: 'data:image/jpeg;base64,base64-image' }
         });
-
-        expect(payload.contents[0].parts[1]).toEqual({
-            inlineData: { mimeType: 'audio/ogg', data: 'base64-audio' }
-        });
-        expect(payload.generationConfig.maxOutputTokens).toBe(1200);
+        expect(payload.max_completion_tokens).toBe(160);
     });
 
-    it('retries transient Gemini service and network failures only', () => {
-        expect(shouldRetryGeminiRequest({ response: { status: 503 } })).toBe(true);
-        expect(shouldRetryGeminiRequest({ response: { status: 429 } })).toBe(true);
-        expect(shouldRetryGeminiRequest({ code: 'ECONNABORTED' })).toBe(true);
-        expect(shouldRetryGeminiRequest({ response: { status: 400 } })).toBe(false);
-        expect(shouldRetryGeminiRequest({ response: { status: 401 } })).toBe(false);
+    it('retries transient server and network failures, but never retries free-tier quota errors', () => {
+        expect(shouldRetryGroqRequest({ response: { status: 503 } })).toBe(true);
+        expect(shouldRetryGroqRequest({ response: { status: 502 } })).toBe(true);
+        expect(shouldRetryGroqRequest({ code: 'ECONNABORTED' })).toBe(true);
+        expect(shouldRetryGroqRequest({ response: { status: 429 } })).toBe(false);
+        expect(shouldRetryGroqRequest({ response: { status: 400 } })).toBe(false);
+        expect(shouldRetryGroqRequest({ response: { status: 401 } })).toBe(false);
     });
 
-    it('retries a transient 503 once and returns the recovered Gemini response', async () => {
+    it('retries one transient 503 and returns the recovered response', async () => {
         vi.useFakeTimers();
         axiosPost
             .mockRejectedValueOnce({ response: { status: 503 } })
-            .mockResolvedValueOnce({ data: { candidates: [{ content: { parts: [{ text: 'Recovered' }] } }] } });
+            .mockResolvedValueOnce({ data: { choices: [{ message: { content: 'Recovered' } }] } });
 
-        const pending = postGeminiWithRetry('https://example.test/generateContent', {}, {}, 'voice_transcription');
+        const pending = postGroqJsonWithRetry('https://api.groq.com/openai/v1/chat/completions', {}, {}, 'sticker_vision');
         await vi.waitFor(() => expect(axiosPost).toHaveBeenCalledTimes(1));
-        await vi.advanceTimersByTimeAsync(700);
+        await vi.advanceTimersByTimeAsync(750);
 
-        await expect(pending).resolves.toMatchObject({ data: { candidates: [{ content: { parts: [{ text: 'Recovered' }] } }] } });
+        await expect(pending).resolves.toMatchObject({ data: { choices: [{ message: { content: 'Recovered' } }] } });
         expect(axiosPost).toHaveBeenCalledTimes(2);
         expect(axiosPost.mock.calls[0][2].timeout).toBe(45_000);
     });
 
-    it('extracts bounded provider diagnostics without exposing credential-like values', () => {
-        const result = getSafeGeminiErrorDetail({
+    it('does not retry a 429 free-tier rate-limit response', async () => {
+        axiosPost.mockRejectedValue({ response: { status: 429, data: { error: { message: 'rate limit reached' } } } });
+        await expect(postGroqJsonWithRetry('https://api.groq.com/openai/v1/chat/completions', {}, {}, 'sticker_vision'))
+            .rejects.toMatchObject({ response: { status: 429 } });
+        expect(axiosPost).toHaveBeenCalledTimes(1);
+    });
+
+    it('sanitizes provider diagnostics and bounds logged error details', () => {
+        const result = getSafeGroqErrorDetail({
             code: 'ERR_BAD_RESPONSE',
             response: {
                 status: 503,
@@ -101,7 +105,7 @@ describe('chatbot media provider reliability', () => {
         expect(result.detail.length).toBeLessThanOrEqual(180);
     });
 
-    it('releases the reserved daily allowance after a failed provider attempt', async () => {
+    it('releases reserved daily usage after a failed provider attempt', async () => {
         const chatId = 'media-refund-test@g.us';
         const senderId = 'sender-refund-test@s.whatsapp.net';
 
