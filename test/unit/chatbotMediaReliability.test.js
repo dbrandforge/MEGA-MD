@@ -34,6 +34,8 @@ vi.mock('../../lib/print.js', () => ({ printLog: vi.fn() }));
 
 import {
     createGroqVisionPayload,
+    createGroqAudioForm,
+    postGroqAudioWithRetry,
     postGroqJsonWithRetry,
     getSafeGroqErrorDetail,
     releaseMediaSlot,
@@ -56,6 +58,31 @@ describe('zero-cost Groq media provider', () => {
             image_url: { url: 'data:image/jpeg;base64,base64-image' }
         });
         expect(payload.max_completion_tokens).toBe(160);
+    });
+
+    it('builds a multipart Whisper request without sending media to a paid provider', () => {
+        const form = createGroqAudioForm(Buffer.from('audio-bytes'), 'audio/ogg');
+        expect(form.getHeaders()['content-type']).toContain('multipart/form-data');
+        const body = form.getBuffer().toString();
+        expect(body).toContain('whisper-large-v3-turbo');
+        expect(body).toContain('forge-guard-voice-note.ogg');
+        expect(body).toContain('Transcribe verbatim');
+    });
+
+    it('rebuilds the multipart body for one transient voice transcription retry', async () => {
+        vi.useFakeTimers();
+        axiosPost
+            .mockRejectedValueOnce({ response: { status: 503 } })
+            .mockResolvedValueOnce({ data: { text: 'I dey come' } });
+
+        const pending = postGroqAudioWithRetry(Buffer.from('audio-bytes'), 'audio/ogg', 'test-groq-key');
+        await vi.waitFor(() => expect(axiosPost).toHaveBeenCalledTimes(1));
+        await vi.advanceTimersByTimeAsync(750);
+
+        await expect(pending).resolves.toMatchObject({ data: { text: 'I dey come' } });
+        expect(axiosPost).toHaveBeenCalledTimes(2);
+        expect(axiosPost.mock.calls[0][1]).not.toBe(axiosPost.mock.calls[1][1]);
+        expect(axiosPost.mock.calls[0][2].headers.Authorization).toBe('Bearer test-groq-key');
     });
 
     it('retries transient server and network failures, but never retries free-tier quota errors', () => {
