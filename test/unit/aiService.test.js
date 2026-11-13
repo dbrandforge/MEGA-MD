@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isUsefulAutomaticAnswer, buildConversationPrompt } from '../../lib/aiService.js';
+import { isUsefulAutomaticAnswer, buildConversationPrompt, shouldUseLiveSearchForMessage } from '../../lib/aiService.js';
 
 describe('Forge Guard conversation style instructions', () => {
   it('does not steer casual conversations toward business by default', () => {
@@ -40,5 +40,27 @@ describe('Gemini automatic-answer relevance checks', () => {
   it('accepts developed answers that explain a factual question semantically', () => {
     const answer = 'Photosynthesis is how green plants make their own food. Their leaves capture light energy and use it to turn water and carbon dioxide into sugar, releasing oxygen in the process.';
     expect(isUsefulAutomaticAnswer('Explain how plants make food?', answer)).toBe(true);
+  });
+});
+
+describe('Sticker reaction mode', () => {
+  it('never routes sticker-originated turns through live web search', () => {
+    expect(shouldUseLiveSearchForMessage({ mediaType: 'sticker' })).toBe(false);
+    expect(shouldUseLiveSearchForMessage({ mediaType: 'voice' })).toBe(true);
+    expect(shouldUseLiveSearchForMessage({})).toBe(true);
+  });
+
+  it('instructs sticker replies to be brief, contextual and free of citations or URLs', () => {
+    const prompt = buildConversationPrompt('The user sent a sticker. Visual description: a surprised cartoon face.', [], '', 'english', 'sticker');
+    expect(prompt).toContain('STICKER REACTION MODE (MANDATORY)');
+    expect(prompt).toContain('React naturally to the sticker');
+    expect(prompt).toContain('Do not perform web research');
+    expect(prompt).toContain('do not include URLs');
+    expect(prompt).toContain('usually one sentence');
+  });
+
+  it('keeps normal conversational prompts unchanged', () => {
+    const prompt = buildConversationPrompt('What is marketing?');
+    expect(prompt).not.toContain('STICKER REACTION MODE');
   });
 });
