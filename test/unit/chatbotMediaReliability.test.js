@@ -41,7 +41,8 @@ import {
     releaseMediaSlot,
     reserveMediaSlot,
     shouldRetryGroqRequest,
-    isUnclearVoiceTranscript
+    isUnclearVoiceTranscript,
+    normalizeVoiceMimeType
 } from '../../lib/chatbotMedia.js';
 
 describe('zero-cost Groq media provider', () => {
@@ -59,6 +60,16 @@ describe('zero-cost Groq media provider', () => {
             image_url: { url: 'data:image/jpeg;base64,base64-image' }
         });
         expect(payload.max_completion_tokens).toBe(160);
+    });
+
+    it('normalizes only audio formats supported by Groq transcription', () => {
+        expect(normalizeVoiceMimeType('audio/ogg; codecs=opus')).toBe('audio/ogg');
+        expect(normalizeVoiceMimeType('audio/mpeg')).toBe('audio/mpeg');
+        expect(normalizeVoiceMimeType('audio/mp4')).toBe('audio/mp4');
+        expect(normalizeVoiceMimeType('audio/x-m4a')).toBe('audio/mp4');
+        expect(normalizeVoiceMimeType('audio/webm')).toBe('audio/webm');
+        expect(normalizeVoiceMimeType('audio/x-wav')).toBe('audio/wav');
+        expect(normalizeVoiceMimeType('audio/aac')).toBe(null);
     });
 
     it('recognizes empty and explicit unclear transcripts without rejecting ordinary bracketed text', () => {
