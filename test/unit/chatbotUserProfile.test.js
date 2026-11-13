@@ -52,6 +52,38 @@ describe('Forge Guard sender-specific long-term profile memory', () => {
         expect(facts.preferredName).toBe('Forge');
     });
 
+    it('does not save casual chatbot banter as profession, interest or preference', () => {
+        const facts = extractUserFacts("I am fine baby what about you. I enjoy you right. I want you to have that stored as my professional role.");
+        expect(facts.professions).toEqual([]);
+        expect(facts.interests).toEqual([]);
+        expect(facts.preferences).toEqual([]);
+    });
+
+    it('extracts professional role and a complete multi-service list generically', () => {
+        const facts = extractUserFacts("My professional role is marketing agency. At The BrandForge we provide Branding, Brand Strategy, Creative Design, Digital Marketing, Business Consultancy, Training, Business Development, and related creative solutions.");
+        expect(facts.professions).toContain('marketing agency');
+        expect(facts.businesses).toContain('The BrandForge');
+        expect(facts.offerings).toEqual([
+            'Branding',
+            'Brand Strategy',
+            'Creative Design',
+            'Digital Marketing',
+            'Business Consultancy',
+            'Training',
+            'Business Development'
+        ]);
+    });
+
+    it('supports a direct profile command phrased as profession role is', () => {
+        expect(extractUserFacts('profession role is marketing agency').professions).toContain('marketing agency');
+    });
+
+    it('stores an explicit preferred language without treating the instruction as a preference blob', () => {
+        const facts = extractUserFacts('I want you to have that stored as my professional role and my preferred language is English');
+        expect(facts.preferredLanguage).toBe('english');
+        expect(facts.preferences).toEqual([]);
+    });
+
     it('answers who-am-I from saved facts without inventing details', () => {
         const reply = buildUserIdentityReply({
             preferredName: 'Forge',
