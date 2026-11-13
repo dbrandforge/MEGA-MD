@@ -8,6 +8,7 @@ import { pickDualReply } from '../data/chatDual/dualBankSelector.js';
 import { getUserGender } from './gender.js';
 import { printLog } from '../lib/print.js';
 import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
+import { getIdentityClaimReply, buildGenderInteractionContext, buildTaggedPeopleContext } from '../lib/chatbotConversationEnhancements.js';
 import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
 import { isExplicitlyAddressedInGroup, hasActiveGroupFollowup, jidMatchesAnyBotIdentity, isBotNameTrigger, stripBotNameTrigger } from '../lib/chatbotAccess.js';
 import { createKeyedSerialExecutor, getConversationMemoryKey } from '../lib/chatbotConversationMemory.js';
@@ -322,7 +323,11 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         const groupProfile = isGroup ? await store.getSetting(chatId, 'forgeGuardGroupProfile').catch(() => null) : null;
         const conversationModeContext = buildGroupConversationModeContext(groupProfile, chatId);
         const forgeKnowledgeContext = buildForgeKnowledgeContext(chatbotQuery, identity);
-        const combinedProfileContext = [userProfileContext, groupContinuityContext, conversationModeContext, forgeKnowledgeContext].filter(Boolean).join(String.fromCharCode(10, 10));
+        let registeredGender = null;
+        try { registeredGender = await getUserGender(senderId); } catch {}
+        const genderInteractionContext = buildGenderInteractionContext(registeredGender);
+        const taggedPeopleContext = buildTaggedPeopleContext(mentioned, sock.store?.contacts, senderId, botJids);
+        const combinedProfileContext = [userProfileContext, groupContinuityContext, conversationModeContext, forgeKnowledgeContext, genderInteractionContext, taggedPeopleContext].filter(Boolean).join(String.fromCharCode(10, 10));
         if (!message.key.fromMe) {
             history.push({
                 name: message.pushName || 'You',
@@ -353,9 +358,8 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         const asksWhoAmI = /\bwho am i\b|\bwhat do you know about me\b|\bdescribe me\b/i.test(cleanForHistory);
         const profileIdentityReply = asksWhoAmI && !identity ? buildUserIdentityReply(userProfile, displayName) : null;
         const forgeKnowledgeReply = getForgeKnowledgeReply(chatbotQuery);
-        let registeredGender = null;
-        try { registeredGender = await getUserGender(senderId); } catch {}
-        let response = arithmeticReply || clockReply || identityReply || identityGreeting || profileIdentityReply || forgeKnowledgeReply;
+        const identityClaimReply = getIdentityClaimReply(cleanForHistory, identity);
+        let response = identityClaimReply || arithmeticReply || clockReply || identityReply || identityGreeting || profileIdentityReply || forgeKnowledgeReply;
         if (!response) {
             // Current facts must be grounded in fresh search evidence, never a dated local answer bank.
             const contextualLiveQuery = resolveContextualBusinessFollowup(chatbotQuery, history.slice(0, -1));
