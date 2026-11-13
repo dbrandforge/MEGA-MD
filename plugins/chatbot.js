@@ -257,6 +257,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
             || quotedMessage.videoMessage?.caption
             || '';
         const mediaContext = String(message?.mediaContext || '').trim().slice(0, 1200);
+        const isStickerMedia = message?.mediaType === 'sticker';
         const chatbotQuery = mediaContext
             ? `${cleanForHistory}\n${mediaContext}`
             : (quotedText && /^(answer this|answer|explain this|tell me about this|what about this|help me with this)[.!?\s👇]*$/i.test(cleanForHistory)
@@ -358,7 +359,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         if (!response) {
             // Current facts must be grounded in fresh search evidence, never a dated local answer bank.
             const contextualLiveQuery = resolveContextualBusinessFollowup(chatbotQuery, history.slice(0, -1));
-            if (CHATBOT_AI_ENABLED && (isTimeSensitiveQuestion(chatbotQuery) || contextualLiveQuery)) {
+            if (!isStickerMedia && CHATBOT_AI_ENABLED && (isTimeSensitiveQuestion(chatbotQuery) || contextualLiveQuery)) {
                 const liveStartedAt = Date.now();
                 const liveResult = await searchLiveKnowledge(contextualLiveQuery || chatbotQuery, { timeoutMs: 5000 });
                 if (!liveResult.ok) {
@@ -419,7 +420,8 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                             timeoutMs: 5000,
                             history: priorTurns,
                             liveContext: combinedProfileContext,
-                            language: responseLanguage
+                            language: responseLanguage,
+                            responseMode: isStickerMedia ? 'sticker' : 'conversation'
                         }), chatbotQuery);
                         console.info(`[Chatbot AI] outcome=success latency_ms=${Date.now() - aiStartedAt}`);
                     } catch (error) {
