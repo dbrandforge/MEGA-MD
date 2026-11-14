@@ -191,8 +191,12 @@ export function startSchedulerEngine(sock) {
                     try {
                         if (item.chatId?.endsWith('@g.us')) {
                             const presence = await verifyGroupPresence(activeSocket, item.chatId);
-                            if (presence.status !== 'active' || !presence.present) {
-                                console.warn(`[SCHEDULE] Skipping due message ID:${item.id}; bot membership in ${item.chatId} is absent or unverified.`);
+                            if (presence.status === 'unknown') {
+                                remaining.push(item);
+                                continue;
+                            }
+                            if (presence.status === 'absent' || !presence.present) {
+                                console.warn(`[SCHEDULE] Discarding due message ID:${item.id}; bot is no longer a participant in ${item.chatId}.`);
                                 changed = true;
                                 continue;
                             }
