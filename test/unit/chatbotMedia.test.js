@@ -78,6 +78,13 @@ describe('chatbot media settings and audio handling', () => {
         await expect(reserveMediaSlot('sticker-global-overflow', 'sticker-global-overflow', 'sticker')).resolves.toBe(false);
     });
 
+    it('enforces each sender limit across multiple chats', async () => {
+        for (let i = 0; i < 20; i++) {
+            await expect(reserveMediaSlot(`user-chat-${i}`, 'same-user', 'voice')).resolves.toBe(true);
+        }
+        await expect(reserveMediaSlot('user-chat-overflow', 'same-user', 'voice')).resolves.toBe(false);
+    });
+
     it('uses gender-aware sarcastic guidance for voice notes longer than the 60-second cap', () => {
         expect(buildLongVoiceNoteReply(74, 'guy')).toContain('BROS');
         expect(buildLongVoiceNoteReply(74, 'guy')).toContain('60 seconds max');
