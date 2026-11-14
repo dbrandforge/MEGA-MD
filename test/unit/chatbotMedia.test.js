@@ -83,6 +83,11 @@ describe('chatbot media settings and audio handling', () => {
             await expect(reserveMediaSlot(`user-chat-${i}`, 'same-user', 'voice')).resolves.toBe(true);
         }
         await expect(reserveMediaSlot('user-chat-overflow', 'same-user', 'voice')).resolves.toBe(false);
+
+        for (let i = 0; i < 30; i++) {
+            await expect(reserveMediaSlot(`sticker-user-chat-${i}`, 'same-sticker-user', 'sticker')).resolves.toBe(true);
+        }
+        await expect(reserveMediaSlot('sticker-user-chat-overflow', 'same-sticker-user', 'sticker')).resolves.toBe(false);
     });
 
     it('cooldowns repeated long-voice-note warnings per sender and chat', () => {
