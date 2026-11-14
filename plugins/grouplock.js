@@ -45,6 +45,7 @@ const GROUP_LOCK_SCHEDULE_KEY = 'groupLockSchedule';
 // WhatsApp can return 403 when the bot has lost group access or admin rights.
 // Avoid hammering the same group every 15 seconds; retry periodically and
 // include the group ID so the underlying membership/permission issue is clear.
+// Keep one forbidden group from flooding the shared scheduler with retries.
 const GROUP_FORBIDDEN_COOLDOWN_MS = 5 * 60 * 1000;
 const groupForbiddenUntil = new Map();
 
