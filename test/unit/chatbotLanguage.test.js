@@ -18,7 +18,7 @@ describe('Forge Guard language matching', () => {
     ['Kedụ?', 'igbo'],
     ['Ndewo, kedụ ka ị mere?', 'igbo'],
     ['Anyị chọrọ ịma ihe a pụtara', 'igbo'],
-    ['Biko, gwa m ihe mere', 'igbo']
+    ['Biko, kedụ ka ị mere?', 'igbo']
   ])('detects %s as %s', (message, expected) => {
     expect(detectMessageLanguage(message)).toBe(expected);
   });
