@@ -101,6 +101,7 @@ describe('chatbot media settings and audio handling', () => {
     it('uses gender-aware sarcastic guidance for voice notes longer than the 60-second cap', () => {
         expect(buildLongVoiceNoteReply(74, 'guy')).toContain('BROS');
         expect(buildLongVoiceNoteReply(74, 'guy')).toContain('60 seconds max');
+        expect(buildLongVoiceNoteReply(74, 'guy')).toContain('20 per person per day across all chats');
         expect(buildLongVoiceNoteReply(81, 'lady')).toContain('SIS');
         expect(buildLongVoiceNoteReply(81, 'lady')).toContain('81 seconds');
         expect(buildLongVoiceNoteReply(90, null)).toContain('MY PERSON');
