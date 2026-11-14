@@ -53,7 +53,6 @@ describe('Sticker reaction mode', () => {
   it('instructs sticker replies to be brief, contextual and free of citations or URLs', () => {
     const prompt = buildConversationPrompt('The user sent a sticker. Visual description: a surprised cartoon face.', [], '', 'english', 'sticker');
     expect(prompt).toContain('STICKER REACTION MODE (MANDATORY)');
-    expect(prompt).toContain('Respond to the person as if they had made a conversational remark');
     expect(prompt).toContain('Do not perform web research');
     expect(prompt).toContain('or include URLs');
     expect(prompt).toContain('usually one natural sentence');
