@@ -5,6 +5,7 @@ import store from '../lib/lightweight_store.js';
 import { FEATURE_GROUPS, loadFeatureGroups } from '../lib/featureGroups.js';
 import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 import { checkBirthdayGreetings } from '../lib/birthdayService.js';
+import { verifyGroupPresence } from '../lib/groupPresence.js';
 
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -188,6 +189,14 @@ export function startSchedulerEngine(sock) {
             for (const item of schedules) {
                 if (now >= item.sendAt) {
                     try {
+                        if (item.chatId?.endsWith('@g.us')) {
+                            const presence = await verifyGroupPresence(activeSocket, item.chatId);
+                            if (presence.status !== 'active' || !presence.present) {
+                                console.warn(`[SCHEDULE] Skipping due message ID:${item.id}; bot membership in ${item.chatId} is absent or unverified.`);
+                                changed = true;
+                                continue;
+                            }
+                        }
                         await activeSocket.sendMessage(item.chatId, { text: item.message });
                         console.log(`[SCHEDULE] ✅ Sent message ID:${item.id}`);
                     } catch (e) {
@@ -204,6 +213,10 @@ export function startSchedulerEngine(sock) {
             // Feature groups are always checked, even if nobody has used .schedule.
             const groupsToCheck = new Set([..._trackedGroups, ...FEATURE_GROUPS]);
             for (const chatId of groupsToCheck) {
+                // Fail closed: do not run group-specific automations unless WhatsApp
+                // confirms that this bot account is currently a participant.
+                const presence = await verifyGroupPresence(activeSocket, chatId);
+                if (presence.status !== 'active' || !presence.present) continue;
                 try {
                     await checkTimedGroupMute(activeSocket, chatId);
                 } catch (e) {
