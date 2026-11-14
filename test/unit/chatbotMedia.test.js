@@ -18,7 +18,7 @@ vi.mock('../../lib/lightweight_store.js', () => ({
 }));
 
 import { getChatbotMediaModes, setChatbotMediaMode } from '../../lib/chatbotMediaSettings.js';
-import { buildLongVoiceNoteReply, normalizeVoiceMimeType, reserveMediaSlot } from '../../lib/chatbotMedia.js';
+import { buildLongVoiceNoteReply, normalizeVoiceMimeType, reserveLongVoiceNoticeSlot, reserveMediaSlot } from '../../lib/chatbotMedia.js';
 
 describe('chatbot media settings and audio handling', () => {
     let testDay = 0;
@@ -83,6 +83,14 @@ describe('chatbot media settings and audio handling', () => {
             await expect(reserveMediaSlot(`user-chat-${i}`, 'same-user', 'voice')).resolves.toBe(true);
         }
         await expect(reserveMediaSlot('user-chat-overflow', 'same-user', 'voice')).resolves.toBe(false);
+    });
+
+    it('cooldowns repeated long-voice-note warnings per sender and chat', () => {
+        expect(reserveLongVoiceNoticeSlot('long-a', 'sender-a')).toBe(true);
+        expect(reserveLongVoiceNoticeSlot('long-a', 'sender-a')).toBe(false);
+        vi.advanceTimersByTime(12_001);
+        expect(reserveLongVoiceNoticeSlot('long-a', 'sender-a')).toBe(true);
+        expect(reserveLongVoiceNoticeSlot('long-b', 'sender-a')).toBe(true);
     });
 
     it('uses gender-aware sarcastic guidance for voice notes longer than the 60-second cap', () => {
