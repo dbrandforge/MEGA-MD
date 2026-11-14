@@ -3,6 +3,7 @@ import { PRIMARY_FEATURE_GROUP, registerFeatureGroup, unregisterFeatureGroup, is
 import { trackGroup, startSchedulerEngine } from './schedule.js';
 import { loadUserGroupData, saveUserGroupData } from './chatbot.js';
 import { invalidateGroupFeatureAccessCache } from '../lib/groupFeatureAccess.js';
+import { isGroupPresenceActive } from '../lib/groupPresence.js';
 import {
   MATURED_MIND_EXCLUSIVE_MAPS,
   GENERAL_GROUP_MAPS,
@@ -70,6 +71,14 @@ export default {
     }
     if (!chatId?.endsWith('@g.us')) {
       return sock.sendMessage(chatId, { text: 'Run this command inside the group you want to configure.' }, { quoted: message });
+    }
+
+    // Never apply or operate a Forge Guard profile unless WhatsApp confirms
+    // this bot account is currently a participant in the target group.
+    if (!await isGroupPresenceActive(sock, chatId)) {
+      return sock.sendMessage(chatId, {
+        text: '⏸️ *GROUP SETUP PAUSED*\n\nWhatsApp could not confirm that Forge Guard is currently a member of this group. No package changes were made. Add the bot back to the group, then retry this command.'
+      }, { quoted: message });
     }
 
     if (action === 'status') {
