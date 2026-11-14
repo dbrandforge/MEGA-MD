@@ -18,6 +18,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Use npm with the Arborist peer-resolution fix
+        run: npm install --global npm@11.6.0
       - name: Regenerate lockfile with patched dependency ranges
         run: npm install --package-lock-only --ignore-scripts
       - name: Verify clean install from patched lockfile
