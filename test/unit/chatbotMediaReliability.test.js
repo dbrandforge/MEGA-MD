@@ -164,6 +164,6 @@ describe('zero-cost Groq media provider', () => {
         usage = settings.get('global:chatbotMediaUsage');
         expect(usage.global.voice).toBe(0);
         expect(usage.chats[chatId].voice).toBe(0);
-        expect(usage.senders[`${chatId}:${senderId}`].voice).toBe(0);
+        expect(usage.senders[senderId].voice).toBe(0);
     });
 });
