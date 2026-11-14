@@ -210,6 +210,7 @@ async function sendDailyActivityOnce(sock, chatId, day) {
     } catch (greetingError) {
         if (!recordGroupLockFailure(chatId, 'occasion greeting', greetingError)) console.error(`[GroupLock] Occasion greeting failed for ${chatId}:`, greetingError.message);
     }
+    if ((groupForbiddenUntil.get(chatId) || 0) > Date.now()) return false;
 
     const dateKey = getCurrentDateKey();
     const sentRecord = (await store.getSetting(chatId, ACTIVITY_SENT_KEY)) || {};
@@ -269,7 +270,7 @@ export async function setManualGroupUnlockOverride(chatId) {
 
 async function unlockGroup(sock, chatId, { manual = false } = {}) {
     try {
-        await unlockGroupSetting(sock, chatId);
+        if (!await unlockGroupSetting(sock, chatId)) return false;
 
         const day = getCurrentDay();
         await sendDailyActivityOnce(sock, chatId, day);
@@ -339,7 +340,7 @@ export async function checkGroupLockSchedule(sock, chatId) {
             // Keep the WhatsApp setting in sync with "should be unlocked"
             // unless an admin deliberately re-locked it after this time.
             if (state.locked && manualOverride.day !== day) {
-                await unlockGroupSetting(sock, chatId);
+                if (!await unlockGroupSetting(sock, chatId)) return false;
                 await saveGroupSetting(chatId, LOCK_STATE_KEY, { locked: false, at: Date.now() });
             }
         }
