@@ -42,6 +42,29 @@ const GOODMORNING_INDEX_KEY = 'groupLockGoodmorningIndex';
 const DAY_UNLOCK_GREETING_KEY = 'groupDayUnlockGreeting';
 const GROUP_LOCK_SCHEDULE_KEY = 'groupLockSchedule';
 
+// WhatsApp can return 403 when the bot has lost group access or admin rights.
+// Avoid hammering the same group every 15 seconds; retry periodically and
+// include the group ID so the underlying membership/permission issue is clear.
+const GROUP_FORBIDDEN_COOLDOWN_MS = 5 * 60 * 1000;
+const groupForbiddenUntil = new Map();
+
+function isForbiddenGroupError(error) {
+    const status = error?.data?.statusCode ?? error?.data ?? error?.statusCode ?? error?.output?.statusCode;
+    return Number(status) === 403 || /forbidden/i.test(String(error?.message || error || ''));
+}
+
+function recordGroupLockFailure(chatId, operation, error) {
+    if (!isForbiddenGroupError(error)) return false;
+    const now = Date.now();
+    const previousUntil = groupForbiddenUntil.get(chatId) || 0;
+    const retryAt = now + GROUP_FORBIDDEN_COOLDOWN_MS;
+    groupForbiddenUntil.set(chatId, retryAt);
+    if (previousUntil <= now) {
+        console.warn(`[GroupLock] WhatsApp returned 403 during ${operation} for group ${chatId}; pausing scheduled attempts for 5 minutes. Check that the bot is still a member and has the required admin permission.`);
+    }
+    return true;
+}
+
 async function getGroupLockSchedule(chatId) {
     const saved = await store.getSetting(chatId, GROUP_LOCK_SCHEDULE_KEY);
     return {
@@ -159,7 +182,7 @@ async function lockGroup(sock, chatId) {
         console.log(`[GroupLock] Locked ${chatId}`);
         return true;
     } catch (e) {
-        console.error('Failed to lock group:', e);
+        if (!recordGroupLockFailure(chatId, 'lock', e)) console.error(`[GroupLock] Failed to lock group ${chatId}:`, e);
         return false;
     }
 }
@@ -171,7 +194,7 @@ async function unlockGroupSetting(sock, chatId) {
         await sock.groupSettingUpdate(chatId, 'not_announcement');
         return true;
     } catch (e) {
-        console.error('Failed to unlock group setting:', e);
+        if (!recordGroupLockFailure(chatId, 'unlock setting', e)) console.error(`[GroupLock] Failed to unlock group setting ${chatId}:`, e);
         return false;
     }
 }
@@ -185,7 +208,7 @@ async function sendDailyActivityOnce(sock, chatId, day) {
     try {
         await sendDayUnlockGreetingOnce(sock, chatId);
     } catch (greetingError) {
-        console.error(`[GroupLock] Occasion greeting failed for ${chatId}:`, greetingError.message);
+        if (!recordGroupLockFailure(chatId, 'occasion greeting', greetingError)) console.error(`[GroupLock] Occasion greeting failed for ${chatId}:`, greetingError.message);
     }
 
     const dateKey = getCurrentDateKey();
@@ -264,7 +287,7 @@ async function unlockGroup(sock, chatId, { manual = false } = {}) {
         console.log(`[GroupLock] Unlocked ${chatId} - ${day}`);
         return true;
     } catch (e) {
-        console.error('Failed to unlock group:', e);
+        if (!recordGroupLockFailure(chatId, 'unlock', e)) console.error(`[GroupLock] Failed to unlock group ${chatId}:`, e);
         return false;
     }
 }
@@ -273,8 +296,12 @@ async function unlockGroup(sock, chatId, { manual = false } = {}) {
  * Called every ~15s by the scheduler engine
  */
 export async function checkGroupLockSchedule(sock, chatId) {
-    // Only run for the target group
-    if (!await hasMaturedMindedFeatures(chatId)) return;
+    // Only run for groups with the Matured Minded lifecycle package.
+    if (!await hasMaturedMindedFeatures(chatId)) return false;
+
+    const retryAt = groupForbiddenUntil.get(chatId) || 0;
+    if (retryAt > Date.now()) return false;
+    if (retryAt) groupForbiddenUntil.delete(chatId);
 
     try {
         const day = getCurrentDay();
@@ -348,7 +375,10 @@ export async function checkGroupLockSchedule(sock, chatId) {
         }
 
     } catch (e) {
-        console.error('checkGroupLockSchedule error:', e);
+        if (!recordGroupLockFailure(chatId, 'scheduled lifecycle check', e)) {
+            console.error(`[GroupLock] Scheduled lifecycle check failed for group ${chatId}:`, e);
+        }
+        return false;
     }
 }
 
