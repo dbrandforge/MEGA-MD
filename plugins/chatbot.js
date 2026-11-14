@@ -447,6 +447,9 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         }
         // Enforce clean output for every chatbot source: AI, curated banks and identity replies.
         response = sanitizeChatbotReply(response);
+        // Keep media allowances visible but unobtrusive, attached to the actual reply.
+        if (message?.mediaType === 'sticker') response += '\n\n🖼️ Daily sticker allowance: 30 per person per day across all chats.';
+        if (message?.mediaType === 'voice') response += '\n\n🎙️ Daily voice-note allowance: 20 per person per day across all chats.';
         const freshBotSession = !previousBotTurn || (previousBotTurn.at && Date.now() - previousBotTurn.at > GROUP_FOLLOWUP_WINDOW_MS);
         if ((isMention || nameTrigger) && freshBotSession && !identity) {
             const greeting = displayName ? `${displayName}, you’re live. Welcome aboard.` : 'You’re live. Welcome aboard.';

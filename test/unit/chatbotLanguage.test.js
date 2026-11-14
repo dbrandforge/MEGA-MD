@@ -14,7 +14,11 @@ describe('Forge Guard language matching', () => {
     ['Ẹ jọ̀ọ́, kí ni ìwà ọ̀daràn?', 'yoruba'],
     ['Mo fẹ́ mọ̀ nípa ilé-ẹ̀kọ́ náà', 'yoruba'],
     ['Báwo ni? Ṣé o wà dáadáa?', 'yoruba'],
-    ['E jowo, se o wa daadaa?', 'yoruba']
+    ['E jowo, se o wa daadaa?', 'yoruba'],
+    ['Kedụ?', 'igbo'],
+    ['Ndewo, kedụ ka ị mere?', 'igbo'],
+    ['Anyị chọrọ ịma ihe a pụtara', 'igbo'],
+    ['Biko, kedụ ka ị mere?', 'igbo']
   ])('detects %s as %s', (message, expected) => {
     expect(detectMessageLanguage(message)).toBe(expected);
   });
@@ -48,6 +52,9 @@ describe('Forge Guard language matching', () => {
     expect(getLanguageInstruction('pidgin')).toContain('Nigerian Pidgin');
     expect(getLanguageInstruction('yoruba')).toContain('Yoruba');
     expect(getLanguageInstruction('english')).toContain('English');
+    expect(getLanguageInstruction('igbo')).toContain('Igbo');
+    expect(getLocalizedAnswerPrefix('igbo')).toBe('Azịza bụ');
+    expect(getLocalizedFailureReply('igbo')).toContain('Enweghị m ike');
     expect(getLocalizedAnswerPrefix('pidgin')).toBe('Answer na');
     expect(getLocalizedAnswerPrefix('yoruba')).toBe('Ìdáhùn ni');
     expect(getLocalizedFailureReply('pidgin')).toContain('I no fit');

@@ -18,7 +18,7 @@ vi.mock('../../lib/lightweight_store.js', () => ({
 }));
 
 import { getChatbotMediaModes, setChatbotMediaMode } from '../../lib/chatbotMediaSettings.js';
-import { normalizeVoiceMimeType, reserveMediaSlot } from '../../lib/chatbotMedia.js';
+import { buildLongVoiceNoteReply, normalizeVoiceMimeType, reserveLongVoiceNoticeSlot, reserveMediaSlot } from '../../lib/chatbotMedia.js';
 
 describe('chatbot media settings and audio handling', () => {
     let testDay = 0;
@@ -54,28 +54,57 @@ describe('chatbot media settings and audio handling', () => {
         });
     });
 
-    it('enforces persisted global and per-chat voice-note ceilings', async () => {
-        for (let i = 0; i < 20; i++) {
+    it('enforces the expanded voice-note per-person, per-chat, and global ceilings', async () => {
+        for (let i = 0; i < 30; i++) {
             await expect(reserveMediaSlot('group-a', `member-${i}`, 'voice')).resolves.toBe(true);
         }
         await expect(reserveMediaSlot('group-a', 'member-overflow', 'voice')).resolves.toBe(false);
 
-        for (let i = 0; i < 10; i++) {
-            await expect(reserveMediaSlot(`group-${i + 1}`, `member-${i + 20}`, 'voice')).resolves.toBe(true);
+        for (let i = 0; i < 15; i++) {
+            await expect(reserveMediaSlot(`group-${i + 1}`, `member-${i + 30}`, 'voice')).resolves.toBe(true);
         }
         await expect(reserveMediaSlot('group-global-overflow', 'member-global-overflow', 'voice')).resolves.toBe(false);
     });
 
     it('enforces the expanded sticker sender, chat, and global ceilings', async () => {
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i < 45; i++) {
             await expect(reserveMediaSlot('sticker-group-a', `member-${i}`, 'sticker')).resolves.toBe(true);
         }
         await expect(reserveMediaSlot('sticker-group-a', 'member-overflow', 'sticker')).resolves.toBe(false);
 
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < 30; i++) {
             await expect(reserveMediaSlot(`sticker-group-${i + 1}`, `sticker-member-${i}`, 'sticker')).resolves.toBe(true);
         }
         await expect(reserveMediaSlot('sticker-global-overflow', 'sticker-global-overflow', 'sticker')).resolves.toBe(false);
+    });
+
+    it('enforces each sender limit across multiple chats', async () => {
+        for (let i = 0; i < 20; i++) {
+            await expect(reserveMediaSlot(`user-chat-${i}`, 'same-user', 'voice')).resolves.toBe(true);
+        }
+        await expect(reserveMediaSlot('user-chat-overflow', 'same-user', 'voice')).resolves.toBe(false);
+
+        for (let i = 0; i < 30; i++) {
+            await expect(reserveMediaSlot(`sticker-user-chat-${i}`, 'same-sticker-user', 'sticker')).resolves.toBe(true);
+        }
+        await expect(reserveMediaSlot('sticker-user-chat-overflow', 'same-sticker-user', 'sticker')).resolves.toBe(false);
+    });
+
+    it('cooldowns repeated long-voice-note warnings per sender and chat', () => {
+        expect(reserveLongVoiceNoticeSlot('long-a', 'sender-a')).toBe(true);
+        expect(reserveLongVoiceNoticeSlot('long-a', 'sender-a')).toBe(false);
+        vi.advanceTimersByTime(12_001);
+        expect(reserveLongVoiceNoticeSlot('long-a', 'sender-a')).toBe(true);
+        expect(reserveLongVoiceNoticeSlot('long-b', 'sender-a')).toBe(true);
+    });
+
+    it('uses gender-aware sarcastic guidance for voice notes longer than the 60-second cap', () => {
+        expect(buildLongVoiceNoteReply(74, 'guy')).toContain('BROS');
+        expect(buildLongVoiceNoteReply(74, 'guy')).toContain('60 seconds max');
+        expect(buildLongVoiceNoteReply(74, 'guy')).toContain('20 per person per day across all chats');
+        expect(buildLongVoiceNoteReply(81, 'lady')).toContain('SIS');
+        expect(buildLongVoiceNoteReply(81, 'lady')).toContain('81 seconds');
+        expect(buildLongVoiceNoteReply(90, null)).toContain('MY PERSON');
     });
 
     it('rejects unknown media settings', async () => {
