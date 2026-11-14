@@ -56,7 +56,9 @@ describe('Sticker reaction mode', () => {
     expect(prompt).toContain('React naturally to the sticker');
     expect(prompt).toContain('Do not perform web research');
     expect(prompt).toContain('or include URLs');
-    expect(prompt).toContain('usually one sentence');
+    expect(prompt).toContain('usually one natural sentence');
+    expect(prompt).toContain('Never say “this sticker shows”');
+    expect(prompt).toContain('Respond to the person as if they had made a conversational remark');
   });
 
   it('keeps normal conversational prompts unchanged', () => {
