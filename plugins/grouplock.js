@@ -48,6 +48,8 @@ const GROUP_LOCK_SCHEDULE_KEY = 'groupLockSchedule';
 // Keep one forbidden group from flooding the shared scheduler with retries.
 const GROUP_FORBIDDEN_COOLDOWN_MS = 5 * 60 * 1000;
 const groupForbiddenUntil = new Map();
+const botUnlockEchoUntil = new Map();
+const earlyUnlockInFlight = new Set();
 
 function isForbiddenGroupError(error) {
     const status = error?.data?.statusCode ?? error?.data ?? error?.statusCode ?? error?.output?.statusCode;
@@ -192,9 +194,11 @@ async function lockGroup(sock, chatId) {
 // unlocked - groupSettingUpdate is idempotent from WhatsApp's side.
 async function unlockGroupSetting(sock, chatId) {
     try {
+        botUnlockEchoUntil.set(chatId, Date.now() + 15_000);
         await sock.groupSettingUpdate(chatId, 'not_announcement');
         return true;
     } catch (e) {
+        botUnlockEchoUntil.delete(chatId);
         if (!recordGroupLockFailure(chatId, 'unlock setting', e)) console.error(`[GroupLock] Failed to unlock group setting ${chatId}:`, e);
         return false;
     }
@@ -291,6 +295,50 @@ async function unlockGroup(sock, chatId, { manual = false } = {}) {
     } catch (e) {
         if (!recordGroupLockFailure(chatId, 'unlock', e)) console.error(`[GroupLock] Failed to unlock group ${chatId}:`, e);
         return false;
+    }
+}
+
+
+export function isEarlyManualUnlockUpdate(update, state, nowMinutes, unlockMinutes) {
+    return Boolean(update?.announce === false && state?.locked === true &&
+        Number.isFinite(nowMinutes) && Number.isFinite(unlockMinutes) && nowMinutes < unlockMinutes);
+}
+export async function handleGroupSettingUpdate(sock, updates) {
+    const list = Array.isArray(updates) ? updates : [updates];
+    for (const update of list) {
+        const chatId = update?.id;
+        if (!chatId?.endsWith('@g.us') || update.announce !== false) continue;
+        const echoUntil = botUnlockEchoUntil.get(chatId) || 0;
+        if (echoUntil > Date.now()) { botUnlockEchoUntil.delete(chatId); continue; }
+        botUnlockEchoUntil.delete(chatId);
+        if (earlyUnlockInFlight.has(chatId)) continue;
+        earlyUnlockInFlight.add(chatId);
+        try {
+            if (!await hasMaturedMindedFeatures(chatId)) continue;
+            const state = (await store.getSetting(chatId, LOCK_STATE_KEY)) || { locked: false };
+            const day = getCurrentDay();
+            const schedules = await getGroupLockSchedule(chatId);
+            const schedule = day === 'sunday' ? schedules.sunday : schedules.default;
+            const [unlockH, unlockM] = schedule.unlock.split(':').map(Number);
+            const now = getLagosNow();
+            const nowMinutes = now.getHours() * 60 + now.getMinutes();
+            const unlockMinutes = unlockH * 60 + unlockM;
+            if (!isEarlyManualUnlockUpdate(update, state, nowMinutes, unlockMinutes)) continue;
+            const dateKey = getCurrentDateKey();
+            const writes = await Promise.all([
+                store.saveSettingVerified(chatId, MANUAL_OVERRIDE_KEY, { day, action: 'unlock', source: 'admin-early-unlock', date: dateKey }),
+                store.saveSettingVerified(chatId, LOCK_STATE_KEY, { locked: false, at: Date.now(), source: 'admin-early-unlock' }),
+                store.saveSettingVerified(chatId, LAST_ACTION_KEY, { action: 'unlock', time: getCurrentTimeString(), day, source: 'admin-early-unlock' })
+            ]);
+            if (writes.some(saved => !saved)) throw new Error('Could not persist early manual-unlock state.');
+            await sock.sendMessage(chatId, { text: '🔓 *THE GROUP HAS BEEN UNLOCKED EARLY*\\n\\nAn admin has opened the group ahead of the scheduled unlock time. Today’s activities are now being posted.' });
+            await sendDailyActivityOnce(sock, chatId, day);
+            console.log(`[GroupLock] Detected admin early-unlock for ${chatId} - ${day}`);
+        } catch (error) {
+            console.error(`[GroupLock] Early manual-unlock handler failed for ${chatId}:`, error);
+        } finally {
+            earlyUnlockInFlight.delete(chatId);
+        }
     }
 }
 
