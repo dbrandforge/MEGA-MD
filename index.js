@@ -134,6 +134,7 @@ process.on('SIGINT', () => {
 let isConnecting = false;
 let reconnectTimer = null;
 let activeSocket = null;
+let activeSocketCacheCleanup = null;
 let authBlocked = false;
 async function safeStartQasimDev() {
     if (authBlocked) {
@@ -411,7 +412,50 @@ async function startQasimDev() {
             queueSessionBackup('creds.json');
         };
         const msgRetryCounterCache = new NodeCache({ stdTTL: 300, checkperiod: 60, useClones: false });
-        const signalKeyStore = makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" }));
+        // Keep the Signal-key cache bounded. The default Baileys cache has a TTL
+        // but no size ceiling; large restored auth states can otherwise retain
+        // thousands of key objects in a 512 MiB container.
+        const signalKeyCache = new Map();
+        const SIGNAL_KEY_CACHE_MAX_ENTRIES = 2500;
+        const SIGNAL_KEY_CACHE_TTL_MS = 3 * 60 * 1000;
+        const signalKeyCacheStore = {
+            async get(key) {
+                const entry = signalKeyCache.get(key);
+                if (!entry) return undefined;
+                if (entry.expiresAt <= Date.now()) {
+                    signalKeyCache.delete(key);
+                    return undefined;
+                }
+                // Refresh insertion order for bounded LRU eviction.
+                signalKeyCache.delete(key);
+                signalKeyCache.set(key, entry);
+                return entry.value;
+            },
+            async set(key, value) {
+                signalKeyCache.delete(key);
+                signalKeyCache.set(key, { value, expiresAt: Date.now() + SIGNAL_KEY_CACHE_TTL_MS });
+                while (signalKeyCache.size > SIGNAL_KEY_CACHE_MAX_ENTRIES) {
+                    signalKeyCache.delete(signalKeyCache.keys().next().value);
+                }
+            },
+            async flushAll() {
+                signalKeyCache.clear();
+            },
+        };
+        let socketCachesClosed = false;
+        const cleanupSocketCaches = () => {
+            if (socketCachesClosed) return;
+            socketCachesClosed = true;
+            signalKeyCacheStore.flushAll().catch(() => {});
+            try { msgRetryCounterCache.close?.(); } catch {}
+            if (activeSocketCacheCleanup === cleanupSocketCaches) activeSocketCacheCleanup = null;
+        };
+        activeSocketCacheCleanup = cleanupSocketCaches;
+        const signalKeyStore = makeCacheableSignalKeyStore(
+            state.keys,
+            pino({ level: "fatal" }).child({ level: "fatal" }),
+            signalKeyCacheStore
+        );
         const groupSenderKeyRecoveryTargets = parseGroupSenderKeyRecoveryTargets(process.env.GROUP_SENDER_KEY_REKEY_GROUPS || '');
         const ghostMode = await store.getSetting('global', 'stealthMode');
         const isGhostActive = ghostMode && ghostMode.enabled;
@@ -812,6 +856,8 @@ async function startQasimDev() {
                 console.log();
             }
             if (connection === 'close') {
+                // Dispose per-socket caches even when this is a late close event.
+                cleanupSocketCaches();
                 // Ignore late close events from sockets that have already been superseded.
                 if (activeSocket !== QasimDev) {
                     printLog('warning', 'Ignoring close event from a non-active WhatsApp socket.');
@@ -860,6 +906,7 @@ async function startQasimDev() {
         return QasimDev;
     }
     catch (error) {
+        try { activeSocketCacheCleanup?.(); } catch {}
         if (activeSocket) {
             try { activeSocket.end(new Error('socket setup failed')); } catch {}
             activeSocket = null;
