@@ -410,7 +410,9 @@ async function startQasimDev() {
             // Coalesce credential writes with other auth-file events.
             queueSessionBackup('creds.json');
         };
-        const msgRetryCounterCache = new NodeCache({ stdTTL: 300, checkperiod: 60, useClones: false });
+        // Match Baileys' one-hour retry-counter retention; a five-minute expiry can reset
+        // failed-decryption retry budgets while WhatsApp is still retrying delivery.
+        const msgRetryCounterCache = new NodeCache({ stdTTL: 3600, checkperiod: 300, useClones: false });
         const signalKeyStore = makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" }));
         const groupSenderKeyRecoveryTargets = parseGroupSenderKeyRecoveryTargets(process.env.GROUP_SENDER_KEY_REKEY_GROUPS || '');
         const ghostMode = await store.getSetting('global', 'stealthMode');
