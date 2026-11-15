@@ -35,7 +35,7 @@ export function patchMessagesReceive(source) {
     const mappedParticipantSender = `let fromJid = node.attrs.participant || node.attrs.from;
 \t\tif (node.attrs.participant && fromJid.endsWith('@s.whatsapp.net')) {
 \t\t\ttry {
-\t\t\t\tconst mappedLid = await signalRepository.lidMapping.getLIDForPN(fromJid);
+\t\t\t\tconst mappedLid = await signalRepository.lidMapping.getLIDForPN(jidNormalizedUser(fromJid));
 \t\t\t\tif (mappedLid) fromJid = mappedLid;
 \t\t\t} catch {
 \t\t\t\t// Keep the participant PN when no local LID mapping is available.
