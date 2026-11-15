@@ -76,8 +76,8 @@ export function classifyDeparture(update, participant, {
   actorAliases = [],
   participantAliases = []
 } = {}) {
-  const actor = update?.author || update?.actor || update?.by;
-  const actorIdentities = new Set([actor, ...actorAliases].flatMap(normalizeDepartureJid));
+  const actorValues = [update?.author, update?.actor, update?.by, ...actorAliases];
+  const actorIdentities = new Set(actorValues.flatMap(normalizeDepartureJid));
   if (!actorIdentities.size) return 'unknown';
   const participantIdentities = new Set([participant, ...participantAliases].flatMap(normalizeDepartureJid));
   return [...actorIdentities].some(identity => participantIdentities.has(identity))
