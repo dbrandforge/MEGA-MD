@@ -4,7 +4,7 @@ import store from '../lib/lightweight_store.js';
 import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 import { logWelcome } from './welcomelog.js';
 import { memberLeftMessages, memberRemovedMessages, memberLeftReturnMessages, memberRemovedReturnMessages, pickRotatingMessage, classifyDeparture } from '../data/groupLifecycleMessages.js';
-import { buildWelcomeBatchMessage, isMemberAlreadyActive, mergeWelcomeParticipants, createOrExtendWelcomeBatch, getEligibleIntroReminderEntries, getNextIntroReminderAt, createWelcomeCampaign, isWelcomeCampaignActive, buildWelcomeCampaignMessage } from '../lib/groupWelcomeBatch.js';
+import { buildWelcomeBatchMessage, isMemberAlreadyActive, mergeWelcomeParticipants, createOrExtendWelcomeBatch, getEligibleIntroReminderEntries, getNextIntroReminderAt, createWelcomeCampaign, isWelcomeCampaignActive, buildWelcomeCampaignMessage, getPendingIntroductionEntries, chunkPendingIntroductionEntries, buildPendingIntroductionReminder, formatPendingIntroductionList } from '../lib/groupWelcomeBatch.js';
 import { WELCOME_PACK_SETTING, normalizeWelcomePackConfig, renderWelcomePackMessage } from '../lib/groupWelcomePack.js';
 
 const PENDING_INTRO_KEY = 'pendingIntros_v2';
@@ -106,6 +106,26 @@ async function savePendingIntros(chatId, data) {
     await store.saveSetting(chatId, PENDING_INTRO_KEY, data);
 }
 
+export async function getPendingIntroductionList(chatId) {
+    if (!await hasMaturedMindedFeatures(chatId)) return [];
+    const pending = await getPendingIntros(chatId);
+    return getPendingIntroductionEntries(pending);
+}
+export async function sendPendingIntroductionReminder(sock, chatId) {
+    if (!await hasMaturedMindedFeatures(chatId)) return { sent: false, reason: 'not-configured', count: 0, batches: 0 };
+    const entries = await getPendingIntroductionList(chatId);
+    if (!entries.length) return { sent: true, count: 0, batches: 0 };
+    const batches = chunkPendingIntroductionEntries(entries, 40);
+    for (let index = 0; index < batches.length; index++) {
+        await sock.sendMessage(chatId, buildPendingIntroductionReminder(batches[index], index + 1, batches.length));
+        if (index < batches.length - 1) await new Promise(resolve => setTimeout(resolve, 900));
+    }
+    return { sent: true, count: entries.length, batches: batches.length };
+}
+export function buildPendingIntroductionListMessages(entries, chunkSize = 40) {
+    const batches = chunkPendingIntroductionEntries(entries, chunkSize);
+    return batches.map((batch, index) => formatPendingIntroductionList(batch, index + 1, batches.length));
+}
 async function addWelcomeCampaignGroup(chatId) {
     const current = await store.getSetting('global', WELCOME_CAMPAIGN_INDEX_KEY);
     const groups = new Set(Array.isArray(current) ? current : []);
@@ -367,9 +387,13 @@ export async function markMemberIntroduced(chatId, userId, messageText = '', { h
     // During a manual campaign, any real member message counts as participation,
     // even if it is casual chat or media rather than a formal profile introduction.
     if (record.campaignId && hasAnyMessage) {
-        delete pending[userId];
-        await savePendingIntros(chatId, pending);
-        return true;
+        const campaign = await store.getSetting(chatId, WELCOME_CAMPAIGN_KEY);
+        // Casual messages count only during the original ten-minute campaign window.
+        if (campaign?.campaignId === record.campaignId && isWelcomeCampaignActive(campaign, Date.now())) {
+            delete pending[userId];
+            await savePendingIntros(chatId, pending);
+            return true;
+        }
     }
 
     if (!looksLikeMemberIntroduction(messageText)) return false;
