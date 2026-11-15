@@ -22,7 +22,7 @@ export default {
         const { chatId, channelInfo } = context;
         const arg0 = (args[0] || '').toLowerCase();
 
-                if (arg0 === 'pendingintro' || arg0 === 'pending') {
+        if (arg0 === 'pendingintro' || arg0 === 'pending') {
             const entries = await getPendingIntroductionList(chatId);
             if (!entries.length) return sock.sendMessage(chatId, { text: '✅ There are currently no pending introductions.', ...channelInfo }, { quoted: message });
             const messages = buildPendingIntroductionListMessages(entries, 40);
