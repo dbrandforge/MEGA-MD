@@ -4,7 +4,7 @@ import store from '../lib/lightweight_store.js';
 import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 import { logWelcome } from './welcomelog.js';
 import { memberLeftMessages, memberRemovedMessages, memberLeftReturnMessages, memberRemovedReturnMessages, pickRotatingMessage, classifyDeparture } from '../data/groupLifecycleMessages.js';
-import { buildWelcomeBatchMessage, isMemberAlreadyActive, mergeWelcomeParticipants, createOrExtendWelcomeBatch, getEligibleIntroReminderEntries, getNextIntroReminderAt } from '../lib/groupWelcomeBatch.js';
+import { buildWelcomeBatchMessage, isMemberAlreadyActive, mergeWelcomeParticipants, createOrExtendWelcomeBatch, getEligibleIntroReminderEntries, getNextIntroReminderAt, createWelcomeCampaign, isWelcomeCampaignActive, buildWelcomeCampaignMessage } from '../lib/groupWelcomeBatch.js';
 import { WELCOME_PACK_SETTING, normalizeWelcomePackConfig, renderWelcomePackMessage } from '../lib/groupWelcomePack.js';
 
 const PENDING_INTRO_KEY = 'pendingIntros_v2';
@@ -15,6 +15,8 @@ const introReminderTimers = new Map();
 const pendingJoinBatches = new Map();
 const JOIN_BATCH_KEY = 'pendingWelcomeJoinBatch_v1';
 const JOIN_BATCH_INDEX_KEY = 'pendingWelcomeJoinBatchGroups_v1';
+const WELCOME_CAMPAIGN_KEY = 'welcomeCampaign_v1';
+const WELCOME_CAMPAIGN_INDEX_KEY = 'welcomeCampaignGroups_v1';
 const JOIN_BATCH_WINDOW_MS = 3 * 60 * 1000;
 const INTRO_REMINDER_DELAY_MS = 10 * 60 * 1000;
 
@@ -75,9 +77,11 @@ async function queueNewMemberWelcome(sock, chatId, participants) {
 export async function restoreWelcomeJobs(sock) {
     const indexed = await store.getSetting('global', JOIN_BATCH_INDEX_KEY);
     const tracked = await store.getSetting('global', 'forgeGuardTrackedGroups');
+    const campaignGroups = await store.getSetting('global', WELCOME_CAMPAIGN_INDEX_KEY);
     const groups = new Set([
         ...(Array.isArray(indexed) ? indexed : []),
-        ...(Array.isArray(tracked) ? tracked : [])
+        ...(Array.isArray(tracked) ? tracked : []),
+        ...(Array.isArray(campaignGroups) ? campaignGroups : [])
     ]);
     for (const chatId of groups) {
         if (!chatId?.endsWith('@g.us')) continue;
@@ -100,6 +104,83 @@ async function getPendingIntros(chatId) {
 }
 async function savePendingIntros(chatId, data) {
     await store.saveSetting(chatId, PENDING_INTRO_KEY, data);
+}
+
+async function addWelcomeCampaignGroup(chatId) {
+    const current = await store.getSetting('global', WELCOME_CAMPAIGN_INDEX_KEY);
+    const groups = new Set(Array.isArray(current) ? current : []);
+    groups.add(chatId);
+    if (!await store.saveSettingVerified('global', WELCOME_CAMPAIGN_INDEX_KEY, [...groups])) {
+        throw new Error('Welcome campaign recovery index could not be persisted.');
+    }
+}
+
+export async function startWelcomeCampaign(sock, chatId) {
+    if (!await hasMaturedMindedFeatures(chatId)) {
+        return { started: false, reason: 'not-configured' };
+    }
+
+    const now = Date.now();
+    const existing = await store.getSetting(chatId, WELCOME_CAMPAIGN_KEY);
+    if (isWelcomeCampaignActive(existing, now)) {
+        return {
+            started: false,
+            reason: 'already-active',
+            expiresAt: existing.expiresAt,
+            count: existing.participantIds?.length || 0
+        };
+    }
+
+    const metadata = await sock.groupMetadata(chatId);
+    const botId = String(sock.user?.id || '').split(':')[0];
+    const participants = (metadata?.participants || [])
+        .map(participant => participant?.id || participant?.phoneNumber || participant?.lid)
+        .filter(id => typeof id === 'string' && id.includes('@') && !id.endsWith('@g.us'))
+        .filter(id => id.split('@')[0].split(':')[0] !== botId);
+    const campaign = createWelcomeCampaign(participants, now, `welcome-${now}-${Math.random().toString(36).slice(2, 8)}`);
+    if (!campaign.participantIds.length) {
+        return { started: false, reason: 'empty-roster' };
+    }
+
+    const pending = await getPendingIntros(chatId);
+    const previous = new Map();
+    for (const userId of campaign.participantIds) {
+        previous.set(userId, pending[userId] ?? null);
+        pending[userId] = {
+            joinedAt: now,
+            reminded: false,
+            introduced: false,
+            campaignId: campaign.campaignId,
+            status: 'active'
+        };
+    }
+
+    await store.saveSettingVerified(chatId, WELCOME_CAMPAIGN_KEY, campaign);
+    await savePendingIntros(chatId, pending);
+    await addWelcomeCampaignGroup(chatId);
+
+    try {
+        const payload = buildWelcomeCampaignMessage(campaign.participantIds);
+        await sock.sendMessage(chatId, payload);
+    } catch (error) {
+        const latest = await getPendingIntros(chatId);
+        for (const userId of campaign.participantIds) {
+            if (latest[userId]?.campaignId !== campaign.campaignId) continue;
+            const oldRecord = previous.get(userId);
+            if (oldRecord) latest[userId] = oldRecord;
+            else delete latest[userId];
+        }
+        await savePendingIntros(chatId, latest);
+        await store.saveSettingVerified(chatId, WELCOME_CAMPAIGN_KEY, null);
+        throw error;
+    }
+
+    scheduleGroupIntroReminder(sock, chatId);
+    return {
+        started: true,
+        count: campaign.participantIds.length,
+        expiresAt: campaign.expiresAt
+    };
 }
 
 function scheduleGroupIntroReminder(sock, chatId) {
@@ -275,10 +356,21 @@ export function looksLikeMemberIntroduction(messageText) {
     return (hasName && detailCount >= 1) || (text.length >= 45 && detailCount >= 2);
 }
 
-export async function markMemberIntroduced(chatId, userId, messageText = '') {
-    if (!await hasMaturedMindedFeatures(chatId) || !userId || !looksLikeMemberIntroduction(messageText)) return false;
+export async function markMemberIntroduced(chatId, userId, messageText = '', { hasAnyMessage = false } = {}) {
+    if (!await hasMaturedMindedFeatures(chatId) || !userId) return false;
     const pending = await getPendingIntros(chatId);
-    if (!pending[userId]) return false;
+    const record = pending[userId];
+    if (!record) return false;
+
+    // During a manual campaign, any real member message counts as participation,
+    // even if it is casual chat or media rather than a formal profile introduction.
+    if (record.campaignId && hasAnyMessage) {
+        delete pending[userId];
+        await savePendingIntros(chatId, pending);
+        return true;
+    }
+
+    if (!looksLikeMemberIntroduction(messageText)) return false;
     delete pending[userId];
     await savePendingIntros(chatId, pending);
     return true;
