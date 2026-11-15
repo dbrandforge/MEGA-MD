@@ -331,11 +331,16 @@ export async function handleNewMember(sock, chatId, participants) {
     }
 }
 
+function normalizeParticipantJid(value) {
+    return String(value || '').trim().replace(/:\\d+(?=@)/, '').replace(/@c\\.us$/i, '@s.whatsapp.net').toLowerCase();
+}
+
 function participantIdentityValues(value) {
-    if (typeof value === 'string') return [value];
+    if (typeof value === 'string') return [normalizeParticipantJid(value)].filter(Boolean);
     if (!value || typeof value !== 'object') return [];
     return [value.id, value.jid, value.phoneNumber, value.lid]
-        .filter(item => typeof item === 'string' && item.length > 0);
+        .map(normalizeParticipantJid)
+        .filter(Boolean);
 }
 
 async function resolveParticipantIdentityAliases(sock, values) {
@@ -345,10 +350,10 @@ async function resolveParticipantIdentityAliases(sock, values) {
         try {
             if (value.endsWith('@lid') && typeof mapping?.getPNForLID === 'function') {
                 const pn = await mapping.getPNForLID(value);
-                if (typeof pn === 'string' && pn) aliases.add(pn);
+                if (typeof pn === 'string' && pn) aliases.add(normalizeParticipantJid(pn));
             } else if (value.endsWith('@s.whatsapp.net') && typeof mapping?.getLIDForPN === 'function') {
                 const lid = await mapping.getLIDForPN(value);
-                if (typeof lid === 'string' && lid) aliases.add(lid);
+                if (typeof lid === 'string' && lid) aliases.add(normalizeParticipantJid(lid));
             }
         } catch {
             // A missing local alias must not prevent a neutral departure announcement.
@@ -358,9 +363,12 @@ async function resolveParticipantIdentityAliases(sock, values) {
 }
 
 async function classifyDepartureForSocket(sock, update, participant) {
-    const actor = update?.author || update?.actor || update?.by;
-    if (!actor) return 'unknown';
-    const actorValues = participantIdentityValues(actor);
+    const actorValues = [
+        ...participantIdentityValues(update?.author),
+        ...participantIdentityValues(update?.actor),
+        ...participantIdentityValues(update?.by)
+    ];
+    if (!actorValues.length) return 'unknown';
     const participantValues = participantIdentityValues(participant);
     const [actorAliases, participantAliases] = await Promise.all([
         resolveParticipantIdentityAliases(sock, actorValues),
@@ -459,9 +467,7 @@ export async function processGroupParticipantsUpdate(sock, update) {
             return;
         }
         if (update.action === 'remove') {
-            handleMemberDeparture(sock, update.id, update).catch(e =>
-                console.error('Departure announcement error:', e.message)
-            );
+            await handleMemberDeparture(sock, update.id, update);
         }
     } catch (e) {
         console.error('Welcome handler error:', e.message);
