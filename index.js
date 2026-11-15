@@ -40,11 +40,18 @@ setInterval(() => {
         console.log('🧹 Garbage collection completed');
     }
 }, 60000);
+let lastHighMemoryWarningAt = 0;
 setInterval(() => {
-    const used = process.memoryUsage().rss / 1024 / 1024;
-    if (used > 400) {
-        printLog('warning', 'RAM too high (>400MB), restarting bot...');
-        process.exit(1);
+    const memory = process.memoryUsage();
+    const rssMb = memory.rss / 1024 / 1024;
+    const heapUsedMb = memory.heapUsed / 1024 / 1024;
+    const externalMb = memory.external / 1024 / 1024;
+    // Do not kill a live WhatsApp session just because RSS crosses an arbitrary
+    // 400MB threshold. Render's process limit is higher; Node's heap is already
+    // bounded by --max-old-space-size. Emit actionable diagnostics instead.
+    if (rssMb > 440 && Date.now() - lastHighMemoryWarningAt > 60000) {
+        lastHighMemoryWarningAt = Date.now();
+        printLog('warning', `High memory usage: rss=${rssMb.toFixed(1)}MB heapUsed=${heapUsedMb.toFixed(1)}MB external=${externalMb.toFixed(1)}MB; keeping the WhatsApp process alive.`);
     }
 }, 30000);
 const phoneNumber = config.pairingNumber || config.ownerNumber || "923051391005";
@@ -401,7 +408,7 @@ async function startQasimDev() {
             // Coalesce credential writes with other auth-file events.
             queueSessionBackup('creds.json');
         };
-        const msgRetryCounterCache = new NodeCache();
+        const msgRetryCounterCache = new NodeCache({ stdTTL: 300, checkperiod: 60, useClones: false });
         const signalKeyStore = makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" }));
         const groupSenderKeyRecoveryTargets = parseGroupSenderKeyRecoveryTargets(process.env.GROUP_SENDER_KEY_REKEY_GROUPS || '');
         const ghostMode = await store.getSetting('global', 'stealthMode');
