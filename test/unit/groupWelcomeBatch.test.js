@@ -64,3 +64,35 @@ describe('fixed-window welcome batching and introduction reminder eligibility', 
     expect(getNextIntroReminderAt(pending)).toBe(now);
   });
 });
+
+
+describe('manual group introduction campaigns', () => {
+  it('snapshots and deduplicates the group roster with a ten-minute deadline', async () => {
+    const { createWelcomeCampaign } = await import('../../lib/groupWelcomeBatch.js');
+    const campaign = createWelcomeCampaign([
+      'one@s.whatsapp.net',
+      { id: 'two@s.whatsapp.net' },
+      'one@s.whatsapp.net'
+    ], 1000, 'campaign-1');
+    expect(campaign.participantIds).toEqual(['one@s.whatsapp.net', 'two@s.whatsapp.net']);
+    expect(campaign.startedAt).toBe(1000);
+    expect(campaign.expiresAt).toBe(601000);
+    expect(campaign.status).toBe('active');
+  });
+
+  it('only treats a campaign as active before its deadline', async () => {
+    const { createWelcomeCampaign, isWelcomeCampaignActive } = await import('../../lib/groupWelcomeBatch.js');
+    const campaign = createWelcomeCampaign(['one@s.whatsapp.net'], 1000, 'campaign-1');
+    expect(isWelcomeCampaignActive(campaign, 1001)).toBe(true);
+    expect(isWelcomeCampaignActive(campaign, 601000)).toBe(false);
+    expect(isWelcomeCampaignActive({ ...campaign, status: 'completed' }, 1001)).toBe(false);
+  });
+
+  it('creates one tagged announcement for the snapshotted members', async () => {
+    const { buildWelcomeCampaignMessage } = await import('../../lib/groupWelcomeBatch.js');
+    const payload = buildWelcomeCampaignMessage(['one@s.whatsapp.net', 'two@s.whatsapp.net']);
+    expect(payload.mentions).toEqual(['one@s.whatsapp.net', 'two@s.whatsapp.net']);
+    expect(payload.text).toContain('@one, @two');
+    expect(payload.text).toContain('next 10 minutes');
+  });
+});
