@@ -560,7 +560,8 @@ async function startQasimDev() {
                     // private command when QasimDev.public was unset.
                     if (mek.key.id?.startsWith('BAE5') && mek.key.id.length === 16)
                         continue;
-                    QasimDev?.msgRetryCounterCache?.clear();
+                    // Preserve Baileys retry counters; clearing this cache on every
+                    // inbound message resets failed-decryption retries for all senders.
                     try {
                         await handleMessages(QasimDev, singleUpdate);
                         printLog('info', `Message processed: jid=${mek.key.remoteJid || 'unknown'} id=${mek.key.id || 'unknown'}`);
