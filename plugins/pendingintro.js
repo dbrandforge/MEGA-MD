@@ -53,14 +53,6 @@ export default {
             return reply(`✅ Marked ${removed} member(s) as introduced and removed ${removed} record(s) from the list.`);
         }
 
-        const entries = Object.entries(pending).filter(([, record]) =>
-            record && record.introduced !== true && record.status !== 'inactive'
-        );
-
-        if (!entries.length) {
-            return reply('✅ No tracked members are currently waiting to introduce themselves.');
-        }
-
         const liveEntries = await getPendingIntroductionList(chatId);
         if (!liveEntries.length) return reply('✅ No tracked members are currently waiting to introduce themselves.');
         const messages = buildPendingIntroductionListMessages(liveEntries, 40);
