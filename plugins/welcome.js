@@ -1,5 +1,5 @@
 import { handleWelcome } from '../lib/welcome.js';
-import { handleNewMember, startWelcomeCampaign } from './sincity-welcome.js';
+import { handleNewMember, startWelcomeCampaign, getPendingIntroductionList, sendPendingIntroductionReminder, buildPendingIntroductionListMessages } from './sincity-welcome.js';
 import { dailyActivities } from '../data/dailyActivities.js';
 import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 
@@ -22,6 +22,26 @@ export default {
         const { chatId, channelInfo } = context;
         const arg0 = (args[0] || '').toLowerCase();
 
+                if (arg0 === 'pendingintro' || arg0 === 'pending') {
+            const entries = await getPendingIntroductionList(chatId);
+            if (!entries.length) return sock.sendMessage(chatId, { text: '✅ There are currently no pending introductions.', ...channelInfo }, { quoted: message });
+            const messages = buildPendingIntroductionListMessages(entries, 40);
+            await sock.sendMessage(chatId, { text: `📋 *${entries.length} MEMBERS STILL PENDING INTRODUCTION*\\n\\nThis list excludes members who have already cleared their pending status.`, ...channelInfo }, { quoted: message });
+            for (let index = 0; index < messages.length; index++) {
+                await sock.sendMessage(chatId, { text: messages[index], ...channelInfo });
+                if (index < messages.length - 1) await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            return;
+        }
+        if (arg0 === 'remindintro' || arg0 === 'introremind') {
+            const result = await sendPendingIntroductionReminder(sock, chatId);
+            const text = result.reason === 'not-configured'
+                ? 'This group has not been registered for the Forge Guard Mature Minded profile.'
+                : result.count === 0
+                    ? '✅ Nobody is currently pending introduction. No reminder was sent.'
+                    : `✅ Reminder sent to ${result.count} pending members in ${result.batches} message batch(es). The list remains live and will shrink as members introduce themselves.`;
+            return sock.sendMessage(chatId, { text, ...channelInfo }, { quoted: message });
+        }
         // .welcome test remains a test-only path and never starts a group campaign.
         if (arg0 === 'test') {
             if (!await hasMaturedMindedFeatures(chatId)) {
