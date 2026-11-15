@@ -134,7 +134,7 @@ export async function startWelcomeCampaign(sock, chatId) {
     const metadata = await sock.groupMetadata(chatId);
     const botId = String(sock.user?.id || '').split(':')[0];
     const participants = (metadata?.participants || [])
-        .map(participant => participant?.id || participant?.phoneNumber || participant?.lid)
+        .map(participant => participant?.phoneNumber || participant?.id || participant?.lid)
         .filter(id => typeof id === 'string' && id.includes('@') && !id.endsWith('@g.us'))
         .filter(id => id.split('@')[0].split(':')[0] !== botId);
     const campaign = createWelcomeCampaign(participants, now, `welcome-${now}-${Math.random().toString(36).slice(2, 8)}`);
@@ -155,9 +155,11 @@ export async function startWelcomeCampaign(sock, chatId) {
         };
     }
 
-    await store.saveSettingVerified(chatId, WELCOME_CAMPAIGN_KEY, campaign);
-    await savePendingIntros(chatId, pending);
     await addWelcomeCampaignGroup(chatId);
+    if (!await store.saveSettingVerified(chatId, WELCOME_CAMPAIGN_KEY, campaign)) {
+        throw new Error('Welcome campaign state could not be persisted.');
+    }
+    await savePendingIntros(chatId, pending);
 
     try {
         const payload = buildWelcomeCampaignMessage(campaign.participantIds);
