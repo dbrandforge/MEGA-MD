@@ -18,6 +18,15 @@ describe('WhatsApp upsert processing policy', () => {
     expect(shouldProcessMessageUpsert('append', message(), { now })).toBe(true);
   });
 
+  it('skips sender-key distribution and non-revocation protocol traffic', () => {
+    expect(shouldProcessMessageUpsert('notify', message({ message: { senderKeyDistributionMessage: { groupId: 'x' } } }), { now })).toBe(false);
+    expect(shouldProcessMessageUpsert('notify', message({ message: { protocolMessage: { type: 1 } } }), { now })).toBe(false);
+  });
+
+  it('preserves message revocation handling', () => {
+    expect(shouldProcessMessageUpsert('notify', message({ message: { protocolMessage: { type: 0 } } }), { now })).toBe(true);
+  });
+
   it('rejects old history, future timestamps, and messages sent by the bot', () => {
     expect(shouldProcessMessageUpsert('append', message({
       messageTimestamp: Math.floor((now - 6 * 60 * 1000) / 1000)
