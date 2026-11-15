@@ -51,7 +51,7 @@ function resolveBaileysSocketFile(filename) {
     ];
     const found = candidates.find(candidate => fs.existsSync(candidate));
     if (!found) {
-        throw new Error(\`Could not locate Baileys Socket/\${filename} beside \${entry}\`);
+        throw new Error('Could not locate Baileys Socket/' + filename + ' beside ' + entry);
     }
     return found;
 }
