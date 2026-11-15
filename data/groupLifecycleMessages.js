@@ -67,7 +67,7 @@ function normalizeDepartureJid(value) {
       .flatMap(normalizeDepartureJid)
       .filter(Boolean);
   }
-  const jid = String(value || '').trim().replace(/:\\d+(?=@)/, '').toLowerCase();
+  const jid = String(value || '').trim().replace(/:\d+(?=@)/, '').toLowerCase();
   if (!jid) return [];
   return [jid.endsWith('@c.us') ? jid.slice(0, -'@c.us'.length) + '@s.whatsapp.net' : jid];
 }
