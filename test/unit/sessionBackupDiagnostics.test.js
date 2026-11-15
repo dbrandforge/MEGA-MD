@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { summarizeAuthStateInventory } from '../../lib/sessionBackup.js';
+import { DEFAULT_LEADERSHIP_WAIT_MS, summarizeAuthStateInventory } from '../../lib/sessionBackup.js';
+
+describe('session-backup leadership takeover', () => {
+    it('waits longer than the full five-minute snapshot lease before aborting startup', () => {
+        expect(DEFAULT_LEADERSHIP_WAIT_MS).toBe(6 * 60 * 1000);
+        expect(DEFAULT_LEADERSHIP_WAIT_MS).toBeGreaterThan(5 * 60 * 1000);
+    });
+});
 
 describe('auth-state inventory diagnostics', () => {
     it('reports aggregate key-file counts without exposing filenames', () => {
