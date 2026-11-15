@@ -31,10 +31,23 @@ export function patchMessagesReceive(source) {
     const before = source.slice(0, retryHandlerStart);
     let handler = source.slice(retryHandlerStart);
     const oldSender = /const fromJid = node\.attrs\.from;?/;
+    const participantSender = 'const fromJid = node.attrs.participant || node.attrs.from;';
+    const mappedParticipantSender = `let fromJid = node.attrs.participant || node.attrs.from;
+\t\tif (node.attrs.participant && fromJid.endsWith('@s.whatsapp.net')) {
+\t\t\ttry {
+\t\t\t\tconst mappedLid = await signalRepository.lidMapping.getLIDForPN(jidNormalizedUser(fromJid));
+\t\t\t\tif (mappedLid) fromJid = mappedLid;
+\t\t\t} catch {
+\t\t\t\t// Keep the participant PN when no local LID mapping is available.
+\t\t\t}
+\t\t}`;
     if (oldSender.test(handler)) {
-        handler = handler.replace(oldSender, 'const fromJid = node.attrs.participant || node.attrs.from;');
+        handler = handler.replace(oldSender, mappedParticipantSender);
         changed = true;
-    } else if (!handler.includes('const fromJid = node.attrs.participant || node.attrs.from;')) {
+    } else if (handler.includes(participantSender)) {
+        handler = handler.replace(participantSender, mappedParticipantSender);
+        changed = true;
+    } else if (!handler.includes("let fromJid = node.attrs.participant || node.attrs.from;")) {
         throw new Error('Baileys retry sender-JID selection was not found; refusing an unsafe partial patch.');
     }
 

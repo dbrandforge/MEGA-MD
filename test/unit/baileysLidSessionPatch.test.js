@@ -21,7 +21,8 @@ describe('Baileys LID session compatibility patch', () => {
         ].join('\\n');
         const result = patchMessagesReceive(input);
         expect(result.source).toContain('await sendRetryRequest(node, true);');
-        expect(result.source).toContain('const fromJid = node.attrs.participant || node.attrs.from;');
+        expect(result.source).toContain('let fromJid = node.attrs.participant || node.attrs.from;');
+        expect(result.source).toContain('signalRepository.lidMapping.getLIDForPN(jidNormalizedUser(fromJid))');
         expect(result.changed).toBe(true);
         expect(patchMessagesReceive(result.source).changed).toBe(false);
     });

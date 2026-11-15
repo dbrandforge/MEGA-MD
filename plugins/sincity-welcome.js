@@ -3,7 +3,7 @@ import { dailyActivities } from '../data/dailyActivities.js';
 import store from '../lib/lightweight_store.js';
 import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 import { logWelcome } from './welcomelog.js';
-import { memberLeftMessages, memberRemovedMessages, memberLeftReturnMessages, memberRemovedReturnMessages, pickRotatingMessage, classifyDeparture } from '../data/groupLifecycleMessages.js';
+import { memberLeftMessages, memberRemovedMessages, memberDepartureMessages, memberLeftReturnMessages, memberRemovedReturnMessages, pickRotatingMessage, classifyDeparture } from '../data/groupLifecycleMessages.js';
 import { buildWelcomeBatchMessage, isMemberAlreadyActive, mergeWelcomeParticipants, createOrExtendWelcomeBatch, getEligibleIntroReminderEntries, getNextIntroReminderAt, createWelcomeCampaign, isWelcomeCampaignActive, buildWelcomeCampaignMessage, getPendingIntroductionEntries, chunkPendingIntroductionEntries, buildPendingIntroductionReminder, formatPendingIntroductionList } from '../lib/groupWelcomeBatch.js';
 import { WELCOME_PACK_SETTING, normalizeWelcomePackConfig, renderWelcomePackMessage } from '../lib/groupWelcomePack.js';
 
@@ -331,26 +331,81 @@ export async function handleNewMember(sock, chatId, participants) {
     }
 }
 
+function normalizeParticipantJid(value) {
+    return String(value || '').trim().replace(/:\d+(?=@)/, '').replace(/@c\.us$/i, '@s.whatsapp.net').toLowerCase();
+}
+
+function participantIdentityValues(value) {
+    if (typeof value === 'string') return [normalizeParticipantJid(value)].filter(Boolean);
+    if (!value || typeof value !== 'object') return [];
+    return [value.id, value.jid, value.phoneNumber, value.lid]
+        .map(normalizeParticipantJid)
+        .filter(Boolean);
+}
+
+async function resolveParticipantIdentityAliases(sock, values) {
+    const aliases = new Set(values);
+    const mapping = sock?.signalRepository?.lidMapping;
+    for (const value of values) {
+        try {
+            if (value.endsWith('@lid') && typeof mapping?.getPNForLID === 'function') {
+                const pn = await mapping.getPNForLID(value);
+                if (typeof pn === 'string' && pn) aliases.add(normalizeParticipantJid(pn));
+            } else if (value.endsWith('@s.whatsapp.net') && typeof mapping?.getLIDForPN === 'function') {
+                const lid = await mapping.getLIDForPN(value);
+                if (typeof lid === 'string' && lid) aliases.add(normalizeParticipantJid(lid));
+            }
+        } catch {
+            // A missing local alias must not prevent a neutral departure announcement.
+        }
+    }
+    return [...aliases];
+}
+
+async function classifyDepartureForSocket(sock, update, participant) {
+    const actorValues = [
+        ...participantIdentityValues(update?.author),
+        ...participantIdentityValues(update?.actor),
+        ...participantIdentityValues(update?.by)
+    ];
+    if (!actorValues.length) return 'unknown';
+    const participantValues = participantIdentityValues(participant);
+    const [actorAliases, participantAliases] = await Promise.all([
+        resolveParticipantIdentityAliases(sock, actorValues),
+        resolveParticipantIdentityAliases(sock, participantValues)
+    ]);
+    return classifyDeparture(update, participant, { actorAliases, participantAliases });
+}
+
 async function handleMemberDeparture(sock, chatId, update) {
     if (!await hasMaturedMindedFeatures(chatId)) return;
     for (const participant of update.participants || []) {
-        const userId = typeof participant === 'string' ? participant : participant?.id;
+        const identities = participantIdentityValues(participant);
+        const userId = identities[0];
         if (!userId) continue;
-        const departureType = classifyDeparture(update, userId);
+
+        const departureType = await classifyDepartureForSocket(sock, update, participant);
         const history = (await store.getSetting(chatId, MEMBER_HISTORY_KEY)) || {};
         const prior = history[userId] || history[userId.split('@')[0]] || { everJoined: true };
-        history[userId] = { ...prior, everJoined: true, status: 'inactive', lastDeparture: departureType, departedAt: Date.now() };
+        history[userId] = {
+            ...prior,
+            everJoined: true,
+            status: 'inactive',
+            lastDeparture: departureType,
+            departedAt: Date.now()
+        };
         await store.saveSetting(chatId, MEMBER_HISTORY_KEY, history);
+
         const pending = await getPendingIntros(chatId);
         delete pending[userId];
         await savePendingIntros(chatId, pending);
-        if (departureType === 'unknown') {
-            console.warn('[Welcome] Departure actor missing; skipping unverified leave/kick announcement.');
-            continue;
-        }
 
         const mention = `@${userId.split('@')[0]}`;
-        const templateBank = departureType === 'left' ? memberLeftMessages : memberRemovedMessages;
+        const templateBank = departureType === 'left'
+            ? memberLeftMessages
+            : departureType === 'removed'
+                ? memberRemovedMessages
+                : memberDepartureMessages;
         const indexes = (await store.getSetting(chatId, DEPARTURE_INDEX_KEY)) || {};
         const key = departureType;
         const selected = pickRotatingMessage(templateBank, indexes[key] ?? -1);
@@ -358,7 +413,7 @@ async function handleMemberDeparture(sock, chatId, update) {
         await store.saveSetting(chatId, DEPARTURE_INDEX_KEY, indexes);
         const text = selected.text.replaceAll('{name}', mention);
         await sock.sendMessage(chatId, { text, mentions: [userId] });
-        console.log(`[Welcome] ${departureType} announcement sent for ${userId}`);
+        console.log(`[Welcome] ${departureType} departure announcement sent for ${userId}`);
     }
 }
 
@@ -412,9 +467,7 @@ export async function processGroupParticipantsUpdate(sock, update) {
             return;
         }
         if (update.action === 'remove') {
-            handleMemberDeparture(sock, update.id, update).catch(e =>
-                console.error('Departure announcement error:', e.message)
-            );
+            await handleMemberDeparture(sock, update.id, update);
         }
     } catch (e) {
         console.error('Welcome handler error:', e.message);

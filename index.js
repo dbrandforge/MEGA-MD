@@ -522,8 +522,7 @@ async function startQasimDev() {
             }
         });
         QasimDev.ev.on('messages.upsert', async (chatUpdate) => {
-            // Log the raw event before filtering so delivery and sync events can
-            // be distinguished when diagnosing an unresponsive WhatsApp session.
+            // Log event shape without message text, identifiers, or cryptographic material.
             printLog('info', `WhatsApp messages.upsert: type=${chatUpdate?.type || 'unknown'} count=${chatUpdate?.messages?.length || 0}`);
             // Baileys can deliver multiple messages in one upsert. Process each
             // independently; the old messages[0]-only handler silently dropped
@@ -531,9 +530,20 @@ async function startQasimDev() {
             for (const originalMessage of (chatUpdate?.messages || [])) {
                 const mek = originalMessage;
                 try {
+                    const messageType = mek?.message && typeof mek.message === 'object'
+                        ? Object.keys(mek.message)[0] || 'empty'
+                        : 'missing';
+                    const rawTimestamp = mek?.messageTimestamp && typeof mek.messageTimestamp.toNumber === 'function'
+                        ? mek.messageTimestamp.toNumber()
+                        : Number(mek?.messageTimestamp);
+                    const ageSeconds = Number.isFinite(rawTimestamp) && rawTimestamp > 0
+                        ? Math.round(Date.now() / 1000 - rawTimestamp)
+                        : 'unknown';
+                    const jidKind = mek?.key?.remoteJid?.endsWith('@g.us') ? 'group'
+                        : mek?.key?.remoteJid ? 'direct' : 'missing';
+                    printLog('info', `WhatsApp upsert item: type=${chatUpdate?.type || 'unknown'} hasKey=${Boolean(mek?.key?.id && mek?.key?.remoteJid)} hasPayload=${Boolean(mek?.message)} messageType=${messageType} fromMe=${Boolean(mek?.key?.fromMe)} jidKind=${jidKind} ageSeconds=${ageSeconds}`);
                     if (!mek?.message || !mek?.key)
                         continue;
-                    const messageType = Object.keys(mek.message)[0];
                     if (messageType === 'ephemeralMessage')
                         mek.message = mek.message.ephemeralMessage?.message || mek.message;
 
@@ -550,7 +560,8 @@ async function startQasimDev() {
                     // private command when QasimDev.public was unset.
                     if (mek.key.id?.startsWith('BAE5') && mek.key.id.length === 16)
                         continue;
-                    QasimDev?.msgRetryCounterCache?.clear();
+                    // Preserve Baileys retry counters; clearing this cache on every
+                    // inbound message resets failed-decryption retries for all senders.
                     try {
                         await handleMessages(QasimDev, singleUpdate);
                         printLog('info', `Message processed: jid=${mek.key.remoteJid || 'unknown'} id=${mek.key.id || 'unknown'}`);
@@ -789,6 +800,7 @@ async function startQasimDev() {
             await handleCall(QasimDev, calls);
         });
         QasimDev.ev.on('group-participants.update', async (update) => {
+            printLog('info', `WhatsApp group participant event: action=${update?.action || 'unknown'} count=${update?.participants?.length || 0} actorPresent=${Boolean(update?.author || update?.actor || update?.by)}`);
             await handleGroupParticipantUpdate(QasimDev, update);
         });
         QasimDev.ev.on('groups.update', async (updates) => {

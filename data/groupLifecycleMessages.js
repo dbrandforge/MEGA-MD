@@ -46,6 +46,13 @@ export const memberRemovedMessages = [
   'Sin City security don do their work. {name}, reflect on your choices abeg. 🫡🚪'
 ];
 
+export const memberDepartureMessages = [
+  '{name} is no longer in the group. 👋',
+  'One member don step out: {name}. Safe journey. 🚶🏽',
+  '{name} has exited the group. Make we keep it moving. 👋',
+  'Group update: {name} is no longer a member here.'
+];
+
 export function pickRotatingMessage(messages, previousIndex = -1, random = Math.random) {
   if (!Array.isArray(messages) || messages.length === 0) return '';
   if (messages.length === 1) return { text: messages[0], index: 0 };
@@ -54,11 +61,28 @@ export function pickRotatingMessage(messages, previousIndex = -1, random = Math.
   return { text: messages[index], index };
 }
 
-export function classifyDeparture(update, participant) {
-  const actor = update?.author || update?.actor || update?.by;
-  if (!actor) return 'unknown';
-  const normalize = jid => String(jid || '').split(':')[0].replace(/@s\.whatsapp\.net$|@lid$/,'');
-  return normalize(actor) === normalize(participant) ? 'left' : 'removed';
+function normalizeDepartureJid(value) {
+  if (value && typeof value === 'object') {
+    return [value.id, value.jid, value.phoneNumber, value.lid]
+      .flatMap(normalizeDepartureJid)
+      .filter(Boolean);
+  }
+  const jid = String(value || '').trim().replace(/:\d+(?=@)/, '').toLowerCase();
+  if (!jid) return [];
+  return [jid.endsWith('@c.us') ? jid.slice(0, -'@c.us'.length) + '@s.whatsapp.net' : jid];
+}
+
+export function classifyDeparture(update, participant, {
+  actorAliases = [],
+  participantAliases = []
+} = {}) {
+  const actorValues = [update?.author, update?.actor, update?.by, ...actorAliases];
+  const actorIdentities = new Set(actorValues.flatMap(normalizeDepartureJid));
+  if (!actorIdentities.size) return 'unknown';
+  const participantIdentities = new Set([participant, ...participantAliases].flatMap(normalizeDepartureJid));
+  return [...actorIdentities].some(identity => participantIdentities.has(identity))
+    ? 'left'
+    : 'removed';
 }
 
 
