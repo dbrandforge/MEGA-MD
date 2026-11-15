@@ -4,6 +4,7 @@ import {
   goodmorningMessages,
   memberLeftMessages,
   memberRemovedMessages,
+  memberDepartureMessages,
   pickRotatingMessage,
   classifyDeparture
 } from '../../data/groupLifecycleMessages.js';
@@ -27,6 +28,20 @@ describe('Sin City lifecycle message banks', () => {
     expect(classifyDeparture({ author: participant }, participant)).toBe('left');
     expect(classifyDeparture({ author: '2348099999999@s.whatsapp.net' }, participant)).toBe('removed');
     expect(classifyDeparture({}, participant)).toBe('unknown');
+  });
+
+  it('matches device-qualified JIDs and explicit PN/LID aliases', () => {
+    expect(classifyDeparture(
+      { author: '2348012345678:12@s.whatsapp.net' },
+      '2348012345678@lid',
+      { actorAliases: ['2348012345678@lid'] }
+    )).toBe('left');
+  });
+
+  it('provides neutral departure wording when WhatsApp omits the actor', () => {
+    expect(classifyDeparture({}, '2348012345678@lid')).toBe('unknown');
+    expect(memberDepartureMessages.length).toBeGreaterThan(0);
+    expect(memberDepartureMessages.every(message => message.includes('{name}'))).toBe(true);
   });
 
   it('does not repeat the immediately previous selection when alternatives exist', () => {
