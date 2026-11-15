@@ -791,6 +791,14 @@ async function startQasimDev() {
         QasimDev.ev.on('group-participants.update', async (update) => {
             await handleGroupParticipantUpdate(QasimDev, update);
         });
+        QasimDev.ev.on('groups.update', async (updates) => {
+            try {
+                const { handleGroupSettingUpdate } = await import('./plugins/grouplock.js');
+                await handleGroupSettingUpdate(QasimDev, updates);
+            } catch (error) {
+                printLog('error', `Group setting update handler failed: ${error.message}`);
+            }
+        });
         QasimDev.ev.on('status.update', async (status) => {
             await handleStatus(QasimDev, status);
         });
