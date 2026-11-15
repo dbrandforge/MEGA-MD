@@ -210,43 +210,74 @@ function startWatchdog() {
 }
 // Watch Baileys' multi-file auth directory so Signal ratchet/key updates are
 // persisted promptly instead of waiting for a five-minute polling interval.
-let sessionBackupTimer = null;
+let sessionBackupInitialized = false;
 let sessionBackupWatcher = null;
 let sessionBackupDebounce = null;
-const SESSION_BACKUP_INTERVAL_MS = 60 * 1000;
+let sessionBackupMaxDebounce = null;
+const pendingSessionBackupFiles = new Set();
+let sessionBackupFullScanPending = false;
+const SESSION_BACKUP_DEBOUNCE_MS = 2500;
+const SESSION_BACKUP_MAX_WAIT_MS = 10000;
+function flushSessionBackupQueue() {
+    if (sessionBackupDebounce) clearTimeout(sessionBackupDebounce);
+    if (sessionBackupMaxDebounce) clearTimeout(sessionBackupMaxDebounce);
+    sessionBackupDebounce = null;
+    sessionBackupMaxDebounce = null;
+    const fullScan = sessionBackupFullScanPending;
+    const changedFiles = [...pendingSessionBackupFiles];
+    sessionBackupFullScanPending = false;
+    pendingSessionBackupFiles.clear();
+    if (fullScan || changedFiles.length) {
+        backupSessionToMongo(fullScan ? null : changedFiles).catch(() => { });
+    }
+}
+function queueSessionBackup(filename = null) {
+    if (filename && typeof filename === 'string' && filename.endsWith('.json')
+        && !filename.includes('/') && filename !== '__snapshot_manifest__.json') {
+        pendingSessionBackupFiles.add(filename);
+    } else {
+        sessionBackupFullScanPending = true;
+    }
+    if (sessionBackupDebounce) clearTimeout(sessionBackupDebounce);
+    sessionBackupDebounce = setTimeout(flushSessionBackupQueue, SESSION_BACKUP_DEBOUNCE_MS);
+    if (!sessionBackupMaxDebounce) {
+        sessionBackupMaxDebounce = setTimeout(flushSessionBackupQueue, SESSION_BACKUP_MAX_WAIT_MS);
+    }
+}
 function startSessionBackupWatcher() {
     if (!isMongoBackupEnabled() || sessionBackupWatcher)
         return;
     try {
         sessionBackupWatcher = fs.watch(ensureSessionDirectory(), (_event, filename) => {
-            if (filename && !String(filename).endsWith('.json'))
+            if (!filename) {
+                queueSessionBackup();
                 return;
-            if (sessionBackupDebounce)
-                clearTimeout(sessionBackupDebounce);
-            sessionBackupDebounce = setTimeout(() => {
-                sessionBackupDebounce = null;
-                backupSessionToMongo().catch(() => { });
-            }, 1500);
+            }
+            const changedFile = String(filename);
+            if (!changedFile.endsWith('.json') || changedFile.includes('/')) return;
+            queueSessionBackup(changedFile);
         });
         sessionBackupWatcher.on('error', error => {
             printLog('warning', `Session auth-state watcher error: ${error.message}`);
             try { sessionBackupWatcher?.close(); } catch {}
             sessionBackupWatcher = null;
+            // If the watcher fails, take one verified full snapshot rather than
+            // silently losing future authentication-state changes.
+            queueSessionBackup();
         });
     } catch (error) {
         printLog('warning', `Could not watch session auth-state directory: ${error.message}`);
+        queueSessionBackup();
     }
 }
 function startSessionBackupLoop() {
-    if (!isMongoBackupEnabled())
-        return;
+    if (!isMongoBackupEnabled()) return;
     startSessionBackupWatcher();
-    if (sessionBackupTimer)
-        return;
+    if (sessionBackupInitialized) return;
+    sessionBackupInitialized = true;
+    // Exactly one full integrity-checked baseline at startup. All later
+    // snapshots are triggered by actual auth-file changes, not a timer.
     backupSessionToMongo().catch(() => { });
-    sessionBackupTimer = setInterval(() => {
-        backupSessionToMongo().catch(() => { });
-    }, SESSION_BACKUP_INTERVAL_MS);
 }
 function ensureSessionDirectory() {
     const sessionPath = path.join(__dirname, 'session');
@@ -367,10 +398,8 @@ async function startQasimDev() {
         const _saveCreds = async () => {
             ensureSessionDirectory();
             await saveCreds();
-            // Credentials changed - back up immediately rather than waiting
-            // for the periodic loop, since this is the highest-value moment
-            // to capture (e.g. right after pairing).
-            backupSessionToMongo().catch(() => { });
+            // Coalesce credential writes with other auth-file events.
+            queueSessionBackup('creds.json');
         };
         const msgRetryCounterCache = new NodeCache();
         const signalKeyStore = makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" }));
@@ -563,8 +592,10 @@ async function startQasimDev() {
                     // Preserve Baileys retry counters; clearing this cache on every
                     // inbound message resets failed-decryption retries for all senders.
                     try {
+                        const processingStartedAt = process.hrtime.bigint();
                         await handleMessages(QasimDev, singleUpdate);
-                        printLog('info', `Message processed: jid=${mek.key.remoteJid || 'unknown'} id=${mek.key.id || 'unknown'}`);
+                        const processingLatencyMs = Number(process.hrtime.bigint() - processingStartedAt) / 1e6;
+                        printLog('info', `Message processed: jid=${mek.key.remoteJid || 'unknown'} id=${mek.key.id || 'unknown'} latency_ms=${processingLatencyMs.toFixed(1)}`);
                     }
                     catch (err) {
                         printLog('error', `Error in handleMessages (jid=${mek.key.remoteJid || 'unknown'}): ${String(err?.message || 'Unknown message handler error').slice(0, 300)}`);
