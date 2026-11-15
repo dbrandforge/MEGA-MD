@@ -332,7 +332,7 @@ export async function handleNewMember(sock, chatId, participants) {
 }
 
 function normalizeParticipantJid(value) {
-    return String(value || '').trim().replace(/:\\d+(?=@)/, '').replace(/@c\\.us$/i, '@s.whatsapp.net').toLowerCase();
+    return String(value || '').trim().replace(/:\d+(?=@)/, '').replace(/@c\.us$/i, '@s.whatsapp.net').toLowerCase();
 }
 
 function participantIdentityValues(value) {
