@@ -223,8 +223,10 @@ let sessionBackupDebounce = null;
 let sessionBackupMaxDebounce = null;
 const pendingSessionBackupFiles = new Set();
 let sessionBackupFullScanPending = false;
-const SESSION_BACKUP_DEBOUNCE_MS = 2500;
-const SESSION_BACKUP_MAX_WAIT_MS = 10000;
+// Auth files can change several times during normal group traffic. Coalesce those
+// writes into a low-frequency durable snapshot instead of hammering MongoDB.
+const SESSION_BACKUP_DEBOUNCE_MS = 30000;
+const SESSION_BACKUP_MAX_WAIT_MS = 60000;
 function flushSessionBackupQueue() {
     if (sessionBackupDebounce) clearTimeout(sessionBackupDebounce);
     if (sessionBackupMaxDebounce) clearTimeout(sessionBackupMaxDebounce);
