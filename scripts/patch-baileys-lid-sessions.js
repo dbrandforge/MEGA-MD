@@ -16,11 +16,11 @@ export function patchMessagesSend(source) {
 
 export function patchMessagesReceive(source) {
     let changed = false;
-    const retryCall = /await sendRetryRequest\\(node,\\s*!encNode\\)/;
+    const retryCall = /await sendRetryRequest\(node,\s*!encNode\)/;
     if (retryCall.test(source)) {
         source = source.replace(retryCall, 'await sendRetryRequest(node, true)');
         changed = true;
-    } else if (!/await sendRetryRequest\\(node,\\s*true\\)/.test(source)) {
+    } else if (!/await sendRetryRequest\(node,\s*true\)/.test(source)) {
         throw new Error('Baileys decrypt-retry call was not found; refusing an unsafe partial patch.');
     }
 
@@ -30,7 +30,7 @@ export function patchMessagesReceive(source) {
     }
     const before = source.slice(0, retryHandlerStart);
     let handler = source.slice(retryHandlerStart);
-    const oldSender = /const fromJid = node\\.attrs\\.from;?/;
+    const oldSender = /const fromJid = node\.attrs\.from;?/;
     if (oldSender.test(handler)) {
         handler = handler.replace(oldSender, 'const fromJid = node.attrs.participant || node.attrs.from;');
         changed = true;
@@ -51,7 +51,7 @@ function resolveBaileysSocketFile(filename) {
     ];
     const found = candidates.find(candidate => fs.existsSync(candidate));
     if (!found) {
-        throw new Error(`Could not locate Baileys Socket/${filename} beside ${entry}`);
+        throw new Error(\`Could not locate Baileys Socket/\${filename} beside \${entry}\`);
     }
     return found;
 }
