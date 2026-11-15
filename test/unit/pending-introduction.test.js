@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../lib/lightweight_store.js', () => ({
   default: {
-    getSetting: vi.fn(async () => ({ '234800000000@s.whatsapp.net': { introduced: false } })),
+    getSetting: vi.fn(async (_chatId, key) => key === 'pendingIntros_v2' ? ({ '234800000000@s.whatsapp.net': { introduced: false } }) : null),
     saveSetting: vi.fn(async () => {})
   }
 }));
@@ -48,5 +48,17 @@ describe('pending introduction tracking', () => {
       'pendingIntros_v2',
       {}
     );
+  });
+});
+
+
+describe('campaign message window', () => {
+  it('does not clear campaign pending status for casual messages after the ten-minute window', async () => {
+    store.getSetting.mockImplementation(async (_chatId, key) => {
+      if (key === 'pendingIntros_v2') return { '234800000000@s.whatsapp.net': { introduced: false, campaignId: 'campaign-1' } };
+      if (key === 'welcomeCampaign_v1') return { campaignId: 'campaign-1', status: 'active', expiresAt: Date.now() - 1 };
+      return null;
+    });
+    await expect(markMemberIntroduced('120363000000000000@g.us','234800000000@s.whatsapp.net','Good evening everyone.',{ hasAnyMessage: true })).resolves.toBe(false);
   });
 });

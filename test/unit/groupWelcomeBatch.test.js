@@ -96,3 +96,23 @@ describe('manual group introduction campaigns', () => {
     expect(payload.text).toContain('next 10 minutes');
   });
 });
+
+
+describe('manual pending-introduction follow-ups', () => {
+  it('lists only members who remain pending and active', async () => {
+    const { getPendingIntroductionEntries } = await import('../../lib/groupWelcomeBatch.js');
+    const entries = getPendingIntroductionEntries({
+      'pending@s.whatsapp.net': { introduced: false, joinedAt: 2 },
+      'done@s.whatsapp.net': { introduced: true, joinedAt: 1 },
+      'inactive@s.whatsapp.net': { introduced: false, status: 'inactive', joinedAt: 0 }
+    });
+    expect(entries.map(([jid]) => jid)).toEqual(['pending@s.whatsapp.net']);
+  });
+  it('splits large reminder lists into safe-sized mention batches', async () => {
+    const { chunkPendingIntroductionEntries, buildPendingIntroductionReminder } = await import('../../lib/groupWelcomeBatch.js');
+    const entries = Array.from({ length: 125 }, (_, index) => [`user${index}@s.whatsapp.net`, { introduced: false }]);
+    const chunks = chunkPendingIntroductionEntries(entries, 40);
+    expect(chunks.map(chunk => chunk.length)).toEqual([40, 40, 40, 5]);
+    expect(buildPendingIntroductionReminder(chunks[0], 1, chunks.length).mentions).toHaveLength(40);
+  });
+});

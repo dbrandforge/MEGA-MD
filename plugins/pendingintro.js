@@ -1,5 +1,6 @@
 import store from '../lib/lightweight_store.js';
 import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
+import { getPendingIntroductionList, buildPendingIntroductionListMessages } from './sincity-welcome.js';
 
 const PENDING_INTRO_KEY = 'pendingIntros_v2';
 
@@ -52,26 +53,14 @@ export default {
             return reply(`✅ Marked ${removed} member(s) as introduced and removed ${removed} record(s) from the list.`);
         }
 
-        const entries = Object.entries(pending).filter(([, record]) =>
-            record && record.introduced !== true && record.status !== 'inactive'
-        );
-
-        if (!entries.length) {
-            return reply('✅ No tracked members are currently waiting to introduce themselves.');
+        const liveEntries = await getPendingIntroductionList(chatId);
+        if (!liveEntries.length) return reply('✅ No tracked members are currently waiting to introduce themselves.');
+        const messages = buildPendingIntroductionListMessages(liveEntries, 40);
+        await reply(`⏳ *Members yet to introduce*\\n\\nTotal: ${liveEntries.length}\\n\\nThe list is refreshed from the current pending records. Members who have completed an introduction or participated in the active campaign are excluded.`);
+        for (let index = 0; index < messages.length; index++) {
+            await sock.sendMessage(chatId, { text: messages[index], ...channelInfo });
+            if (index < messages.length - 1) await new Promise(resolve => setTimeout(resolve, 500));
         }
-
-        const lines = entries.map(([jid], index) => {
-            const joinedAt = Number(entries[index][1]?.joinedAt);
-            const date = Number.isFinite(joinedAt) && joinedAt > 0
-                ? new Date(joinedAt).toLocaleDateString('en-GB', { timeZone: 'Africa/Lagos' })
-                : '';
-            return `${index + 1}. @${jid.split('@')[0]}${date ? ` — joined ${date}` : ''}`;
-        });
-
-        return sock.sendMessage(chatId, {
-            text: `⏳ *Members yet to introduce*\n\n${lines.join('\n')}\n\nTotal: ${entries.length}\n\nAdmin controls:\n• .pendingintro done @member\n• .pendingintro clear`,
-            mentions: entries.map(([jid]) => jid),
-            ...channelInfo
-        }, { quoted: message });
+        return;
     }
 };
