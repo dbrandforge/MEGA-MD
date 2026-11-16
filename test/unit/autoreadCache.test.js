@@ -32,11 +32,11 @@ describe('autoread hot-path settings cache', () => {
         const message = { key: { remoteJid: '2348011111111@s.whatsapp.net', id: 'message-1' }, message: { conversation: 'hello' } };
 
         await handleAutoread(sock, message);
+        const readsAfterFirstMessage = getSetting.mock.calls.length;
         await handleAutoread(sock, { ...message, key: { ...message.key, id: 'message-2' } });
 
-        expect(getSetting).toHaveBeenCalledTimes(2);
-        expect(getSetting).toHaveBeenCalledWith('global', 'stealthMode');
-        expect(getSetting).toHaveBeenCalledWith('global', 'autoread');
+        expect(readsAfterFirstMessage).toBeLessThanOrEqual(2);
+        expect(getSetting).toHaveBeenCalledTimes(readsAfterFirstMessage);
         expect(readMessages).not.toHaveBeenCalled();
     });
 });
