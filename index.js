@@ -32,6 +32,7 @@ import { parseGroupSenderKeyRecoveryTargets, resetGroupSenderKeyMemoryBeforeSend
 
 // Keep libsignal diagnostics useful without allowing serialized ratchets or key material into logs.
 installSignalDiagnosticGuard();
+global.__forgeWhatsAppConnected = false;
 store.readFromFile();
 setInterval(() => store.writeToFile(), config.storeWriteInterval || 10000);
 setInterval(() => {
@@ -791,6 +792,7 @@ async function startQasimDev() {
                     return;
                 }
                 printLog('success', 'Bot connected successfully!');
+                global.__forgeWhatsAppConnected = true;
                 currentSocket = QasimDev;
                 authBlocked = false;
                 startWatchdog();
@@ -864,6 +866,7 @@ async function startQasimDev() {
                     return;
                 }
                 activeSocket = null;
+                global.__forgeWhatsAppConnected = false;
                 if (currentSocket === QasimDev)
                     currentSocket = null;
                 const statusCode = lastDisconnect?.error?.output?.statusCode;
