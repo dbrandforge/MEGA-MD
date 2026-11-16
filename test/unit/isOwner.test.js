@@ -56,4 +56,15 @@ describe('isOwnerOrSudo', () => {
     it('cleanJid handles empty string', () => {
         expect(cleanJid('')).toBe('');
     });
+    it('reuses group metadata for repeated unresolved LID checks in the same group', async () => {
+        const sock = {
+            groupMetadata: vi.fn(async () => ({
+                participants: [{ lid: 'owner-lid@lid', id: '923001234567@s.whatsapp.net' }]
+            }))
+        };
+        expect(await isOwnerOrSudo('owner-lid@lid', sock, 'group-1@g.us')).toBe(true);
+        expect(await isOwnerOrSudo('owner-lid@lid', sock, 'group-1@g.us')).toBe(true);
+        expect(sock.groupMetadata).toHaveBeenCalledTimes(1);
+    });
+
 });
