@@ -30,18 +30,33 @@ function cleanId(jid) {
 
 const muteCache = new Map();
 const MUTE_CACHE_TTL_MS = 1000;
+const MAX_CACHED_MUTE_GROUPS = 500;
+
+function cacheMutes(chatId, value) {
+    muteCache.delete(chatId);
+    muteCache.set(chatId, { value, at: Date.now() });
+    while (muteCache.size > MAX_CACHED_MUTE_GROUPS) {
+        muteCache.delete(muteCache.keys().next().value);
+    }
+}
+
+export function invalidateSoftMuteCache(chatId = null) {
+    if (chatId) muteCache.delete(chatId);
+    else muteCache.clear();
+}
+
 async function getMutes(chatId) {
     const cached = muteCache.get(chatId);
     if (cached && Date.now() - cached.at < MUTE_CACHE_TTL_MS) return cached.value;
     const value = (await store.getSetting(chatId, MUTE_KEY)) || {};
-    muteCache.set(chatId, { value, at: Date.now() });
+    cacheMutes(chatId, value);
     return value;
 }
 
 async function saveMutes(chatId, data) {
     const saved = await store.saveSettingVerified(chatId, MUTE_KEY, data);
     if (!saved) throw new Error('Soft-mute state could not be persisted.');
-    muteCache.set(chatId, { value: data, at: Date.now() });
+    cacheMutes(chatId, data);
 }
 
 export async function normalizeSoftMuteUserId(sock, userId) {
