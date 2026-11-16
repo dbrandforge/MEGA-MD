@@ -87,8 +87,11 @@ async function loadAntideleteConfig() {
 }
 async function saveAntideleteConfig(config) {
     try {
-        if (HAS_DB) await store.saveSetting('global', 'antidelete', config);
-        else fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+        if (HAS_DB) {
+            if (!await store.saveSettingVerified('global', 'antidelete', config)) throw new Error('Antidelete setting write was not confirmed.');
+        } else {
+            fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+        }
         cachedAntideleteConfig = { ...config };
         cachedAntideleteConfigAt = Date.now();
     } catch (err) {
