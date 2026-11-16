@@ -13,6 +13,7 @@ const messageStore = createBoundedMessageStore({
     ttlMs: MESSAGE_STORE_TTL_MS,
     onEvict: entry => entry?.mediaPath ? fs.promises.unlink(entry.mediaPath).catch(() => {}) : undefined,
 });
+global.__forgeAntiDeleteCacheSize = () => messageStore.size;
 const messageStoreCleanupTimer = setInterval(() => messageStore.prune(), 5 * 60 * 1000);
 messageStoreCleanupTimer.unref?.();
 let cachedAntideleteConfig = null;
