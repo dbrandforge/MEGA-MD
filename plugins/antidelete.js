@@ -6,7 +6,7 @@ import { dataFile } from '../lib/paths.js';
 import { downloadContentFromMessage } from '@whiskeysockets/baileys';
 import { createBoundedMessageStore } from '../lib/boundedMessageStore.js';
 import store from '../lib/lightweight_store.js';
-const MESSAGE_STORE_MAX_ENTRIES = 10000;
+const MESSAGE_STORE_MAX_ENTRIES = 20000;
 const MESSAGE_STORE_TTL_MS = 48 * 60 * 60 * 1000;
 const messageStore = createBoundedMessageStore({
     maxEntries: MESSAGE_STORE_MAX_ENTRIES,
