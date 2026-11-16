@@ -43,6 +43,7 @@ function cloneCachedData(value) {
 
 // Each participant gets an independent transcript per chat. Group transcripts are never shared.
 const chatMemory = { messages: new Map(), loaded: new Set() };
+global.__forgeChatbotCacheStats = () => ({ histories: chatMemory.messages.size, loaded: chatMemory.loaded.size });
 const runConversationSerial = createKeyedSerialExecutor();
 const runLocalMemoryWriteSerial = createKeyedSerialExecutor();
 const MEMORY_SETTING = 'chatbotConversationMemory';
