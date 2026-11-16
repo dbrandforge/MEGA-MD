@@ -82,9 +82,7 @@ export async function flushHotSeatReaders() {
                 // Keep failed activity writes queued for the next flush. Do not
                 // overwrite a newer touch that arrived while this batch was saving.
                 for (const [userId, timestamp] of touches) {
-                    const current = pendingReaderTouches.get(chatId) || new Map();
-                    current.set(userId, Math.max(current.get(userId) || 0, timestamp));
-                    pendingReaderTouches.set(chatId, current);
+                    queueReaderTouch(chatId, userId, timestamp);
                     const cacheKey = `${chatId}:${userId}`;
                     if (readerTouchCache.get(cacheKey) === timestamp) readerTouchCache.delete(cacheKey);
                 }
