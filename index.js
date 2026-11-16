@@ -89,15 +89,48 @@ setInterval(() => {
     const memory = process.memoryUsage();
     const rssMb = memory.rss / 1024 / 1024;
     const heapUsedMb = memory.heapUsed / 1024 / 1024;
+    const heapTotalMb = memory.heapTotal / 1024 / 1024;
     const externalMb = memory.external / 1024 / 1024;
-    // Do not kill a live WhatsApp session just because RSS crosses an arbitrary
-    // 400MB threshold. Render's process limit is higher; Node's heap is already
-    // bounded by --max-old-space-size. Emit actionable diagnostics instead.
-    if (rssMb > 440 && Date.now() - lastHighMemoryWarningAt > 60000) {
+    const arrayBuffersMb = memory.arrayBuffers / 1024 / 1024;
+    // Emit a breakdown before the container approaches its 512MB limit.
+    // This is diagnostic only: never terminate or alter a live WhatsApp session.
+    if (rssMb > 320 && Date.now() - lastHighMemoryWarningAt > 60000) {
         lastHighMemoryWarningAt = Date.now();
-        printLog('warning', `High memory usage: rss=${rssMb.toFixed(1)}MB heapUsed=${heapUsedMb.toFixed(1)}MB external=${externalMb.toFixed(1)}MB; keeping the WhatsApp process alive.`);
+        const queue = global.__forgeIncomingQueueStats?.() || {};
+        const signalCacheEntries = global.__forgeSignalKeyCacheSize?.() ?? 'unknown';
+        const chatbotCaches = global.__forgeChatbotCacheStats?.() || {};
+        const antiDeleteEntries = global.__forgeAntiDeleteCacheSize?.() ?? 0;
+        const groupRosterEntries = global.__forgeGroupRosterCacheSize?.() ?? 0;
+        const profileEntries = global.__forgeProfileCacheSize?.() ?? 0;
+        printLog('warning', `Memory diagnostics: rss=${rssMb.toFixed(1)}MB heapUsed=${heapUsedMb.toFixed(1)}MB heapTotal=${heapTotalMb.toFixed(1)}MB external=${externalMb.toFixed(1)}MB arrayBuffers=${arrayBuffersMb.toFixed(1)}MB signalKeyCache=${signalCacheEntries} antiDeleteEntries=${antiDeleteEntries} chatbotHistories=${chatbotCaches.histories ?? 0} groupRosters=${groupRosterEntries} profiles=${profileEntries} queueActive=${queue.active ?? 0} queuePending=${queue.pending ?? 0} queueChats=${queue.chats ?? 0}`);
     }
 }, 30000);
+
+let shutdownFlushStarted = false;
+async function flushPendingStateBeforeShutdown(signal) {
+    if (shutdownFlushStarted) return;
+    shutdownFlushStarted = true;
+    printLog('info', `[shutdown] ${signal} received; flushing pending counters and chatbot group memory`);
+    const timeout = setTimeout(() => {
+        printLog('warning', '[shutdown] state flush exceeded 8 seconds; exiting to respect platform termination');
+        process.exit(1);
+    }, 8000);
+    const results = await Promise.allSettled([
+        typeof store.flushPendingCounters === 'function' ? store.flushPendingCounters() : Promise.resolve(),
+        typeof global.__forgeFlushGroupMemory === 'function' ? global.__forgeFlushGroupMemory() : Promise.resolve(),
+    ]);
+    clearTimeout(timeout);
+    const failures = results.filter(result => result.status === 'rejected');
+    if (failures.length) {
+        printLog('warning', `[shutdown] ${failures.length} pending-state flush operation(s) failed`);
+        process.exit(1);
+    }
+    printLog('info', '[shutdown] pending counters and group memory flushed');
+    process.exit(0);
+}
+process.once('SIGTERM', () => { flushPendingStateBeforeShutdown('SIGTERM').catch(() => process.exit(1)); });
+process.once('SIGINT', () => { flushPendingStateBeforeShutdown('SIGINT').catch(() => process.exit(1)); });
+
 const phoneNumber = config.pairingNumber || config.ownerNumber || "923051391005";
 // Auto-create data directory and default files on startup
 const DATA_DEFAULTS = {
@@ -461,6 +494,7 @@ async function startQasimDev() {
         // thousands of key objects in a 512 MiB container.
         const signalKeyCache = new Map();
         const SIGNAL_KEY_CACHE_MAX_ENTRIES = 2500;
+        global.__forgeSignalKeyCacheSize = () => signalKeyCache.size;
         const SIGNAL_KEY_CACHE_TTL_MS = 3 * 60 * 1000;
         const signalKeyCacheStore = {
             async get(key) {
@@ -532,23 +566,26 @@ async function startQasimDev() {
         const originalSendMessage = QasimDev.sendMessage.bind(QasimDev);
         QasimDev.sendMessage = async (jid, ...args) => {
             const destinationType = typeof jid === 'string' && jid.endsWith('@g.us') ? 'group' : 'dm';
+            const sendStartedAt = process.hrtime.bigint();
             try {
                 const reset = await resetGroupSenderKeyMemoryBeforeSend(jid, signalKeyStore, groupSenderKeyRecoveryTargets);
                 if (reset) {
                     printLog('warning', '[SenderKeyRecovery] refreshed distribution state type=group');
                 }
                 const result = await originalSendMessage(jid, ...args);
+                const sendDurationMs = Number(process.hrtime.bigint() - sendStartedAt) / 1e6;
                 const messageId = result?.key?.id;
                 if (messageId) {
                     outboundTrace.set(messageId, { destinationType });
                     if (outboundTrace.size > 500) outboundTrace.delete(outboundTrace.keys().next().value);
-                    printLog('info', `[Outbound Trace] accepted type=${destinationType} id=${String(messageId).slice(0, 16)}`);
+                    printLog('info', `[Outbound Trace] accepted type=${destinationType} duration_ms=${sendDurationMs.toFixed(1)} id=${String(messageId).slice(0, 16)}`);
                 } else {
-                    printLog('warning', `[Outbound Trace] send returned without message id type=${destinationType}`);
+                    printLog('warning', `[Outbound Trace] send returned without message id type=${destinationType} duration_ms=${sendDurationMs.toFixed(1)}`);
                 }
                 return result;
             } catch (error) {
-                printLog('warning', `[Outbound Trace] send failed type=${destinationType} error=${error?.name || 'Error'}`);
+                const sendDurationMs = Number(process.hrtime.bigint() - sendStartedAt) / 1e6;
+                printLog('warning', `[Outbound Trace] send failed type=${destinationType} duration_ms=${sendDurationMs.toFixed(1)} error=${error?.name || 'Error'}`);
                 throw error;
             }
         };

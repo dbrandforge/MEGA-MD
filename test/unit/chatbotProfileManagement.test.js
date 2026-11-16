@@ -14,6 +14,7 @@ import {
     buildUserProfileContext,
     removeUserProfileFact,
     clearUserProfile,
+    clearUserProfileCache,
     setUserProfileGroupSharing
 } from '../../lib/chatbotUserProfile.js';
 
@@ -22,6 +23,7 @@ let settings;
 
 describe('Forge Guard user-controlled profile facts', () => {
     beforeEach(() => {
+        clearUserProfileCache();
         settings = new Map();
         vi.clearAllMocks();
         store.getSetting.mockImplementation(async (key, setting) => settings.get(key + ':' + setting) || null);
@@ -103,5 +105,38 @@ describe('Forge Guard user-controlled profile facts', () => {
         const profile = await getUserProfile(sender);
         expect(profile.businesses).toEqual([]);
         expect(profile.interests).toEqual([]);
+    });
+});
+
+
+describe('bounded user-profile read cache', () => {
+    beforeEach(() => {
+        clearUserProfileCache();
+        settings = new Map();
+        vi.clearAllMocks();
+        store.getSetting.mockImplementation(async (key, setting) => settings.get(key + ':' + setting) || null);
+        store.saveSettingVerified.mockImplementation(async (key, setting, value) => {
+            settings.set(key + ':' + setting, value);
+            return true;
+        });
+    });
+
+    it('reuses a warm profile instead of querying MongoDB for every group message', async () => {
+        settings.set('user:' + sender + ':chatbotUserProfile', {
+            businesses: [{ value: 'Forge Studio' }]
+        });
+        const first = await getUserProfile(sender);
+        const second = await getUserProfile(sender);
+
+        expect(first.businesses[0].value).toBe('Forge Studio');
+        expect(second.businesses[0].value).toBe('Forge Studio');
+        expect(store.getSetting).toHaveBeenCalledTimes(1);
+    });
+
+    it('updates the cache immediately after an explicit privacy change', async () => {
+        await setUserProfileGroupSharing(sender, true);
+        const profile = await getUserProfile(sender);
+        expect(profile.sharing.groupContext).toBe(true);
+        expect(store.getSetting).toHaveBeenCalledTimes(1);
     });
 });

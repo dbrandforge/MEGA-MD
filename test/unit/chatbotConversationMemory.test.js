@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
     createKeyedSerialExecutor,
+    getCachedConversationHistory,
     getConversationMemoryKey,
+    setCachedConversationHistory,
     normalizeConversationParticipant
 } from '../../lib/chatbotConversationMemory.js';
 
@@ -74,5 +76,30 @@ describe('Forge Guard individual conversation memory scopes', () => {
         releaseFirst();
         await Promise.all([first, second]);
         expect(order).toEqual(['a-start', 'b-start', 'a-end', 'a-next']);
+    });
+});
+
+
+describe('bounded chatbot conversation history cache', () => {
+    it('evicts the least-recently-used transcript while preserving recent histories', () => {
+        const messages = new Map();
+        const loaded = new Set();
+        setCachedConversationHistory(messages, loaded, 'a', [{ text: 'A' }], 2);
+        setCachedConversationHistory(messages, loaded, 'b', [{ text: 'B' }], 2);
+        expect(getCachedConversationHistory(messages, loaded, 'a')).toEqual([{ text: 'A' }]);
+        setCachedConversationHistory(messages, loaded, 'c', [{ text: 'C' }], 2);
+
+        expect(getCachedConversationHistory(messages, loaded, 'a')).toEqual([{ text: 'A' }]);
+        expect(getCachedConversationHistory(messages, loaded, 'b')).toBeUndefined();
+        expect(getCachedConversationHistory(messages, loaded, 'c')).toEqual([{ text: 'C' }]);
+        expect(messages.size).toBe(2);
+        expect(loaded.size).toBe(2);
+    });
+
+    it('returns an empty transcript as a cached value rather than treating it as a miss', () => {
+        const messages = new Map();
+        const loaded = new Set();
+        setCachedConversationHistory(messages, loaded, 'empty', [], 5);
+        expect(getCachedConversationHistory(messages, loaded, 'empty')).toEqual([]);
     });
 });

@@ -100,11 +100,32 @@ function getLagosDay() {
     return days[new Date(str).getDay()];
 }
 
+const pendingIntroCache = new Map();
+const PENDING_INTRO_CACHE_TTL_MS = 2000;
+const MAX_PENDING_INTRO_CACHE_GROUPS = 100;
+
 async function getPendingIntros(chatId) {
-    return (await store.getSetting(chatId, PENDING_INTRO_KEY)) || {};
+    const cached = pendingIntroCache.get(chatId);
+    if (cached && Date.now() - cached.cachedAt < PENDING_INTRO_CACHE_TTL_MS) {
+        pendingIntroCache.delete(chatId);
+        pendingIntroCache.set(chatId, cached);
+        return { ...cached.value };
+    }
+    const value = (await store.getSetting(chatId, PENDING_INTRO_KEY)) || {};
+    pendingIntroCache.delete(chatId);
+    pendingIntroCache.set(chatId, { value, cachedAt: Date.now() });
+    while (pendingIntroCache.size > MAX_PENDING_INTRO_CACHE_GROUPS) {
+        pendingIntroCache.delete(pendingIntroCache.keys().next().value);
+    }
+    return { ...value };
 }
 async function savePendingIntros(chatId, data) {
     await store.saveSetting(chatId, PENDING_INTRO_KEY, data);
+    pendingIntroCache.delete(chatId);
+    pendingIntroCache.set(chatId, { value: { ...data }, cachedAt: Date.now() });
+    while (pendingIntroCache.size > MAX_PENDING_INTRO_CACHE_GROUPS) {
+        pendingIntroCache.delete(pendingIntroCache.keys().next().value);
+    }
 }
 
 export async function getPendingIntroductionList(chatId) {

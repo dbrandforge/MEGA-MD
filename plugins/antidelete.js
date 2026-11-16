@@ -1,10 +1,24 @@
 import fs from 'fs';
+import { createWriteStream } from 'fs';
+import { pipeline } from 'stream/promises';
 import path from 'path';
 import { dataFile } from '../lib/paths.js';
 import { downloadContentFromMessage } from '@whiskeysockets/baileys';
-import { writeFile } from 'fs/promises';
+import { createBoundedMessageStore } from '../lib/boundedMessageStore.js';
 import store from '../lib/lightweight_store.js';
-const messageStore = new Map();
+const MESSAGE_STORE_MAX_ENTRIES = 20000;
+const MESSAGE_STORE_TTL_MS = 48 * 60 * 60 * 1000;
+const messageStore = createBoundedMessageStore({
+    maxEntries: MESSAGE_STORE_MAX_ENTRIES,
+    ttlMs: MESSAGE_STORE_TTL_MS,
+    onEvict: entry => entry?.mediaPath ? fs.promises.unlink(entry.mediaPath).catch(() => {}) : undefined,
+});
+global.__forgeAntiDeleteCacheSize = () => messageStore.size;
+const messageStoreCleanupTimer = setInterval(() => messageStore.prune(), 5 * 60 * 1000);
+messageStoreCleanupTimer.unref?.();
+let cachedAntideleteConfig = null;
+let cachedAntideleteConfigAt = 0;
+let antideleteConfigLoadPromise = null;
 const CONFIG_PATH = dataFile('antidelete.json');
 const TEMP_MEDIA_DIR = path.join(process.cwd(), 'temp');
 const MONGO_URL = process.env.MONGO_URL;
@@ -15,69 +29,79 @@ const HAS_DB = !!(MONGO_URL || POSTGRES_URL || MYSQL_URL || SQLITE_URL);
 if (!fs.existsSync(TEMP_MEDIA_DIR)) {
     fs.mkdirSync(TEMP_MEDIA_DIR, { recursive: true });
 }
-const getFolderSizeInMB = (folderPath) => {
-    try {
-        const files = fs.readdirSync(folderPath);
-        let totalSize = 0;
-        for (const file of files) {
-            const filePath = path.join(folderPath, file);
-            if (fs.statSync(filePath).isFile()) {
-                totalSize += fs.statSync(filePath).size;
-            }
-        }
-        return totalSize / (1024 * 1024);
-    }
-    catch (err) {
-        console.error('Error getting folder size:', err);
-        return 0;
-    }
-};
+const TEMP_MEDIA_MAX_BYTES = 150 * 1024 * 1024;
+const TEMP_MEDIA_TARGET_BYTES = 100 * 1024 * 1024;
 const cleanTempFolderIfLarge = () => {
     try {
-        const sizeMB = getFolderSizeInMB(TEMP_MEDIA_DIR);
-        if (sizeMB > 200) {
-            const files = fs.readdirSync(TEMP_MEDIA_DIR);
-            for (const file of files) {
-                const filePath = path.join(TEMP_MEDIA_DIR, file);
-                fs.unlinkSync(filePath);
-            }
+        const files = fs.readdirSync(TEMP_MEDIA_DIR).map(name => {
+            const filePath = path.join(TEMP_MEDIA_DIR, name);
+            try {
+                const stat = fs.statSync(filePath);
+                return stat.isFile() ? { name, filePath, size: stat.size, mtimeMs: stat.mtimeMs } : null;
+            } catch { return null; }
+        }).filter(Boolean);
+        let totalBytes = files.reduce((total, file) => total + file.size, 0);
+        if (totalBytes <= TEMP_MEDIA_MAX_BYTES) return;
+        const messageIdsByPath = new Map([...messageStore.entries()]
+            .filter(([, entry]) => entry?.mediaPath)
+            .map(([messageId, entry]) => [entry.mediaPath, messageId]));
+        files.sort((a, b) => a.mtimeMs - b.mtimeMs);
+        for (const file of files) {
+            if (totalBytes <= TEMP_MEDIA_TARGET_BYTES) break;
+            try {
+                fs.unlinkSync(file.filePath);
+                totalBytes -= file.size;
+                const messageId = messageIdsByPath.get(file.filePath);
+                if (messageId) messageStore.delete(messageId);
+            } catch {}
         }
-    }
-    catch (err) {
+    } catch (err) {
         console.error('Temp cleanup error:', err);
     }
 };
-setInterval(cleanTempFolderIfLarge, 60 * 1000);
+const tempMediaCleanupTimer = setInterval(cleanTempFolderIfLarge, 60 * 1000);
+tempMediaCleanupTimer.unref?.();
+
+async function saveMediaToFile(messageContent, mediaType, destination) {
+    const stream = await downloadContentFromMessage(messageContent, mediaType);
+    await pipeline(stream, createWriteStream(destination, { flags: 'w', mode: 0o600 }));
+}
 async function loadAntideleteConfig() {
-    try {
-        if (HAS_DB) {
-            const config = await store.getSetting('global', 'antidelete');
-            return config || { enabled: false };
+    const now = Date.now();
+    if (cachedAntideleteConfig && now - cachedAntideleteConfigAt < 5000) return { ...cachedAntideleteConfig };
+    if (antideleteConfigLoadPromise) return { ...(await antideleteConfigLoadPromise) };
+    antideleteConfigLoadPromise = (async () => {
+        try {
+            let config;
+            if (HAS_DB) config = await store.getSetting('global', 'antidelete');
+            else if (fs.existsSync(CONFIG_PATH)) config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+            cachedAntideleteConfig = config && typeof config === 'object' ? config : { enabled: false };
+        } catch {
+            cachedAntideleteConfig = { enabled: false };
         }
-        else {
-            if (!fs.existsSync(CONFIG_PATH))
-                return { enabled: false };
-            return JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
-        }
-    }
-    catch {
-        return { enabled: false };
-    }
+        cachedAntideleteConfigAt = Date.now();
+        return cachedAntideleteConfig;
+    })();
+    try { return { ...(await antideleteConfigLoadPromise) }; }
+    finally { antideleteConfigLoadPromise = null; }
 }
 async function saveAntideleteConfig(config) {
     try {
         if (HAS_DB) {
-            await store.saveSetting('global', 'antidelete', config);
-        }
-        else {
+            if (!await store.saveSettingVerified('global', 'antidelete', config)) throw new Error('Antidelete setting write was not confirmed.');
+        } else {
             fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
         }
-    }
-    catch (err) {
+        cachedAntideleteConfig = { ...config };
+        cachedAntideleteConfigAt = Date.now();
+    } catch (err) {
+        cachedAntideleteConfig = null;
+        cachedAntideleteConfigAt = 0;
         console.error('Config save error:', err);
     }
 }
 export async function storeMessage(sock, message) {
+    let mediaPath = '';
     try {
         const config = await loadAntideleteConfig();
         if (!config.enabled)
@@ -87,7 +111,6 @@ export async function storeMessage(sock, message) {
         const messageId = message.key.id;
         let content = '';
         let mediaType = '';
-        let mediaPath = '';
         let isViewOnce = false;
         const sender = message.key.participant || message.key.remoteJid;
         const viewOnceContainer = message.message?.viewOnceMessageV2?.message || message.message?.viewOnceMessage?.message;
@@ -95,25 +118,15 @@ export async function storeMessage(sock, message) {
             if (viewOnceContainer.imageMessage) {
                 mediaType = 'image';
                 content = viewOnceContainer.imageMessage.caption || '';
-                const stream = await downloadContentFromMessage(viewOnceContainer.imageMessage, 'image');
-                let buffer = Buffer.from([]);
-                for await (const chunk of stream) {
-                    buffer = Buffer.concat([buffer, chunk]);
-                }
                 mediaPath = path.join(TEMP_MEDIA_DIR, `${messageId}.jpg`);
-                await writeFile(mediaPath, buffer);
+                await saveMediaToFile(viewOnceContainer.imageMessage, 'image', mediaPath);
                 isViewOnce = true;
             }
             else if (viewOnceContainer.videoMessage) {
                 mediaType = 'video';
                 content = viewOnceContainer.videoMessage.caption || '';
-                const stream = await downloadContentFromMessage(viewOnceContainer.videoMessage, 'video');
-                let buffer = Buffer.from([]);
-                for await (const chunk of stream) {
-                    buffer = Buffer.concat([buffer, chunk]);
-                }
                 mediaPath = path.join(TEMP_MEDIA_DIR, `${messageId}.mp4`);
-                await writeFile(mediaPath, buffer);
+                await saveMediaToFile(viewOnceContainer.videoMessage, 'video', mediaPath);
                 isViewOnce = true;
             }
         }
@@ -126,46 +139,26 @@ export async function storeMessage(sock, message) {
         else if (message.message?.imageMessage) {
             mediaType = 'image';
             content = message.message.imageMessage.caption || '';
-            const stream = await downloadContentFromMessage(message.message.imageMessage, 'image');
-            let buffer = Buffer.from([]);
-            for await (const chunk of stream) {
-                buffer = Buffer.concat([buffer, chunk]);
-            }
             mediaPath = path.join(TEMP_MEDIA_DIR, `${messageId}.jpg`);
-            await writeFile(mediaPath, buffer);
+                await saveMediaToFile(message.message.imageMessage, 'image', mediaPath);
         }
         else if (message.message?.stickerMessage) {
             mediaType = 'sticker';
-            const stream = await downloadContentFromMessage(message.message.stickerMessage, 'sticker');
-            let buffer = Buffer.from([]);
-            for await (const chunk of stream) {
-                buffer = Buffer.concat([buffer, chunk]);
-            }
             mediaPath = path.join(TEMP_MEDIA_DIR, `${messageId}.webp`);
-            await writeFile(mediaPath, buffer);
+                await saveMediaToFile(message.message.stickerMessage, 'sticker', mediaPath);
         }
         else if (message.message?.videoMessage) {
             mediaType = 'video';
             content = message.message.videoMessage.caption || '';
-            const stream = await downloadContentFromMessage(message.message.videoMessage, 'video');
-            let buffer = Buffer.from([]);
-            for await (const chunk of stream) {
-                buffer = Buffer.concat([buffer, chunk]);
-            }
             mediaPath = path.join(TEMP_MEDIA_DIR, `${messageId}.mp4`);
-            await writeFile(mediaPath, buffer);
+                await saveMediaToFile(message.message.videoMessage, 'video', mediaPath);
         }
         else if (message.message?.audioMessage) {
             mediaType = 'audio';
             const mime = message.message.audioMessage.mimetype || '';
             const ext = mime.includes('mpeg') ? 'mp3' : (mime.includes('ogg') ? 'ogg' : 'mp3');
-            const stream = await downloadContentFromMessage(message.message.audioMessage, 'audio');
-            let buffer = Buffer.from([]);
-            for await (const chunk of stream) {
-                buffer = Buffer.concat([buffer, chunk]);
-            }
             mediaPath = path.join(TEMP_MEDIA_DIR, `${messageId}.${ext}`);
-            await writeFile(mediaPath, buffer);
+                await saveMediaToFile(message.message.audioMessage, 'audio', mediaPath);
         }
         messageStore.set(messageId, {
             content,
@@ -198,6 +191,7 @@ export async function storeMessage(sock, message) {
         }
     }
     catch (err) {
+        if (mediaPath) fs.promises.unlink(mediaPath).catch(() => {});
         console.error('storeMessage error:', err);
     }
 }
