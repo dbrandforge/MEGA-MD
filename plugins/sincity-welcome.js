@@ -11,6 +11,7 @@ const PENDING_INTRO_KEY = 'pendingIntros_v2';
 const DEPARTURE_INDEX_KEY = 'groupDepartureMessageIndexes';
 const MEMBER_HISTORY_KEY = 'groupMemberHistory';
 const RETURN_INDEX_KEY = 'groupReturnMessageIndexes';
+const LEAVE_ANNOUNCEMENTS_KEY = 'groupLeaveAnnouncementsEnabled';
 const introReminderTimers = new Map();
 const pendingJoinBatches = new Map();
 const JOIN_BATCH_KEY = 'pendingWelcomeJoinBatch_v1';
@@ -399,6 +400,12 @@ async function handleMemberDeparture(sock, chatId, update) {
         const pending = await getPendingIntros(chatId);
         delete pending[userId];
         await savePendingIntros(chatId, pending);
+
+        const leaveAnnouncementsEnabled = await store.getSetting(chatId, LEAVE_ANNOUNCEMENTS_KEY);
+        if (departureType === 'left' && leaveAnnouncementsEnabled === false) {
+            console.log(`[Welcome] Voluntary leave announcement suppressed for ${userId} (disabled for group).`);
+            continue;
+        }
 
         const mention = `@${userId.split('@')[0]}`;
         const templateBank = departureType === 'left'
