@@ -339,14 +339,18 @@ function mentionBot(sock, message) {
 
 export async function handleTriviaContinuity(sock, chatId, message, senderId) {
   if (!chatId?.endsWith('@g.us') || message?.key?.fromMe || !isFeatureGroup(chatId)) return false;
-  const pendingGame = await readGame(chatId);
-  if (!pendingGame) return false;
-  armTimer(sock, chatId, pendingGame);
   const contextInfo = message.message?.extendedTextMessage?.contextInfo || message.message?.imageMessage?.contextInfo || {};
   const replied = !!contextInfo.stanzaId;
   const tagged = mentionBot(sock, message);
   const body = String(message.message?.conversation || message.message?.extendedTextMessage?.text ||
     message.message?.imageMessage?.caption || message.message?.videoMessage?.caption || '').trim();
+  const canResume = /^(next|continue)$/i.test(body);
+  // Most group messages are neither answers nor explicit resume requests.
+  // Avoid reading the persisted Trivia state for those messages.
+  if (!canResume && !replied && !tagged) return false;
+  const pendingGame = await readGame(chatId);
+  if (!pendingGame) return false;
+  armTimer(sock, chatId, pendingGame);
   if (/^(next|continue)$/i.test(body) && pendingGame.questionClosed && pendingGame.noParticipationExpiresAt) {
     const resumed = await withChatLock(chatId, async () => {
       const game = await readGame(chatId);
