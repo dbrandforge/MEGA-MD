@@ -29,10 +29,68 @@ import { FEATURE_GROUPS } from './lib/featureGroups.js';
 
 import { installSignalDiagnosticGuard } from './lib/signalDiagnostics.js';
 import { parseGroupSenderKeyRecoveryTargets, resetGroupSenderKeyMemoryBeforeSend } from './lib/groupSenderKeyRecovery.js';
+import { createPerChatMessageQueue } from './lib/perChatMessageQueue.js';
 
 // Keep libsignal diagnostics useful without allowing serialized ratchets or key material into logs.
 installSignalDiagnosticGuard();
 global.__forgeWhatsAppConnected = false;
+
+const queueOverflowNoticeAt = new Map();
+const incomingMessageQueue = createPerChatMessageQueue({
+    maxConcurrentChats: 4,
+    maxQueuePerChat: 150,
+    maxQueueTotal: 800,
+    processMessage: async ({ sock, update }) => {
+        const mek = update.messages?.[0];
+        try {
+            const processingStartedAt = process.hrtime.bigint();
+            await handleMessages(sock, update);
+            const processingLatencyMs = Number(process.hrtime.bigint() - processingStartedAt) / 1e6;
+            printLog('info', `Message processed: jid=${mek?.key?.remoteJid || 'unknown'} id=${mek?.key?.id || 'unknown'} latency_ms=${processingLatencyMs.toFixed(1)}`);
+        } catch (err) {
+            printLog('error', `Error in handleMessages (jid=${mek?.key?.remoteJid || 'unknown'}): ${String(err?.message || 'Unknown message handler error').slice(0, 300)}`);
+            const chatId = mek?.key?.remoteJid;
+            if (chatId) {
+                await sock.sendMessage(chatId, {
+                    text: '❌ An error occurred while processing your message.',
+                    contextInfo: {
+                        forwardingScore: 1,
+                        isForwarded: true,
+                        forwardedNewsletterMessageInfo: {
+                            newsletterJid: '120363319098372999@newsletter',
+                            newsletterName: 'GlobalTechInc',
+                            serverMessageId: -1
+                        }
+                    }
+                }).catch(sendError => printLog('error', `Failed to send processing-error notice: ${sendError.message}`));
+            }
+        }
+    },
+    onError: (error, item) => {
+        printLog('error', `Queued message worker failed: ${String(error?.message || 'Unknown queue error').slice(0, 250)}`);
+        const chatId = item?.update?.messages?.[0]?.key?.remoteJid;
+        if (chatId && item?.sock) {
+            item.sock.sendMessage(chatId, {
+                text: '❌ An unexpected processing error occurred. Please retry your message.'
+            }).catch(() => {});
+        }
+    },
+    onOverflow: ({ chatId, item, reason, stats }) => {
+        printLog('warning', `Incoming message queue full: type=${chatId.endsWith('@g.us') ? 'group' : 'direct'} reason=${reason} pending=${stats.pending} active=${stats.active}`);
+        const now = Date.now();
+        const lastNotice = queueOverflowNoticeAt.get(chatId) || 0;
+        if (now - lastNotice < 60000) return;
+        queueOverflowNoticeAt.delete(chatId);
+        queueOverflowNoticeAt.set(chatId, now);
+        while (queueOverflowNoticeAt.size > 500) {
+            queueOverflowNoticeAt.delete(queueOverflowNoticeAt.keys().next().value);
+        }
+        item?.sock?.sendMessage(chatId, {
+            text: '⏳ Forge Bot is handling a heavy message burst. Some messages could not enter the processing queue. Please retry your command shortly.'
+        }).catch(() => {});
+    }
+});
+global.__forgeIncomingQueueStats = incomingMessageQueue.getStats;
 store.readFromFile();
 setInterval(() => store.writeToFile(), config.storeWriteInterval || 10000);
 setInterval(() => {
@@ -643,31 +701,13 @@ async function startQasimDev() {
                     // private command when QasimDev.public was unset.
                     if (mek.key.id?.startsWith('BAE5') && mek.key.id.length === 16)
                         continue;
-                    // Preserve Baileys retry counters; clearing this cache on every
-                    // inbound message resets failed-decryption retries for all senders.
-                    try {
-                        const processingStartedAt = process.hrtime.bigint();
-                        await handleMessages(QasimDev, singleUpdate);
-                        const processingLatencyMs = Number(process.hrtime.bigint() - processingStartedAt) / 1e6;
-                        printLog('info', `Message processed: jid=${mek.key.remoteJid || 'unknown'} id=${mek.key.id || 'unknown'} latency_ms=${processingLatencyMs.toFixed(1)}`);
-                    }
-                    catch (err) {
-                        printLog('error', `Error in handleMessages (jid=${mek.key.remoteJid || 'unknown'}): ${String(err?.message || 'Unknown message handler error').slice(0, 300)}`);
-                        if (mek.key.remoteJid) {
-                            await QasimDev.sendMessage(mek.key.remoteJid, {
-                                text: '❌ An error occurred while processing your message.',
-                                contextInfo: {
-                                    forwardingScore: 1,
-                                    isForwarded: true,
-                                    forwardedNewsletterMessageInfo: {
-                                        newsletterJid: '120363319098372999@newsletter',
-                                        newsletterName: 'GlobalTechInc',
-                                        serverMessageId: -1
-                                    }
-                                }
-                            }).catch(sendError => printLog('error', `Failed to send processing-error notice: ${sendError.message}`));
-                        }
-                    }
+                    // Preserve Baileys retry counters. Queue each chat independently:
+                    // FIFO ordering is retained within a chat while unrelated chats
+                    // can progress concurrently under a bounded global worker limit.
+                    incomingMessageQueue.enqueue(mek.key.remoteJid, {
+                        sock: QasimDev,
+                        update: singleUpdate
+                    });
                 }
                 catch (err) {
                     printLog('error', `Error processing individual messages.upsert item: ${err?.message || 'Unknown processing error'}`);
