@@ -116,10 +116,14 @@ export async function handleTruthDareContinue(sock, chatId, message, userMessage
         const lower = (userMessage || '').trim().toLowerCase();
         const isEndRequest = lower === 'stop' || lower === 'end' || lower === '.stop';
         const hasBotMention = isBotMentioned(sock, message, userMessage);
+        const contextInfo = message.message?.extendedTextMessage?.contextInfo
+            || message.message?.imageMessage?.contextInfo
+            || message.message?.videoMessage?.contextInfo;
+        const hasReply = Boolean(contextInfo?.stanzaId);
         const hasQuotedGamePrompt = Boolean(quotesTruthOrDare(message));
         // Ordinary group chatter cannot advance a solo Truth/Dare session.
-        // Avoid reading the session document unless this message could matter.
-        if (!isEndRequest && !hasBotMention && !hasQuotedGamePrompt) return false;
+        // Any reply may match the stored prompt ID, so keep that cheap path available.
+        if (!isEndRequest && !hasBotMention && !hasReply && !hasQuotedGamePrompt) return false;
         const sessions = await getSessions(chatId);
         const session = senderId ? sessions[senderId] : null;
 
