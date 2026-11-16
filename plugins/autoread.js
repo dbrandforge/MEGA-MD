@@ -8,29 +8,58 @@ const MYSQL_URL = process.env.MYSQL_URL;
 const SQLITE_URL = process.env.DB_URL;
 const HAS_DB = !!(MONGO_URL || POSTGRES_URL || MYSQL_URL || SQLITE_URL);
 const configPath = dataFile('autoread.json');
+const CONFIG_CACHE_TTL_MS = 5000;
+const STEALTH_CACHE_TTL_MS = 1000;
+let cachedConfig = null;
+let cachedConfigAt = 0;
+let configLoadPromise = null;
+let cachedStealthMode = null;
+let cachedStealthModeAt = 0;
+let stealthLoadPromise = null;
+
 async function initConfig() {
-    if (HAS_DB) {
-        const config = await store.getSetting('global', 'autoread');
-        return config || { enabled: false };
-    }
-    else {
-        if (!fs.existsSync(configPath)) {
-            const dataDir = path.dirname(configPath);
-            if (!fs.existsSync(dataDir)) {
-                fs.mkdirSync(dataDir, { recursive: true });
+    if (cachedConfig && Date.now() - cachedConfigAt < CONFIG_CACHE_TTL_MS) return { ...cachedConfig };
+    if (configLoadPromise) return { ...(await configLoadPromise) };
+    configLoadPromise = (async () => {
+        let config;
+        if (HAS_DB) {
+            config = await store.getSetting('global', 'autoread');
+        } else {
+            if (!fs.existsSync(configPath)) {
+                const dataDir = path.dirname(configPath);
+                if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+                fs.writeFileSync(configPath, JSON.stringify({ enabled: false }, null, 2));
             }
-            fs.writeFileSync(configPath, JSON.stringify({ enabled: false }, null, 2));
+            config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
         }
-        return JSON.parse(fs.readFileSync(configPath, "utf-8"));
-    }
+        cachedConfig = config && typeof config === 'object' ? config : { enabled: false };
+        cachedConfigAt = Date.now();
+        return cachedConfig;
+    })();
+    try { return { ...(await configLoadPromise) }; }
+    finally { configLoadPromise = null; }
 }
 async function saveConfig(config) {
-    if (HAS_DB) {
-        await store.saveSetting('global', 'autoread', config);
-    }
-    else {
-        fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-    }
+    if (HAS_DB) await store.saveSetting('global', 'autoread', config);
+    else fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    cachedConfig = { ...config };
+    cachedConfigAt = Date.now();
+}
+async function isStealthModeActive() {
+    if (cachedStealthMode !== null && Date.now() - cachedStealthModeAt < STEALTH_CACHE_TTL_MS) return cachedStealthMode;
+    if (stealthLoadPromise) return stealthLoadPromise;
+    stealthLoadPromise = (async () => {
+        try {
+            const value = await store.getSetting('global', 'stealthMode');
+            cachedStealthMode = value?.enabled === true;
+        } catch {
+            cachedStealthMode = false;
+        }
+        cachedStealthModeAt = Date.now();
+        return cachedStealthMode;
+    })();
+    try { return await stealthLoadPromise; }
+    finally { stealthLoadPromise = null; }
 }
 async function isAutoreadEnabled() {
     try {
@@ -75,15 +104,7 @@ function isBotMentionedInMessage(message, botNumber) {
     return false;
 }
 export async function handleAutoread(sock, message) {
-    try {
-        const ghostMode = await store.getSetting('global', 'stealthMode');
-        if (ghostMode && ghostMode.enabled) {
-            console.log('👻 Stealth mode active - skipping read receipt');
-            return false;
-        }
-    }
-    catch (err) {
-    }
+    if (await isStealthModeActive()) return false;
     const enabled = await isAutoreadEnabled();
     if (enabled) {
         const botNumber = `${sock.user.id.split(':')[0] }@s.whatsapp.net`;
