@@ -18,7 +18,7 @@ describe('outbound network diagnostics', () => {
             hostname: 'media.api.example.co.uk',
             remoteAddress: '203.0.113.10',
             port: 443,
-        })).toBe('external:co.uk');
+        })).toBe('external:example.co.uk');
     });
 
     it('ignores private and local destinations', () => {
