@@ -9,7 +9,7 @@ vi.mock('../../lib/lightweight_store.js', () => ({
 }));
 
 import store from '../../lib/lightweight_store.js';
-import { recordGroupInteraction, buildGroupContinuityContext } from '../../lib/chatbotGroupMemory.js';
+import { clearGroupMemoryCache, flushPendingGroupRosterWrites, recordGroupInteraction, buildGroupContinuityContext } from '../../lib/chatbotGroupMemory.js';
 
 const group = '120363000000000000@g.us';
 const member = '2348011111111@s.whatsapp.net';
@@ -18,6 +18,7 @@ let settings;
 
 describe('Forge Guard group-local member continuity', () => {
     beforeEach(() => {
+        clearGroupMemoryCache();
         settings = new Map();
         vi.clearAllMocks();
         store.getSetting.mockImplementation(async (chatId, key) => settings.get(`${chatId}:${key}`) || null);
@@ -69,5 +70,48 @@ describe('Forge Guard group-local member continuity', () => {
         await recordGroupInteraction(group, member, 'Adunni', 'Previous contribution', 'english');
         const context = await buildGroupContinuityContext(group, member, 'Who am I?');
         expect(context).toBe('');
+    });
+});
+
+
+describe('Forge Guard group-memory write batching', () => {
+    beforeEach(() => {
+        clearGroupMemoryCache();
+        settings = new Map();
+        vi.clearAllMocks();
+        store.getSetting.mockImplementation(async (chatId, key) => settings.get(`${chatId}:${key}`) || null);
+        store.saveSettingVerified.mockImplementation(async (chatId, key, value) => {
+            settings.set(`${chatId}:${key}`, value);
+            return true;
+        });
+    });
+
+    it('coalesces multiple ordinary messages into one durable group-roster write', async () => {
+        await recordGroupInteraction(group, member, 'Adunni', 'First public contribution', 'english');
+        await recordGroupInteraction(group, askingMember, 'Tunde', 'Second public contribution', 'pidgin');
+
+        expect(store.getSetting).toHaveBeenCalledTimes(1);
+        expect(store.saveSettingVerified).not.toHaveBeenCalled();
+
+        expect(await flushPendingGroupRosterWrites()).toBe(1);
+        expect(store.saveSettingVerified).toHaveBeenCalledTimes(1);
+        const saved = store.saveSettingVerified.mock.calls[0][2];
+        expect(saved.members[member].messages.at(-1).text).toBe('First public contribution');
+        expect(saved.members[askingMember].messages.at(-1).text).toBe('Second public contribution');
+    });
+
+    it('serves continuity reads from the warm roster cache without another database read', async () => {
+        await recordGroupInteraction(group, member, 'Adunni', 'A useful group update', 'english');
+        const readsAfterWrite = store.getSetting.mock.calls.length;
+        await buildGroupContinuityContext(group, askingMember, 'What did Adunni say?');
+        expect(store.getSetting).toHaveBeenCalledTimes(readsAfterWrite);
+    });
+
+    it('keeps failed roster writes queued for a later retry', async () => {
+        await recordGroupInteraction(group, member, 'Adunni', 'Retry this contribution', 'english');
+        store.saveSettingVerified.mockResolvedValueOnce(false);
+        expect(await flushPendingGroupRosterWrites()).toBe(0);
+        expect(await flushPendingGroupRosterWrites()).toBe(1);
+        expect(store.saveSettingVerified).toHaveBeenCalledTimes(2);
     });
 });
