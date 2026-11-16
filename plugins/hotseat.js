@@ -17,7 +17,96 @@ const NEXT_QUESTION_MS = Number(config.hotseatNextQuestionSeconds || 60) * 1000;
 const MIN_PLAYERS = 2;
 const MAX_PLAYERS = 4;
 const READER_TOUCH_INTERVAL_MS = 60 * 1000;
+const READER_TOUCH_CACHE_MAX = 20000;
+const READER_PENDING_MAX = 20000;
+const READER_FLUSH_INTERVAL_MS = 5000;
 const readerTouchCache = new Map();
+const pendingReaderTouches = new Map();
+let readerFlushPromise = null;
+
+function trimReaderTouchCache(now = Date.now()) {
+    const cutoff = now - READER_WINDOW_MS;
+    for (const [key, timestamp] of readerTouchCache) {
+        if (timestamp < cutoff) readerTouchCache.delete(key);
+    }
+    while (readerTouchCache.size > READER_TOUCH_CACHE_MAX) {
+        readerTouchCache.delete(readerTouchCache.keys().next().value);
+    }
+}
+
+function queueReaderTouch(chatId, userId, timestamp) {
+    let groupTouches = pendingReaderTouches.get(chatId);
+    if (!groupTouches) {
+        groupTouches = new Map();
+        pendingReaderTouches.set(chatId, groupTouches);
+    }
+    groupTouches.set(userId, timestamp);
+
+    let pendingCount = 0;
+    for (const touches of pendingReaderTouches.values()) pendingCount += touches.size;
+    while (pendingCount > READER_PENDING_MAX) {
+        const oldestGroup = pendingReaderTouches.keys().next().value;
+        const oldestTouches = pendingReaderTouches.get(oldestGroup);
+        if (!oldestTouches?.size) {
+            pendingReaderTouches.delete(oldestGroup);
+            continue;
+        }
+        oldestTouches.delete(oldestTouches.keys().next().value);
+        pendingCount--;
+        if (!oldestTouches.size) pendingReaderTouches.delete(oldestGroup);
+    }
+}
+
+export async function flushHotSeatReaders() {
+    if (readerFlushPromise) return readerFlushPromise;
+    if (!pendingReaderTouches.size) return 0;
+
+    readerFlushPromise = (async () => {
+        const batches = [...pendingReaderTouches.entries()];
+        pendingReaderTouches.clear();
+        let persisted = 0;
+
+        for (const [chatId, touches] of batches) {
+            try {
+                const stored = (await store.getSetting(chatId, READERS_KEY)) || {};
+                const cutoff = Date.now() - READER_WINDOW_MS;
+                const readers = Object.fromEntries(
+                    Object.entries(stored).filter(([, timestamp]) => Number(timestamp) >= cutoff)
+                );
+                for (const [userId, timestamp] of touches) {
+                    readers[userId] = Math.max(Number(readers[userId]) || 0, timestamp);
+                }
+                await saveGameState(chatId, READERS_KEY, readers);
+                persisted += touches.size;
+            } catch {
+                // Keep failed activity writes queued for the next flush. Do not
+                // overwrite a newer touch that arrived while this batch was saving.
+                for (const [userId, timestamp] of touches) {
+                    queueReaderTouch(chatId, userId, timestamp);
+                    const cacheKey = `${chatId}:${userId}`;
+                    if (readerTouchCache.get(cacheKey) === timestamp) readerTouchCache.delete(cacheKey);
+                }
+            }
+        }
+        return persisted;
+    })();
+
+    try {
+        return await readerFlushPromise;
+    } finally {
+        readerFlushPromise = null;
+    }
+}
+
+const readerFlushTimer = setInterval(() => {
+    flushHotSeatReaders().catch(() => {});
+}, READER_FLUSH_INTERVAL_MS);
+readerFlushTimer.unref?.();
+
+const readerCacheCleanupTimer = setInterval(() => {
+    trimReaderTouchCache();
+}, 10 * 60 * 1000);
+readerCacheCleanupTimer.unref?.();
 
 function shuffle(items) { return [...items].sort(() => Math.random() - 0.5); }
 function mention(jid) { return '@' + String(jid || '').split('@')[0]; }
@@ -316,16 +405,14 @@ export async function trackHotSeatReader(chatId, userId) {
     const cacheKey = `${chatId}:${userId}`;
     const now = Date.now();
     if (now - (readerTouchCache.get(cacheKey) || 0) < READER_TOUCH_INTERVAL_MS) return false;
-    readerTouchCache.set(cacheKey, now);
-    try {
-        const readers = await getReaders(chatId);
-        readers[userId] = now;
-        await saveGameState(chatId, READERS_KEY, readers);
-        return true;
-    } catch {
-        readerTouchCache.delete(cacheKey);
-        return false;
+
+    if (readerTouchCache.size >= READER_TOUCH_CACHE_MAX) trimReaderTouchCache(now);
+    if (readerTouchCache.size >= READER_TOUCH_CACHE_MAX) {
+        readerTouchCache.delete(readerTouchCache.keys().next().value);
     }
+    readerTouchCache.set(cacheKey, now);
+    queueReaderTouch(chatId, userId, now);
+    return true;
 }
 
 export default {

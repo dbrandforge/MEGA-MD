@@ -24,6 +24,7 @@ import {
     getSoftMuteDurationHours,
     isSoftMuted,
     softMuteUser,
+    invalidateSoftMuteCache,
     softUnmuteUser,
     handleSoftMuteMessage
 } from '../../plugins/softmute.js';
@@ -33,6 +34,7 @@ const GROUP = '120363000000000001@g.us';
 describe('soft mute expiry and scheduler registration', () => {
     beforeEach(() => {
         mockStore.values.clear();
+        invalidateSoftMuteCache();
         vi.clearAllMocks();
     });
 

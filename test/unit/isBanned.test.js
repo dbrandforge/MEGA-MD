@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isBanned } from '../../lib/isBanned.js';
+import { isBanned, invalidateBannedUsersCache } from '../../lib/isBanned.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -10,8 +10,10 @@ describe('isBanned', () => {
         if (fs.existsSync(TEST_BANNED_FILE)) {
             const orig = fs.readFileSync(TEST_BANNED_FILE, 'utf8');
             fs.unlinkSync(TEST_BANNED_FILE);
+            invalidateBannedUsersCache();
             const result = await isBanned('nobody@s.whatsapp.net');
             fs.writeFileSync(TEST_BANNED_FILE, orig);
+            invalidateBannedUsersCache();
             expect(result).toBe(false);
         } else {
             expect(await isBanned('nobody@s.whatsapp.net')).toBe(false);
@@ -22,8 +24,10 @@ describe('isBanned', () => {
         const orig = fs.existsSync(TEST_BANNED_FILE) ? fs.readFileSync(TEST_BANNED_FILE, 'utf8') : null;
         fs.mkdirSync(path.dirname(TEST_BANNED_FILE), { recursive: true });
         fs.writeFileSync(TEST_BANNED_FILE, '["999@s.whatsapp.net"]');
+        invalidateBannedUsersCache();
         const result = await isBanned('123@s.whatsapp.net');
         if (orig) fs.writeFileSync(TEST_BANNED_FILE, orig); else fs.unlinkSync(TEST_BANNED_FILE);
+        invalidateBannedUsersCache();
         expect(result).toBe(false);
     });
 
@@ -31,6 +35,7 @@ describe('isBanned', () => {
         const orig = fs.existsSync(TEST_BANNED_FILE) ? fs.readFileSync(TEST_BANNED_FILE, 'utf8') : null;
         fs.mkdirSync(path.dirname(TEST_BANNED_FILE), { recursive: true });
         fs.writeFileSync(TEST_BANNED_FILE, '["123@s.whatsapp.net"]');
+        invalidateBannedUsersCache();
         const result = await isBanned('123@s.whatsapp.net');
         if (orig) fs.writeFileSync(TEST_BANNED_FILE, orig); else fs.unlinkSync(TEST_BANNED_FILE);
         expect(result).toBe(true);

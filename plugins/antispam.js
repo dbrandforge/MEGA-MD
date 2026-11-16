@@ -14,7 +14,20 @@ const configPath = dataFile('antispam.json');
 const tracker = new Map();
 const metaCache = new Map();
 const META_TTL_MS = 5 * 60 * 1000;
-// 5 minutes
+const TRACKER_IDLE_TTL_MS = 24 * 60 * 60 * 1000;
+const MAX_TRACKED_SENDERS_PER_GROUP = 5000;
+const trackerCleanupTimer = setInterval(() => {
+    const now = Date.now();
+    for (const [chatId, groupTracker] of tracker) {
+        for (const [senderId, userData] of groupTracker) {
+            const lastSeenAt = Number(userData.lastSeenAt || userData.firstMessageTime || 0);
+            if (now - lastSeenAt > TRACKER_IDLE_TTL_MS) groupTracker.delete(senderId);
+        }
+        if (!groupTracker.size) tracker.delete(chatId);
+    }
+}, 10 * 60 * 1000);
+trackerCleanupTimer.unref?.();
+// Group flood state is bounded and inactive senders expire after 24 hours.
 async function getParticipants(sock, chatId) {
     const cached = metaCache.get(chatId);
     if (cached && (Date.now() - cached.fetchedAt) < META_TTL_MS) {
@@ -81,33 +94,47 @@ const DEFAULT_GROUP_CONFIG = {
     action: 'warn',
     warnCount: 3
 };
+let cachedConfig = null;
+let cachedConfigAt = 0;
+let configLoadPromise = null;
+const CONFIG_CACHE_TTL_MS = 3000;
 async function loadConfig() {
-    try {
-        if (HAS_DB) {
-            const data = await store.getSetting('global', 'antispam');
-            return data || { groups: {} };
-        }
-        else {
-            if (!fs.existsSync(configPath)) {
-                const dataDir = path.dirname(configPath);
-                if (!fs.existsSync(dataDir))
-                    fs.mkdirSync(dataDir, { recursive: true });
-                fs.writeFileSync(configPath, JSON.stringify({ groups: {} }, null, 2));
+    if (cachedConfig && Date.now() - cachedConfigAt < CONFIG_CACHE_TTL_MS) return cachedConfig;
+    if (configLoadPromise) return configLoadPromise;
+    configLoadPromise = (async () => {
+        let data;
+        try {
+            if (HAS_DB) {
+                data = await store.getSetting('global', 'antispam');
+            } else {
+                if (!fs.existsSync(configPath)) {
+                    const dataDir = path.dirname(configPath);
+                    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+                    fs.writeFileSync(configPath, JSON.stringify({ groups: {} }, null, 2));
+                }
+                data = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
             }
-            return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        } catch {
+            data = { groups: {} };
         }
-    }
-    catch {
-        return { groups: {} };
+        cachedConfig = data || { groups: {} };
+        cachedConfigAt = Date.now();
+        return cachedConfig;
+    })();
+    try {
+        return await configLoadPromise;
+    } finally {
+        configLoadPromise = null;
     }
 }
 async function saveConfig(config) {
     if (HAS_DB) {
         await store.saveSetting('global', 'antispam', config);
-    }
-    else {
+    } else {
         fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
     }
+    cachedConfig = config;
+    cachedConfigAt = Date.now();
 }
 // ── Named export hooked into messageHandler.ts ────────────────────────────
 export async function handleAntiSpam(sock, chatId, message, senderId, senderIsOwnerOrSudo) {
@@ -131,10 +158,18 @@ export async function handleAntiSpam(sock, chatId, message, senderId, senderIsOw
             tracker.set(chatId, new Map());
         const groupTracker = tracker.get(chatId);
         if (!groupTracker.has(senderId)) {
-            groupTracker.set(senderId, { count: 1, firstMessageTime: now, warns: 0 });
+            // Bound per-group sender state during large or long-lived group traffic.
+            if (groupTracker.size >= MAX_TRACKED_SENDERS_PER_GROUP) {
+                groupTracker.delete(groupTracker.keys().next().value);
+            }
+            groupTracker.set(senderId, { count: 1, firstMessageTime: now, lastSeenAt: now, warns: 0 });
             return false;
         }
         const userData = groupTracker.get(senderId);
+        userData.lastSeenAt = now;
+        // Refresh insertion order so the size cap evicts the least recently active sender.
+        groupTracker.delete(senderId);
+        groupTracker.set(senderId, userData);
         // Reset window if expired
         if (now - userData.firstMessageTime > windowMs) {
             userData.count = 1;

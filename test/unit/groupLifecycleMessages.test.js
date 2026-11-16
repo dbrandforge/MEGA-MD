@@ -17,6 +17,8 @@ describe('Sin City lifecycle message banks', () => {
   });
 
   it('has separate self-leave and admin-removal message banks', () => {
+    expect(memberLeftMessages.length).toBeGreaterThanOrEqual(20);
+    expect(new Set(memberLeftMessages).size).toBe(memberLeftMessages.length);
     expect(memberLeftMessages.some(message => /don commot|has left|don waka/i.test(message))).toBe(true);
     expect(memberRemovedMessages.some(message => /hear word|red card|escorted out/i.test(message))).toBe(true);
     expect(memberLeftMessages.every(message => message.includes('{name}'))).toBe(true);
