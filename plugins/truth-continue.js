@@ -159,9 +159,6 @@ export async function handleTruthDareContinue(sock, chatId, message, userMessage
         // Advance only when this user replies to their exact active prompt,
         // or explicitly mentions the bot. Unrelated messages and old prompt
         // replies must never advance the session.
-        const contextInfo = message.message?.extendedTextMessage?.contextInfo ||
-            message.message?.imageMessage?.contextInfo ||
-            message.message?.videoMessage?.contextInfo;
         const stanzaId = contextInfo?.stanzaId || null;
         const repliedToCurrentPrompt = !!(stanzaId && session.questionMessageId && stanzaId === session.questionMessageId);
         const mentioned = hasBotMention;
