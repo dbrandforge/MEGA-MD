@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_LEADERSHIP_WAIT_MS, summarizeAuthStateInventory } from '../../lib/sessionBackup.js';
+import { chunkOperations, DEFAULT_LEADERSHIP_WAIT_MS, summarizeAuthStateInventory } from '../../lib/sessionBackup.js';
 
 describe('session-backup leadership takeover', () => {
     it('waits longer than the full five-minute snapshot lease before aborting startup', () => {
@@ -28,5 +28,21 @@ describe('auth-state inventory diagnostics', () => {
             appStateKeys: 1,
             other: 0,
         });
+    });
+});
+
+
+describe('incremental session backup batching', () => {
+    it('splits large recipient-session updates into bounded bulk-write batches', () => {
+        const operations = Array.from({ length: 981 }, (_, index) => ({ updateOne: { filter: { filename: `session-${index}.json` } } }));
+        const batches = chunkOperations(operations, 250);
+        expect(batches.map(batch => batch.length)).toEqual([250, 250, 250, 231]);
+        expect(batches.flat()).toEqual(operations);
+    });
+
+    it('returns no batches for invalid input and handles an empty change set', () => {
+        expect(chunkOperations([], 250)).toEqual([]);
+        expect(chunkOperations(null, 250)).toEqual([]);
+        expect(chunkOperations([{ updateOne: {} }], 0)).toEqual([]);
     });
 });
