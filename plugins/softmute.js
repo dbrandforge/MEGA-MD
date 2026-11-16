@@ -28,13 +28,20 @@ function cleanId(jid) {
     return String(jid || '').replace(/:\d+(?=@)/, '');
 }
 
+const muteCache = new Map();
+const MUTE_CACHE_TTL_MS = 1000;
 async function getMutes(chatId) {
-    return (await store.getSetting(chatId, MUTE_KEY)) || {};
+    const cached = muteCache.get(chatId);
+    if (cached && Date.now() - cached.at < MUTE_CACHE_TTL_MS) return cached.value;
+    const value = (await store.getSetting(chatId, MUTE_KEY)) || {};
+    muteCache.set(chatId, { value, at: Date.now() });
+    return value;
 }
 
 async function saveMutes(chatId, data) {
     const saved = await store.saveSettingVerified(chatId, MUTE_KEY, data);
     if (!saved) throw new Error('Soft-mute state could not be persisted.');
+    muteCache.set(chatId, { value: data, at: Date.now() });
 }
 
 export async function normalizeSoftMuteUserId(sock, userId) {
