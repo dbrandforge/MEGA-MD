@@ -36,11 +36,8 @@ import { createPerChatMessageQueue } from './lib/perChatMessageQueue.js';
 installSignalDiagnosticGuard();
 global.__forgeWhatsAppConnected = false;
 
-const queueOverflowNoticeAt = new Map();
 const incomingMessageQueue = createPerChatMessageQueue({
     maxConcurrentChats: 4,
-    maxQueuePerChat: 150,
-    maxQueueTotal: 800,
     processMessage: async ({ sock, update }) => {
         const mek = update.messages?.[0];
         try {
@@ -76,20 +73,6 @@ const incomingMessageQueue = createPerChatMessageQueue({
             }).catch(() => {});
         }
     },
-    onOverflow: ({ chatId, item, reason, stats }) => {
-        printLog('warning', `Incoming message queue full: type=${chatId.endsWith('@g.us') ? 'group' : 'direct'} reason=${reason} pending=${stats.pending} active=${stats.active}`);
-        const now = Date.now();
-        const lastNotice = queueOverflowNoticeAt.get(chatId) || 0;
-        if (now - lastNotice < 60000) return;
-        queueOverflowNoticeAt.delete(chatId);
-        queueOverflowNoticeAt.set(chatId, now);
-        while (queueOverflowNoticeAt.size > 500) {
-            queueOverflowNoticeAt.delete(queueOverflowNoticeAt.keys().next().value);
-        }
-        item?.sock?.sendMessage(chatId, {
-            text: '⏳ Forge Bot is handling a heavy message burst. Some messages could not enter the processing queue. Please retry your command shortly.'
-        }).catch(() => {});
-    }
 });
 global.__forgeIncomingQueueStats = incomingMessageQueue.getStats;
 store.readFromFile();
