@@ -301,14 +301,51 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
 
         if (!cleanForHistory) return;
 
-        // Group history is keyed by (group, participant); DM history is keyed by participant.
-        // Legacy history is migrated only for one-to-one chats, never from a mixed group log.
-        const history = await loadChatHistory(memoryKey, isGroup ? null : chatId);
-        // Profile facts use a private DM scope or this group's own scope; group replies
-        // must never expose details that the same participant shared only in a DM.
+        // Decide whether a group message is actually part of a Forge Guard conversation
+        // before loading or mutating any persistent memory. Ordinary group chatter must
+        // not create profiles, roster snapshots, or database reads/writes.
+        const quotedParticipant = contextInfo.participant || contextInfo.participantAlt || '';
+        const quotedParticipants = [contextInfo.participant, contextInfo.participantAlt].filter(Boolean);
+        let isReplyToBot = false;
+        if (isGroup) {
+            for (const quotedJid of quotedParticipants) {
+                if (await jidMatchesAnyBotIdentity(quotedJid, botJids, sock)) {
+                    isReplyToBot = true;
+                    break;
+                }
+            }
+        }
+        const explicitlyAddressed = isGroup && isExplicitlyAddressedInGroup({
+            isMention: isMention || nameTrigger,
+            isReplyToBot,
+            quotedParticipant,
+            botJids
+        });
+
+        let history;
+        let activeFollowup = false;
+        if (isGroup && !explicitlyAddressed) {
+            // Only an already-loaded, recently active transcript can qualify for a
+            // follow-up. Never hit MongoDB just to inspect every unaddressed group post.
+            const cachedHistory = getCachedConversationHistory(chatMemory.messages, chatMemory.loaded, memoryKey);
+            if (!cachedHistory || !hasActiveGroupFollowup(cachedHistory, Date.now(), GROUP_FOLLOWUP_WINDOW_MS, cleanForHistory)) {
+                return;
+            }
+            history = cachedHistory;
+            activeFollowup = true;
+        } else {
+            // Explicitly addressed messages and enabled DMs may load their own transcript.
+            // Group history remains isolated by (group, participant).
+            history = await loadChatHistory(memoryKey, isGroup ? null : chatId);
+        }
+
+        if (isGroup) {
+            console.info(`[Chatbot Group] accepted mention=${isMention} name_trigger=${nameTrigger} reply_to_bot=${isReplyToBot} followup=${activeFollowup}`);
+        }
+
+        // Profile facts and group continuity are captured only for people actively
+        // conversing with Forge Guard, never for every member's ordinary group chatter.
         const profileLanguage = detectMessageLanguage(cleanForHistory, history);
-        // Capture ordinary group messages before address filtering so a member's own
-        // recent public statements can seed only that member's group-scoped profile.
         const groupMemberSnapshot = isGroup && !message.key.fromMe
             ? await recordGroupInteraction(chatId, senderId, message.pushName, cleanForHistory, profileLanguage)
             : null;
@@ -320,37 +357,6 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         const userProfile = message.key.fromMe ? null
             : await updateUserProfileFromMessage(senderId, profileSourceText, { language: profileLanguage, scopeChatId: isGroup ? chatId : null });
         const userProfileContext = buildUserProfileContext(userProfile);
-
-        // A group conversation starts only with a mention/reply to Forge Guard.
-        // Once started, only that same participant can continue their own transcript
-        // for a short window. The memory key includes both group and sender IDs.
-        const quotedParticipant = contextInfo.participant || contextInfo.participantAlt || '';
-        const quotedParticipants = [contextInfo.participant, contextInfo.participantAlt].filter(Boolean);
-        let isReplyToBot = false;
-        for (const quotedJid of quotedParticipants) {
-            if (await jidMatchesAnyBotIdentity(quotedJid, botJids, sock)) {
-                isReplyToBot = true;
-                break;
-            }
-        }
-        const explicitlyAddressed = isExplicitlyAddressedInGroup({
-            isMention: isMention || nameTrigger,
-            isReplyToBot,
-            quotedParticipant,
-            botJids
-        });
-        if (isGroup) {
-            console.info(`[Chatbot Group] addressing mention=${isMention} name_trigger=${nameTrigger} reply_to_bot=${isReplyToBot} accepted=${explicitlyAddressed}`);
-        }
-        const activeFollowup = isGroup && !explicitlyAddressed
-            && hasActiveGroupFollowup(history, Date.now(), GROUP_FOLLOWUP_WINDOW_MS, cleanForHistory);
-        if (isGroup && !explicitlyAddressed && !activeFollowup) {
-            console.info('[Chatbot Group] skipped addressed=false active_followup=false');
-            return;
-        }
-        if (isGroup) {
-            console.info(`[Chatbot Group] accepted addressed=${explicitlyAddressed} active_followup=${activeFollowup}`);
-        }
 
         // Keep ownership/build inquiries about this specific bot out of the AI
         // context in both DMs and addressed group conversations.
