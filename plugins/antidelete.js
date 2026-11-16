@@ -97,6 +97,7 @@ async function saveAntideleteConfig(config) {
     }
 }
 export async function storeMessage(sock, message) {
+    let mediaPath = '';
     try {
         const config = await loadAntideleteConfig();
         if (!config.enabled)
@@ -106,7 +107,6 @@ export async function storeMessage(sock, message) {
         const messageId = message.key.id;
         let content = '';
         let mediaType = '';
-        let mediaPath = '';
         let isViewOnce = false;
         const sender = message.key.participant || message.key.remoteJid;
         const viewOnceContainer = message.message?.viewOnceMessageV2?.message || message.message?.viewOnceMessage?.message;
