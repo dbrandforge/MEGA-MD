@@ -11,7 +11,7 @@ import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAckn
 import { getIdentityClaimReply, buildGenderInteractionContext, buildTaggedPeopleContext } from '../lib/chatbotConversationEnhancements.js';
 import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
 import { isExplicitlyAddressedInGroup, hasActiveGroupFollowup, jidMatchesAnyBotIdentity, isBotNameTrigger, stripBotNameTrigger } from '../lib/chatbotAccess.js';
-import { createKeyedSerialExecutor, getConversationMemoryKey } from '../lib/chatbotConversationMemory.js';
+import { createKeyedSerialExecutor, getCachedConversationHistory, getConversationMemoryKey, setCachedConversationHistory } from '../lib/chatbotConversationMemory.js';
 import { updateUserProfileFromMessage, buildUserProfileContext, buildUserIdentityReply } from '../lib/chatbotUserProfile.js';
 import { recordGroupInteraction, buildGroupContinuityContext } from '../lib/chatbotGroupMemory.js';
 import { buildForgeKnowledgeContext, buildGroupConversationModeContext, getForgeKnowledgeReply } from '../lib/forgeKnowledge.js';
@@ -31,6 +31,15 @@ const SQLITE_URL = process.env.DB_URL;
 const HAS_DB = !!(MONGO_URL || POSTGRES_URL || MYSQL_URL || SQLITE_URL);
 const USER_GROUP_DATA = dataFile('userGroupData.json');
 const CHAT_MEMORY_FILE = dataFile('chatbotConversationMemory.json');
+const USER_GROUP_DATA_CACHE_TTL_MS = 3000;
+const MAX_CACHED_CONVERSATIONS = 1000;
+let userGroupDataCache = null;
+let userGroupDataCacheAt = 0;
+let userGroupDataLoadPromise = null;
+
+function cloneCachedData(value) {
+    return value == null ? value : JSON.parse(JSON.stringify(value));
+}
 
 // Each participant gets an independent transcript per chat. Group transcripts are never shared.
 const chatMemory = { messages: new Map(), loaded: new Set() };
@@ -69,35 +78,58 @@ export function getLagosClockReply(query, now = new Date(), language = 'english'
 }
 
 export async function loadUserGroupData() {
-    let data;
-    try {
-        if (HAS_DB) {
-            data = await store.getSetting('global', 'userGroupData');
-        } else {
-            data = JSON.parse(fs.readFileSync(USER_GROUP_DATA, 'utf-8'));
+    const now = Date.now();
+    if (userGroupDataCache && now - userGroupDataCacheAt < USER_GROUP_DATA_CACHE_TTL_MS) {
+        return cloneCachedData(userGroupDataCache);
+    }
+    if (userGroupDataLoadPromise) return cloneCachedData(await userGroupDataLoadPromise);
+    userGroupDataLoadPromise = (async () => {
+        let data;
+        try {
+            if (HAS_DB) data = await store.getSetting('global', 'userGroupData');
+            else data = JSON.parse(fs.readFileSync(USER_GROUP_DATA, 'utf-8'));
+        } catch {
+            data = null;
         }
-    } catch {
-        data = null;
+        if (!data || typeof data !== 'object') data = { chatbot: {} };
+        if (!data.chatbot || typeof data.chatbot !== 'object') data.chatbot = {};
+        if (!data.chatbotDM || typeof data.chatbotDM !== 'object') data.chatbotDM = {};
+        if (migrateDMChatbotDefault(data) && !await saveUserGroupData(data)) {
+            console.warn('[Chatbot] Could not persist the new DM-default-off migration.');
+        }
+        userGroupDataCache = cloneCachedData(data);
+        userGroupDataCacheAt = Date.now();
+        return data;
+    })();
+    try {
+        return cloneCachedData(await userGroupDataLoadPromise);
+    } finally {
+        userGroupDataLoadPromise = null;
     }
-    if (!data || typeof data !== 'object') data = { chatbot: {} };
-    if (!data.chatbot || typeof data.chatbot !== 'object') data.chatbot = {};
-    if (!data.chatbotDM || typeof data.chatbotDM !== 'object') data.chatbotDM = {};
-    if (migrateDMChatbotDefault(data) && !await saveUserGroupData(data)) {
-        console.warn('[Chatbot] Could not persist the new DM-default-off migration.');
-    }
-    return data;
 }
 
 export async function saveUserGroupData(data) {
     try {
+        let saved = false;
         if (HAS_DB) {
-            return await store.saveSettingVerified('global', 'userGroupData', data);
+            saved = await store.saveSettingVerified('global', 'userGroupData', data);
+        } else {
+            const dir = path.dirname(USER_GROUP_DATA);
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+            fs.writeFileSync(USER_GROUP_DATA, JSON.stringify(data, null, 2));
+            saved = true;
         }
-        const dir = path.dirname(USER_GROUP_DATA);
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(USER_GROUP_DATA, JSON.stringify(data, null, 2));
-        return true;
+        if (saved) {
+            userGroupDataCache = cloneCachedData(data);
+            userGroupDataCacheAt = Date.now();
+        } else {
+            userGroupDataCache = null;
+            userGroupDataCacheAt = 0;
+        }
+        return saved;
     } catch (error) {
+        userGroupDataCache = null;
+        userGroupDataCacheAt = 0;
         console.error('[Chatbot] Could not save user/group settings:', error.message);
         return false;
     }
@@ -119,7 +151,8 @@ export async function isChatbotEnabledForMessage(chatId, senderId) {
 
 
 async function loadChatHistory(memoryKey, legacyDirectChatId = null) {
-    if (chatMemory.loaded.has(memoryKey)) return chatMemory.messages.get(memoryKey) || [];
+    const cachedHistory = getCachedConversationHistory(chatMemory.messages, chatMemory.loaded, memoryKey);
+    if (cachedHistory !== undefined) return cachedHistory;
     try {
         let history = [];
         if (HAS_DB) {
@@ -145,13 +178,12 @@ async function loadChatHistory(memoryKey, legacyDirectChatId = null) {
             .filter(item => item && typeof item.text === 'string' &&
                 (!item.at || Date.now() - item.at <= MAX_HISTORY_AGE_MS))
             .slice(-MAX_HISTORY_MESSAGES);
-        chatMemory.messages.set(memoryKey, fresh);
+        setCachedConversationHistory(chatMemory.messages, chatMemory.loaded, memoryKey, fresh, MAX_CACHED_CONVERSATIONS);
     } catch (error) {
         console.warn('[Chatbot] Could not load persistent conversation memory:', error.message);
-        chatMemory.messages.set(memoryKey, []);
+        setCachedConversationHistory(chatMemory.messages, chatMemory.loaded, memoryKey, [], MAX_CACHED_CONVERSATIONS);
     }
-    chatMemory.loaded.add(memoryKey);
-    return chatMemory.messages.get(memoryKey);
+    return getCachedConversationHistory(chatMemory.messages, chatMemory.loaded, memoryKey) || [];
 }
 
 async function saveChatHistory(memoryKey, history) {
@@ -160,7 +192,7 @@ async function saveChatHistory(memoryKey, history) {
             .filter(item => item && typeof item.text === 'string' &&
                 (!item.at || Date.now() - item.at <= MAX_HISTORY_AGE_MS))
             .slice(-MAX_HISTORY_MESSAGES);
-        chatMemory.messages.set(memoryKey, fresh);
+        setCachedConversationHistory(chatMemory.messages, chatMemory.loaded, memoryKey, fresh, MAX_CACHED_CONVERSATIONS);
         if (HAS_DB) {
             await store.saveSetting(memoryKey, MEMORY_SETTING, fresh);
         } else {
