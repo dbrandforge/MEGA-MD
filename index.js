@@ -98,7 +98,11 @@ setInterval(() => {
         lastHighMemoryWarningAt = Date.now();
         const queue = global.__forgeIncomingQueueStats?.() || {};
         const signalCacheEntries = global.__forgeSignalKeyCacheSize?.() ?? 'unknown';
-        printLog('warning', `Memory diagnostics: rss=${rssMb.toFixed(1)}MB heapUsed=${heapUsedMb.toFixed(1)}MB heapTotal=${heapTotalMb.toFixed(1)}MB external=${externalMb.toFixed(1)}MB arrayBuffers=${arrayBuffersMb.toFixed(1)}MB signalKeyCache=${signalCacheEntries} queueActive=${queue.active ?? 0} queuePending=${queue.pending ?? 0} queueChats=${queue.chats ?? 0}`);
+        const chatbotCaches = global.__forgeChatbotCacheStats?.() || {};
+        const antiDeleteEntries = global.__forgeAntiDeleteCacheSize?.() ?? 0;
+        const groupRosterEntries = global.__forgeGroupRosterCacheSize?.() ?? 0;
+        const profileEntries = global.__forgeProfileCacheSize?.() ?? 0;
+        printLog('warning', `Memory diagnostics: rss=${rssMb.toFixed(1)}MB heapUsed=${heapUsedMb.toFixed(1)}MB heapTotal=${heapTotalMb.toFixed(1)}MB external=${externalMb.toFixed(1)}MB arrayBuffers=${arrayBuffersMb.toFixed(1)}MB signalKeyCache=${signalCacheEntries} antiDeleteEntries=${antiDeleteEntries} chatbotHistories=${chatbotCaches.histories ?? 0} groupRosters=${groupRosterEntries} profiles=${profileEntries} queueActive=${queue.active ?? 0} queuePending=${queue.pending ?? 0} queueChats=${queue.chats ?? 0}`);
     }
 }, 30000);
 const phoneNumber = config.pairingNumber || config.ownerNumber || "923051391005";
