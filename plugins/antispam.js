@@ -81,33 +81,47 @@ const DEFAULT_GROUP_CONFIG = {
     action: 'warn',
     warnCount: 3
 };
+let cachedConfig = null;
+let cachedConfigAt = 0;
+let configLoadPromise = null;
+const CONFIG_CACHE_TTL_MS = 3000;
 async function loadConfig() {
-    try {
-        if (HAS_DB) {
-            const data = await store.getSetting('global', 'antispam');
-            return data || { groups: {} };
-        }
-        else {
-            if (!fs.existsSync(configPath)) {
-                const dataDir = path.dirname(configPath);
-                if (!fs.existsSync(dataDir))
-                    fs.mkdirSync(dataDir, { recursive: true });
-                fs.writeFileSync(configPath, JSON.stringify({ groups: {} }, null, 2));
+    if (cachedConfig && Date.now() - cachedConfigAt < CONFIG_CACHE_TTL_MS) return cachedConfig;
+    if (configLoadPromise) return configLoadPromise;
+    configLoadPromise = (async () => {
+        let data;
+        try {
+            if (HAS_DB) {
+                data = await store.getSetting('global', 'antispam');
+            } else {
+                if (!fs.existsSync(configPath)) {
+                    const dataDir = path.dirname(configPath);
+                    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+                    fs.writeFileSync(configPath, JSON.stringify({ groups: {} }, null, 2));
+                }
+                data = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
             }
-            return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        } catch {
+            data = { groups: {} };
         }
-    }
-    catch {
-        return { groups: {} };
+        cachedConfig = data || { groups: {} };
+        cachedConfigAt = Date.now();
+        return cachedConfig;
+    })();
+    try {
+        return await configLoadPromise;
+    } finally {
+        configLoadPromise = null;
     }
 }
 async function saveConfig(config) {
     if (HAS_DB) {
         await store.saveSetting('global', 'antispam', config);
-    }
-    else {
+    } else {
         fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
     }
+    cachedConfig = config;
+    cachedConfigAt = Date.now();
 }
 // ── Named export hooked into messageHandler.ts ────────────────────────────
 export async function handleAntiSpam(sock, chatId, message, senderId, senderIsOwnerOrSudo) {
