@@ -38,13 +38,14 @@ global.__forgeWhatsAppConnected = false;
 
 const incomingMessageQueue = createPerChatMessageQueue({
     maxConcurrentChats: 4,
-    processMessage: async ({ sock, update }) => {
+    processMessage: async ({ sock, update, queuedAt }) => {
         const mek = update.messages?.[0];
         try {
-            const processingStartedAt = process.hrtime.bigint();
+            const handlerStartedAt = process.hrtime.bigint();
+            const queueWaitMs = Math.max(0, Date.now() - (Number.isFinite(queuedAt) ? queuedAt : Date.now()));
             await handleMessages(sock, update);
-            const processingLatencyMs = Number(process.hrtime.bigint() - processingStartedAt) / 1e6;
-            printLog('info', `Message processed: jid=${mek?.key?.remoteJid || 'unknown'} id=${mek?.key?.id || 'unknown'} latency_ms=${processingLatencyMs.toFixed(1)}`);
+            const handlerLatencyMs = Number(process.hrtime.bigint() - handlerStartedAt) / 1e6;
+            printLog('info', `Message processed: jid=${mek?.key?.remoteJid || 'unknown'} id=${mek?.key?.id || 'unknown'} queue_wait_ms=${queueWaitMs} handler_ms=${handlerLatencyMs.toFixed(1)}`);
         } catch (err) {
             printLog('error', `Error in handleMessages (jid=${mek?.key?.remoteJid || 'unknown'}): ${String(err?.message || 'Unknown message handler error').slice(0, 300)}`);
             const chatId = mek?.key?.remoteJid;
@@ -702,7 +703,8 @@ async function startQasimDev() {
                     // can progress concurrently under a bounded global worker limit.
                     incomingMessageQueue.enqueue(mek.key.remoteJid, {
                         sock: QasimDev,
-                        update: singleUpdate
+                        update: singleUpdate,
+                        queuedAt: Date.now()
                     });
                 }
                 catch (err) {
