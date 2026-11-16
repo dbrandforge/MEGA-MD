@@ -24,6 +24,7 @@ import { printLog } from './lib/print.js';
 import { writeErrorLog } from './lib/logger.js';
 import { handleMessages, handleGroupParticipantUpdate, handleStatus, handleCall } from './lib/messageHandler.js';
 import commandHandler from './lib/commandHandler.js';
+import { shouldProcessMessageUpsert } from './lib/messageEventPolicy.js';
 import { startSchedulerEngine, trackGroup } from './plugins/schedule.js';
 import { FEATURE_GROUPS } from './lib/featureGroups.js';
 
@@ -35,11 +36,8 @@ import { createPerChatMessageQueue } from './lib/perChatMessageQueue.js';
 installSignalDiagnosticGuard();
 global.__forgeWhatsAppConnected = false;
 
-const queueOverflowNoticeAt = new Map();
 const incomingMessageQueue = createPerChatMessageQueue({
     maxConcurrentChats: 4,
-    maxQueuePerChat: 150,
-    maxQueueTotal: 800,
     processMessage: async ({ sock, update }) => {
         const mek = update.messages?.[0];
         try {
@@ -75,20 +73,6 @@ const incomingMessageQueue = createPerChatMessageQueue({
             }).catch(() => {});
         }
     },
-    onOverflow: ({ chatId, item, reason, stats }) => {
-        printLog('warning', `Incoming message queue full: type=${chatId.endsWith('@g.us') ? 'group' : 'direct'} reason=${reason} pending=${stats.pending} active=${stats.active}`);
-        const now = Date.now();
-        const lastNotice = queueOverflowNoticeAt.get(chatId) || 0;
-        if (now - lastNotice < 60000) return;
-        queueOverflowNoticeAt.delete(chatId);
-        queueOverflowNoticeAt.set(chatId, now);
-        while (queueOverflowNoticeAt.size > 500) {
-            queueOverflowNoticeAt.delete(queueOverflowNoticeAt.keys().next().value);
-        }
-        item?.sock?.sendMessage(chatId, {
-            text: '⏳ Forge Bot is handling a heavy message burst. Some messages could not enter the processing queue. Please retry your command shortly.'
-        }).catch(() => {});
-    }
 });
 global.__forgeIncomingQueueStats = incomingMessageQueue.getStats;
 store.readFromFile();
@@ -663,32 +647,44 @@ async function startQasimDev() {
             }
         });
         QasimDev.ev.on('messages.upsert', async (chatUpdate) => {
-            // Log event shape without message text, identifiers, or cryptographic material.
-            printLog('info', `WhatsApp messages.upsert: type=${chatUpdate?.type || 'unknown'} count=${chatUpdate?.messages?.length || 0}`);
+            const debugEvents = process.env.DEBUG_WHATSAPP_EVENTS === 'true';
+            if (debugEvents) {
+                printLog('info', `WhatsApp messages.upsert: type=${chatUpdate?.type || 'unknown'} count=${chatUpdate?.messages?.length || 0}`);
+            }
             // Baileys can deliver multiple messages in one upsert. Process each
             // independently; the old messages[0]-only handler silently dropped
             // every message after the first item in a batch.
             for (const originalMessage of (chatUpdate?.messages || [])) {
                 const mek = originalMessage;
                 try {
-                    const messageType = mek?.message && typeof mek.message === 'object'
-                        ? Object.keys(mek.message)[0] || 'empty'
-                        : 'missing';
-                    const rawTimestamp = mek?.messageTimestamp && typeof mek.messageTimestamp.toNumber === 'function'
-                        ? mek.messageTimestamp.toNumber()
-                        : Number(mek?.messageTimestamp);
-                    const ageSeconds = Number.isFinite(rawTimestamp) && rawTimestamp > 0
-                        ? Math.round(Date.now() / 1000 - rawTimestamp)
-                        : 'unknown';
-                    const jidKind = mek?.key?.remoteJid?.endsWith('@g.us') ? 'group'
-                        : mek?.key?.remoteJid ? 'direct' : 'missing';
-                    printLog('info', `WhatsApp upsert item: type=${chatUpdate?.type || 'unknown'} hasKey=${Boolean(mek?.key?.id && mek?.key?.remoteJid)} hasPayload=${Boolean(mek?.message)} messageType=${messageType} fromMe=${Boolean(mek?.key?.fromMe)} jidKind=${jidKind} ageSeconds=${ageSeconds}`);
                     if (!mek?.message || !mek?.key)
                         continue;
-                    if (messageType === 'ephemeralMessage')
-                        mek.message = mek.message.ephemeralMessage?.message || mek.message;
 
-                    printLog('info', `Incoming message event: type=${chatUpdate.type || 'unknown'} jid=${mek.key.remoteJid || 'unknown'} id=${mek.key.id || 'unknown'}`);
+                    let messageType = Object.keys(mek.message)[0] || 'empty';
+                    if (messageType === 'ephemeralMessage') {
+                        mek.message = mek.message.ephemeralMessage?.message || mek.message;
+                        messageType = Object.keys(mek.message || {})[0] || 'empty';
+                    }
+
+                    // Reject stale history-sync append records and WhatsApp transport
+                    // messages before logging or queueing them. Previously these events
+                    // entered the per-chat queue and consumed CPU just to be discarded
+                    // later by handleMessages().
+                    if (!shouldProcessMessageUpsert(chatUpdate?.type, mek))
+                        continue;
+
+                    if (debugEvents) {
+                        const rawTimestamp = mek?.messageTimestamp && typeof mek.messageTimestamp.toNumber === 'function'
+                            ? mek.messageTimestamp.toNumber()
+                            : Number(mek?.messageTimestamp);
+                        const ageSeconds = Number.isFinite(rawTimestamp) && rawTimestamp > 0
+                            ? Math.round(Date.now() / 1000 - rawTimestamp)
+                            : 'unknown';
+                        const jidKind = mek?.key?.remoteJid?.endsWith('@g.us') ? 'group'
+                            : mek?.key?.remoteJid ? 'direct' : 'missing';
+                        printLog('info', `WhatsApp upsert item: type=${chatUpdate?.type || 'unknown'} messageType=${messageType} fromMe=${Boolean(mek?.key?.fromMe)} jidKind=${jidKind} ageSeconds=${ageSeconds}`);
+                        printLog('info', `Incoming message event: type=${chatUpdate.type || 'unknown'} jid=${mek.key.remoteJid || 'unknown'} id=${mek.key.id || 'unknown'}`);
+                    }
 
                     const singleUpdate = { ...chatUpdate, messages: [mek] };
                     if (mek.key.remoteJid === 'status@broadcast') {

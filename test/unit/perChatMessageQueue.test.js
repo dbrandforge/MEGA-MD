@@ -7,7 +7,7 @@ function deferred() {
     return { promise, resolve };
 }
 
-describe('bounded per-chat message queue', () => {
+describe('per-chat message queue', () => {
     it('preserves FIFO order within a chat while allowing different chats to run concurrently', async () => {
         const firstGate = deferred();
         const started = [];
@@ -37,29 +37,29 @@ describe('bounded per-chat message queue', () => {
         expect(queue.getStats()).toMatchObject({ active: 0, pending: 0, chats: 0 });
     });
 
-    it('rejects overflow explicitly and reports whether the per-chat or global cap was reached', async () => {
+    it('accepts and drains large bursts without rejecting messages due to queue depth', async () => {
         const gate = deferred();
-        const onOverflow = vi.fn();
+        const processed = [];
         const queue = createPerChatMessageQueue({
             maxConcurrentChats: 1,
-            maxQueuePerChat: 1,
-            maxQueueTotal: 1,
-            processMessage: async () => gate.promise,
-            onOverflow
+            processMessage: async item => {
+                if (item.id === 0) await gate.promise;
+                processed.push(item.id);
+            }
         });
 
-        expect(queue.enqueue('group-a', { id: 'active' })).toBe(true);
+        expect(queue.enqueue('large-group', { id: 0 })).toBe(true);
         await Promise.resolve();
         await Promise.resolve();
-        expect(queue.enqueue('group-a', { id: 'queued' })).toBe(true);
-        expect(queue.enqueue('group-a', { id: 'overflow' })).toBe(false);
-        expect(onOverflow).toHaveBeenCalledWith(expect.objectContaining({
-            chatId: 'group-a',
-            reason: 'chat-limit'
-        }));
+        for (let id = 1; id <= 1200; id++) {
+            expect(queue.enqueue('large-group', { id })).toBe(true);
+        }
+        expect(queue.getStats().pending).toBe(1200);
 
         gate.resolve();
-        await vi.waitFor(() => expect(queue.getStats()).toMatchObject({ active: 0, pending: 0 }));
+        await vi.waitFor(() => expect(processed).toHaveLength(1201));
+        expect(processed).toEqual(Array.from({ length: 1201 }, (_, id) => id));
+        expect(queue.getStats()).toMatchObject({ active: 0, pending: 0 });
     });
 
     it('continues draining after a message processor throws', async () => {

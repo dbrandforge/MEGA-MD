@@ -90,7 +90,19 @@ let _lastBirthdayCheckMinute = null;
 let _birthdayCheckInProgress = false;
 let _activeSocket = null;
 let _trackedGroups = new Set();
+let _trackedGroupsLoaded = false;
 const TRACKED_GROUPS_KEY = 'forgeGuardTrackedGroups';
+
+async function loadTrackedGroupsOnce() {
+    if (_trackedGroupsLoaded) return;
+    const persistedGroups = await store.getSetting('global', TRACKED_GROUPS_KEY);
+    if (Array.isArray(persistedGroups)) {
+        persistedGroups.forEach(id => {
+            if (id?.endsWith('@g.us')) _trackedGroups.add(id);
+        });
+    }
+    _trackedGroupsLoaded = true;
+}
 
 const TIMED_GROUP_MUTE_KEY = 'timedGroupMute';
 
@@ -145,6 +157,7 @@ export function startSchedulerEngine(sock) {
     // created once, but must never retain a stale, closed Baileys socket.
     if (sock) _activeSocket = sock;
     loadFeatureGroups().catch(error => console.error('[SCHEDULE] Feature-group registry load failed:', error.message));
+    loadTrackedGroupsOnce().catch(error => console.error('[SCHEDULE] Tracked-group registry load failed:', error.message));
     if (_engineStarted) return;
     _engineStarted = true;
 
@@ -175,10 +188,6 @@ export function startSchedulerEngine(sock) {
                     _birthdayCheckInProgress = false;
                 }
             }
-            // Restore group registrations after a process restart.
-            const persistedGroups = await store.getSetting('global', TRACKED_GROUPS_KEY);
-            if (Array.isArray(persistedGroups)) persistedGroups.forEach(id => { if (id?.endsWith('@g.us')) _trackedGroups.add(id); });
-
             // 1. Regular scheduled messages
             const now = Date.now();
             const schedules = await loadSchedules();
