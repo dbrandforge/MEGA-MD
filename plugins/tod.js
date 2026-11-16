@@ -327,6 +327,13 @@ function isBotMentioned(sock, message, text = '') {
 
 export async function handleTodReply(sock, chatId, senderId, text, message) {
     if (!chatId?.endsWith('@g.us') || message?.key?.fromMe || !senderId) return false;
+    const context = message?.message?.extendedTextMessage?.contextInfo
+        || message?.message?.imageMessage?.contextInfo
+        || message?.message?.videoMessage?.contextInfo
+        || message?.message?.documentMessage?.contextInfo || {};
+    const tagged = isBotMentioned(sock, message, text);
+    if (!context.stanzaId && !tagged) return false;
+
     const sessions = await getSessions(chatId);
     const session = Object.values(sessions).find(s =>
         s.status === 'active' && s.waitingFor === senderId
@@ -334,12 +341,7 @@ export async function handleTodReply(sock, chatId, senderId, text, message) {
     if (!session) return false;
     if (session.advancing) return true;
 
-    const context = message?.message?.extendedTextMessage?.contextInfo
-        || message?.message?.imageMessage?.contextInfo
-        || message?.message?.videoMessage?.contextInfo
-        || message?.message?.documentMessage?.contextInfo || {};
     const replied = Boolean(session.questionMessageId && context.stanzaId === session.questionMessageId);
-    const tagged = isBotMentioned(sock, message, text);
     if (!replied && !tagged) return false;
 
     return completeTodTurn(sock, chatId, senderId, { message });

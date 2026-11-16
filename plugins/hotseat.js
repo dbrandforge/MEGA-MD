@@ -19,7 +19,7 @@ const MAX_PLAYERS = 4;
 const READER_TOUCH_INTERVAL_MS = 60 * 1000;
 const READER_TOUCH_CACHE_MAX = 20000;
 const READER_PENDING_MAX = 20000;
-const READER_FLUSH_INTERVAL_MS = 5000;
+const READER_FLUSH_INTERVAL_MS = 30000;
 const readerTouchCache = new Map();
 const pendingReaderTouches = new Map();
 let readerFlushPromise = null;
@@ -302,13 +302,10 @@ export async function resumeHotSeatSession(sock, chatId) {
 
 export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
     if (!isFeatureGroup(chatId) || message?.key?.fromMe) return false;
-    const session = await getSession(chatId);
-    if (!session || session.status !== 'active') return false;
-    const playerKey = await resolveSessionPlayerKey(sock, session, senderId);
-    const state = session.playerStates?.[playerKey];
-    if (!state || state.status !== 'active' || !state.waiting) return false;
     if (!message?.message || message.message.protocolMessage) return false;
 
+    // Hot Seat only accepts a bot mention or a reply. Reject ordinary group posts
+    // before reading the persisted session document.
     const botNum = (sock.user?.id || '').split(':')[0];
     const botLid = sock.user?.lid || null;
     const mentions = getMentions(message);
@@ -321,6 +318,14 @@ export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
         || message?.message?.videoMessage?.contextInfo
         || message?.message?.audioMessage?.contextInfo
         || {};
+    if (!taggedBot && !ctx.stanzaId) return false;
+
+    const session = await getSession(chatId);
+    if (!session || session.status !== 'active') return false;
+    const playerKey = await resolveSessionPlayerKey(sock, session, senderId);
+    const state = session.playerStates?.[playerKey];
+    if (!state || state.status !== 'active' || !state.waiting) return false;
+
     const repliedToCurrentQuestion = !!(ctx.stanzaId && state.questionMessageId && ctx.stanzaId === state.questionMessageId);
     if (!taggedBot && !repliedToCurrentQuestion) return false;
 

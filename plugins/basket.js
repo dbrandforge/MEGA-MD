@@ -44,14 +44,17 @@ function botMentioned(sock, message) {
 
 export async function handleBasketContinuity(sock, chatId, message, senderId) {
     if (!chatId?.endsWith('@g.us') || message?.key?.fromMe) return false;
-    const sessions = (await store.getSetting(chatId, SESSION_KEY)) || {};
-    const session = sessions[senderId];
-    if (!session) return false;
     const ctx = message.message?.extendedTextMessage?.contextInfo
         || message.message?.imageMessage?.contextInfo
         || message.message?.videoMessage?.contextInfo || {};
+    const tagged = botMentioned(sock, message);
+    if (!ctx.stanzaId && !tagged) return false;
+
+    const sessions = (await store.getSetting(chatId, SESSION_KEY)) || {};
+    const session = sessions[senderId];
+    if (!session) return false;
     const replied = !!(ctx.stanzaId && session.questionMessageId && ctx.stanzaId === session.questionMessageId);
-    if (!replied && !botMentioned(sock, message)) return false;
+    if (!replied && !tagged) return false;
 
     const allowed = await isGameAllowed(chatId, 'basket');
     if (!allowed.ok) {

@@ -66,6 +66,12 @@ async function sendQuestion(sock, chatId, senderId, quoted) {
 
 export async function handleWyrContinuity(sock, chatId, message, senderId) {
   if (!chatId?.endsWith('@g.us') || message?.key?.fromMe || !isFeatureGroup(chatId)) return false;
+  const ctx = message.message?.extendedTextMessage?.contextInfo
+    || message.message?.imageMessage?.contextInfo
+    || {};
+  const tagged = botMentioned(sock, message);
+  if (!ctx.stanzaId && !tagged) return false;
+
   const sessions = await getSessions(chatId);
   const session = sessions[senderId];
   if (!session) return false;
@@ -76,11 +82,7 @@ export async function handleWyrContinuity(sock, chatId, message, senderId) {
     return false;
   }
 
-  const ctx = message.message?.extendedTextMessage?.contextInfo
-    || message.message?.imageMessage?.contextInfo
-    || {};
   const replied = !!(ctx.stanzaId && session.questionMessageId && ctx.stanzaId === session.questionMessageId);
-  const tagged = botMentioned(sock, message);
   if (!replied && !tagged) return false;
 
   // Only intercept a message that actually addresses the active WYR prompt.
