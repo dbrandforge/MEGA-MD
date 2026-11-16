@@ -10,6 +10,7 @@ vi.mock('../../lib/lightweight_store.js', () => ({
 
 import store from '../../lib/lightweight_store.js';
 import { clearGroupMemoryCache, flushPendingGroupRosterWrites, recordGroupInteraction, buildGroupContinuityContext } from '../../lib/chatbotGroupMemory.js';
+import { clearUserProfileCache } from '../../lib/chatbotUserProfile.js';
 
 const group = '120363000000000000@g.us';
 const member = '2348011111111@s.whatsapp.net';
@@ -19,6 +20,7 @@ let settings;
 describe('Forge Guard group-local member continuity', () => {
     beforeEach(() => {
         clearGroupMemoryCache();
+        clearUserProfileCache();
         settings = new Map();
         vi.clearAllMocks();
         store.getSetting.mockImplementation(async (chatId, key) => settings.get(`${chatId}:${key}`) || null);
