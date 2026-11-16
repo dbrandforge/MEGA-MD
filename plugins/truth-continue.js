@@ -160,7 +160,7 @@ export async function handleTruthDareContinue(sock, chatId, message, userMessage
             message.message?.videoMessage?.contextInfo;
         const stanzaId = contextInfo?.stanzaId || null;
         const repliedToCurrentPrompt = !!(stanzaId && session.questionMessageId && stanzaId === session.questionMessageId);
-        const mentioned = isBotMentioned(sock, message, userMessage);
+        const mentioned = hasBotMention;
         if (!repliedToCurrentPrompt && !mentioned) return false;
 
         // Manual and scheduled locks must stop new rounds, but never prevent
