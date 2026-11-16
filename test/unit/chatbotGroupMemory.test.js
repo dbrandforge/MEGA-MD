@@ -79,6 +79,7 @@ describe('Forge Guard group-local member continuity', () => {
 describe('Forge Guard group-memory write batching', () => {
     beforeEach(() => {
         clearGroupMemoryCache();
+        clearUserProfileCache();
         settings = new Map();
         vi.clearAllMocks();
         store.getSetting.mockImplementation(async (chatId, key) => settings.get(`${chatId}:${key}`) || null);
