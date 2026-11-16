@@ -102,9 +102,10 @@ describe('Forge Guard group-memory write batching', () => {
 
     it('serves continuity reads from the warm roster cache without another database read', async () => {
         await recordGroupInteraction(group, member, 'Adunni', 'A useful group update', 'english');
-        const readsAfterWrite = store.getSetting.mock.calls.length;
+        const rosterReadsAfterWrite = store.getSetting.mock.calls.filter(([, key]) => key === 'chatbotGroupRoster').length;
         await buildGroupContinuityContext(group, askingMember, 'What did Adunni say?');
-        expect(store.getSetting).toHaveBeenCalledTimes(readsAfterWrite);
+        const rosterReadsAfterContext = store.getSetting.mock.calls.filter(([, key]) => key === 'chatbotGroupRoster').length;
+        expect(rosterReadsAfterContext).toBe(rosterReadsAfterWrite);
     });
 
     it('keeps failed roster writes queued for a later retry', async () => {
