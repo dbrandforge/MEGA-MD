@@ -105,6 +105,32 @@ setInterval(() => {
         printLog('warning', `Memory diagnostics: rss=${rssMb.toFixed(1)}MB heapUsed=${heapUsedMb.toFixed(1)}MB heapTotal=${heapTotalMb.toFixed(1)}MB external=${externalMb.toFixed(1)}MB arrayBuffers=${arrayBuffersMb.toFixed(1)}MB signalKeyCache=${signalCacheEntries} antiDeleteEntries=${antiDeleteEntries} chatbotHistories=${chatbotCaches.histories ?? 0} groupRosters=${groupRosterEntries} profiles=${profileEntries} queueActive=${queue.active ?? 0} queuePending=${queue.pending ?? 0} queueChats=${queue.chats ?? 0}`);
     }
 }, 30000);
+
+let shutdownFlushStarted = false;
+async function flushPendingStateBeforeShutdown(signal) {
+    if (shutdownFlushStarted) return;
+    shutdownFlushStarted = true;
+    printLog('info', `[shutdown] ${signal} received; flushing pending counters and chatbot group memory`);
+    const timeout = setTimeout(() => {
+        printLog('warning', '[shutdown] state flush exceeded 8 seconds; exiting to respect platform termination');
+        process.exit(1);
+    }, 8000);
+    const results = await Promise.allSettled([
+        typeof store.flushPendingCounters === 'function' ? store.flushPendingCounters() : Promise.resolve(),
+        typeof global.__forgeFlushGroupMemory === 'function' ? global.__forgeFlushGroupMemory() : Promise.resolve(),
+    ]);
+    clearTimeout(timeout);
+    const failures = results.filter(result => result.status === 'rejected');
+    if (failures.length) {
+        printLog('warning', `[shutdown] ${failures.length} pending-state flush operation(s) failed`);
+        process.exit(1);
+    }
+    printLog('info', '[shutdown] pending counters and group memory flushed');
+    process.exit(0);
+}
+process.once('SIGTERM', () => { flushPendingStateBeforeShutdown('SIGTERM').catch(() => process.exit(1)); });
+process.once('SIGINT', () => { flushPendingStateBeforeShutdown('SIGINT').catch(() => process.exit(1)); });
+
 const phoneNumber = config.pairingNumber || config.ownerNumber || "923051391005";
 // Auto-create data directory and default files on startup
 const DATA_DEFAULTS = {
