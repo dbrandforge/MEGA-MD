@@ -32,7 +32,26 @@ export const memberLeftMessages = [
   '{name} don carry their slippers go. We wish them strength outside these four walls. 🩴🤣',
   'One sinner don disappear from the congregation. Safe journey, {name}! 😈👋',
   '{name} has exited Sin City. The door is not locked from outside o. 😂🚶🏽‍♀️',
-  'Breaking news: {name} don resign from the department of premium gbas-gbos. 😭📰'
+  'Breaking news: {name} don resign from the department of premium gbas-gbos. 😭📰',
+  '{name} has chosen peace over premium group notifications. We respect the decision. 😂🕊️',
+  'The exit button has claimed another one. Safe journey, {name}. No hard feelings. 👋',
+  '{name} don quietly disappear like person wey owe contribution. We see you o. 😭',
+  'A moment of silence for {name}; former resident, current visitor from afar. 😂',
+  '{name} has left us to face the outside world. May their data and patience be sufficient. 🤲🏽',
+  'No long story, no closing remarks. {name} has taken the exit. Take care out there. 👋',
+  '{name} don choose another community. May the new group understand their full personality. 😭😂',
+  'The city just lost one resident: {name}. We hope the next stop brings good vibes. 🌆',
+  '{name} has logged out of this particular wahala. Wishing them a peaceful journey. 🫡',
+  'Some journeys require a different group chat. Safe travels, {name}. 😂🚪',
+  '{name} don waka go find greener notification settings. All the best! 🌱🤣',
+  'Former resident alert: {name} has left the group. The memories remain in the chat history. 📜',
+  '{name} has made a strategic withdrawal. We shall not hold a press conference. 😭',
+  'One less voice in the room: {name}. May your next group be lively but not too lively. 😂',
+  '{name} has exited stage left. No drama, just a clean departure. 🎭👋',
+  'The group roster has changed. {name}, wherever you are headed, go well. 🤝',
+  '{name} don close this chapter. We wish them better chapters ahead. 📖',
+  'Another notification-free life begins for {name}. Enjoy the silence while it lasts. 😂',
+  '{name} has left the chat. We will let the door close gently behind them. 🚪'
 ];
 
 export const memberRemovedMessages = [
