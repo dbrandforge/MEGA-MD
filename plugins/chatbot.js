@@ -20,6 +20,7 @@ import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomatic
 import { evaluateArithmetic, evaluateArithmeticFollowup, formatArithmeticAnswer } from '../lib/arithmetic.js';
 import { detectMessageLanguage, getLocalizedAnswerPrefix, getLocalizedSourceSummaryFailure } from '../lib/chatbotLanguage.js';
 import { isTimeSensitiveQuestion, searchLiveKnowledge, buildLiveKnowledgeContext, formatLiveKnowledgeSources, formatLiveKnowledgeEvidenceSummary, formatLiveKnowledgeUnavailable, resolveContextualBusinessFollowup } from '../lib/liveKnowledge.js';
+import { isForgeGuardReplicationRequest, FORGE_GUARD_REPLICATION_REPLY } from '../lib/botProtection.js';
 
 const CHATBOT_AI_ENABLED = process.env.CHATBOT_AI_ENABLED === 'true';
 
@@ -317,6 +318,19 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         if (isGroup) {
             console.info(`[Chatbot Group] accepted addressed=${explicitlyAddressed} active_followup=${activeFollowup}`);
         }
+
+        // Keep ownership/build inquiries about this specific bot out of the AI
+        // context in both DMs and addressed group conversations.
+        if (isForgeGuardReplicationRequest(chatbotQuery)) {
+            await sock.sendMessage(chatId, { text: FORGE_GUARD_REPLICATION_REPLY }, { quoted: message });
+            history.push({ name: message.pushName || 'You', text: cleanForHistory.slice(0, 500), at: Date.now() });
+            history.push({ name: 'Forge Bot', text: FORGE_GUARD_REPLICATION_REPLY, at: Date.now() });
+            if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
+            await saveChatHistory(memoryKey, history);
+            console.info('[Chatbot Protection] handled Forge Guard replication inquiry.');
+            return;
+        }
+
         const groupContinuityContext = isGroup
             ? await buildGroupContinuityContext(chatId, senderId, chatbotQuery, mentioned)
             : '';

@@ -9,7 +9,7 @@ vi.mock('../../lib/index.js', () => ({
 }));
 
 describe('isOwnerOrSudo', () => {
-    let isOwnerOrSudo, isOwnerOnly, cleanJid;
+    let isOwnerOrSudo, isOwnerOnly, cleanJid, invalidateGroupMetadataCache;
 
     beforeEach(async () => {
         vi.resetModules();
@@ -17,6 +17,7 @@ describe('isOwnerOrSudo', () => {
         isOwnerOrSudo = mod.default;
         isOwnerOnly = mod.isOwnerOnly;
         cleanJid = mod.cleanJid;
+        invalidateGroupMetadataCache = mod.invalidateGroupMetadataCache;
     });
 
     it('owner JID matches', async () => {
@@ -56,4 +57,27 @@ describe('isOwnerOrSudo', () => {
     it('cleanJid handles empty string', () => {
         expect(cleanJid('')).toBe('');
     });
+    it('reuses group metadata for repeated unresolved LID checks in the same group', async () => {
+        const sock = {
+            groupMetadata: vi.fn(async () => ({
+                participants: [{ lid: 'owner-lid@lid', id: '923001234567@s.whatsapp.net' }]
+            }))
+        };
+        expect(await isOwnerOrSudo('owner-lid@lid', sock, 'group-1@g.us')).toBe(true);
+        expect(await isOwnerOrSudo('owner-lid@lid', sock, 'group-1@g.us')).toBe(true);
+        expect(sock.groupMetadata).toHaveBeenCalledTimes(1);
+    });
+
+    it('invalidates cached group metadata after participant changes', async () => {
+        const sock = {
+            groupMetadata: vi.fn(async () => ({
+                participants: [{ lid: 'owner-lid@lid', id: '923001234567@s.whatsapp.net' }]
+            }))
+        };
+        await isOwnerOrSudo('owner-lid@lid', sock, 'group-2@g.us');
+        invalidateGroupMetadataCache('group-2@g.us');
+        await isOwnerOrSudo('owner-lid@lid', sock, 'group-2@g.us');
+        expect(sock.groupMetadata).toHaveBeenCalledTimes(2);
+    });
+
 });
