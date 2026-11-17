@@ -51,23 +51,23 @@ export async function hasActiveSoloTruthDareSession(chatId, userId, sock = globa
 
 // Called by plugins/truth.js and plugins/dare.js right after they send the
 // first prompt, so continuity has something to track.
-export async function startSoloSession(chatId, senderId, type, gender) {
-    senderId = await canonicalWhatsAppUserId(global.__forgeSock, senderId);
+export async function startSoloSession(chatId, senderId, type, gender, sock = global.__forgeSock) {
+    senderId = await canonicalWhatsAppUserId(sock, senderId);
     const { hasActiveTodSession } = await import('./tod.js');
-    if (await hasActiveTodSession(chatId, senderId, global.__forgeSock)) {
+    if (await hasActiveTodSession(chatId, senderId, sock)) {
         throw new Error('You are already in an active Truth or Dare session. Finish or end that session before starting another.');
     }
     const sessions = await getSessions(chatId);
-    if (await findSoloSessionKey(global.__forgeSock, sessions, senderId)) throw new Error('You already have an active solo Truth/Dare session. Type *stop* to finish it first.');
+    if (await findSoloSessionKey(sock, sessions, senderId)) throw new Error('You already have an active solo Truth/Dare session. Type *stop* to finish it first.');
     sessions[senderId] = { type, gender, startedAt: Date.now(), lastActivity: Date.now(), questionMessageId: null, questionsAnswered: 0 };
     await saveSessions(chatId, sessions);
 }
 
-export async function setSoloQuestionMessage(chatId, senderId, messageId) {
+export async function setSoloQuestionMessage(chatId, senderId, messageId, sock = global.__forgeSock) {
     if (!messageId) return;
-    senderId = await canonicalWhatsAppUserId(global.__forgeSock, senderId);
+    senderId = await canonicalWhatsAppUserId(sock, senderId);
     const sessions = await getSessions(chatId);
-    const sessionKey = await findSoloSessionKey(global.__forgeSock, sessions, senderId);
+    const sessionKey = await findSoloSessionKey(sock, sessions, senderId);
     const session = sessionKey ? sessions[sessionKey] : null;
     if (!session) return;
     session.questionMessageId = messageId;
@@ -77,9 +77,9 @@ export async function setSoloQuestionMessage(chatId, senderId, messageId) {
     await saveSessions(chatId, sessions);
 }
 
-export async function endSoloSession(chatId, senderId) {
+export async function endSoloSession(chatId, senderId, sock = global.__forgeSock) {
     const sessions = await getSessions(chatId);
-    const sessionKey = await findSoloSessionKey(global.__forgeSock, sessions, senderId);
+    const sessionKey = await findSoloSessionKey(sock, sessions, senderId);
     if (sessionKey) {
         delete sessions[sessionKey];
         await saveSessions(chatId, sessions);
