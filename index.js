@@ -1009,8 +1009,8 @@ async function startQasimDev() {
         try { activeSocketCacheCleanup?.(); } catch {}
         if (activeSocket) {
             try { activeSocket.end(new Error('socket setup failed')); } catch {}
-            activeSocket = null;
             if (global.__forgeSock === activeSocket) global.__forgeSock = null;
+            activeSocket = null;
         }
         printLog('error', `Error in startQasimDev: ${error.message}`);
         if (rl && !rlClosed) {
