@@ -78,10 +78,10 @@ export async function setSoloQuestionMessage(chatId, senderId, messageId) {
 }
 
 export async function endSoloSession(chatId, senderId) {
-    senderId = await canonicalWhatsAppUserId(global.__forgeSock, senderId);
     const sessions = await getSessions(chatId);
-    if (sessions[senderId]) {
-        delete sessions[canonicalSenderId];
+    const sessionKey = await findSoloSessionKey(global.__forgeSock, sessions, senderId);
+    if (sessionKey) {
+        delete sessions[sessionKey];
         await saveSessions(chatId, sessions);
         return true;
     }
