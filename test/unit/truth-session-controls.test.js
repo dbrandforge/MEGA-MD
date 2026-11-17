@@ -24,7 +24,7 @@ describe('.truth session controls', () => {
 
     await truth.handler(sock, message, [action], context);
 
-    expect(endSoloSession).toHaveBeenCalledWith(context.chatId, context.senderId);
+    expect(endSoloSession).toHaveBeenCalledWith(context.chatId, context.senderId, sock);
     expect(isGameAllowed).not.toHaveBeenCalled();
     expect(sock.sendMessage).toHaveBeenCalledTimes(1);
   });
