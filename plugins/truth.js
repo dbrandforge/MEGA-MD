@@ -16,7 +16,7 @@ export default {
 
         // Session controls must remain available even when Truth/Dare is locked.
         if (action === 'stop' || action === 'end' || action === 'cancel') {
-            const ended = await endSoloSession(chatId, senderId);
+            const ended = await endSoloSession(chatId, senderId, sock);
             return sock.sendMessage(chatId, {
                 text: ended
                     ? '🛑 Your Truth session has ended. Use *.truth* when you want to start again.'
@@ -32,7 +32,7 @@ export default {
             return sock.sendMessage(chatId, { text: allowed.msg, ...channelInfo }, { quoted: message });
         }
 
-        const gender = await getUserGender(senderId);
+        const gender = await getUserGender(senderId, sock);
         if (!gender) {
             await savePendingGenderGame(chatId, senderId, { command: 'truth', args: [], requester: senderId, pushName: message.pushName });
             return sock.sendMessage(chatId, {
@@ -44,11 +44,11 @@ export default {
         const list = getTruths(gender);
         const truthMessage = randomFrom(list);
 
-        await startSoloSession(chatId, senderId, 'truth', gender);
+        await startSoloSession(chatId, senderId, 'truth', gender, sock);
 
         const sent = await sock.sendMessage(chatId, {
             text: `🔥 *TRUTH* (${gender}) 🔥\n\n${truthMessage}\n\n_Reply to this message or tag me to get another one. Type *stop* to end._`
         }, { quoted: message });
-        await setSoloQuestionMessage(chatId, senderId, sent?.key?.id);
+        await setSoloQuestionMessage(chatId, senderId, sent?.key?.id, sock);
     }
 };

@@ -3,6 +3,7 @@ import { getUserGender } from './gender.js';
 import { getTruths, getDares, randomFrom } from '../data/todLists.js';
 import { isGameAllowed } from './daylock.js';
 import { savePendingGenderGame } from '../lib/genderGameContinuation.js';
+import { canonicalWhatsAppUserId, sameWhatsAppUser } from '../lib/whatsappIdentity.js';
 
 const SESSIONS_KEY = 'todSessions';
 const TIMEOUT_MS = 10 * 60 * 1000;
@@ -13,6 +14,15 @@ async function getSessions(chatId) {
 }
 async function saveSessions(chatId, sessions) {
     if (!await store.saveSettingVerified(chatId, SESSIONS_KEY, sessions)) throw new Error('Truth or Dare session state could not be persisted.');
+}
+
+export async function hasActiveTodSession(chatId, userId, sock = global.__forgeSock) {
+    const sessions = await getSessions(chatId);
+    for (const session of Object.values(sessions)) {
+        if (!['active', 'choosing_mode'].includes(session.status)) continue;
+        for (const player of session.players || []) if (await sameWhatsAppUser(sock, player, userId)) return true;
+    }
+    return false;
 }
 function mention(jid) {
     return `@${(jid || '').split('@')[0]}`;
@@ -91,7 +101,15 @@ async function startRound(sock, chatId, session) {
     text += `${mention(answerer)}, your ${type}:\n\n${content}\n\n`;
     text += `✅ When done, type *.done*\n🛑 *.endtod* to stop`;
 
-    await sock.sendMessage(chatId, { text, mentions: session.players });
+    const sent = await sock.sendMessage(chatId, { text, mentions: session.players });
+    session.questionMessageId = sent?.key?.id || null;
+    const latestSessions = await getSessions(chatId);
+    const latest = latestSessions[session.id];
+    if (latest?.status === 'active' && latest.round === session.round) {
+        latest.questionMessageId = session.questionMessageId;
+        latestSessions[session.id] = latest;
+        await saveSessions(chatId, latestSessions);
+    }
 }
 
 async function startSolo(sock, chatId, senderId, gender) {
@@ -145,9 +163,13 @@ async function startPaired(sock, chatId, senderId, partnerId, starterGender, par
 
 export async function completeTodTurn(sock, chatId, senderId, options = {}) {
     const sessions = await getSessions(chatId);
-    const session = Object.values(sessions).find(s =>
-        s.players?.includes(senderId) && s.status === 'active' && s.waitingFor === senderId
-    );
+    const session = await (async () => {
+        for (const candidate of Object.values(sessions)) {
+            if (candidate.status !== 'active' || !candidate.waitingFor) continue;
+            if (await sameWhatsAppUser(sock, candidate.waitingFor, senderId)) return candidate;
+        }
+        return null;
+    })();
     if (!session) return false;
     if (session.advancing) return true;
 
@@ -163,8 +185,9 @@ export async function completeTodTurn(sock, chatId, senderId, options = {}) {
 
     session.advancing = true;
     session.questionsCompleted = session.questionsCompleted || {};
-    session.questionsCompleted[senderId] = (session.questionsCompleted[senderId] || 0) + 1;
-    session.lastCompletedBy = senderId;
+    const sessionPlayerId = session.waitingFor || senderId;
+    session.questionsCompleted[sessionPlayerId] = (session.questionsCompleted[sessionPlayerId] || 0) + 1;
+    session.lastCompletedBy = sessionPlayerId;
     session.lastCompletedAt = Date.now();
     session.lastActivity = Date.now();
     session.warningSent = false;
@@ -172,7 +195,7 @@ export async function completeTodTurn(sock, chatId, senderId, options = {}) {
     if (options.endAfter) {
         session.status = 'ended';
         session.endedAt = Date.now();
-        session.endedBy = senderId;
+        session.endedBy = sessionPlayerId;
         sessions[session.id] = session;
         await saveSessions(chatId, sessions);
         await sock.sendMessage(chatId, {
@@ -214,9 +237,13 @@ export default {
         const firstArg = String(args?.[0] || '').toLowerCase();
         if (['stop', 'end', 'cancel'].includes(firstArg)) {
             const sessions = await getSessions(chatId);
-            const active = Object.values(sessions).filter(session =>
-                session.status === 'active' && session.players?.includes(senderId)
-            );
+            const active = [];
+            for (const session of Object.values(sessions)) {
+                if (session.status !== 'active') continue;
+                for (const player of session.players || []) {
+                    if (await sameWhatsAppUser(sock, player, senderId)) { active.push(session); break; }
+                }
+            }
             if (!active.length) {
                 return sock.sendMessage(chatId, { text: 'You do not have an active Truth or Dare session to end.', ...channelInfo }, { quoted: message });
             }
@@ -239,7 +266,7 @@ export default {
             return sock.sendMessage(chatId, { text: allowed.msg, ...channelInfo }, { quoted: message });
         }
 
-        const gender = await getUserGender(senderId);
+        const gender = await getUserGender(senderId, sock);
         if (!gender) {
             await savePendingGenderGame(chatId, senderId, { command: 'tod', args: Array.isArray(args) ? args : [], requester: senderId, mentionedJids: message.message?.extendedTextMessage?.contextInfo?.mentionedJid || [], pushName: message.pushName });
             return sock.sendMessage(chatId, {
@@ -248,10 +275,18 @@ export default {
             }, { quoted: message });
         }
 
+        const { hasActiveSoloTruthDareSession } = await import('./truth-continue.js');
+        if (await hasActiveSoloTruthDareSession(chatId, senderId, sock)) {
+            return sock.sendMessage(chatId, { text: 'You already have an active solo Truth/Dare session. Type *stop* or *.truth stop* to finish it before starting TOD.', ...channelInfo }, { quoted: message });
+        }
         const sessions = await getSessions(chatId);
-        const existing = Object.values(sessions).find(s =>
-            s.players?.includes(senderId) && ['active', 'choosing_mode'].includes(s.status)
-        );
+        const existing = await (async () => {
+            for (const candidate of Object.values(sessions)) {
+                if (!['active', 'choosing_mode'].includes(candidate.status)) continue;
+                for (const player of candidate.players || []) if (await sameWhatsAppUser(sock, player, senderId)) return candidate;
+            }
+            return null;
+        })();
         if (existing) {
             return sock.sendMessage(chatId, {
                 text: `Already in a session. *.endtod* or *.done*`,
@@ -272,10 +307,14 @@ export default {
                 }, { quoted: message });
             }
             const partner = mentioned[0];
-            if (partner === senderId) {
+            if (await sameWhatsAppUser(sock, partner, senderId)) {
                 return sock.sendMessage(chatId, { text: `Cannot pair with yourself.`, ...channelInfo }, { quoted: message });
             }
-            const partnerGender = await getUserGender(partner);
+            const { hasActiveSoloTruthDareSession } = await import('./truth-continue.js');
+            if (await hasActiveSoloTruthDareSession(chatId, partner, sock)) {
+                return sock.sendMessage(chatId, { text: 'Your tagged partner is already in a solo Truth/Dare session and must finish it before joining paired TOD.', ...channelInfo }, { quoted: message });
+            }
+            const partnerGender = await getUserGender(partner, sock);
             if (!partnerGender) {
                 await savePendingGenderGame(chatId, partner, { command: 'tod', args: Array.isArray(args) ? args : ['paired'], requester: senderId, mentionedJids: [partner], pushName: message.pushName });
                 return sock.sendMessage(chatId, {
@@ -283,7 +322,8 @@ export default {
                     ...channelInfo
                 }, { quoted: message });
             }
-            return startPaired(sock, chatId, senderId, partner, gender, partnerGender);
+            const canonicalPartner = await canonicalWhatsAppUserId(sock, partner);
+            return startPaired(sock, chatId, senderId, canonicalPartner, gender, partnerGender);
         }
 
         await sock.sendMessage(chatId, {
@@ -335,9 +375,13 @@ export async function handleTodReply(sock, chatId, senderId, text, message) {
     if (!context.stanzaId && !tagged) return false;
 
     const sessions = await getSessions(chatId);
-    const session = Object.values(sessions).find(s =>
-        s.status === 'active' && s.waitingFor === senderId
-    );
+    const session = await (async () => {
+        for (const candidate of Object.values(sessions)) {
+            if (candidate.status !== 'active' || !candidate.waitingFor) continue;
+            if (await sameWhatsAppUser(sock, candidate.waitingFor, senderId)) return candidate;
+        }
+        return null;
+    })();
     if (!session) return false;
     if (session.advancing) return true;
 

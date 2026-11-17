@@ -4,32 +4,34 @@
  */
 import store from '../lib/lightweight_store.js';
 import { resumePendingGenderGame } from '../lib/genderGameContinuation.js';
+import { getWhatsAppIdentity } from '../lib/whatsappIdentity.js';
 
 const GENDER_KEY = 'userGenders';
-
-function cleanId(jid) {
-    return (jid || '').split(':')[0].split('@')[0];
-}
 
 async function getAllGenders() {
     return (await store.getSetting('global', GENDER_KEY)) || {};
 }
 async function saveAllGenders(data) {
+    if (typeof store.saveSettingVerified === 'function') {
+        if (!await store.saveSettingVerified('global', GENDER_KEY, data)) throw new Error('Saved gender could not be verified in storage.');
+        return;
+    }
     await store.saveSetting('global', GENDER_KEY, data);
 }
-
-export async function getUserGender(userId) {
+export async function getUserGender(userId, sock = global.__forgeSock) {
     const all = await getAllGenders();
-    const key = cleanId(userId);
-    return all[key] || all[userId] || null;
+    const identity = await getWhatsAppIdentity(sock, userId);
+    for (const key of identity.aliases) if (typeof all[key] === 'string') return all[key];
+    return null;
 }
-
-export async function setUserGender(userId, gender) {
+export async function setUserGender(userId, gender, sock = global.__forgeSock) {
     const g = (gender || '').toLowerCase();
     if (g !== 'guy' && g !== 'lady') return false;
     const all = await getAllGenders();
-    const key = cleanId(userId);
-    all[key] = g;
+    const identity = await getWhatsAppIdentity(sock, userId);
+    if (!identity.canonical) return false;
+    all[identity.canonical] = g;
+    for (const key of identity.aliases) if (!String(key).includes('@') || key.endsWith('@lid')) all[key] = g;
     await saveAllGenders(all);
     return true;
 }
@@ -64,7 +66,7 @@ export default {
             }
             const target = mentioned[0];
             const g = (arg1 === 'guy' || arg1 === 'lady') ? arg1 : arg0;
-            await setUserGender(target, g);
+            await setUserGender(target, g, sock);
             await sock.sendMessage(chatId, {
                 text: `✅ Gender for @${target.split('@')[0]} set to *${g}* (admin).`,
                 mentions: [target],
@@ -76,7 +78,7 @@ export default {
         }
 
         if (!arg0) {
-            const current = await getUserGender(senderId);
+            const current = await getUserGender(senderId, sock);
             if (current) {
                 return sock.sendMessage(chatId, {
                     text: `Your gender: *${current}*\n\nTo change it, ask an admin.\nAdmin: *.gender @you guy/lady*`,
@@ -96,7 +98,7 @@ export default {
             }, { quoted: message });
         }
 
-        const existing = await getUserGender(senderId);
+        const existing = await getUserGender(senderId, sock);
         if (existing && existing !== arg0 && !isAdmin) {
             return sock.sendMessage(chatId, {
                 text: `Your gender is already set to *${existing}*.\n\nOnly an *admin* can change it.\nAsk them: *.gender @you ${arg0}*`,
@@ -104,7 +106,7 @@ export default {
             }, { quoted: message });
         }
 
-        await setUserGender(senderId, arg0);
+        await setUserGender(senderId, arg0, sock);
         await sock.sendMessage(chatId, {
             text: existing && isAdmin
                 ? `✅ Gender updated to *${arg0}* (admin).`
