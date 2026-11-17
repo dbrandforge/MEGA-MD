@@ -21,7 +21,7 @@ import { getTruths, getDares, randomFrom } from '../data/todLists.js';
 import { getUserGender } from './gender.js';
 import isAdmin from '../lib/isAdmin.js';
 import { isGameAllowed } from './daylock.js';
-import { canonicalWhatsAppUserId } from '../lib/whatsappIdentity.js';
+import { canonicalWhatsAppUserId, sameWhatsAppUser } from '../lib/whatsappIdentity.js';
 
 const TRUTH_MARKER = '🔥 *TRUTH*';
 const DARE_MARKER = '🔥 *DARE*';
@@ -35,11 +35,18 @@ async function saveSessions(chatId, sessions) {
     if (!await store.saveSettingVerified(chatId, SESSIONS_KEY, sessions)) throw new Error('Truth or Dare session state could not be persisted.');
 }
 
+async function findSoloSessionKey(sock, sessions, userId) {
+    const canonicalId = await canonicalWhatsAppUserId(sock, userId);
+    if (canonicalId && sessions[canonicalId]) return canonicalId;
+    for (const key of Object.keys(sessions)) if (await sameWhatsAppUser(sock, key, userId)) return key;
+    return null;
+}
+
 export async function hasActiveSoloTruthDareSession(chatId, userId, sock = global.__forgeSock) {
     const canonicalId = await canonicalWhatsAppUserId(sock, userId);
     if (!canonicalId) return false;
     const sessions = await getSessions(chatId);
-    return Boolean(sessions[canonicalId]);
+    return Boolean(await findSoloSessionKey(sock, sessions, userId));
 }
 
 // Called by plugins/truth.js and plugins/dare.js right after they send the
@@ -51,6 +58,7 @@ export async function startSoloSession(chatId, senderId, type, gender) {
         throw new Error('You are already in an active Truth or Dare session. Finish or end that session before starting another.');
     }
     const sessions = await getSessions(chatId);
+    if (await findSoloSessionKey(global.__forgeSock, sessions, senderId)) throw new Error('You already have an active solo Truth/Dare session. Type *stop* to finish it first.');
     sessions[senderId] = { type, gender, startedAt: Date.now(), lastActivity: Date.now(), questionMessageId: null, questionsAnswered: 0 };
     await saveSessions(chatId, sessions);
 }
@@ -59,10 +67,12 @@ export async function setSoloQuestionMessage(chatId, senderId, messageId) {
     if (!messageId) return;
     senderId = await canonicalWhatsAppUserId(global.__forgeSock, senderId);
     const sessions = await getSessions(chatId);
-    const session = sessions[senderId];
+    const sessionKey = await findSoloSessionKey(global.__forgeSock, sessions, senderId);
+    const session = sessionKey ? sessions[sessionKey] : null;
     if (!session) return;
     session.questionMessageId = messageId;
     session.lastActivity = Date.now();
+    if (sessionKey !== senderId) delete sessions[sessionKey];
     sessions[senderId] = session;
     await saveSessions(chatId, sessions);
 }
@@ -141,7 +151,8 @@ export async function handleTruthDareContinue(sock, chatId, message, userMessage
         if (!isEndRequest && !hasBotMention && !hasReply && !hasQuotedGamePrompt) return false;
         const sessions = await getSessions(chatId);
         const canonicalSenderId = await canonicalWhatsAppUserId(sock, senderId);
-        const session = canonicalSenderId ? sessions[canonicalSenderId] : null;
+        const sessionKey = await findSoloSessionKey(sock, sessions, senderId);
+        const session = sessionKey ? sessions[sessionKey] : null;
 
         // Stop/end: the session owner can always end their own session.
         if (session && (lower === 'stop' || lower === 'end' || lower === '.stop')) {
@@ -193,6 +204,7 @@ export async function handleTruthDareContinue(sock, chatId, message, userMessage
             return true;
         }
 
+        if (sessionKey !== canonicalSenderId) delete sessions[sessionKey];
         await sendNext(sock, chatId, canonicalSenderId, session, sessions);
         return true;
     } catch (e) {
