@@ -21,6 +21,7 @@ import { getTruths, getDares, randomFrom } from '../data/todLists.js';
 import { getUserGender } from './gender.js';
 import isAdmin from '../lib/isAdmin.js';
 import { isGameAllowed } from './daylock.js';
+import { canonicalWhatsAppUserId } from '../lib/whatsappIdentity.js';
 
 const TRUTH_MARKER = '🔥 *TRUTH*';
 const DARE_MARKER = '🔥 *DARE*';
@@ -37,6 +38,7 @@ async function saveSessions(chatId, sessions) {
 // Called by plugins/truth.js and plugins/dare.js right after they send the
 // first prompt, so continuity has something to track.
 export async function startSoloSession(chatId, senderId, type, gender) {
+    senderId = await canonicalWhatsAppUserId(global.__forgeSock, senderId);
     const sessions = await getSessions(chatId);
     sessions[senderId] = { type, gender, startedAt: Date.now(), lastActivity: Date.now(), questionMessageId: null, questionsAnswered: 0 };
     await saveSessions(chatId, sessions);
@@ -44,6 +46,7 @@ export async function startSoloSession(chatId, senderId, type, gender) {
 
 export async function setSoloQuestionMessage(chatId, senderId, messageId) {
     if (!messageId) return;
+    senderId = await canonicalWhatsAppUserId(global.__forgeSock, senderId);
     const sessions = await getSessions(chatId);
     const session = sessions[senderId];
     if (!session) return;
@@ -54,6 +57,7 @@ export async function setSoloQuestionMessage(chatId, senderId, messageId) {
 }
 
 export async function endSoloSession(chatId, senderId) {
+    senderId = await canonicalWhatsAppUserId(global.__forgeSock, senderId);
     const sessions = await getSessions(chatId);
     if (sessions[senderId]) {
         delete sessions[senderId];
@@ -125,7 +129,8 @@ export async function handleTruthDareContinue(sock, chatId, message, userMessage
         // Any reply may match the stored prompt ID, so keep that cheap path available.
         if (!isEndRequest && !hasBotMention && !hasReply && !hasQuotedGamePrompt) return false;
         const sessions = await getSessions(chatId);
-        const session = senderId ? sessions[senderId] : null;
+        const canonicalSenderId = await canonicalWhatsAppUserId(sock, senderId);
+        const session = canonicalSenderId ? sessions[canonicalSenderId] : null;
 
         // Stop/end: the session owner can always end their own session.
         if (session && (lower === 'stop' || lower === 'end' || lower === '.stop')) {
@@ -177,7 +182,7 @@ export async function handleTruthDareContinue(sock, chatId, message, userMessage
             return true;
         }
 
-        await sendNext(sock, chatId, senderId, session, sessions);
+        await sendNext(sock, chatId, canonicalSenderId, session, sessions);
         return true;
     } catch (e) {
         console.error('Truth/Dare continue error:', e);
