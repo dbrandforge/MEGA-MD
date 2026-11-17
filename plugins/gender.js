@@ -98,7 +98,7 @@ export default {
             }, { quoted: message });
         }
 
-        const existing = await getUserGender(senderId);
+        const existing = await getUserGender(senderId, sock);
         if (existing && existing !== arg0 && !isAdmin) {
             return sock.sendMessage(chatId, {
                 text: `Your gender is already set to *${existing}*.\n\nOnly an *admin* can change it.\nAsk them: *.gender @you ${arg0}*`,
