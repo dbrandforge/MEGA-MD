@@ -20,7 +20,7 @@ export default {
             return sock.sendMessage(chatId, { text: allowed.msg, ...channelInfo }, { quoted: message });
         }
 
-        const gender = await getUserGender(senderId);
+        const gender = await getUserGender(senderId, sock);
         if (!gender) {
             await savePendingGenderGame(chatId, senderId, { command: 'dare', args: [], requester: senderId, pushName: message.pushName });
             return sock.sendMessage(chatId, {
@@ -32,11 +32,11 @@ export default {
         const list = getDares(gender);
         const dareMessage = randomFrom(list);
 
-        await startSoloSession(chatId, senderId, 'dare', gender);
+        await startSoloSession(chatId, senderId, 'dare', gender, sock);
 
         const sent = await sock.sendMessage(chatId, {
             text: `🔥 *DARE* (${gender}) 🔥\n\n${dareMessage}\n\n_Reply to this message or tag me to get another one. Type *stop* to end._`
         }, { quoted: message });
-        await setSoloQuestionMessage(chatId, senderId, sent?.key?.id);
+        await setSoloQuestionMessage(chatId, senderId, sent?.key?.id, sock);
     }
 };
