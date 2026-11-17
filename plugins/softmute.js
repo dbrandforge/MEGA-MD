@@ -29,7 +29,7 @@ function cleanId(jid) {
 }
 
 const muteCache = new Map();
-const MUTE_CACHE_TTL_MS = 1000;
+const MUTE_CACHE_TTL_MS = 10000;
 const MAX_CACHED_MUTE_GROUPS = 500;
 
 function cacheMutes(chatId, value) {
