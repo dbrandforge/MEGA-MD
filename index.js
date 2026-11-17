@@ -99,7 +99,7 @@ const runtimeTelemetryTimer = setInterval(() => {
     const memory = process.memoryUsage();
     const mb = value => (value / 1024 / 1024).toFixed(1);
     const queue = global.__forgeIncomingQueueStats?.() || {};
-    printLog('info', 'Runtime pressure: ' + ['cpu_pct=' + cpuPercent.toFixed(1), 'rss_mb=' + mb(memory.rss), 'heap_used_mb=' + mb(memory.heapUsed), 'heap_total_mb=' + mb(memory.heapTotal), 'external_mb=' + mb(memory.external), 'array_buffers_mb=' + mb(memory.arrayBuffers || 0), 'event_loop_p95_ms=' + (eventLoopDelay.percentile(95) / 1e6).toFixed(1), 'event_loop_max_ms=' + (eventLoopDelay.max / 1e6).toFixed(1), 'queue_pending=' + (queue.pending ?? 'unknown'), 'queue_active=' + (queue.active ?? 'unknown')].join(' '));
+    printLog('info', 'Runtime pressure: ' + ['process_cpu_one_core_pct=' + cpuPercent.toFixed(1), 'rss_mb=' + mb(memory.rss), 'heap_used_mb=' + mb(memory.heapUsed), 'heap_total_mb=' + mb(memory.heapTotal), 'external_mb=' + mb(memory.external), 'array_buffers_mb=' + mb(memory.arrayBuffers || 0), 'event_loop_p95_ms=' + (eventLoopDelay.percentile(95) / 1e6).toFixed(1), 'event_loop_max_ms=' + (eventLoopDelay.max / 1e6).toFixed(1), 'queue_pending=' + (queue.pending ?? 'unknown'), 'queue_active=' + (queue.active ?? 'unknown')].join(' '));
     eventLoopDelay.reset();
 }, 30000);
 runtimeTelemetryTimer.unref?.();
