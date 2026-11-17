@@ -31,13 +31,7 @@ async function endSession(sock, chatId, session, reason = 'ended') {
     let text = `🛑 *Truth or Dare session ended*\n\n${session.players.map(mention).join(' & ')}`;
     if (reason === 'timeout') text += `\n\nEnded due to 10 minutes inactivity.`;
     else if (reason === 'manual') text += `\n\nEnded by a player.`;
-    const sent = const sent = await sock.sendMessage(chatId, { text, mentions: session.players });
-    session.questionMessageId = sent?.key?.id || null;
-    const latest = await getSessions(chatId);
-    if (latest[session.id]?.status === 'active' && latest[session.id]?.round === session.round) {
-        latest[session.id].questionMessageId = session.questionMessageId;
-        await saveSessions(chatId, latest);
-    }
+    const sent = await sock.sendMessage(chatId, { text, mentions: session.players });
     session.questionMessageId = sent?.key?.id || null;
     const latestSessions = await getSessions(chatId);
     const latest = latestSessions[session.id];
@@ -98,7 +92,15 @@ async function startRound(sock, chatId, session) {
     text += `${mention(answerer)}, your ${type}:\n\n${content}\n\n`;
     text += `✅ When done, type *.done*\n🛑 *.endtod* to stop`;
 
-    await sock.sendMessage(chatId, { text, mentions: session.players });
+    const sent = await sock.sendMessage(chatId, { text, mentions: session.players });
+    session.questionMessageId = sent?.key?.id || null;
+    const latestSessions = await getSessions(chatId);
+    const latest = latestSessions[session.id];
+    if (latest?.status === 'active' && latest.round === session.round) {
+        latest.questionMessageId = session.questionMessageId;
+        latestSessions[session.id] = latest;
+        await saveSessions(chatId, latestSessions);
+    }
 }
 
 async function startSolo(sock, chatId, senderId, gender) {
