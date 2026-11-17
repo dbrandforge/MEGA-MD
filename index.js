@@ -580,6 +580,7 @@ async function startQasimDev() {
             keepAliveIntervalMs: 10000,
         });
         activeSocket = QasimDev;
+        global.__forgeSock = QasimDev;
         // Trace outbound message acceptance without logging message bodies or raw chat identifiers.
         // The map correlates Baileys message IDs with later server/delivery status updates.
         const outboundTrace = new Map();
@@ -961,6 +962,7 @@ async function startQasimDev() {
                     return;
                 }
                 activeSocket = null;
+                if (global.__forgeSock === QasimDev) global.__forgeSock = null;
                 global.__forgeWhatsAppConnected = false;
                 if (currentSocket === QasimDev)
                     currentSocket = null;
@@ -1008,6 +1010,7 @@ async function startQasimDev() {
         if (activeSocket) {
             try { activeSocket.end(new Error('socket setup failed')); } catch {}
             activeSocket = null;
+            if (global.__forgeSock === activeSocket) global.__forgeSock = null;
         }
         printLog('error', `Error in startQasimDev: ${error.message}`);
         if (rl && !rlClosed) {
