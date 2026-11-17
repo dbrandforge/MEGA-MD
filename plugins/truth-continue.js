@@ -160,7 +160,7 @@ export async function handleTruthDareContinue(sock, chatId, message, userMessage
                 await sock.sendMessage(chatId, { text: 'Reply to or tag the bot on your current Truth/Dare prompt first. You can end your session after attempting at least one prompt.' }, { quoted: message });
                 return true;
             }
-            delete sessions[senderId];
+            delete sessions[sessionKey];
             await saveSessions(chatId, sessions);
             await sock.sendMessage(chatId, {
                 text: '✅ Stopped. Use *.truth* or *.dare* anytime to start again.'
