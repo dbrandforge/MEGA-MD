@@ -35,6 +35,13 @@ async function saveSessions(chatId, sessions) {
     if (!await store.saveSettingVerified(chatId, SESSIONS_KEY, sessions)) throw new Error('Truth or Dare session state could not be persisted.');
 }
 
+export async function hasActiveSoloTruthDareSession(chatId, userId, sock = global.__forgeSock) {
+    const canonicalId = await canonicalWhatsAppUserId(sock, userId);
+    if (!canonicalId) return false;
+    const sessions = await getSessions(chatId);
+    return Boolean(sessions[canonicalId]);
+}
+
 // Called by plugins/truth.js and plugins/dare.js right after they send the
 // first prompt, so continuity has something to track.
 export async function startSoloSession(chatId, senderId, type, gender) {
