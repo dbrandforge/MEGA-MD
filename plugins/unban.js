@@ -1,5 +1,6 @@
 import fs from 'fs';
 import store from '../lib/lightweight_store.js';
+import { invalidateBannedUsersCache } from '../lib/isBanned.js';
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
 const MYSQL_URL = process.env.MYSQL_URL;
@@ -28,6 +29,7 @@ async function saveBannedUsers(bannedUsers) {
         }
         fs.writeFileSync(bannedFilePath, JSON.stringify(bannedUsers, null, 2));
     }
+    invalidateBannedUsersCache();
 }
 export default {
     command: 'unban',
