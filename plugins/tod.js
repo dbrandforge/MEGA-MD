@@ -15,6 +15,15 @@ async function getSessions(chatId) {
 async function saveSessions(chatId, sessions) {
     if (!await store.saveSettingVerified(chatId, SESSIONS_KEY, sessions)) throw new Error('Truth or Dare session state could not be persisted.');
 }
+
+export async function hasActiveTodSession(chatId, userId, sock = global.__forgeSock) {
+    const sessions = await getSessions(chatId);
+    for (const session of Object.values(sessions)) {
+        if (!['active', 'choosing_mode'].includes(session.status)) continue;
+        for (const player of session.players || []) if (await sameWhatsAppUser(sock, player, userId)) return true;
+    }
+    return false;
+}
 function mention(jid) {
     return `@${(jid || '').split('@')[0]}`;
 }
@@ -228,9 +237,13 @@ export default {
         const firstArg = String(args?.[0] || '').toLowerCase();
         if (['stop', 'end', 'cancel'].includes(firstArg)) {
             const sessions = await getSessions(chatId);
-            const active = Object.values(sessions).filter(session =>
-                session.status === 'active' && session.players?.includes(senderId)
-            );
+            const active = [];
+            for (const session of Object.values(sessions)) {
+                if (session.status !== 'active') continue;
+                for (const player of session.players || []) {
+                    if (await sameWhatsAppUser(sock, player, senderId)) { active.push(session); break; }
+                }
+            }
             if (!active.length) {
                 return sock.sendMessage(chatId, { text: 'You do not have an active Truth or Dare session to end.', ...channelInfo }, { quoted: message });
             }
@@ -262,6 +275,10 @@ export default {
             }, { quoted: message });
         }
 
+        const { hasActiveSoloTruthDareSession } = await import('./truth-continue.js');
+        if (await hasActiveSoloTruthDareSession(chatId, senderId, sock)) {
+            return sock.sendMessage(chatId, { text: 'You already have an active solo Truth/Dare session. Type *stop* or *.truth stop* to finish it before starting TOD.', ...channelInfo }, { quoted: message });
+        }
         const sessions = await getSessions(chatId);
         const existing = await (async () => {
             for (const candidate of Object.values(sessions)) {
@@ -292,6 +309,10 @@ export default {
             const partner = mentioned[0];
             if (await sameWhatsAppUser(sock, partner, senderId)) {
                 return sock.sendMessage(chatId, { text: `Cannot pair with yourself.`, ...channelInfo }, { quoted: message });
+            }
+            const { hasActiveSoloTruthDareSession } = await import('./truth-continue.js');
+            if (await hasActiveSoloTruthDareSession(chatId, partner, sock)) {
+                return sock.sendMessage(chatId, { text: 'Your tagged partner is already in a solo Truth/Dare session and must finish it before joining paired TOD.', ...channelInfo }, { quoted: message });
             }
             const partnerGender = await getUserGender(partner, sock);
             if (!partnerGender) {
