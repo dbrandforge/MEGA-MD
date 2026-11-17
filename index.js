@@ -588,25 +588,31 @@ async function startQasimDev() {
         QasimDev.sendMessage = async (jid, ...args) => {
             const destinationType = typeof jid === 'string' && jid.endsWith('@g.us') ? 'group' : 'dm';
             const sendStartedAt = process.hrtime.bigint();
+            let recoveryDurationMs = 0;
+            let baileysSendDurationMs = 0;
             try {
+                const recoveryStartedAt = process.hrtime.bigint();
                 const reset = await resetGroupSenderKeyMemoryBeforeSend(jid, signalKeyStore, groupSenderKeyRecoveryTargets);
+                recoveryDurationMs = Number(process.hrtime.bigint() - recoveryStartedAt) / 1e6;
                 if (reset) {
-                    printLog('warning', '[SenderKeyRecovery] refreshed distribution state type=group');
+                    printLog('warning', `[SenderKeyRecovery] refreshed distribution state type=group duration_ms=${recoveryDurationMs.toFixed(1)}`);
                 }
+                const baileysSendStartedAt = process.hrtime.bigint();
                 const result = await originalSendMessage(jid, ...args);
+                baileysSendDurationMs = Number(process.hrtime.bigint() - baileysSendStartedAt) / 1e6;
                 const sendDurationMs = Number(process.hrtime.bigint() - sendStartedAt) / 1e6;
                 const messageId = result?.key?.id;
                 if (messageId) {
                     outboundTrace.set(messageId, { destinationType });
                     if (outboundTrace.size > 500) outboundTrace.delete(outboundTrace.keys().next().value);
-                    printLog('info', `[Outbound Trace] accepted type=${destinationType} duration_ms=${sendDurationMs.toFixed(1)} id=${String(messageId).slice(0, 16)}`);
+                    printLog('info', `[Outbound Trace] accepted type=${destinationType} duration_ms=${sendDurationMs.toFixed(1)} recovery_ms=${recoveryDurationMs.toFixed(1)} baileys_ms=${baileysSendDurationMs.toFixed(1)} id=${String(messageId).slice(0, 16)}`);
                 } else {
-                    printLog('warning', `[Outbound Trace] send returned without message id type=${destinationType} duration_ms=${sendDurationMs.toFixed(1)}`);
+                    printLog('warning', `[Outbound Trace] send returned without message id type=${destinationType} duration_ms=${sendDurationMs.toFixed(1)} recovery_ms=${recoveryDurationMs.toFixed(1)} baileys_ms=${baileysSendDurationMs.toFixed(1)}`);
                 }
                 return result;
             } catch (error) {
                 const sendDurationMs = Number(process.hrtime.bigint() - sendStartedAt) / 1e6;
-                printLog('warning', `[Outbound Trace] send failed type=${destinationType} duration_ms=${sendDurationMs.toFixed(1)} error=${error?.name || 'Error'}`);
+                printLog('warning', `[Outbound Trace] send failed type=${destinationType} duration_ms=${sendDurationMs.toFixed(1)} recovery_ms=${recoveryDurationMs.toFixed(1)} baileys_ms=${baileysSendDurationMs.toFixed(1)} error=${error?.name || 'Error'}`);
                 throw error;
             }
         };
