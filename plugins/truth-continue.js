@@ -39,6 +39,10 @@ async function saveSessions(chatId, sessions) {
 // first prompt, so continuity has something to track.
 export async function startSoloSession(chatId, senderId, type, gender) {
     senderId = await canonicalWhatsAppUserId(global.__forgeSock, senderId);
+    const { hasActiveTodSession } = await import('./tod.js');
+    if (await hasActiveTodSession(chatId, senderId, global.__forgeSock)) {
+        throw new Error('You are already in an active Truth or Dare session. Finish or end that session before starting another.');
+    }
     const sessions = await getSessions(chatId);
     sessions[senderId] = { type, gender, startedAt: Date.now(), lastActivity: Date.now(), questionMessageId: null, questionsAnswered: 0 };
     await saveSessions(chatId, sessions);
@@ -60,7 +64,7 @@ export async function endSoloSession(chatId, senderId) {
     senderId = await canonicalWhatsAppUserId(global.__forgeSock, senderId);
     const sessions = await getSessions(chatId);
     if (sessions[senderId]) {
-        delete sessions[senderId];
+        delete sessions[canonicalSenderId];
         await saveSessions(chatId, sessions);
         return true;
     }
