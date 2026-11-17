@@ -8,6 +8,7 @@ import { parsePhoneNumber as PhoneNumber } from 'awesome-phonenumber';
 import readline from 'readline';
 import QRCode from 'qrcode';
 import { fileURLToPath } from 'url';
+import { monitorEventLoopDelay } from 'perf_hooks';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import { smsg } from './lib/myfunc.js';
@@ -84,6 +85,25 @@ setInterval(() => {
         console.log('🧹 Garbage collection completed');
     }
 }, 60000);
+const eventLoopDelay = monitorEventLoopDelay({ resolution: 20 });
+eventLoopDelay.enable();
+let previousCpuUsage = process.cpuUsage();
+let previousCpuSampleAt = process.hrtime.bigint();
+const runtimeTelemetryTimer = setInterval(() => {
+    const now = process.hrtime.bigint();
+    const elapsedMs = Number(now - previousCpuSampleAt) / 1e6;
+    const cpuDelta = process.cpuUsage(previousCpuUsage);
+    const cpuPercent = elapsedMs > 0 ? ((cpuDelta.user + cpuDelta.system) / (elapsedMs * 1000)) * 100 : 0;
+    previousCpuUsage = process.cpuUsage();
+    previousCpuSampleAt = now;
+    const memory = process.memoryUsage();
+    const mb = value => (value / 1024 / 1024).toFixed(1);
+    const queue = global.__forgeIncomingQueueStats?.() || {};
+    printLog('info', 'Runtime pressure: ' + ['cpu_pct=' + cpuPercent.toFixed(1), 'rss_mb=' + mb(memory.rss), 'heap_used_mb=' + mb(memory.heapUsed), 'heap_total_mb=' + mb(memory.heapTotal), 'external_mb=' + mb(memory.external), 'array_buffers_mb=' + mb(memory.arrayBuffers || 0), 'event_loop_p95_ms=' + (eventLoopDelay.percentile(95) / 1e6).toFixed(1), 'event_loop_max_ms=' + (eventLoopDelay.max / 1e6).toFixed(1), 'queue_pending=' + (queue.pending ?? 'unknown'), 'queue_active=' + (queue.active ?? 'unknown')].join(' '));
+    eventLoopDelay.reset();
+}, 30000);
+runtimeTelemetryTimer.unref?.();
+
 let lastHighMemoryWarningAt = 0;
 setInterval(() => {
     const memory = process.memoryUsage();
