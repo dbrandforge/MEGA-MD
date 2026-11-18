@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../lib/lightweight_store.js', () => ({
     default: {
@@ -30,11 +30,14 @@ describe('Forge Guard group-local member continuity', () => {
         });
     });
 
-    it('remembers only public messages in the group where they were sent', async () => {
+    afterEach(() => { clearGroupMemoryCache(); vi.restoreAllMocks(); });
+
+    it('keeps lightweight participant identity without retaining raw public message samples', async () => {
         await recordGroupInteraction(group, member, 'Adunni', 'I am planning a new launch', 'english');
         const context = await buildGroupContinuityContext(group, askingMember, 'What has Adunni done this time?');
         expect(context).toContain('Adunni');
-        expect(context).toContain('I am planning a new launch');
+        expect(context).not.toContain('I am planning a new launch');
+        expect(context).toContain('Recognized group participant');
         expect(context).toContain('GROUP-LOCAL CONTINUITY');
     });
 
@@ -99,8 +102,29 @@ describe('Forge Guard group-memory write batching', () => {
         expect(await flushPendingGroupRosterWrites()).toBe(1);
         expect(store.saveSettingVerified).toHaveBeenCalledTimes(1);
         const saved = store.saveSettingVerified.mock.calls[0][2];
-        expect(saved.members[member].messages.at(-1).text).toBe('First public contribution');
-        expect(saved.members[askingMember].messages.at(-1).text).toBe('Second public contribution');
+        expect(saved.members[member].firstSeenAt).toBeTruthy();
+        expect(saved.members[askingMember].firstSeenAt).toBeTruthy();
+        expect(saved.members[member].messages).toBeUndefined();
+        expect(saved.members[askingMember].messages).toBeUndefined();
+    });
+
+    it('persists an existing participant no more than once per seven days', async () => {
+        const start = 1_830_000_000_000;
+        const clock = vi.spyOn(Date, 'now').mockReturnValue(start);
+
+        await recordGroupInteraction(group, member, 'Adunni', 'First message');
+        await flushPendingGroupRosterWrites();
+        expect(store.saveSettingVerified).toHaveBeenCalledTimes(1);
+
+        clock.mockReturnValue(start + 24 * 60 * 60 * 1000);
+        await recordGroupInteraction(group, member, 'Adunni', 'Day one message');
+        await flushPendingGroupRosterWrites();
+        expect(store.saveSettingVerified).toHaveBeenCalledTimes(1);
+
+        clock.mockReturnValue(start + 7 * 24 * 60 * 60 * 1000);
+        await recordGroupInteraction(group, member, 'Adunni', 'Day seven message');
+        await flushPendingGroupRosterWrites();
+        expect(store.saveSettingVerified).toHaveBeenCalledTimes(2);
     });
 
     it('serves continuity reads from the warm roster cache without another database read', async () => {
