@@ -97,7 +97,7 @@ const DEFAULT_GROUP_CONFIG = {
 let cachedConfig = null;
 let cachedConfigAt = 0;
 let configLoadPromise = null;
-const CONFIG_CACHE_TTL_MS = 10000;
+const CONFIG_CACHE_TTL_MS = 30000;
 async function loadConfig() {
     if (cachedConfig && Date.now() - cachedConfigAt < CONFIG_CACHE_TTL_MS) return cachedConfig;
     if (configLoadPromise) return configLoadPromise;
