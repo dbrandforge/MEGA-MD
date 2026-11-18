@@ -14,9 +14,9 @@
     "postinstall": "node scripts/patch-baileys-lid-sessions.js",
     "start": "node index.js",
     "start:optimized": "node --max-old-space-size=384 index.js",
-    "start:fresh": "node reset-data.js && node index.js",
+    "start:fresh": "node scripts/reset-user-memory.js --apply && node index.js",
     "dev": "nodemon --watch . --ext js --ignore node_modules --ignore data --ignore session --ignore temp index.js",
-    "reset-data": "node reset-data.js",
+    "reset-data": "node scripts/reset-user-memory.js",
     "reset-session": "node -e \"import('fs').then(f=>f.default.rmSync('./session',{recursive:true,force:true})).then(()=>console.log('Session cleared!'))\"",
     "build": "echo 'No build step needed - plain JS'",
     "lint": "eslint . --ext .js",
@@ -29,7 +29,8 @@
     "trivia:candidates:audit": "node scripts/audit-trivia-candidates.js",
     "trivia:audit:release": "npm run trivia:audit:stage",
     "trivia:audit:stage": "node scripts/audit-trivia-bank.js --require=forge,music,football,movies,lifestyle,geography,history,food,nigeria,culture,technology,business,science,gaming,literature,current-affairs",
-    "chatdual:audit": "node scripts/audit-chatdual-specialty-banks.js"
+    "chatdual:audit": "node scripts/audit-chatdual-specialty-banks.js",
+    "reset-user-memory": "node scripts/reset-user-memory.js"
   },
   "keywords": [
     "whatsapp-bot",

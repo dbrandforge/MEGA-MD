@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../lib/lightweight_store.js', () => ({
     default: {
@@ -20,6 +20,7 @@ import {
 
 const sender = '2348011111111@s.whatsapp.net';
 let settings;
+afterEach(() => vi.restoreAllMocks());
 
 describe('Forge Guard user-controlled profile facts', () => {
     beforeEach(() => {
@@ -133,6 +134,43 @@ describe('bounded user-profile read cache', () => {
         expect(store.getSetting).toHaveBeenCalledTimes(1);
     });
 
+    it('waits seven days of returning activity before refreshing an automatic profile', async () => {
+        const start = 1_800_000_000_000;
+        const clock = vi.spyOn(Date, 'now').mockReturnValue(start);
+
+        const first = await (await import('../../lib/chatbotUserProfile.js')).updateUserProfileFromMessage(
+            sender, 'My business is Forge Studio.'
+        );
+        expect(first.businesses).toEqual([]);
+        expect(first.firstSeenAt).toBe(start);
+        expect(first.lastProfileRefreshAt).toBeNull();
+        expect(store.saveSettingVerified).toHaveBeenCalledTimes(1);
+
+        clock.mockReturnValue(start + 6 * 24 * 60 * 60 * 1000);
+        const daySix = await (await import('../../lib/chatbotUserProfile.js')).updateUserProfileFromMessage(
+            sender, 'My business is Forge Studio.'
+        );
+        expect(daySix.businesses).toEqual([]);
+        expect(store.saveSettingVerified).toHaveBeenCalledTimes(1);
+
+        clock.mockReturnValue(start + 7 * 24 * 60 * 60 * 1000);
+        const daySeven = await (await import('../../lib/chatbotUserProfile.js')).updateUserProfileFromMessage(
+            sender, 'My business is Forge Studio.'
+        );
+        expect(daySeven.businesses.map(item => item.value)).toContain('Forge Studio');
+        expect(daySeven.lastProfileRefreshAt).toBe(start + 7 * 24 * 60 * 60 * 1000);
+        expect(store.saveSettingVerified).toHaveBeenCalledTimes(2);
+    });
+
+    it('allows a user-requested profile edit to bypass the seven-day wait', async () => {
+        const start = 1_810_000_000_000;
+        vi.spyOn(Date, 'now').mockReturnValue(start);
+        const { updateUserProfileFromMessage } = await import('../../lib/chatbotUserProfile.js');
+        const profile = await updateUserProfileFromMessage(sender, 'My business is Forge Studio.', { force: true });
+        expect(profile.businesses.map(item => item.value)).toContain('Forge Studio');
+        expect(profile.lastProfileRefreshAt).toBe(start);
+    });
+
     it('updates the cache immediately after an explicit privacy change', async () => {
         await setUserProfileGroupSharing(sender, true);
         const profile = await getUserProfile(sender);
@@ -140,3 +178,4 @@ describe('bounded user-profile read cache', () => {
         expect(store.getSetting).toHaveBeenCalledTimes(1);
     });
 });
+
