@@ -80,6 +80,8 @@ describe('Forge Guard group-local member continuity', () => {
 
 
 describe('Forge Guard group-memory write batching', () => {
+    afterEach(() => { clearGroupMemoryCache(); vi.restoreAllMocks(); });
+
     beforeEach(() => {
         clearGroupMemoryCache();
         clearUserProfileCache();
