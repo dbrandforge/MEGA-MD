@@ -4,6 +4,7 @@ import { dataFile } from '../lib/paths.js';
 import store from '../lib/lightweight_store.js';
 import { channelInfo } from '../lib/messageConfig.js';
 import { softMuteUser } from './softmute.js';
+import { getCachedGroupMetadata, invalidateGroupMetadataCache } from '../lib/isOwner.js';
 const MONGO_URL = process.env.MONGO_URL;
 const POSTGRES_URL = process.env.POSTGRES_URL;
 const MYSQL_URL = process.env.MYSQL_URL;
@@ -34,7 +35,7 @@ async function getParticipants(sock, chatId) {
         return cached.participants;
     }
     try {
-        const metadata = await sock.groupMetadata(chatId);
+        const metadata = await getCachedGroupMetadata(sock, chatId);
         const participants = metadata?.participants || [];
         metaCache.set(chatId, { participants, fetchedAt: Date.now() });
         return participants;
@@ -97,7 +98,7 @@ const DEFAULT_GROUP_CONFIG = {
 let cachedConfig = null;
 let cachedConfigAt = 0;
 let configLoadPromise = null;
-const CONFIG_CACHE_TTL_MS = 30000;
+const CONFIG_CACHE_TTL_MS = 120000;
 async function loadConfig() {
     if (cachedConfig && Date.now() - cachedConfigAt < CONFIG_CACHE_TTL_MS) return cachedConfig;
     if (configLoadPromise) return configLoadPromise;
@@ -266,6 +267,7 @@ export async function handleAntiSpam(sock, chatId, message, senderId, senderIsOw
 // Invalidate cache when group participants change (call this on group-participants.update)
 export function invalidateGroupCache(chatId) {
     metaCache.delete(chatId);
+    invalidateGroupMetadataCache(chatId);
     tracker.delete(chatId);
 }
 export { loadConfig, saveConfig, DEFAULT_GROUP_CONFIG };

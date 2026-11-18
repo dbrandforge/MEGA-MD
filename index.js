@@ -28,6 +28,7 @@ import commandHandler from './lib/commandHandler.js';
 import { shouldProcessMessageUpsert } from './lib/messageEventPolicy.js';
 import { startSchedulerEngine, trackGroup } from './plugins/schedule.js';
 import { FEATURE_GROUPS } from './lib/featureGroups.js';
+import { getCachedGroupMetadata } from './lib/isOwner.js';
 
 import { installSignalDiagnosticGuard } from './lib/signalDiagnostics.js';
 import { parseGroupSenderKeyRecoveryTargets, resetGroupSenderKeyMemoryBeforeSend } from './lib/groupSenderKeyRecovery.js';
@@ -557,6 +558,7 @@ async function startQasimDev() {
         const groupSenderKeyRecoveryTargets = parseGroupSenderKeyRecoveryTargets(process.env.GROUP_SENDER_KEY_REKEY_GROUPS || '');
         const ghostMode = await store.getSetting('global', 'stealthMode');
         const isGhostActive = ghostMode && ghostMode.enabled;
+        let metadataSocket = null;
         const QasimDev = makeWASocket({
             version,
             logger: pino({ level: 'silent' }),
@@ -564,6 +566,19 @@ async function startQasimDev() {
             auth: {
                 creds: state.creds,
                 keys: signalKeyStore,
+            },
+            // Reuse the same bounded group-metadata cache used by admin,
+            // owner and moderation checks. Baileys otherwise performs its own
+            // uncached metadata query on group sends, which can stall sends up
+            // to defaultQueryTimeoutMs under slow WhatsApp responses.
+            cachedGroupMetadata: async (jid) => {
+                if (!metadataSocket) return undefined;
+                try {
+                    return await getCachedGroupMetadata(metadataSocket, jid);
+                } catch (error) {
+                    printLog('warn', `Cached group metadata unavailable; Baileys will use its normal lookup: ${error.message}`);
+                    return undefined;
+                }
             },
             markOnlineOnConnect: !isGhostActive,
             generateHighQualityLinkPreview: true,
@@ -579,6 +594,7 @@ async function startQasimDev() {
             connectTimeoutMs: 60000,
             keepAliveIntervalMs: 10000,
         });
+        metadataSocket = QasimDev;
         activeSocket = QasimDev;
         global.__forgeSock = QasimDev;
         // Trace outbound message acceptance without logging message bodies or raw chat identifiers.
