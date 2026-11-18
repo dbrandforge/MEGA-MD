@@ -43,7 +43,7 @@ export default {
     aliases: ['warning'],
     category: 'admin',
     description: 'Warn a user (auto soft-mute 10 hours after 3 warnings)',
-    usage: '.warn [@user] or reply to message',
+    usage: '.warn @user <reason> or reply with .warn <reason>',
     groupOnly: true,
     adminOnly: true,
     async handler(sock, message, args, context) {
@@ -63,7 +63,7 @@ export default {
 
             if (!userToWarn) {
                 return sock.sendMessage(chatId, {
-                    text: '❌ Please mention the user or reply to their message to warn!',
+                    text: '❌ Choose who to warn first. Use *.warn @user test specimen 101* or reply to their message with *.warn test specimen 101*. ',
                     ...channelInfo
                 }, { quoted: message });
             }
