@@ -178,3 +178,49 @@ describe('bounded user-profile read cache', () => {
         expect(store.getSetting).toHaveBeenCalledTimes(1);
     });
 });
+
+
+describe('seven-day lightweight group roster', () => {
+    const group = '120363000000000000@g.us';
+    const member = '2348011111111@s.whatsapp.net';
+
+    beforeEach(() => {
+        clearGroupMemoryCache();
+        settings = new Map();
+        vi.clearAllMocks();
+        store.getSetting.mockImplementation(async (chatId, key) => settings.get(chatId + ':' + key) || null);
+        store.saveSettingVerified.mockImplementation(async (chatId, key, value) => {
+            settings.set(chatId + ':' + key, value);
+            return true;
+        });
+    });
+
+    afterEach(() => {
+        clearGroupMemoryCache();
+        vi.restoreAllMocks();
+    });
+
+    it('persists a member once, then waits seven days before another roster write', async () => {
+        const start = 1_820_000_000_000;
+        const clock = vi.spyOn(Date, 'now').mockReturnValue(start);
+
+        const first = await recordGroupInteraction(group, member, 'Member One', 'Hello');
+        expect(first.firstSeenAt).toBe(start);
+        expect(first.lastPersistedAt).toBe(start);
+        expect(first.messages).toBeUndefined();
+        await flushPendingGroupRosterWrites();
+        expect(store.saveSettingVerified).toHaveBeenCalledTimes(1);
+
+        clock.mockReturnValue(start + 24 * 60 * 60 * 1000);
+        const dayOne = await recordGroupInteraction(group, member, 'Member One', 'Another message');
+        expect(dayOne.lastSeenAt).toBe(start + 24 * 60 * 60 * 1000);
+        await flushPendingGroupRosterWrites();
+        expect(store.saveSettingVerified).toHaveBeenCalledTimes(1);
+
+        clock.mockReturnValue(start + 7 * 24 * 60 * 60 * 1000);
+        const daySeven = await recordGroupInteraction(group, member, 'Member One', 'Back after a week');
+        expect(daySeven.lastPersistedAt).toBe(start + 7 * 24 * 60 * 60 * 1000);
+        await flushPendingGroupRosterWrites();
+        expect(store.saveSettingVerified).toHaveBeenCalledTimes(2);
+    });
+});
