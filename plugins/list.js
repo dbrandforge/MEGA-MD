@@ -130,16 +130,15 @@ export default {
         }
 
         const menuText = buildMenu(ownerView);
-        try {
-            const artwork = await getMenuArtwork();
-            await sock.sendMessage(chatId, {
-                image: artwork,
-                caption: ownerView ? '🛡️ *FORGE GUARD • OWNER COMMAND INDEX*' : '🛡️ *FORGE GUARD • COMMAND INDEX*',
-                ...channelInfo
-            }, { quoted: message });
-        } catch (artError) {
-            console.warn('[Menu] Forge Guard artwork unavailable; sending text menu:', artError.message);
-        }
-        return sock.sendMessage(chatId, { text: menuText, ...channelInfo }, { quoted: message });
+        const textDelivery = await sock.sendMessage(chatId, { text: menuText, ...channelInfo }, { quoted: message });
+        // Artwork conversion is deliberately detached from command response latency.
+        getMenuArtwork().then(artwork => sock.sendMessage(chatId, {
+            image: artwork,
+            caption: ownerView ? '🛡️ *FORGE GUARD • OWNER COMMAND INDEX*' : '🛡️ *FORGE GUARD • COMMAND INDEX*',
+            ...channelInfo
+        }, { quoted: message })).catch(artError => {
+            console.warn('[Menu] Forge Guard artwork unavailable; text menu was already delivered:', artError.message);
+        });
+        return textDelivery;
     }
 };
