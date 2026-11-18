@@ -91,32 +91,38 @@ let _birthdayCheckInProgress = false;
 let _activeSocket = null;
 let _trackedGroups = new Set();
 let _trackedGroupsLoaded = false;
+let _trackedGroupsLoadPromise = null;
 const TRACKED_GROUPS_KEY = 'forgeGuardTrackedGroups';
 
 async function loadTrackedGroupsOnce() {
     if (_trackedGroupsLoaded) return;
-    const persistedGroups = await store.getSetting('global', TRACKED_GROUPS_KEY);
-    if (Array.isArray(persistedGroups)) {
-        persistedGroups.forEach(id => {
-            if (id?.endsWith('@g.us')) _trackedGroups.add(id);
-        });
+    if (!_trackedGroupsLoadPromise) {
+        _trackedGroupsLoadPromise = (async () => {
+            const persistedGroups = await store.getSetting('global', TRACKED_GROUPS_KEY);
+            if (Array.isArray(persistedGroups)) {
+                persistedGroups.forEach(id => {
+                    if (id?.endsWith('@g.us')) _trackedGroups.add(id);
+                });
+            }
+            _trackedGroupsLoaded = true;
+        })().finally(() => { _trackedGroupsLoadPromise = null; });
     }
-    _trackedGroupsLoaded = true;
+    await _trackedGroupsLoadPromise;
 }
 
 const TIMED_GROUP_MUTE_KEY = 'timedGroupMute';
 
 export async function trackGroup(chatId) {
     if (!chatId?.endsWith('@g.us')) return false;
-    _trackedGroups.add(chatId);
     try {
-        const saved = await store.getSetting('global', TRACKED_GROUPS_KEY);
-        const groups = new Set(Array.isArray(saved) ? saved : []);
-        groups.add(chatId);
-        const persisted = await store.saveSettingVerified('global', TRACKED_GROUPS_KEY, [...groups]);
+        await loadTrackedGroupsOnce();
+        if (_trackedGroups.has(chatId)) return true;
+        _trackedGroups.add(chatId);
+        const persisted = await store.saveSettingVerified('global', TRACKED_GROUPS_KEY, [..._trackedGroups]);
         if (!persisted) throw new Error('Tracked group list verification failed.');
         return true;
     } catch (error) {
+        _trackedGroups.delete(chatId);
         console.error('[SCHEDULE] Could not persist tracked group:', error.message);
         return false;
     }
