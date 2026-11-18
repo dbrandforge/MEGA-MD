@@ -32,6 +32,7 @@ import { FEATURE_GROUPS } from './lib/featureGroups.js';
 import { installSignalDiagnosticGuard } from './lib/signalDiagnostics.js';
 import { parseGroupSenderKeyRecoveryTargets, resetGroupSenderKeyMemoryBeforeSend } from './lib/groupSenderKeyRecovery.js';
 import { createPerChatMessageQueue } from './lib/perChatMessageQueue.js';
+import { classifyOutboundPayload, createOutboundMediaTelemetry } from './lib/outboundMediaTelemetry.js';
 
 // Keep libsignal diagnostics useful without allowing serialized ratchets or key material into logs.
 installSignalDiagnosticGuard();
@@ -103,6 +104,34 @@ const runtimeTelemetryTimer = setInterval(() => {
     eventLoopDelay.reset();
 }, 30000);
 runtimeTelemetryTimer.unref?.();
+
+const outboundMediaTelemetry = createOutboundMediaTelemetry();
+const outboundMediaTelemetryTimer = setInterval(() => {
+    const stats = outboundMediaTelemetry.drain();
+    if (!stats.sends) return;
+    const avgMs = stats.sends ? stats.totalDurationMs / stats.sends : 0;
+    printLog('info', '[Outbound Media] ' + [
+        'window_s=60',
+        'sends=' + stats.sends,
+        'failures=' + stats.failures,
+        'text=' + stats.types.text,
+        'image=' + stats.types.image,
+        'video=' + stats.types.video,
+        'audio=' + stats.types.audio,
+        'document=' + stats.types.document,
+        'sticker=' + stats.types.sticker,
+        'other=' + stats.types.other,
+        'buffer_media=' + stats.sources.buffer,
+        'remote_url_media=' + stats.sources.remote_url,
+        'stream_media=' + stats.sources.stream,
+        'unknown_media_source=' + stats.sources.unknown,
+        'known_media_bytes=' + stats.knownMediaBytes,
+        'text_bytes=' + stats.textBytes,
+        'avg_send_ms=' + avgMs.toFixed(1),
+        'max_send_ms=' + stats.maxDurationMs.toFixed(1)
+    ].join(' '));
+}, 60000);
+outboundMediaTelemetryTimer.unref?.();
 
 let lastHighMemoryWarningAt = 0;
 setInterval(() => {
@@ -587,6 +616,7 @@ async function startQasimDev() {
         const originalSendMessage = QasimDev.sendMessage.bind(QasimDev);
         QasimDev.sendMessage = async (jid, ...args) => {
             const destinationType = typeof jid === 'string' && jid.endsWith('@g.us') ? 'group' : 'dm';
+            const payloadSummary = classifyOutboundPayload(args[0]);
             const sendStartedAt = process.hrtime.bigint();
             let recoveryDurationMs = 0;
             let baileysSendDurationMs = 0;
@@ -601,6 +631,7 @@ async function startQasimDev() {
                 const result = await originalSendMessage(jid, ...args);
                 baileysSendDurationMs = Number(process.hrtime.bigint() - baileysSendStartedAt) / 1e6;
                 const sendDurationMs = Number(process.hrtime.bigint() - sendStartedAt) / 1e6;
+                outboundMediaTelemetry.record(payloadSummary, sendDurationMs, false);
                 const messageId = result?.key?.id;
                 if (messageId) {
                     outboundTrace.set(messageId, { destinationType });
@@ -612,6 +643,7 @@ async function startQasimDev() {
                 return result;
             } catch (error) {
                 const sendDurationMs = Number(process.hrtime.bigint() - sendStartedAt) / 1e6;
+                outboundMediaTelemetry.record(payloadSummary, sendDurationMs, true);
                 printLog('warning', `[Outbound Trace] send failed type=${destinationType} duration_ms=${sendDurationMs.toFixed(1)} recovery_ms=${recoveryDurationMs.toFixed(1)} baileys_ms=${baileysSendDurationMs.toFixed(1)} error=${error?.name || 'Error'}`);
                 throw error;
             }
