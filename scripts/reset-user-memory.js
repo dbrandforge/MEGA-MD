@@ -17,7 +17,7 @@ const CREATOR_SCOPE_PATTERN = CREATOR_DIGITS
 function isCreatorScope(key) { return Boolean(CREATOR_SCOPE_PATTERN?.test(String(key || ''))); }
 function isCreatorJid(key) { return Boolean(CREATOR_JID_PATTERN?.test(String(key || ''))); }
 function logPlan() {
-    console.log('[User memory reset] Scope: chatbotUserProfile, chatbotGroupRoster, chatbotConversationMemory.');
+    console.log('[User memory reset] Scope: ' + TARGET_SETTINGS.join(', ') + '.');
     console.log('Creator-scoped profiles, direct/group conversation histories, and group-roster entries are retained where they can be identified by the configured creator number.');
     console.log('Protected: creator knowledge/configuration, gender and birthday feature registries, game/trivia records, XP, scores, achievements, moderation state, WhatsApp auth/session files, message counters, and backups.');
     console.log(APPLY ? '[User memory reset] APPLY mode enabled.' : '[User memory reset] Dry run only. Re-run with --apply to apply the allowlisted reset.');
@@ -59,7 +59,7 @@ async function resetMongo() {
 }
 
 function readJson(file) {
-    try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return {}; }
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 function writeJson(file, value) {
     const temp = file + '.tmp';
@@ -69,6 +69,7 @@ function writeJson(file, value) {
 function resetLocalFiles() {
     if (!CREATOR_DIGITS) throw new Error('Cannot safely preserve creator data: configure CREATOR_NUMBER or OWNER_NUMBER first.');
     const profileFile = path.join(DATA_DIR, 'chatbotUserProfile.json');
+    if (fs.existsSync(profileFile)) console.log('[User memory reset] Profile file exists; its sender identity is not encoded in local JSON.');
     if (APPLY && fs.existsSync(profileFile)) {
         throw new Error('The local profile file is not sender-scoped, so creator data cannot be safely excluded. No local memory files were changed. Use MongoDB storage or manually review this file.');
     }
