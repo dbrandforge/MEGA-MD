@@ -616,7 +616,7 @@ async function startQasimDev() {
         const originalSendMessage = QasimDev.sendMessage.bind(QasimDev);
         QasimDev.sendMessage = async (jid, ...args) => {
             const destinationType = typeof jid === 'string' && jid.endsWith('@g.us') ? 'group' : 'dm';
-        const payloadSummary = classifyOutboundPayload(args[0]);
+            const payloadSummary = classifyOutboundPayload(args[0]);
             const sendStartedAt = process.hrtime.bigint();
             let recoveryDurationMs = 0;
             let baileysSendDurationMs = 0;
