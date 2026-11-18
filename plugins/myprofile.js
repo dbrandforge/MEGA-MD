@@ -91,7 +91,7 @@ export default {
             if (!recognized) {
                 return sock.sendMessage(chatId, { text: 'I couldn’t identify a clear profile fact in that update. Use explicit wording such as “My business is…”, “I work as…”, “I enjoy…”, “I’m building…”, or “I prefer…”.' }, { quoted: message });
             }
-            const updated = await updateUserProfileFromMessage(senderId, details, { scopeChatId });
+            const updated = await updateUserProfileFromMessage(senderId, details, { scopeChatId, force: true });
             return sock.sendMessage(chatId, { text: '🧠 I’ve updated the profile information you explicitly shared. It will be kept in this ' + (isGroup ? 'group' : 'private chat') + ' scope.\n\n' + profileSummary(updated, identity) }, { quoted: message });
         }
 
