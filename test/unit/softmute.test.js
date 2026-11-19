@@ -17,8 +17,10 @@ const mockStore = vi.hoisted(() => {
 
 vi.mock('../../lib/lightweight_store.js', () => ({ default: mockStore }));
 vi.mock('../../config.js', () => ({ default: { muteDurationHours: 10 } }));
+vi.mock('../../plugins/schedule.js', () => ({ trackGroup: vi.fn(async () => true) }));
 
 import store from '../../lib/lightweight_store.js';
+import { trackGroup } from '../../plugins/schedule.js';
 import {
     cleanExpiredSoftMutes,
     getSoftMuteDurationHours,
@@ -136,7 +138,7 @@ describe('soft mute expiry and scheduler registration', () => {
     it('registers a group with the scheduler whenever a member is soft-muted', async () => {
         await softMuteUser({}, GROUP, '2348000000000@s.whatsapp.net', 10);
 
-        expect(await store.getSetting('global', 'forgeGuardTrackedGroups')).toContain(GROUP);
+        expect(trackGroup).toHaveBeenCalledWith(GROUP);
         const mutes = await store.getSetting(GROUP, 'softMutes');
         expect(mutes['2348000000000@s.whatsapp.net'].until).toBeGreaterThan(Date.now());
     });

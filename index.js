@@ -701,7 +701,26 @@ async function startQasimDev() {
                 if (node && node.attrs && (node.attrs.type === 'read' || node.attrs.type === 'read-self'))
                     return;
             }
-            return originalQuery.apply(this, [node, ...args]);
+            const queryStartedAt = process.hrtime.bigint();
+            try {
+                const result = await originalQuery.apply(this, [node, ...args]);
+                const durationMs = Number(process.hrtime.bigint() - queryStartedAt) / 1e6;
+                if (durationMs >= 1000) {
+                    const tag = String(node?.tag || 'unknown').slice(0, 40);
+                    const type = String(node?.attrs?.type || 'none').slice(0, 40);
+                    printLog('warning', `[Baileys Query] slow duration_ms=${durationMs.toFixed(1)} tag=${tag} type=${type} outcome=resolved`);
+                }
+                return result;
+            } catch (error) {
+                const durationMs = Number(process.hrtime.bigint() - queryStartedAt) / 1e6;
+                if (durationMs >= 1000) {
+                    const tag = String(node?.tag || 'unknown').slice(0, 40);
+                    const type = String(node?.attrs?.type || 'none').slice(0, 40);
+                    const code = String(error?.code || error?.output?.statusCode || 'none').slice(0, 40);
+                    printLog('warning', `[Baileys Query] slow duration_ms=${durationMs.toFixed(1)} tag=${tag} type=${type} outcome=rejected error=${error?.name || 'Error'} code=${code}`);
+                }
+                throw error;
+            }
         };
         QasimDev.isGhostMode = async () => {
             const ghostMode = await store.getSetting('global', 'stealthMode');
@@ -749,6 +768,14 @@ async function startQasimDev() {
             }
         });
         QasimDev.ev.on('connection.update', (update = {}) => {
+            if (update?.connection || update?.lastDisconnect) {
+                const state = String(update?.connection || 'unchanged');
+                const disconnectError = update?.lastDisconnect?.error;
+                const disconnectCode = disconnectError?.output?.statusCode ?? disconnectError?.statusCode ?? 'none';
+                const disconnectName = String(disconnectError?.name || 'none').slice(0, 60);
+                printLog(state === 'close' ? 'warning' : 'info',
+                    `[WhatsApp Connection] state=${state} disconnect_code=${disconnectCode} error=${disconnectName} is_new_login=${Boolean(update?.isNewLogin)} pending_notifications=${Boolean(update?.receivedPendingNotifications)}`);
+            }
             const restriction = update?.reachoutTimeLock;
             if (restriction !== undefined) {
                 let summary = 'present';

@@ -29,7 +29,8 @@
     "trivia:candidates:audit": "node scripts/audit-trivia-candidates.js",
     "trivia:audit:release": "npm run trivia:audit:stage",
     "trivia:audit:stage": "node scripts/audit-trivia-bank.js --require=forge,music,football,movies,lifestyle,geography,history,food,nigeria,culture,technology,business,science,gaming,literature,current-affairs",
-    "chatdual:audit": "node scripts/audit-chatdual-specialty-banks.js"
+    "chatdual:audit": "node scripts/audit-chatdual-specialty-banks.js",
+    "migrate:message-identity": "node scripts/migrate-message-identity-index.js"
   },
   "keywords": [
     "whatsapp-bot",
