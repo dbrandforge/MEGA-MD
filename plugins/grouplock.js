@@ -51,6 +51,24 @@ const groupForbiddenUntil = new Map();
 const botUnlockEchoUntil = new Map();
 const earlyUnlockInFlight = new Set();
 
+// Prevent overlapping scheduler ticks and duplicate daily activity sends per group.
+// Different groups remain independent and can progress concurrently.
+export function createGroupInFlightGuard() {
+    const inFlight = new Set();
+    return async function runOnce(key, operation) {
+        if (inFlight.has(key)) return false;
+        inFlight.add(key);
+        try {
+            return await operation();
+        } finally {
+            inFlight.delete(key);
+        }
+    };
+}
+
+const runDailyActivityOnce = createGroupInFlightGuard();
+const runScheduledGroupCheck = createGroupInFlightGuard();
+
 function isForbiddenGroupError(error) {
     const status = error?.data?.statusCode ?? error?.data ?? error?.statusCode ?? error?.output?.statusCode;
     return Number(status) === 403 || /forbidden/i.test(String(error?.message || error || ''));
@@ -207,7 +225,7 @@ async function unlockGroupSetting(sock, chatId) {
 // Sends + pins today's activity exactly once per calendar day, no matter
 // what the lock state is. This is the piece that used to be stuck behind
 // `state.locked === true`.
-async function sendDailyActivityOnce(sock, chatId, day) {
+async function sendDailyActivityOnceUnlocked(sock, chatId, day) {
     // Occasion greeting is a separate, best-effort message. It must never
     // block, replace, delay, or change the daily activity message or pin.
     try {
@@ -219,7 +237,19 @@ async function sendDailyActivityOnce(sock, chatId, day) {
 
     const dateKey = getCurrentDateKey();
     const sentRecord = (await store.getSetting(chatId, ACTIVITY_SENT_KEY)) || {};
-    if (sentRecord.date === dateKey) return false; // already sent today
+    if (sentRecord.date === dateKey) {
+        if (sentRecord.status === 'sending') {
+            console.warn(`[GroupLock] Daily activity reservation already exists for ${chatId} on ${dateKey}; skipping to prevent a duplicate send.`);
+        }
+        return false; // sent or already reserved today
+    }
+
+    // Claim before contacting WhatsApp. If the process or database fails after
+    // WhatsApp accepts the message, the next scheduler tick must not duplicate it.
+    const activityClaim = { date: dateKey, day, status: 'sending', startedAt: Date.now() };
+    if (!await store.saveSettingVerified(chatId, ACTIVITY_SENT_KEY, activityClaim)) {
+        throw new Error('Daily activity send reservation could not be persisted.');
+    }
 
     const activityText = getActivityText(day);
     const morningRecord = (await store.getSetting(chatId, GOODMORNING_SENT_KEY)) || {};
@@ -231,9 +261,18 @@ async function sendDailyActivityOnce(sock, chatId, day) {
         greeting = selectedGreeting.text;
     }
 
-    const sent = await sock.sendMessage(chatId, {
-        text: `🔓 *Group unlocked.*\n\n${greeting ? `${greeting}\n\n` : ''}${activityText}`
-    });
+    let sent;
+    try {
+        sent = await sock.sendMessage(chatId, {
+            text: `🔓 *Group unlocked.*\n\n${greeting ? `${greeting}\n\n` : ''}${activityText}`
+        });
+    } catch (sendError) {
+        // A rejected send can still have an ambiguous delivery outcome (for
+        // example, a transport timeout after WhatsApp accepted the message).
+        // Retain today's reservation rather than risk a duplicate announcement.
+        console.error(`[GroupLock] Daily activity send outcome is uncertain for ${chatId}; retaining today's reservation to prevent duplicates: ${sendError.message}`);
+        throw sendError;
+    }
     if (selectedGreeting) {
         await saveGroupSetting(chatId, GOODMORNING_INDEX_KEY, selectedGreeting.index);
         await saveGroupSetting(chatId, GOODMORNING_SENT_KEY, { date: dateKey, sentAt: Date.now() });
@@ -250,9 +289,19 @@ async function sendDailyActivityOnce(sock, chatId, day) {
         console.log('Could not pin message:', pinErr.message);
     }
 
-    await saveGroupSetting(chatId, ACTIVITY_SENT_KEY, { date: dateKey, day, sentAt: Date.now() });
+    await saveGroupSetting(chatId, ACTIVITY_SENT_KEY, {
+        date: dateKey,
+        day,
+        status: 'sent',
+        sentAt: Date.now(),
+        messageId: sent?.key?.id || null
+    });
     console.log(`[GroupLock] Daily activity sent for ${chatId} - ${day}`);
     return true;
+}
+
+async function sendDailyActivityOnce(sock, chatId, day) {
+    return runDailyActivityOnce(chatId, () => sendDailyActivityOnceUnlocked(sock, chatId, day));
 }
 
 // Full unlock: flips the WhatsApp setting, sends/pins the activity (if not
@@ -345,7 +394,7 @@ export async function handleGroupSettingUpdate(sock, updates) {
 /**
  * Called every ~15s by the scheduler engine
  */
-export async function checkGroupLockSchedule(sock, chatId) {
+async function runGroupLockSchedule(sock, chatId) {
     // Only run for groups with the Matured Minded lifecycle package.
     if (!await hasMaturedMindedFeatures(chatId)) return false;
 
@@ -430,6 +479,10 @@ export async function checkGroupLockSchedule(sock, chatId) {
         }
         return false;
     }
+}
+
+export async function checkGroupLockSchedule(sock, chatId) {
+    return runScheduledGroupCheck(chatId, () => runGroupLockSchedule(sock, chatId));
 }
 
 export default {
