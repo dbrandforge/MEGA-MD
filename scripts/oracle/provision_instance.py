@@ -1,21 +1,128 @@
 #!/usr/bin/env python3
-"""Idempotent OCI instance provisioner with a non-mutating authentication preflight.
+"""Discover and provision an Always Free-compatible OCI instance.
 
-A dry run validates the OCI signer and API access only. Provisioning requires
-all explicit infrastructure settings and never creates a duplicate active
-instance with the configured display name.
+The controller discovers recent Ubuntu 24.04 images and eligible shapes in the
+configured region/availability domain, then tries compatible combinations.
+It never creates more than one active instance with the configured name.
+Dry-run performs discovery only and never mutates OCI resources.
 """
 import os
 import sys
+import time
 import oci
 from oci.exceptions import ServiceError
 
+TERMINAL_STATES = {"TERMINATED", "TERMINATING"}
+FREE_TIER_SHAPES = ("VM.Standard.A1.Flex", "VM.Standard.E2.1.Micro")
+
+
+def env(name, default=""):
+    return os.getenv(name, default).strip()
+
 
 def required(name):
-    value = os.getenv(name, "").strip()
+    value = env(name)
     if not value:
         raise RuntimeError(f"Missing required GitHub variable/secret: {name}")
     return value
+
+
+def bool_env(name, default=False):
+    return env(name, str(default)).lower() in {"1", "true", "yes", "on"}
+
+
+def classify_arch(shape_name):
+    name = shape_name.lower()
+    if ".a1." in name or "ampere" in name:
+        return "arm64"
+    if ".e2." in name or "amd" in name or "intel" in name:
+        return "x86_64"
+    return None
+
+
+def image_arch(image):
+    name = (getattr(image, "display_name", "") or "").lower()
+    for value in ("aarch64", "arm64", "arm-64"):
+        if value in name:
+            return "arm64"
+    for value in ("x86_64", "amd64", "x64"):
+        if value in name:
+            return "x86_64"
+    return None
+
+
+def is_capacity_error(exc):
+    code = (getattr(exc, "code", "") or "").lower()
+    message = (getattr(exc, "message", "") or "").lower()
+    return (
+        code in {"outofhostcapacity", "capacityconstraint", "internalerror"}
+        or "capacity" in message
+        or getattr(exc, "status", 0) in {429, 500, 503}
+    )
+
+
+def discover_candidates(compute, compartment, ad):
+    allowed = tuple(
+        item.strip()
+        for item in env("OCI_ALLOWED_SHAPES", ",".join(FREE_TIER_SHAPES)).split(",")
+        if item.strip()
+    )
+    # Keep the free-tier guard explicit: arbitrary paid shapes are never tried.
+    disallowed = set(allowed) - set(FREE_TIER_SHAPES)
+    if disallowed:
+        raise RuntimeError(
+            "Paid/unknown shapes blocked by Always Free safety policy: "
+            + ", ".join(sorted(disallowed))
+        )
+
+    shapes = compute.list_shapes(
+        compartment_id=compartment,
+        availability_domain=ad,
+        limit=100,
+    ).data
+    available = {shape.shape for shape in shapes}
+    shape_names = [name for name in allowed if name in available]
+    if not shape_names:
+        raise RuntimeError(
+            "No configured Always Free shape is currently listed in this AD. "
+            f"Checked: {', '.join(allowed)}"
+        )
+
+    images = compute.list_images(
+        compartment_id=compartment,
+        operating_system="Canonical Ubuntu",
+        operating_system_version="24.04",
+        sort_by="TIMECREATED",
+        sort_order="DESC",
+        limit=50,
+    ).data
+    candidates = []
+    for shape_name in shape_names:
+        arch = classify_arch(shape_name)
+        if not arch:
+            continue
+        for image in images:
+            if image_arch(image) != arch:
+                continue
+            compatible = getattr(image, "compatible_shapes", None) or []
+            if compatible and shape_name not in compatible:
+                continue
+            candidates.append((shape_name, image, arch))
+    return candidates
+
+
+def launch_config(shape_name):
+    if shape_name == "VM.Standard.A1.Flex":
+        # OCI Always Free A1 aggregate allowance is up to 4 OCPUs / 24 GB RAM.
+        # These are tenancy-wide ceilings, not a promise of remaining quota.
+        ocpus = float(env("OCI_A1_OCPUS", "4"))
+        memory = float(env("OCI_A1_MEMORY_GB", "24"))
+        if not (0 < ocpus <= 4 and 1 <= memory <= 24):
+            raise RuntimeError("A1 settings exceed the Always Free safety ceiling (4 OCPU / 24 GB).")
+        return oci.core.models.LaunchInstanceShapeConfigDetails(
+            ocpus=ocpus, memory_in_gbs=memory
+        )
+    return None
 
 
 def main():
@@ -24,92 +131,86 @@ def main():
     fingerprint = required("OCI_FINGERPRINT")
     private_key = required("OCI_PRIVATE_KEY_PEM").replace("\\n", "\n")
     region = required("OCI_REGION")
-    dry_run = os.getenv("PROVISION_DRY_RUN", "false").lower() == "true"
-
-    # OCI service clients validate the standard config fields even when a
-    # manually constructed API-key signer is supplied. Use the SDK-supported
-    # in-memory key_content config so validation and signer creation agree.
     config = {
         "tenancy": tenancy,
         "user": user,
         "fingerprint": fingerprint,
         "key_content": private_key,
-        "pass_phrase": os.getenv("OCI_PRIVATE_KEY_PASSPHRASE") or None,
+        "pass_phrase": env("OCI_PRIVATE_KEY_PASSPHRASE") or None,
         "region": region,
     }
 
-    # Always verify the credentials against OCI before considering provisioning.
     identity = oci.identity.IdentityClient(config)
     identity.get_user(user)
-    print(f"OCI_AUTHENTICATION_OK: user authenticated in {region}.")
-
-    # A dry run is deliberately authentication-only: it does not need launch
-    # parameters and cannot create, modify, or terminate OCI resources.
-    if dry_run:
-        print("DRY_RUN: authentication validated; no OCI resources changed.")
-        return 0
+    print(f"OCI_AUTHENTICATION_OK: authenticated in {region}")
 
     compartment = required("OCI_COMPARTMENT_OCID")
     subnet = required("OCI_SUBNET_OCID")
-    image = required("OCI_IMAGE_OCID")
-    shape = required("OCI_SHAPE")
     ad = required("OCI_AVAILABILITY_DOMAIN")
-    ssh_key = required("OCI_SSH_PUBLIC_KEY")
-    display_name = os.getenv("OCI_INSTANCE_NAME", "forge-guard-oracle").strip()
-    assign_public_ip = os.getenv("OCI_ASSIGN_PUBLIC_IP", "true").lower() == "true"
-
     compute = oci.core.ComputeClient(config)
+
+    display_name = env("OCI_INSTANCE_NAME", "forge-guard-oracle")
     existing = compute.list_instances(
-        compartment_id=compartment,
-        display_name=display_name,
-        limit=100,
+        compartment_id=compartment, display_name=display_name, limit=100
     ).data
-    active = [i for i in existing if i.lifecycle_state not in ("TERMINATED", "TERMINATING")]
+    active = [item for item in existing if item.lifecycle_state not in TERMINAL_STATES]
     if active:
-        instance = active[0]
-        print(f"ALREADY_EXISTS: {instance.display_name} | {instance.lifecycle_state} | {instance.id}")
-        print("No new instance created.")
+        item = active[0]
+        print(f"ALREADY_EXISTS: {item.display_name} | {item.lifecycle_state} | {item.id}")
         return 0
 
-    shape_config = None
-    ocpus = os.getenv("OCI_OCPUS", "").strip()
-    memory = os.getenv("OCI_MEMORY_GB", "").strip()
-    if ocpus or memory:
-        if not (ocpus and memory):
-            raise RuntimeError("Set both OCI_OCPUS and OCI_MEMORY_GB for flexible shapes.")
-        shape_config = oci.core.models.LaunchInstanceShapeConfigDetails(
-            ocpus=float(ocpus), memory_in_gbs=float(memory)
+    candidates = discover_candidates(compute, compartment, ad)
+    if not candidates:
+        raise RuntimeError("No compatible Ubuntu 24.04 image and Always Free shape combinations found.")
+
+    print(f"DISCOVERY_OK: {len(candidates)} compatible candidate(s) in {ad}")
+    for index, (shape_name, image, arch) in enumerate(candidates, 1):
+        print(f"CANDIDATE_{index}: shape={shape_name} arch={arch} image={image.display_name} image_ocid={image.id}")
+
+    if bool_env("PROVISION_DRY_RUN", True):
+        print("DRY_RUN: discovery complete; no OCI resources changed.")
+        return 0
+
+    ssh_key = required("OCI_SSH_PUBLIC_KEY")
+    assign_public_ip = bool_env("OCI_ASSIGN_PUBLIC_IP", True)
+    failures = 0
+    for index, (shape_name, image, arch) in enumerate(candidates, 1):
+        details = oci.core.models.LaunchInstanceDetails(
+            availability_domain=ad,
+            compartment_id=compartment,
+            display_name=display_name,
+            shape=shape_name,
+            shape_config=launch_config(shape_name),
+            source_details=oci.core.models.InstanceSourceViaImageDetails(
+                image_id=image.id, source_type="image"
+            ),
+            create_vnic_details=oci.core.models.CreateVnicDetails(
+                subnet_id=subnet, assign_public_ip=assign_public_ip
+            ),
+            metadata={"ssh_authorized_keys": ssh_key},
         )
-
-    details = oci.core.models.LaunchInstanceDetails(
-        availability_domain=ad,
-        compartment_id=compartment,
-        display_name=display_name,
-        shape=shape,
-        shape_config=shape_config,
-        source_details=oci.core.models.InstanceSourceViaImageDetails(
-            image_id=image,
-            source_type="image",
-        ),
-        create_vnic_details=oci.core.models.CreateVnicDetails(
-            subnet_id=subnet,
-            assign_public_ip=assign_public_ip,
-        ),
-        metadata={"ssh_authorized_keys": ssh_key},
-    )
-
-    try:
-        response = compute.launch_instance(details)
-        instance = response.data
-        print(f"CREATE_ACCEPTED: {instance.display_name} | {instance.lifecycle_state} | {instance.id}")
-        return 0
-    except ServiceError as exc:
-        message = f"OCI_ERROR status={exc.status} code={exc.code} message={exc.message}"
-        print(message)
-        if exc.status == 429 or exc.status >= 500 or "capacity" in (exc.message or "").lower():
-            print("RETRY_LATER: next scheduled workflow run will try again.")
+        try:
+            response = compute.launch_instance(details)
+            instance = response.data
+            print(
+                f"CREATE_ACCEPTED: candidate={index} shape={shape_name} "
+                f"image={image.id} state={instance.lifecycle_state} instance={instance.id}"
+            )
             return 0
-        return 2
+        except ServiceError as exc:
+            print(
+                f"CANDIDATE_FAILED: candidate={index} shape={shape_name} "
+                f"image={image.id} status={exc.status} code={exc.code} message={exc.message}"
+            )
+            failures += 1
+            if not is_capacity_error(exc):
+                print("STOPPING: error is not classified as transient capacity/throttling.")
+                return 2
+            # Briefly back off between candidates to avoid hammering OCI.
+            time.sleep(min(2 * failures, 10))
+
+    print(f"NO_CAPACITY: all {failures} candidate launch attempts failed; scheduled run will retry.")
+    return 0
 
 
 if __name__ == "__main__":
