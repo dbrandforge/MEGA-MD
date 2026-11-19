@@ -13,7 +13,6 @@ import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess
 import { isExplicitlyAddressedInGroup, hasActiveGroupFollowup, jidMatchesAnyBotIdentity, isBotNameTrigger, stripBotNameTrigger } from '../lib/chatbotAccess.js';
 import { createKeyedSerialExecutor, getCachedConversationHistory, getConversationMemoryKey, setCachedConversationHistory } from '../lib/chatbotConversationMemory.js';
 import { updateUserProfileFromMessage, buildUserProfileContext, buildUserIdentityReply } from '../lib/chatbotUserProfile.js';
-import { MEMBER_FEATURES_ENABLED } from '../lib/memberFeatures.js';
 import { buildForgeKnowledgeContext, buildGroupConversationModeContext, getForgeKnowledgeReply } from '../lib/forgeKnowledge.js';
 import { getChatbotFailureFallback } from '../lib/chatbotFailureFallback.js';
 import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI, shouldUseLiveSearchForMessage } from '../lib/aiService.js';
