@@ -33,8 +33,8 @@ def bool_env(name, default=False):
 def resolve_availability_domain(identity, compartment, configured):
     domains = identity.list_availability_domains(compartment_id=compartment).data
     for domain in domains:
-        if configured in {domain.name, domain.name.split(":")[-1], domain.display_name}:
-            print(f"AVAILABILITY_DOMAIN_RESOLVED: {domain.display_name}")
+        if configured in {domain.name, domain.name.split(":")[-1]}:
+            print(f"AVAILABILITY_DOMAIN_RESOLVED: {domain.name}")
             return domain.name
     raise RuntimeError(
         f"Configured availability domain {configured!r} was not found. "
