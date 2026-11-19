@@ -511,8 +511,13 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         console.info(`[Chatbot] Reply (intent: ${classifyIntent(cleanForHistory)}, identity: ${identity?.role || 'standard'}, gender: ${registeredGender || 'unregistered'}).`);
 
         printLog('info', `[Chatbot DM] Attempting reply via destinationType=${chatId.endsWith('@lid') ? 'LID' : 'PN_or_group'}`);
+        const sendStartedAt = Date.now();
         const sentMessage = await sock.sendMessage(chatId, { text: response }, { quoted: message });
-        printLog('info', `[Chatbot DM] sendMessage resolved id=${sentMessage?.key?.id || 'missing'} destinationType=${sentMessage?.key?.remoteJid?.endsWith('@lid') ? 'LID' : 'other'}`);
+        const sendLatencyMs = Date.now() - sendStartedAt;
+        printLog('info', `[Chatbot DM] sendMessage resolved latency_ms=${sendLatencyMs} id=${sentMessage?.key?.id || 'missing'} destinationType=${sentMessage?.key?.remoteJid?.endsWith('@lid') ? 'LID' : 'other'}`);
+        if (isGroup && sendLatencyMs >= 5000) {
+            printLog('warning', `[Chatbot Group Send] slow outbound send latency_ms=${sendLatencyMs} destination=group`);
+        }
 
         history.push({ name: 'Forge Bot', text: response.slice(0, 500), at: Date.now() });
         if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
