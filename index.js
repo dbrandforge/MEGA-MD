@@ -135,6 +135,9 @@ async function flushPendingStateBeforeShutdown(signal) {
     const results = await Promise.allSettled([
         typeof store.flushPendingCounters === 'function' ? store.flushPendingCounters() : Promise.resolve(),
         typeof global.__forgeFlushGroupMemory === 'function' ? global.__forgeFlushGroupMemory() : Promise.resolve(),
+        // Persist the latest Signal ratchet state so the next instance does not
+        // restore stale keys (which causes bad_mac / decrypt_failed after a deploy).
+        typeof flushSessionBackupQueue === 'function' ? flushSessionBackupQueue() : Promise.resolve(),
     ]);
     clearTimeout(timeout);
     const failures = results.filter(result => result.status === 'rejected');
@@ -320,8 +323,8 @@ const pendingSessionBackupFiles = new Set();
 let sessionBackupFullScanPending = false;
 // Auth files can change several times during normal group traffic. Coalesce those
 // writes into a low-frequency durable snapshot instead of hammering MongoDB.
-const SESSION_BACKUP_DEBOUNCE_MS = 120000;
-const SESSION_BACKUP_MAX_WAIT_MS = 300000;
+const SESSION_BACKUP_DEBOUNCE_MS = 45000;
+const SESSION_BACKUP_MAX_WAIT_MS = 120000;
 function flushSessionBackupQueue() {
     if (sessionBackupDebounce) clearTimeout(sessionBackupDebounce);
     if (sessionBackupMaxDebounce) clearTimeout(sessionBackupMaxDebounce);
@@ -332,8 +335,9 @@ function flushSessionBackupQueue() {
     sessionBackupFullScanPending = false;
     pendingSessionBackupFiles.clear();
     if (fullScan || changedFiles.length) {
-        backupSessionToMongo(fullScan ? null : changedFiles).catch(() => { });
+        return backupSessionToMongo(fullScan ? null : changedFiles).catch(() => { });
     }
+    return Promise.resolve();
 }
 function queueSessionBackup(filename = null) {
     if (filename && typeof filename === 'string' && filename.endsWith('.json')
