@@ -47,21 +47,24 @@ describe('Forge Guard menu branding', () => {
         await menuPlugin.handler(sock, publicMessage, [], {
             chatId, senderId: '2348000000000@s.whatsapp.net', channelInfo: {}
         });
-        expect(sent[0]?.content?.image).toBeInstanceOf(Buffer);
-        expect(sent[0]?.content?.caption).toContain('FORGE GUARD');
-        const publicText = sent.at(-1)?.content?.text || '';
+        const publicText = sent.find(item => typeof item.content.text === 'string')?.content?.text || '';
         const publicCount = Number(publicText.match(/Commands:\* (\d+)/)?.[1] || 0);
         expect(publicCount).toBeGreaterThan(100);
+        await vi.waitFor(() => expect(sent.filter(item => item.content.image)).toHaveLength(1));
+        const publicArtwork = sent.find(item => item.content.image)?.content;
+        expect(publicArtwork?.image).toBeInstanceOf(Buffer);
+        expect(publicArtwork?.caption).toContain('FORGE GUARD');
 
         const ownerMessage = { key: { remoteJid: chatId, fromMe: true } };
         await menuPlugin.handler(sock, ownerMessage, ['owner'], {
             chatId, senderId: '2348000000000@s.whatsapp.net', channelInfo: {}
         });
-        expect(sent.at(-2)?.content?.image).toBeInstanceOf(Buffer);
-        expect(sent.at(-2)?.content?.caption).toContain('OWNER COMMAND INDEX');
-        const ownerText = sent.at(-1)?.content?.text || '';
+        const ownerText = sent.filter(item => typeof item.content.text === 'string').at(-1)?.content?.text || '';
         const ownerCount = Number(ownerText.match(/Commands:\* (\d+)/)?.[1] || 0);
         expect(ownerCount).toBeGreaterThan(200);
-        expect(sent.filter(item => item.content.image)).toHaveLength(2);
+        await vi.waitFor(() => expect(sent.filter(item => item.content.image)).toHaveLength(2));
+        const ownerArtwork = sent.filter(item => item.content.image).at(-1)?.content;
+        expect(ownerArtwork?.image).toBeInstanceOf(Buffer);
+        expect(ownerArtwork?.caption).toContain('OWNER COMMAND INDEX');
     });
 });
