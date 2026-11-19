@@ -57,4 +57,65 @@ describe('mongo auth key store', () => {
         expect(held.pendingCount()).toBe(1);
         store.close(); held.close();
     });
-});
+
+
+    it('limits write batches to 100 operations and applies a real cooldown between batches', async () => {
+        const batchSizes = [];
+        const model = { bulkWrite: async operations => { batchSizes.push(operations.length); } };
+        const store = createMongoKeyStore({ getModel: async () => model, BufferJSON, proto: null, flushMs: 10000, batchCooldownMs: 20 });
+        const keys = Object.fromEntries(Array.from({ length: 201 }, (_, i) => [String(i), { value: i }]));
+        await store.set({ session: keys });
+        const startedAt = Date.now();
+        await store.flush();
+        const elapsed = Date.now() - startedAt;
+        store.close();
+        expect(batchSizes).toEqual([100, 100, 1]);
+        expect(elapsed).toBeGreaterThanOrEqual(35);
+        expect(store.pendingCount()).toBe(0);
+    });
+
+    it('requeues a failed batch without losing pending keys', async () => {
+        let attempts = 0;
+        const persisted = [];
+        const model = {
+            bulkWrite: async operations => {
+                attempts++;
+                if (attempts === 1) throw new Error('temporary MongoDB failure');
+                persisted.push(...operations);
+            },
+        };
+        const store = createMongoKeyStore({ getModel: async () => model, BufferJSON, proto: null, flushMs: 10000, batchCooldownMs: 0 });
+        await store.set({ session: { a: { value: 1 }, b: { value: 2 }, c: { value: 3 } } });
+        await store.flush();
+        expect(store.pendingCount()).toBe(3);
+        await store.flush();
+        store.close();
+        expect(persisted).toHaveLength(3);
+        expect(store.pendingCount()).toBe(0);
+    });
+
+    it('preserves newer writes that arrive while a batch is in flight', async () => {
+        let releaseWrite;
+        const blocked = new Promise(resolve => { releaseWrite = resolve; });
+        let calls = 0;
+        const persisted = [];
+        const model = {
+            bulkWrite: async operations => {
+                calls++;
+                if (calls === 1) await blocked;
+                persisted.push(...operations);
+            },
+        };
+        const store = createMongoKeyStore({ getModel: async () => model, BufferJSON, proto: null, flushMs: 10000, batchCooldownMs: 0 });
+        await store.set({ session: { first: { value: 1 } } });
+        const firstFlush = store.flush();
+        await Promise.resolve();
+        await store.set({ session: { second: { value: 2 } } });
+        releaseWrite();
+        await firstFlush;
+        await store.flush();
+        store.close();
+        expect(persisted).toHaveLength(2);
+        expect(store.pendingCount()).toBe(0);
+    });
+\n});\n
