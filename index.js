@@ -79,13 +79,9 @@ const incomingMessageQueue = createPerChatMessageQueue({
 });
 global.__forgeIncomingQueueStats = incomingMessageQueue.getStats;
 store.readFromFile();
-setInterval(() => store.writeToFile(), config.storeWriteInterval || 10000);
-setInterval(() => {
-    if (global.gc) {
-        global.gc();
-        console.log('🧹 Garbage collection completed');
-    }
-}, 60000);
+// Store snapshots serialize the whole store; on a 0.15 CPU instance every write
+// steals event-loop time from message handling, so write far less often.
+setInterval(() => store.writeToFile(), config.storeWriteInterval || 120000).unref?.();
 const eventLoopDelay = monitorEventLoopDelay({ resolution: 20 });
 eventLoopDelay.enable();
 let previousCpuUsage = process.cpuUsage();
@@ -102,7 +98,7 @@ const runtimeTelemetryTimer = setInterval(() => {
     const queue = global.__forgeIncomingQueueStats?.() || {};
     printLog('info', 'Runtime pressure: ' + ['process_cpu_one_core_pct=' + cpuPercent.toFixed(1), 'rss_mb=' + mb(memory.rss), 'heap_used_mb=' + mb(memory.heapUsed), 'heap_total_mb=' + mb(memory.heapTotal), 'external_mb=' + mb(memory.external), 'array_buffers_mb=' + mb(memory.arrayBuffers || 0), 'event_loop_p95_ms=' + (eventLoopDelay.percentile(95) / 1e6).toFixed(1), 'event_loop_max_ms=' + (eventLoopDelay.max / 1e6).toFixed(1), 'queue_pending=' + (queue.pending ?? 'unknown'), 'queue_active=' + (queue.active ?? 'unknown')].join(' '));
     eventLoopDelay.reset();
-}, 30000);
+}, 120000);
 runtimeTelemetryTimer.unref?.();
 
 let lastHighMemoryWarningAt = 0;
@@ -125,7 +121,7 @@ setInterval(() => {
         const profileEntries = global.__forgeProfileCacheSize?.() ?? 0;
         printLog('warning', `Memory diagnostics: rss=${rssMb.toFixed(1)}MB heapUsed=${heapUsedMb.toFixed(1)}MB heapTotal=${heapTotalMb.toFixed(1)}MB external=${externalMb.toFixed(1)}MB arrayBuffers=${arrayBuffersMb.toFixed(1)}MB signalKeyCache=${signalCacheEntries} antiDeleteEntries=${antiDeleteEntries} chatbotHistories=${chatbotCaches.histories ?? 0} groupRosters=${groupRosterEntries} profiles=${profileEntries} queueActive=${queue.active ?? 0} queuePending=${queue.pending ?? 0} queueChats=${queue.chats ?? 0}`);
     }
-}, 30000);
+}, 120000);
 
 let shutdownFlushStarted = false;
 async function flushPendingStateBeforeShutdown(signal) {
@@ -324,8 +320,8 @@ const pendingSessionBackupFiles = new Set();
 let sessionBackupFullScanPending = false;
 // Auth files can change several times during normal group traffic. Coalesce those
 // writes into a low-frequency durable snapshot instead of hammering MongoDB.
-const SESSION_BACKUP_DEBOUNCE_MS = 30000;
-const SESSION_BACKUP_MAX_WAIT_MS = 60000;
+const SESSION_BACKUP_DEBOUNCE_MS = 120000;
+const SESSION_BACKUP_MAX_WAIT_MS = 300000;
 function flushSessionBackupQueue() {
     if (sessionBackupDebounce) clearTimeout(sessionBackupDebounce);
     if (sessionBackupMaxDebounce) clearTimeout(sessionBackupMaxDebounce);
