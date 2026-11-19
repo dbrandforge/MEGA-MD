@@ -1,5 +1,43 @@
-import { describe, expect, it } from 'vitest';
-import { isUsefulAutomaticAnswer, buildConversationPrompt, shouldUseLiveSearchForMessage } from '../../lib/aiService.js';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import axios from 'axios';
+import { isUsefulAutomaticAnswer, buildConversationPrompt, shouldUseLiveSearchForMessage, askFastAI } from '../../lib/aiService.js';
+
+vi.mock('axios', () => ({ default: { post: vi.fn(), get: vi.fn() } }));
+
+describe('bounded automatic AI provider failover', () => {
+  const originalKey = process.env.GEMINI_API_KEY;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.GEMINI_API_KEY = 'test-gemini-key';
+  });
+
+  afterEach(() => {
+    if (originalKey === undefined) delete process.env.GEMINI_API_KEY;
+    else process.env.GEMINI_API_KEY = originalKey;
+  });
+
+  it('falls through to the first backup when Gemini times out', async () => {
+    axios.post.mockRejectedValueOnce(Object.assign(new Error('timeout'), { code: 'ECONNABORTED' }));
+    axios.get.mockResolvedValueOnce({ data: { data: { response: 'Photosynthesis is the process by which green plants use sunlight to make food from water and carbon dioxide.' } } });
+
+    const answer = await askFastAI('What is photosynthesis?', { timeoutMs: 5000 });
+
+    expect(answer).toContain('Photosynthesis');
+    expect(axios.post).toHaveBeenCalledTimes(1);
+    expect(axios.get).toHaveBeenCalledTimes(1);
+    expect(axios.get.mock.calls[0][1].timeout).toBeLessThanOrEqual(1200);
+  });
+
+  it('does not call a second backup after the first backup succeeds', async () => {
+    axios.post.mockRejectedValueOnce(Object.assign(new Error('timeout'), { code: 'ETIMEDOUT' }));
+    axios.get.mockResolvedValueOnce({ data: { data: { response: 'Photosynthesis allows green plants to convert light energy, water and carbon dioxide into glucose and oxygen.' } } });
+
+    await askFastAI('Explain photosynthesis.', { timeoutMs: 5000 });
+
+    expect(axios.get).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe('Forge Guard conversation style instructions', () => {
   it('does not steer casual conversations toward business by default', () => {
