@@ -13,7 +13,6 @@ import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess
 import { isExplicitlyAddressedInGroup, hasActiveGroupFollowup, jidMatchesAnyBotIdentity, isBotNameTrigger, stripBotNameTrigger } from '../lib/chatbotAccess.js';
 import { createKeyedSerialExecutor, getCachedConversationHistory, getConversationMemoryKey, setCachedConversationHistory } from '../lib/chatbotConversationMemory.js';
 import { updateUserProfileFromMessage, buildUserProfileContext, buildUserIdentityReply } from '../lib/chatbotUserProfile.js';
-import { recordGroupInteraction, buildGroupContinuityContext } from '../lib/chatbotGroupMemory.js';
 import { MEMBER_FEATURES_ENABLED } from '../lib/memberFeatures.js';
 import { buildForgeKnowledgeContext, buildGroupConversationModeContext, getForgeKnowledgeReply } from '../lib/forgeKnowledge.js';
 import { getChatbotFailureFallback } from '../lib/chatbotFailureFallback.js';
@@ -152,7 +151,11 @@ export async function isChatbotEnabledForMessage(chatId, senderId) {
 }
 
 
-async function loadChatHistory(memoryKey, legacyDirectChatId = null) {
+async function loadChatHistory(memoryKey, legacyDirectChatId = null, allowPersistentMemory = true) {
+    if (!allowPersistentMemory) {
+        setCachedConversationHistory(chatMemory.messages, chatMemory.loaded, memoryKey, [], MAX_CACHED_CONVERSATIONS);
+        return [];
+    }
     const cachedHistory = getCachedConversationHistory(chatMemory.messages, chatMemory.loaded, memoryKey);
     if (cachedHistory !== undefined) return cachedHistory;
     try {
@@ -188,7 +191,11 @@ async function loadChatHistory(memoryKey, legacyDirectChatId = null) {
     return getCachedConversationHistory(chatMemory.messages, chatMemory.loaded, memoryKey) || [];
 }
 
-async function saveChatHistory(memoryKey, history) {
+async function saveChatHistory(memoryKey, history, allowPersistentMemory = true) {
+    if (!allowPersistentMemory) {
+        setCachedConversationHistory(chatMemory.messages, chatMemory.loaded, memoryKey, [], MAX_CACHED_CONVERSATIONS);
+        return;
+    }
     try {
         const fresh = history
             .filter(item => item && typeof item.text === 'string' &&
@@ -337,7 +344,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         } else {
             // Explicitly addressed messages and enabled DMs may load their own transcript.
             // Group history remains isolated by (group, participant).
-            history = await loadChatHistory(memoryKey, isGroup ? null : chatId);
+            history = await loadChatHistory(memoryKey, isGroup ? null : chatId, Boolean(identity));
         }
 
         if (isGroup) {
@@ -347,15 +354,11 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         // Profile facts and group continuity are captured only for people actively
         // conversing with Forge Guard, never for every member's ordinary group chatter.
         const profileLanguage = detectMessageLanguage(cleanForHistory, history);
-        const groupMemberSnapshot = MEMBER_FEATURES_ENABLED && isGroup && !message.key.fromMe
-            ? await recordGroupInteraction(chatId, senderId, message.pushName, cleanForHistory, profileLanguage)
-            : null;
         const profileSourceText = [
             cleanForHistory,
-            ...history.filter(item => item.name !== 'Forge Bot').map(item => item.text),
-            ...(groupMemberSnapshot?.messages || []).map(item => item.text)
+            ...history.filter(item => item.name !== 'Forge Bot').map(item => item.text)
         ].join(String.fromCharCode(10));
-        const userProfile = (message.key.fromMe || !MEMBER_FEATURES_ENABLED) ? null
+        const userProfile = (!identity || message.key.fromMe) ? null
             : await updateUserProfileFromMessage(senderId, profileSourceText, { language: profileLanguage, scopeChatId: isGroup ? chatId : null });
         const userProfileContext = buildUserProfileContext(userProfile);
 
@@ -366,14 +369,12 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
             history.push({ name: message.pushName || 'You', text: cleanForHistory.slice(0, 500), at: Date.now() });
             history.push({ name: 'Forge Bot', text: FORGE_GUARD_REPLICATION_REPLY, at: Date.now() });
             if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
-            await saveChatHistory(memoryKey, history);
+            await saveChatHistory(memoryKey, history, Boolean(identity));
             console.info('[Chatbot Protection] handled Forge Guard replication inquiry.');
             return;
         }
 
-        const groupContinuityContext = isGroup
-            ? await buildGroupContinuityContext(chatId, senderId, chatbotQuery, mentioned)
-            : '';
+        const groupContinuityContext = '';
         const groupProfile = isGroup ? await store.getSetting(chatId, 'forgeGuardGroupProfile').catch(() => null) : null;
         const conversationModeContext = buildGroupConversationModeContext(groupProfile, chatId);
         const forgeKnowledgeContext = buildForgeKnowledgeContext(chatbotQuery, identity);
