@@ -32,10 +32,26 @@ def bool_env(name, default=False):
 
 def resolve_availability_domain(identity, compartment, configured):
     domains = identity.list_availability_domains(compartment_id=compartment).data
+    requested = configured.strip().upper()
+    available = []
+
     for domain in domains:
-        if configured in {domain.name, domain.name.split(":")[-1]}:
-            print(f"AVAILABILITY_DOMAIN_RESOLVED: {domain.name}")
+        domain_name = domain.name.strip()
+        short_name = domain_name.rsplit(":", 1)[-1]
+        available.append(domain_name)
+
+        # OCI may return a region-qualified AD name, such as
+        # "<realm>:<region>-AD-1", while configuration uses the short "AD-1".
+        normalized_short = short_name.upper()
+        if (
+            requested == domain_name.upper()
+            or requested == normalized_short
+            or normalized_short.endswith(f"-{requested}")
+        ):
+            print(f"AVAILABILITY_DOMAIN_RESOLVED: {domain_name}")
             return domain.name
+
+    print("OCI_AVAILABLE_AVAILABILITY_DOMAINS: " + ", ".join(available))
     raise RuntimeError(
         f"Configured availability domain {configured!r} was not found. "
         "Set OCI_AVAILABILITY_DOMAIN to AD-1 or the exact OCI AD name."
