@@ -26,6 +26,7 @@ Populate the GitHub repository Settings → Secrets and variables → Actions.
 - `OCI_INSTANCE_NAME`: default `forge-guard-oracle`
 - `OCI_ASSIGN_PUBLIC_IP`: `true` only if the selected existing subnet is public and the design requires a public IP; otherwise `false`
 - `OCI_OCPUS` and `OCI_MEMORY_GB`: set both for flexible shapes; leave both blank for fixed shapes
+- `OCI_PROVISIONING_ENABLED`: set to `true` only after the dry run passes and you are ready for scheduled creation attempts
 
 Do not guess or recreate network IDs. Use the subnet already created in the Forge Guard VCN. Confirm its route table, internet/NAT path, security rules/NSGs, and whether it is public or private before choosing the public-IP setting. A private subnet normally needs a deliberate egress design; do not assign a public IP to bypass that design.
 
@@ -35,7 +36,7 @@ Do not guess or recreate network IDs. Use the subnet already created in the Forg
 2. Copy the exact existing VCN subnet OCID and the correct compartment/region values into repository variables.
 3. Select the image, shape, and availability domain from the same region.
 4. Run Actions → Oracle Instance Provisioner → Run workflow with `dry_run=true`.
-5. Review the run logs. Only after the dry run passes, run manually with `dry_run=false`; the scheduled runs will then continue automatically.
+5. Review the run logs. Only after the dry run passes, set `OCI_PROVISIONING_ENABLED=true` to enable scheduled attempts. You can alternatively dispatch one immediate attempt with `dry_run=false`.
 6. Monitor Actions → Oracle Instance Provisioner. Capacity/rate-limit/server-side errors are logged as retry-later and the next scheduled run makes another single attempt.
 
 ## Safety behaviour
