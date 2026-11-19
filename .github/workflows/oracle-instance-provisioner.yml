@@ -20,8 +20,9 @@ concurrency:
 
 jobs:
   provision:
-    # Manual dispatch must not bypass the explicit provisioning safety switch.
-    if: vars.OCI_PROVISIONING_ENABLED == 'true'
+    # Read-only manual discovery is allowed while provisioning is disabled.
+    # Instance creation always requires OCI_PROVISIONING_ENABLED=true.
+    if: vars.OCI_PROVISIONING_ENABLED == 'true' || (github.event_name == 'workflow_dispatch' && inputs.dry_run)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
