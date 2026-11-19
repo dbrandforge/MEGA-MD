@@ -18,7 +18,7 @@ import {
     setUserProfileGroupSharing
 } from '../../lib/chatbotUserProfile.js';
 
-const sender = '2348011111111@s.whatsapp.net';
+const sender = '2348087404020@s.whatsapp.net';
 let settings;
 
 describe('Forge Guard user-controlled profile facts', () => {
@@ -33,7 +33,15 @@ describe('Forge Guard user-controlled profile facts', () => {
         });
     });
 
-    it('extracts explicit business and service information for a member update', () => {
+    it('blocks personal profile storage for ordinary members', async () => {
+        const ordinaryMember = '2348011111111@s.whatsapp.net';
+        expect(await getUserProfile(ordinaryMember)).toBeNull();
+        expect(await updateUserProfileFromMessage(ordinaryMember, 'My business is Example Studio.')).toBeNull();
+        expect(store.getSetting).not.toHaveBeenCalled();
+        expect(store.saveSettingVerified).not.toHaveBeenCalled();
+    });
+
+    it('extracts explicit business and service information for an authorized profile update', () => {
         const facts = extractUserFacts('My business is Ray’s Glitz & Glam. I specialize in bridal makeup.');
         expect(facts.businesses).toContain('Ray’s Glitz & Glam');
         expect(facts.offerings).toContain('bridal makeup');
