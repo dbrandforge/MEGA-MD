@@ -264,14 +264,14 @@ async function sendDailyActivityOnceUnlocked(sock, chatId, day) {
     let sent;
     try {
         sent = await sock.sendMessage(chatId, {
-            text: \`🔓 *Group unlocked.*\n\n\${greeting ? \`\${greeting}\n\n\` : ''}\${activityText}\`
+            text: `🔓 *Group unlocked.*\n\n${greeting ? `${greeting}\n\n` : ''}${activityText}`
         });
     } catch (sendError) {
         // Release only when WhatsApp explicitly rejected the send. If this
         // write fails, retaining the claim is safer than risking duplicates.
         const released = await store.saveSettingVerified(chatId, ACTIVITY_SENT_KEY, null);
         if (!released) {
-            console.error(\`[GroupLock] Could not release failed daily activity reservation for \${chatId}; duplicate protection remains active.\`);
+            console.error(`[GroupLock] Could not release failed daily activity reservation for ${chatId}; duplicate protection remains active.`);
         }
         throw sendError;
     }
