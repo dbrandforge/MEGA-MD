@@ -30,6 +30,7 @@ def main():
         tenancy=tenancy,
         user=user,
         fingerprint=fingerprint,
+        private_key_file_location=None,
         private_key_content=private_key,
         pass_phrase=os.getenv("OCI_PRIVATE_KEY_PASSPHRASE") or None,
     )
