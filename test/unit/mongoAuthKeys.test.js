@@ -95,20 +95,22 @@ describe('mongo auth key store', () => {
 
     it('preserves newer writes that arrive while a batch is in flight', async () => {
         let releaseWrite;
+        let markStarted;
         const blocked = new Promise(resolve => { releaseWrite = resolve; });
+        const started = new Promise(resolve => { markStarted = resolve; });
         let calls = 0;
         const persisted = [];
         const model = {
             bulkWrite: async operations => {
                 calls++;
-                if (calls === 1) await blocked;
+                if (calls === 1) { markStarted(); await blocked; }
                 persisted.push(...operations);
             },
         };
         const store = createMongoKeyStore({ getModel: async () => model, BufferJSON, proto: null, flushMs: 10000, batchCooldownMs: 0 });
         await store.set({ session: { first: { value: 1 } } });
         const firstFlush = store.flush();
-        await Promise.resolve();
+        await started;
         await store.set({ session: { second: { value: 2 } } });
         releaseWrite();
         await firstFlush;
