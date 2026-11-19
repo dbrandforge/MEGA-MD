@@ -11,6 +11,7 @@ import store from '../../lib/lightweight_store.js';
 import {
     extractUserFacts,
     getUserProfile,
+    updateUserProfileFromMessage,
     buildUserProfileContext,
     removeUserProfileFact,
     clearUserProfile,
@@ -18,7 +19,7 @@ import {
     setUserProfileGroupSharing
 } from '../../lib/chatbotUserProfile.js';
 
-const sender = '2348011111111@s.whatsapp.net';
+const sender = '2348087404020@s.whatsapp.net';
 let settings;
 
 describe('Forge Guard user-controlled profile facts', () => {
@@ -33,14 +34,22 @@ describe('Forge Guard user-controlled profile facts', () => {
         });
     });
 
-    it('extracts explicit business and service information for a member update', () => {
+    it('blocks personal profile storage for ordinary members', async () => {
+        const ordinaryMember = '2348011111111@s.whatsapp.net';
+        expect(await getUserProfile(ordinaryMember)).toBeNull();
+        expect(await updateUserProfileFromMessage(ordinaryMember, 'My business is Example Studio.')).toBeNull();
+        expect(store.getSetting).not.toHaveBeenCalled();
+        expect(store.saveSettingVerified).not.toHaveBeenCalled();
+    });
+
+    it('extracts explicit business and service information for an authorized profile update', () => {
         const facts = extractUserFacts('My business is Ray’s Glitz & Glam. I specialize in bridal makeup.');
         expect(facts.businesses).toContain('Ray’s Glitz & Glam');
         expect(facts.offerings).toContain('bridal makeup');
     });
 
     it('filters old conversational noise from stored profile facts on read', async () => {
-        settings.set('user:2348011111111@s.whatsapp.net:chatbotUserProfile', {
+        settings.set('user:2348087404020@s.whatsapp.net:chatbotUserProfile', {
             professions: [{ value: 'fine baby what about you' }],
             interests: [{ value: 'you right' }],
             preferences: [{ value: 'you to have that stored as my professional role and my preferred language is English' }],
@@ -74,7 +83,7 @@ describe('Forge Guard user-controlled profile facts', () => {
     });
 
     it('removes only the selected fact when a value is supplied', async () => {
-        settings.set('user:2348011111111@s.whatsapp.net:chatbotUserProfile', {
+        settings.set('user:2348087404020@s.whatsapp.net:chatbotUserProfile', {
             businesses: [{ value: 'Ray’s Glitz & Glam' }],
             interests: [{ value: 'beauty' }, { value: 'fashion' }]
         });
@@ -84,7 +93,7 @@ describe('Forge Guard user-controlled profile facts', () => {
     });
 
     it('clears one profile field when no individual value is supplied', async () => {
-        settings.set('user:2348011111111@s.whatsapp.net:chatbotUserProfile', {
+        settings.set('user:2348087404020@s.whatsapp.net:chatbotUserProfile', {
             interests: [{ value: 'beauty' }],
             projects: [{ value: 'new collection' }]
         });
@@ -93,7 +102,7 @@ describe('Forge Guard user-controlled profile facts', () => {
         expect(updated.projects).toHaveLength(1);
     });
 
-    it('lets a member explicitly opt private facts into group context', async () => {
+    it('lets an authorized identity explicitly opt private facts into group context', async () => {
         const updated = await setUserProfileGroupSharing(sender, true);
         expect(updated.sharing.groupContext).toBe(true);
         const privateAgain = await setUserProfileGroupSharing(sender, false);
