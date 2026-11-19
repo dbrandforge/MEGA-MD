@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 """Discover and provision an Always Free-compatible OCI instance.
 
-The controller discovers recent Ubuntu 24.04 images and eligible shapes in the
-configured region/availability domain, then tries compatible combinations.
-It never creates more than one active instance with the configured name.
-Dry-run performs discovery only and never mutates OCI resources.
+Discovers Ubuntu 24.04 images and configured Always Free shapes in the target
+region/AD, then tries compatible combinations. Dry-run is read-only.
 """
 import os
 import sys
@@ -17,7 +15,8 @@ FREE_TIER_SHAPES = ("VM.Standard.A1.Flex", "VM.Standard.E2.1.Micro")
 
 
 def env(name, default=""):
-    return os.getenv(name, default).strip()
+    value = os.getenv(name)
+    return value.strip() if value and value.strip() else default
 
 
 def required(name):
@@ -31,6 +30,18 @@ def bool_env(name, default=False):
     return env(name, str(default)).lower() in {"1", "true", "yes", "on"}
 
 
+def resolve_availability_domain(identity, compartment, configured):
+    domains = identity.list_availability_domains(compartment_id=compartment).data
+    for domain in domains:
+        if configured in {domain.name, domain.name.split(":")[-1], domain.display_name}:
+            print(f"AVAILABILITY_DOMAIN_RESOLVED: {domain.display_name}")
+            return domain.name
+    raise RuntimeError(
+        f"Configured availability domain {configured!r} was not found. "
+        "Set OCI_AVAILABILITY_DOMAIN to AD-1 or the exact OCI AD name."
+    )
+
+
 def classify_arch(shape_name):
     name = shape_name.lower()
     if ".a1." in name or "ampere" in name:
@@ -42,12 +53,10 @@ def classify_arch(shape_name):
 
 def image_arch(image):
     name = (getattr(image, "display_name", "") or "").lower()
-    for value in ("aarch64", "arm64", "arm-64"):
-        if value in name:
-            return "arm64"
-    for value in ("x86_64", "amd64", "x64"):
-        if value in name:
-            return "x86_64"
+    if any(value in name for value in ("aarch64", "arm64", "arm-64")):
+        return "arm64"
+    if any(value in name for value in ("x86_64", "amd64", "x64")):
+        return "x86_64"
     return None
 
 
@@ -67,7 +76,6 @@ def discover_candidates(compute, compartment, ad):
         for item in env("OCI_ALLOWED_SHAPES", ",".join(FREE_TIER_SHAPES)).split(",")
         if item.strip()
     )
-    # Keep the free-tier guard explicit: arbitrary paid shapes are never tried.
     disallowed = set(allowed) - set(FREE_TIER_SHAPES)
     if disallowed:
         raise RuntimeError(
@@ -76,9 +84,7 @@ def discover_candidates(compute, compartment, ad):
         )
 
     shapes = compute.list_shapes(
-        compartment_id=compartment,
-        availability_domain=ad,
-        limit=100,
+        compartment_id=compartment, availability_domain=ad, limit=100
     ).data
     available = {shape.shape for shape in shapes}
     shape_names = [name for name in allowed if name in available]
@@ -113,12 +119,11 @@ def discover_candidates(compute, compartment, ad):
 
 def launch_config(shape_name):
     if shape_name == "VM.Standard.A1.Flex":
-        # OCI Always Free A1 aggregate allowance is up to 4 OCPUs / 24 GB RAM.
-        # These are tenancy-wide ceilings, not a promise of remaining quota.
+        # Tenancy-wide Always Free A1 ceiling: 4 OCPUs / 24 GB RAM.
         ocpus = float(env("OCI_A1_OCPUS", "4"))
         memory = float(env("OCI_A1_MEMORY_GB", "24"))
         if not (0 < ocpus <= 4 and 1 <= memory <= 24):
-            raise RuntimeError("A1 settings exceed the Always Free safety ceiling (4 OCPU / 24 GB).")
+            raise RuntimeError("A1 settings exceed the Always Free ceiling (4 OCPU / 24 GB).")
         return oci.core.models.LaunchInstanceShapeConfigDetails(
             ocpus=ocpus, memory_in_gbs=memory
         )
@@ -146,7 +151,8 @@ def main():
 
     compartment = required("OCI_COMPARTMENT_OCID")
     subnet = required("OCI_SUBNET_OCID")
-    ad = required("OCI_AVAILABILITY_DOMAIN")
+    configured_ad = required("OCI_AVAILABILITY_DOMAIN")
+    ad = resolve_availability_domain(identity, compartment, configured_ad)
     compute = oci.core.ComputeClient(config)
 
     display_name = env("OCI_INSTANCE_NAME", "forge-guard-oracle")
@@ -163,7 +169,7 @@ def main():
     if not candidates:
         raise RuntimeError("No compatible Ubuntu 24.04 image and Always Free shape combinations found.")
 
-    print(f"DISCOVERY_OK: {len(candidates)} compatible candidate(s) in {ad}")
+    print(f"DISCOVERY_OK: {len(candidates)} compatible candidate(s) in {configured_ad}")
     for index, (shape_name, image, arch) in enumerate(candidates, 1):
         print(f"CANDIDATE_{index}: shape={shape_name} arch={arch} image={image.display_name} image_ocid={image.id}")
 
@@ -190,8 +196,7 @@ def main():
             metadata={"ssh_authorized_keys": ssh_key},
         )
         try:
-            response = compute.launch_instance(details)
-            instance = response.data
+            instance = compute.launch_instance(details).data
             print(
                 f"CREATE_ACCEPTED: candidate={index} shape={shape_name} "
                 f"image={image.id} state={instance.lifecycle_state} instance={instance.id}"
@@ -206,7 +211,6 @@ def main():
             if not is_capacity_error(exc):
                 print("STOPPING: error is not classified as transient capacity/throttling.")
                 return 2
-            # Briefly back off between candidates to avoid hammering OCI.
             time.sleep(min(2 * failures, 10))
 
     print(f"NO_CAPACITY: all {failures} candidate launch attempts failed; scheduled run will retry.")
