@@ -58,7 +58,6 @@ describe('mongo auth key store', () => {
         store.close(); held.close();
     });
 
-
     it('limits write batches to 100 operations and applies a real cooldown between batches', async () => {
         const batchSizes = [];
         const model = { bulkWrite: async operations => { batchSizes.push(operations.length); } };
@@ -118,4 +117,5 @@ describe('mongo auth key store', () => {
         expect(persisted).toHaveLength(2);
         expect(store.pendingCount()).toBe(0);
     });
-\n});\n
+
+});
