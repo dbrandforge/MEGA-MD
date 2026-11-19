@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Validate Oracle authentication without creating an instance"
+        description: "Discover compatible Ubuntu images and Always Free shapes without creating an instance"
         required: true
         default: true
         type: boolean
@@ -20,9 +20,10 @@ concurrency:
 
 jobs:
   provision:
-    if: github.event_name == 'workflow_dispatch' || vars.OCI_PROVISIONING_ENABLED == 'true'
+    # Manual dispatch must not bypass the explicit provisioning safety switch.
+    if: vars.OCI_PROVISIONING_ENABLED == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -35,7 +36,7 @@ jobs:
       - name: Install OCI SDK
         run: python -m pip install --disable-pip-version-check oci
 
-      - name: Validate configuration and attempt provisioning
+      - name: Discover candidates and optionally provision
         env:
           OCI_USER_OCID: ${{ secrets.OCI_USER_OCID }}
           OCI_TENANCY_OCID: ${{ secrets.OCI_TENANCY_OCID }}
@@ -45,13 +46,12 @@ jobs:
           OCI_REGION: ${{ secrets.OCI_REGION }}
           OCI_COMPARTMENT_OCID: ${{ vars.OCI_COMPARTMENT_OCID }}
           OCI_SUBNET_OCID: ${{ vars.OCI_SUBNET_OCID }}
-          OCI_IMAGE_OCID: ${{ vars.OCI_IMAGE_OCID }}
-          OCI_SHAPE: ${{ vars.OCI_SHAPE }}
           OCI_AVAILABILITY_DOMAIN: ${{ vars.OCI_AVAILABILITY_DOMAIN }}
           OCI_INSTANCE_NAME: ${{ vars.OCI_INSTANCE_NAME }}
           OCI_ASSIGN_PUBLIC_IP: ${{ vars.OCI_ASSIGN_PUBLIC_IP }}
-          OCI_OCPUS: ${{ vars.OCI_OCPUS }}
-          OCI_MEMORY_GB: ${{ vars.OCI_MEMORY_GB }}
+          OCI_ALLOWED_SHAPES: ${{ vars.OCI_ALLOWED_SHAPES }}
+          OCI_A1_OCPUS: ${{ vars.OCI_A1_OCPUS }}
+          OCI_A1_MEMORY_GB: ${{ vars.OCI_A1_MEMORY_GB }}
           OCI_SSH_PUBLIC_KEY: ${{ secrets.OCI_SSH_PUBLIC_KEY }}
           PROVISION_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
         run: python scripts/oracle/provision_instance.py
