@@ -6,7 +6,6 @@ creates a second non-terminated instance with the configured display name.
 """
 import os
 import sys
-import time
 import oci
 from oci.exceptions import ServiceError
 
