@@ -26,18 +26,20 @@ def main():
     region = required("OCI_REGION")
     dry_run = os.getenv("PROVISION_DRY_RUN", "false").lower() == "true"
 
-    signer = oci.signer.Signer(
-        tenancy=tenancy,
-        user=user,
-        fingerprint=fingerprint,
-        private_key_file_location=None,
-        private_key_content=private_key,
-        pass_phrase=os.getenv("OCI_PRIVATE_KEY_PASSPHRASE") or None,
-    )
-    config = {"region": region}
+    # OCI service clients validate the standard config fields even when a
+    # manually constructed API-key signer is supplied. Use the SDK-supported
+    # in-memory key_content config so validation and signer creation agree.
+    config = {
+        "tenancy": tenancy,
+        "user": user,
+        "fingerprint": fingerprint,
+        "key_content": private_key,
+        "pass_phrase": os.getenv("OCI_PRIVATE_KEY_PASSPHRASE") or None,
+        "region": region,
+    }
 
     # Always verify the credentials against OCI before considering provisioning.
-    identity = oci.identity.IdentityClient(config, signer=signer)
+    identity = oci.identity.IdentityClient(config)
     identity.get_user(user)
     print(f"OCI_AUTHENTICATION_OK: user authenticated in {region}.")
 
@@ -56,7 +58,7 @@ def main():
     display_name = os.getenv("OCI_INSTANCE_NAME", "forge-guard-oracle").strip()
     assign_public_ip = os.getenv("OCI_ASSIGN_PUBLIC_IP", "true").lower() == "true"
 
-    compute = oci.core.ComputeClient(config, signer=signer)
+    compute = oci.core.ComputeClient(config)
     existing = compute.list_instances(
         compartment_id=compartment,
         display_name=display_name,
