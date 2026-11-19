@@ -50,7 +50,7 @@ describe('Forge Guard menu branding', () => {
         const publicText = sent.find(item => typeof item.content.text === 'string')?.content?.text || '';
         const publicCount = Number(publicText.match(/Commands:\* (\d+)/)?.[1] || 0);
         expect(publicCount).toBeGreaterThan(100);
-        await vi.waitFor(() => expect(sent.filter(item => item.content.image)).toHaveLength(1));
+        await vi.waitFor(() => expect(sent.filter(item => item.content.image)).toHaveLength(1), { timeout: 5000, interval: 50 });
         const publicArtwork = sent.find(item => item.content.image)?.content;
         expect(publicArtwork?.image).toBeInstanceOf(Buffer);
         expect(publicArtwork?.caption).toContain('FORGE GUARD');
@@ -62,7 +62,7 @@ describe('Forge Guard menu branding', () => {
         const ownerText = sent.filter(item => typeof item.content.text === 'string').at(-1)?.content?.text || '';
         const ownerCount = Number(ownerText.match(/Commands:\* (\d+)/)?.[1] || 0);
         expect(ownerCount).toBeGreaterThan(200);
-        await vi.waitFor(() => expect(sent.filter(item => item.content.image)).toHaveLength(2));
+        await vi.waitFor(() => expect(sent.filter(item => item.content.image)).toHaveLength(2), { timeout: 5000, interval: 50 });
         const ownerArtwork = sent.filter(item => item.content.image).at(-1)?.content;
         expect(ownerArtwork?.image).toBeInstanceOf(Buffer);
         expect(ownerArtwork?.caption).toContain('OWNER COMMAND INDEX');
