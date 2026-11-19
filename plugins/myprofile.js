@@ -62,6 +62,11 @@ export default {
         const scopeChatId = isGroup ? chatId : null;
         const action = String(args?.[0] || 'view').toLowerCase();
         const identity = resolveIdentity(senderId);
+        if (!identity) {
+            return sock.sendMessage(chatId, {
+                text: 'Personal profiles and saved conversation memory are reserved for Forge (Creator) and Empire (Queen). I do not maintain personal profiles for other members.'
+            }, { quoted: message });
+        }
 
         if (action === 'privacy') {
             if (isGroup) {
