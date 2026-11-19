@@ -9,113 +9,44 @@ vi.mock('../../lib/lightweight_store.js', () => ({
 }));
 
 import store from '../../lib/lightweight_store.js';
-import { clearGroupMemoryCache, flushPendingGroupRosterWrites, recordGroupInteraction, buildGroupContinuityContext } from '../../lib/chatbotGroupMemory.js';
-import { clearUserProfileCache } from '../../lib/chatbotUserProfile.js';
+import {
+    clearGroupMemoryCache,
+    flushPendingGroupRosterWrites,
+    recordGroupInteraction,
+    getGroupMemberProfile,
+    buildGroupContinuityContext
+} from '../../lib/chatbotGroupMemory.js';
 
-const group = '120363000000000000@g.us';
-const member = '2348011111111@s.whatsapp.net';
-const askingMember = '2348022222222@s.whatsapp.net';
-let settings;
-
-describe('Forge Guard group-local member continuity', () => {
+describe('Forge Guard group-wide member memory is disabled', () => {
     beforeEach(() => {
-        clearGroupMemoryCache();
-        clearUserProfileCache();
-        settings = new Map();
         vi.clearAllMocks();
-        store.getSetting.mockImplementation(async (chatId, key) => settings.get(`${chatId}:${key}`) || null);
-        store.saveSettingVerified.mockImplementation(async (chatId, key, value) => {
-            settings.set(`${chatId}:${key}`, value);
-            return true;
-        });
-    });
-
-    it('remembers only public messages in the group where they were sent', async () => {
-        await recordGroupInteraction(group, member, 'Adunni', 'I am planning a new launch', 'english');
-        const context = await buildGroupContinuityContext(group, askingMember, 'What has Adunni done this time?');
-        expect(context).toContain('Adunni');
-        expect(context).toContain('I am planning a new launch');
-        expect(context).toContain('GROUP-LOCAL CONTINUITY');
-    });
-
-    it('uses private profile facts in a group only after the member opts in', async () => {
-        await recordGroupInteraction(group, member, 'Adunni', 'I joined the discussion', 'english');
-        settings.set('user:2348011111111@s.whatsapp.net:chatbotUserProfile', {
-            businesses: [{ value: 'Ray’s Glitz & Glam' }],
-            preferences: [{ value: 'avoid explicit topics unless I opt in' }],
-            communicationStyles: [{ value: 'prefer playful Pidgin' }],
-            sharing: { groupContext: true }
-        });
-        const context = await buildGroupContinuityContext(group, askingMember, 'What does Adunni do?');
-        expect(context).toContain('Ray’s Glitz & Glam');
-        expect(context).toContain('avoid explicit topics unless I opt in');
-        expect(context).toContain('prefer playful Pidgin');
-    });
-
-    it('keeps private profile facts out of groups when sharing is disabled', async () => {
-        await recordGroupInteraction(group, member, 'Adunni', 'I joined the discussion', 'english');
-        settings.set('user:2348011111111@s.whatsapp.net:chatbotUserProfile', {
-            businesses: [{ value: 'Ray’s Glitz & Glam' }],
-            sharing: { groupContext: false }
-        });
-        const context = await buildGroupContinuityContext(group, askingMember, 'What does Adunni do?');
-        expect(context).not.toContain('Ray’s Glitz & Glam');
-    });
-
-    it('does not expose another group’s member history', async () => {
-        await recordGroupInteraction(group, member, 'Adunni', 'A group-only update', 'pidgin');
-        const context = await buildGroupContinuityContext('another-group@g.us', askingMember, 'Adunni');
-        expect(context).toBe('');
-    });
-
-    it('does not include the asking participant as another member', async () => {
-        await recordGroupInteraction(group, member, 'Adunni', 'Previous contribution', 'english');
-        const context = await buildGroupContinuityContext(group, member, 'Who am I?');
-        expect(context).toBe('');
-    });
-});
-
-
-describe('Forge Guard group-memory write batching', () => {
-    beforeEach(() => {
         clearGroupMemoryCache();
-        clearUserProfileCache();
-        settings = new Map();
-        vi.clearAllMocks();
-        store.getSetting.mockImplementation(async (chatId, key) => settings.get(`${chatId}:${key}`) || null);
-        store.saveSettingVerified.mockImplementation(async (chatId, key, value) => {
-            settings.set(`${chatId}:${key}`, value);
-            return true;
-        });
     });
 
-    it('coalesces multiple ordinary messages into one durable group-roster write', async () => {
-        await recordGroupInteraction(group, member, 'Adunni', 'First public contribution', 'english');
-        await recordGroupInteraction(group, askingMember, 'Tunde', 'Second public contribution', 'pidgin');
-
-        expect(store.getSetting).toHaveBeenCalledTimes(1);
-        expect(store.saveSettingVerified).not.toHaveBeenCalled();
-
-        expect(await flushPendingGroupRosterWrites()).toBe(1);
-        expect(store.saveSettingVerified).toHaveBeenCalledTimes(1);
-        const saved = store.saveSettingVerified.mock.calls[0][2];
-        expect(saved.members[member].messages.at(-1).text).toBe('First public contribution');
-        expect(saved.members[askingMember].messages.at(-1).text).toBe('Second public contribution');
-    });
-
-    it('serves continuity reads from the warm roster cache without another database read', async () => {
-        await recordGroupInteraction(group, member, 'Adunni', 'A useful group update', 'english');
-        const rosterReadsAfterWrite = store.getSetting.mock.calls.filter(([, key]) => key === 'chatbotGroupRoster').length;
-        await buildGroupContinuityContext(group, askingMember, 'What did Adunni say?');
-        const rosterReadsAfterContext = store.getSetting.mock.calls.filter(([, key]) => key === 'chatbotGroupRoster').length;
-        expect(rosterReadsAfterContext).toBe(rosterReadsAfterWrite);
-    });
-
-    it('keeps failed roster writes queued for a later retry', async () => {
-        await recordGroupInteraction(group, member, 'Adunni', 'Retry this contribution', 'english');
-        store.saveSettingVerified.mockResolvedValueOnce(false);
+    it('does not record individual group messages or create roster writes', async () => {
+        expect(await recordGroupInteraction(
+            '120363000000000000@g.us',
+            '2348011111111@s.whatsapp.net',
+            'Member',
+            'A message from an ordinary member',
+            'english'
+        )).toBeNull();
         expect(await flushPendingGroupRosterWrites()).toBe(0);
-        expect(await flushPendingGroupRosterWrites()).toBe(1);
-        expect(store.saveSettingVerified).toHaveBeenCalledTimes(2);
+        expect(store.getSetting).not.toHaveBeenCalled();
+        expect(store.saveSetting).not.toHaveBeenCalled();
+        expect(store.saveSettingVerified).not.toHaveBeenCalled();
+    });
+
+    it('does not expose group member profiles or continuity history', async () => {
+        expect(await getGroupMemberProfile(
+            '120363000000000000@g.us',
+            '2348011111111@s.whatsapp.net'
+        )).toBeNull();
+        expect(await buildGroupContinuityContext(
+            '120363000000000000@g.us',
+            '2348022222222@s.whatsapp.net',
+            'What did that member say?'
+        )).toBe('');
+        expect(store.getSetting).not.toHaveBeenCalled();
     });
 });
