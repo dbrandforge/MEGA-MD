@@ -13,13 +13,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import { smsg } from './lib/myfunc.js';
 import { compileAll } from './lib/compile.js';
-import makeWASocket, { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers, jidDecode, jidNormalizedUser, makeCacheableSignalKeyStore, delay } from '@whiskeysockets/baileys';
+import makeWASocket, { BufferJSON, proto, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers, jidDecode, jidNormalizedUser, makeCacheableSignalKeyStore, delay } from '@whiskeysockets/baileys';
 import NodeCache from 'node-cache';
 import pino from 'pino';
 import config from './config.js';
 import store from './lib/lightweight_store.js';
 import SaveCreds from './lib/session.js';
-import { restoreSessionFromMongo, backupSessionToMongo, isMongoBackupEnabled, clearMongoSessionBackup, claimSessionBackupLeadership, getAuthStateInventory } from './lib/sessionBackup.js';
+import { restoreSessionFromMongo, backupSessionToMongo, isMongoBackupEnabled, clearMongoSessionBackup, claimSessionBackupLeadership, getAuthStateInventory, getAuthKeyModel, canWriteAuthState } from './lib/sessionBackup.js';
+import { createMongoKeyStore } from './lib/mongoAuthKeys.js';
 import { server, PORT } from './lib/server.js';
 import { printLog } from './lib/print.js';
 import { writeErrorLog } from './lib/logger.js';
@@ -138,6 +139,7 @@ async function flushPendingStateBeforeShutdown(signal) {
         // Persist the latest Signal ratchet state so the next instance does not
         // restore stale keys (which causes bad_mac / decrypt_failed after a deploy).
         typeof flushSessionBackupQueue === 'function' ? flushSessionBackupQueue() : Promise.resolve(),
+        mongoKeyStore ? mongoKeyStore.flush() : Promise.resolve(),
     ]);
     clearTimeout(timeout);
     const failures = results.filter(result => result.status === 'rejected');
@@ -431,6 +433,33 @@ function hasValidSession() {
         return false;
     }
 }
+// Opt-in: keep Signal keys (sessions, sender keys, pre-keys, ...) directly in
+// MongoDB instead of thousands of local files plus a hash-and-upload loop.
+// creds.json stays on disk and keeps using the existing backup path.
+const useMongoAuthKeys = process.env.AUTH_STORE === 'mongo' && isMongoBackupEnabled();
+let mongoKeyStore = null;
+function getMongoKeyStore() {
+    if (!mongoKeyStore) {
+        mongoKeyStore = createMongoKeyStore({
+            getModel: getAuthKeyModel,
+            canWrite: canWriteAuthState,
+            BufferJSON,
+            proto,
+            log: (level, message) => printLog(level, message),
+        });
+        printLog('info', '[auth-keys] MongoDB key store active (AUTH_STORE=mongo)');
+    }
+    return mongoKeyStore;
+}
+let credsBackupTimer = null;
+function queueCredsBackupSoon() {
+    if (credsBackupTimer) return;
+    credsBackupTimer = setTimeout(() => {
+        credsBackupTimer = null;
+        backupSessionToMongo(['creds.json']).catch(() => { });
+    }, 5000);
+    credsBackupTimer.unref?.();
+}
 async function initializeSession() {
     ensureSessionDirectory();
     // IMPORTANT: only restore from MongoDB if we don't already have a
@@ -453,7 +482,7 @@ async function initializeSession() {
     // invalid (a genuinely fresh container), which is the only case it
     // was ever meant to cover.
     if (isMongoBackupEnabled() && !hasValidSession()) {
-        const restored = await restoreSessionFromMongo();
+        const restored = await restoreSessionFromMongo({ credsOnly: useMongoAuthKeys });
         if (restored && hasValidSession()) {
             printLog('success', 'Restored full session state from MongoDB - no pairing needed.');
             return true;
@@ -508,6 +537,8 @@ async function startQasimDev() {
             await saveCreds();
             // Coalesce credential writes with other auth-file events.
             queueSessionBackup('creds.json');
+            // Keys are persisted within seconds in MongoDB mode, so keep creds close behind.
+            if (useMongoAuthKeys) queueCredsBackupSoon();
         };
         const msgRetryCounterCache = new NodeCache({ stdTTL: 300, checkperiod: 60, useClones: false });
         // Keep the Signal-key cache bounded. The default Baileys cache has a TTL
@@ -551,7 +582,7 @@ async function startQasimDev() {
         };
         activeSocketCacheCleanup = cleanupSocketCaches;
         const signalKeyStore = makeCacheableSignalKeyStore(
-            state.keys,
+            useMongoAuthKeys ? getMongoKeyStore() : state.keys,
             pino({ level: "fatal" }).child({ level: "fatal" }),
             signalKeyCacheStore
         );
