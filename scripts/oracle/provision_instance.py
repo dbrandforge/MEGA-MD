@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Idempotent, one-attempt-per-run OCI instance provisioner.
+"""Idempotent OCI instance provisioner with a non-mutating authentication preflight.
 
-GitHub Actions schedules this script every 15 minutes. It never loops or
-creates a second non-terminated instance with the configured display name.
+A dry run validates the OCI signer and API access only. Provisioning requires
+all explicit infrastructure settings and never creates a duplicate active
+instance with the configured display name.
 """
 import os
 import sys
 import oci
 from oci.exceptions import ServiceError
+
 
 def required(name):
     value = os.getenv(name, "").strip()
@@ -15,12 +17,35 @@ def required(name):
         raise RuntimeError(f"Missing required GitHub variable/secret: {name}")
     return value
 
+
 def main():
     user = required("OCI_USER_OCID")
     tenancy = required("OCI_TENANCY_OCID")
     fingerprint = required("OCI_FINGERPRINT")
     private_key = required("OCI_PRIVATE_KEY_PEM").replace("\\n", "\n")
     region = required("OCI_REGION")
+    dry_run = os.getenv("PROVISION_DRY_RUN", "false").lower() == "true"
+
+    signer = oci.signer.Signer(
+        tenancy=tenancy,
+        user=user,
+        fingerprint=fingerprint,
+        private_key_content=private_key,
+        pass_phrase=os.getenv("OCI_PRIVATE_KEY_PASSPHRASE") or None,
+    )
+    config = {"region": region}
+
+    # Always verify the credentials against OCI before considering provisioning.
+    identity = oci.identity.IdentityClient(config, signer=signer)
+    identity.get_user(user)
+    print(f"OCI_AUTHENTICATION_OK: user authenticated in {region}.")
+
+    # A dry run is deliberately authentication-only: it does not need launch
+    # parameters and cannot create, modify, or terminate OCI resources.
+    if dry_run:
+        print("DRY_RUN: authentication validated; no OCI resources changed.")
+        return 0
+
     compartment = required("OCI_COMPARTMENT_OCID")
     subnet = required("OCI_SUBNET_OCID")
     image = required("OCI_IMAGE_OCID")
@@ -29,16 +54,8 @@ def main():
     ssh_key = required("OCI_SSH_PUBLIC_KEY")
     display_name = os.getenv("OCI_INSTANCE_NAME", "forge-guard-oracle").strip()
     assign_public_ip = os.getenv("OCI_ASSIGN_PUBLIC_IP", "true").lower() == "true"
-    dry_run = os.getenv("PROVISION_DRY_RUN", "false").lower() == "true"
 
-    signer = oci.signer.Signer(
-        tenancy=tenancy, user=user, fingerprint=fingerprint,
-        private_key_content=private_key,
-        pass_phrase=os.getenv("OCI_PRIVATE_KEY_PASSPHRASE") or None,
-    )
-    config = {"region": region}
     compute = oci.core.ComputeClient(config, signer=signer)
-
     existing = compute.list_instances(
         compartment_id=compartment,
         display_name=display_name,
@@ -78,11 +95,6 @@ def main():
         metadata={"ssh_authorized_keys": ssh_key},
     )
 
-    if dry_run:
-        print("DRY_RUN: credentials validated and no active instance found.")
-        print(f"Would request {shape} in {region} / {ad}, subnet {subnet}.")
-        return 0
-
     try:
         response = compute.launch_instance(details)
         instance = response.data
@@ -94,9 +106,8 @@ def main():
         if exc.status == 429 or exc.status >= 500 or "capacity" in (exc.message or "").lower():
             print("RETRY_LATER: next scheduled workflow run will try again.")
             return 0
-        # Invalid credentials, image, subnet, permissions, or shape must be fixed;
-        # do not disguise configuration failures as capacity retries.
         return 2
+
 
 if __name__ == "__main__":
     try:
