@@ -24,8 +24,8 @@ concurrency:
 jobs:
   provision:
     # Manual read-only discovery is allowed while provisioning is disabled.
-    # Actual instance creation requires BOTH a manual dispatch with dry_run=false
-    # and OCI_PROVISIONING_ENABLED=true.
+    # Creation requires OCI_PROVISIONING_ENABLED=true; manual runs additionally
+    # require dry_run=false. Scheduled runs are always real provisioning attempts.
     if: (github.event_name == 'workflow_dispatch' && (inputs.dry_run || vars.OCI_PROVISIONING_ENABLED == 'true')) || (github.event_name == 'schedule' && vars.OCI_PROVISIONING_ENABLED == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 15
