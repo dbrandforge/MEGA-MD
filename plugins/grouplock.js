@@ -267,12 +267,10 @@ async function sendDailyActivityOnceUnlocked(sock, chatId, day) {
             text: `🔓 *Group unlocked.*\n\n${greeting ? `${greeting}\n\n` : ''}${activityText}`
         });
     } catch (sendError) {
-        // Release only when WhatsApp explicitly rejected the send. If this
-        // write fails, retaining the claim is safer than risking duplicates.
-        const released = await store.saveSettingVerified(chatId, ACTIVITY_SENT_KEY, null);
-        if (!released) {
-            console.error(`[GroupLock] Could not release failed daily activity reservation for ${chatId}; duplicate protection remains active.`);
-        }
+        // A rejected send can still have an ambiguous delivery outcome (for
+        // example, a transport timeout after WhatsApp accepted the message).
+        // Retain today's reservation rather than risk a duplicate announcement.
+        console.error(`[GroupLock] Daily activity send outcome is uncertain for ${chatId}; retaining today's reservation to prevent duplicates: ${sendError.message}`);
         throw sendError;
     }
     if (selectedGreeting) {
