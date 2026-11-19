@@ -65,8 +65,12 @@ describe('Forge Guard live-information routing', () => {
         expect(formatLiveKnowledgeUnavailable('Find a restaurant in Ilorin', 'yoruba')).toContain('Mi ò rí ẹ̀rí');
     });
 
-    it('does not treat ordinary evergreen definitions as live searches', () => {
+    it('does not treat ordinary evergreen definitions or casual uses of time words as live searches', () => {
         expect(isTimeSensitiveQuestion('What is accounting?')).toBe(false);
+        expect(isTimeSensitiveQuestion('Nothing is good currently but survival comes first')).toBe(false);
+        expect(isTimeSensitiveQuestion('I have been feeling better recently')).toBe(false);
+        expect(isTimeSensitiveQuestion('Who is currently leading the election?')).toBe(true);
+        expect(isTimeSensitiveQuestion('What is the latest exchange rate today?')).toBe(true);
     });
 
     it('rejects search results unrelated to the actual query', () => {

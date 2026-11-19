@@ -55,6 +55,15 @@ describe('Automatic AI answer quality gate', () => {
     axios.get.mockResolvedValueOnce({ data: { response: 'Davido is a Nigerian singer.' } });
     await expect(askFastAI('Who is Davido?')).resolves.toContain('Nigerian singer');
   });
+
+  it('rejects generic follow-up questions that ignore the current conversational turn', () => {
+    expect(isUsefulAutomaticAnswer(
+      'Thought you were dead after that hard coding I put you through',
+      "What's good, fam?"
+    )).toBe(false);
+    expect(isUsefulAutomaticAnswer('Marketing', "What's the plan for today?")).toBe(false);
+    expect(isUsefulAutomaticAnswer("What's good?", "I'm good, my guy. How body?")).toBe(true);
+  });
 });
 
 describe('Subject relevance validation', () => {
