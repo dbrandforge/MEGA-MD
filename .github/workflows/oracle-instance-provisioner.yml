@@ -1,8 +1,11 @@
 name: Oracle Instance Provisioner
 
 on:
-  # Provisioning is intentionally manual-only. Do not add a schedule here:
-  # an unattended run could create OCI resources and incur charges.
+  # Retry Always Free provisioning every six hours when OCI has capacity.
+  # The job is gated by OCI_PROVISIONING_ENABLED and the provisioner blocks
+  # every shape outside the explicit Always Free allow-list.
+  schedule:
+    - cron: "17 */6 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -23,7 +26,7 @@ jobs:
     # Manual read-only discovery is allowed while provisioning is disabled.
     # Actual instance creation requires BOTH a manual dispatch with dry_run=false
     # and OCI_PROVISIONING_ENABLED=true.
-    if: github.event_name == 'workflow_dispatch' && (inputs.dry_run || vars.OCI_PROVISIONING_ENABLED == 'true')
+    if: (github.event_name == 'workflow_dispatch' && (inputs.dry_run || vars.OCI_PROVISIONING_ENABLED == 'true')) || (github.event_name == 'schedule' && vars.OCI_PROVISIONING_ENABLED == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -55,5 +58,5 @@ jobs:
           OCI_A1_OCPUS: ${{ vars.OCI_A1_OCPUS }}
           OCI_A1_MEMORY_GB: ${{ vars.OCI_A1_MEMORY_GB }}
           OCI_SSH_PUBLIC_KEY: ${{ secrets.OCI_SSH_PUBLIC_KEY }}
-          PROVISION_DRY_RUN: ${{ inputs.dry_run }}
+          PROVISION_DRY_RUN: ${{ github.event_name == 'schedule' && 'false' || inputs.dry_run }}
         run: python scripts/oracle/provision_instance.py
