@@ -22,6 +22,7 @@ import SaveCreds from './lib/session.js';
 import { restoreSessionFromMongo, backupSessionToMongo, isMongoBackupEnabled, clearMongoSessionBackup, claimSessionBackupLeadership, getAuthStateInventory, getAuthKeyModel, canWriteAuthState } from './lib/sessionBackup.js';
 import { createMongoKeyStore } from './lib/mongoAuthKeys.js';
 import { startCpuProbe } from './lib/cpuProbe.js';
+import { MEMBER_FEATURES_ENABLED } from './lib/memberFeatures.js';
 import { server, PORT } from './lib/server.js';
 import { printLog } from './lib/print.js';
 import { writeErrorLog } from './lib/logger.js';
@@ -768,7 +769,7 @@ async function startQasimDev() {
             for (const update of updates) {
                 const groupId = update?.key?.remoteJid;
                 const reader = update?.receipt?.userJid || update?.receipt?.participant || update?.key?.participant;
-                if (!FEATURE_GROUPS.includes(groupId) || !reader) continue;
+                if (!MEMBER_FEATURES_ENABLED || !FEATURE_GROUPS.includes(groupId) || !reader) continue;
                 const timestamp = Number(update?.receipt?.readTimestamp || update?.receipt?.receiptTimestamp || Math.floor(Date.now() / 1000)) * 1000;
                 bufferHotseatReader(groupId, reader, timestamp);
             }
@@ -1002,7 +1003,7 @@ async function startQasimDev() {
                 // Group automation must not depend on someone running .schedule manually.
                 for (const groupId of FEATURE_GROUPS) trackGroup(groupId);
                 startSchedulerEngine(QasimDev);
-                try {
+                if (MEMBER_FEATURES_ENABLED) try {
                     const welcomeModule = await import('./plugins/sincity-welcome.js');
                     if (typeof welcomeModule.restoreWelcomeJobs === 'function') await welcomeModule.restoreWelcomeJobs(QasimDev);
                 } catch (error) {

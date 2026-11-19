@@ -14,6 +14,7 @@ import { isExplicitlyAddressedInGroup, hasActiveGroupFollowup, jidMatchesAnyBotI
 import { createKeyedSerialExecutor, getCachedConversationHistory, getConversationMemoryKey, setCachedConversationHistory } from '../lib/chatbotConversationMemory.js';
 import { updateUserProfileFromMessage, buildUserProfileContext, buildUserIdentityReply } from '../lib/chatbotUserProfile.js';
 import { recordGroupInteraction, buildGroupContinuityContext } from '../lib/chatbotGroupMemory.js';
+import { MEMBER_FEATURES_ENABLED } from '../lib/memberFeatures.js';
 import { buildForgeKnowledgeContext, buildGroupConversationModeContext, getForgeKnowledgeReply } from '../lib/forgeKnowledge.js';
 import { getChatbotFailureFallback } from '../lib/chatbotFailureFallback.js';
 import { askFastAI, sanitizeAIResponse, sanitizeChatbotReply, shouldUseAutomaticAI, shouldUseLiveSearchForMessage } from '../lib/aiService.js';
@@ -346,7 +347,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         // Profile facts and group continuity are captured only for people actively
         // conversing with Forge Guard, never for every member's ordinary group chatter.
         const profileLanguage = detectMessageLanguage(cleanForHistory, history);
-        const groupMemberSnapshot = isGroup && !message.key.fromMe
+        const groupMemberSnapshot = MEMBER_FEATURES_ENABLED && isGroup && !message.key.fromMe
             ? await recordGroupInteraction(chatId, senderId, message.pushName, cleanForHistory, profileLanguage)
             : null;
         const profileSourceText = [
@@ -354,7 +355,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
             ...history.filter(item => item.name !== 'Forge Bot').map(item => item.text),
             ...(groupMemberSnapshot?.messages || []).map(item => item.text)
         ].join(String.fromCharCode(10));
-        const userProfile = message.key.fromMe ? null
+        const userProfile = (message.key.fromMe || !MEMBER_FEATURES_ENABLED) ? null
             : await updateUserProfileFromMessage(senderId, profileSourceText, { language: profileLanguage, scopeChatId: isGroup ? chatId : null });
         const userProfileContext = buildUserProfileContext(userProfile);
 
