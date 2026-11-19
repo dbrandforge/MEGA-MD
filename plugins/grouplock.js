@@ -264,14 +264,14 @@ async function sendDailyActivityOnceUnlocked(sock, chatId, day) {
     let sent;
     try {
         sent = await sock.sendMessage(chatId, {
-            text: `🔓 *Group unlocked.*\n\n${greeting ? `${greeting}\n\n` : ''}${activityText}`
+            text: \`🔓 *Group unlocked.*\n\n\${greeting ? \`\${greeting}\n\n\` : ''}\${activityText}\`
         });
     } catch (sendError) {
         // Release only when WhatsApp explicitly rejected the send. If this
         // write fails, retaining the claim is safer than risking duplicates.
         const released = await store.saveSettingVerified(chatId, ACTIVITY_SENT_KEY, null);
         if (!released) {
-            console.error(`[GroupLock] Could not release failed daily activity reservation for ${chatId}; duplicate protection remains active.`);
+            console.error(\`[GroupLock] Could not release failed daily activity reservation for \${chatId}; duplicate protection remains active.\`);
         }
         throw sendError;
     }
@@ -382,7 +382,7 @@ export async function handleGroupSettingUpdate(sock, updates) {
                 store.saveSettingVerified(chatId, LAST_ACTION_KEY, { action: 'unlock', time: getCurrentTimeString(), day, source: 'admin-early-unlock' })
             ]);
             if (writes.some(saved => !saved)) throw new Error('Could not persist early manual-unlock state.');
-            await sock.sendMessage(chatId, { text: '🔓 *THE GROUP HAS BEEN UNLOCKED EARLY*\n\nAn admin has opened the group ahead of the scheduled unlock time. Today’s activities are now being posted.' });
+            await sock.sendMessage(chatId, { text: '🔓 *THE GROUP HAS BEEN UNLOCKED EARLY*\\n\\nAn admin has opened the group ahead of the scheduled unlock time. Today’s activities are now being posted.' });
             await sendDailyActivityOnce(sock, chatId, day);
             console.log(`[GroupLock] Detected admin early-unlock for ${chatId} - ${day}`);
         } catch (error) {
@@ -507,7 +507,7 @@ export default {
 
         if (action === 'schedule') {
             const schedules = await getGroupLockSchedule(chatId);
-            return sock.sendMessage(chatId, { text: `🕒 *GROUP LOCK SCHEDULE*\n\nMonday–Saturday: Lock *${schedules.default.lock}* · Unlock *${schedules.default.unlock}*\nSunday: Lock *${schedules.sunday.lock}* · Unlock *${schedules.sunday.unlock}*\n\nSet weekday schedule: *.grouplock set default 01:00 06:00*\nSet Sunday schedule: *.grouplock set sunday 01:00 12:00*\nRestore defaults: *.grouplock reset*`, ...channelInfo }, { quoted: message });
+            return sock.sendMessage(chatId, { text: `🕒 *GROUP LOCK SCHEDULE*\\n\\nMonday–Saturday: Lock *${schedules.default.lock}* · Unlock *${schedules.default.unlock}*\\nSunday: Lock *${schedules.sunday.lock}* · Unlock *${schedules.sunday.unlock}*\\n\\nSet weekday schedule: *.grouplock set default 01:00 06:00*\\nSet Sunday schedule: *.grouplock set sunday 01:00 12:00*\\nRestore defaults: *.grouplock reset*`, ...channelInfo }, { quoted: message });
         }
         if (action === 'set') {
             const dayType = String(args[1] || 'default').toLowerCase();
@@ -521,14 +521,14 @@ export default {
             if (!await store.saveSettingVerified(chatId, GROUP_LOCK_SCHEDULE_KEY, schedules)) {
                 return sock.sendMessage(chatId, { text: '❌ Could not save the group lock schedule. Existing schedule remains unchanged.', ...channelInfo }, { quoted: message });
             }
-            return sock.sendMessage(chatId, { text: `✅ ${dayType === 'sunday' ? 'Sunday' : 'Monday–Saturday'} lock schedule updated.\nLock: *${lock}*\nUnlock: *${unlock}*\n\nThe scheduler will use the new times automatically.`, ...channelInfo }, { quoted: message });
+            return sock.sendMessage(chatId, { text: `✅ ${dayType === 'sunday' ? 'Sunday' : 'Monday–Saturday'} lock schedule updated.\\nLock: *${lock}*\\nUnlock: *${unlock}*\\n\\nThe scheduler will use the new times automatically.`, ...channelInfo }, { quoted: message });
         }
         if (action === 'reset') {
             if (!await store.saveSettingVerified(chatId, GROUP_LOCK_SCHEDULE_KEY, null)) {
                 return sock.sendMessage(chatId, { text: '❌ Could not restore the default schedule.', ...channelInfo }, { quoted: message });
             }
             const schedules = await getGroupLockSchedule(chatId);
-            return sock.sendMessage(chatId, { text: `✅ Default schedule restored.\nMonday–Saturday: ${schedules.default.lock}–${schedules.default.unlock}\nSunday: ${schedules.sunday.lock}–${schedules.sunday.unlock}`, ...channelInfo }, { quoted: message });
+            return sock.sendMessage(chatId, { text: `✅ Default schedule restored.\\nMonday–Saturday: ${schedules.default.lock}–${schedules.default.unlock}\\nSunday: ${schedules.sunday.lock}–${schedules.sunday.unlock}`, ...channelInfo }, { quoted: message });
         }
         if (action === 'lock') {
             const day = getCurrentDay();
