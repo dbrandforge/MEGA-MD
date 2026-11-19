@@ -21,6 +21,7 @@ import store from './lib/lightweight_store.js';
 import SaveCreds from './lib/session.js';
 import { restoreSessionFromMongo, backupSessionToMongo, isMongoBackupEnabled, clearMongoSessionBackup, claimSessionBackupLeadership, getAuthStateInventory, getAuthKeyModel, canWriteAuthState } from './lib/sessionBackup.js';
 import { createMongoKeyStore } from './lib/mongoAuthKeys.js';
+import { startCpuProbe } from './lib/cpuProbe.js';
 import { server, PORT } from './lib/server.js';
 import { printLog } from './lib/print.js';
 import { writeErrorLog } from './lib/logger.js';
@@ -1101,6 +1102,7 @@ async function startQasimDev() {
     }
 }
 async function main() {
+    if (process.env.CPU_PROBE === '1') startCpuProbe({ log: (message) => printLog('info', message) });
     await compileAll();
     await commandHandler.loadCommands();
     printLog('info', 'Starting MEGA MD BOT...');
