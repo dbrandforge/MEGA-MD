@@ -389,7 +389,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                 at: Date.now()
             });
             if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
-            await saveChatHistory(memoryKey, history);
+            await saveChatHistory(memoryKey, history, Boolean(identity));
         }
 
         const languageInput = quotedText && /^(answer this|answer|explain this|tell me about this|what about this|help me with this)[.!?\s👇]*$/i.test(cleanForHistory) ? quotedText : cleanForHistory;
@@ -522,7 +522,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
 
         history.push({ name: 'Forge Bot', text: response.slice(0, 500), at: Date.now() });
         if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
-        await saveChatHistory(memoryKey, history);
+        await saveChatHistory(memoryKey, history, Boolean(identity));
 
     } catch (e) {
         printLog('error', `[Chatbot DM] Reply failed: ${String(e?.message || e).slice(0, 400)}`);
