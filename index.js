@@ -126,35 +126,6 @@ setInterval(() => {
     }
 }, 120000);
 
-// Hot Seat recent-reader tracking, buffered to keep database traffic low.
-const HOTSEAT_READERS_KEY = 'hotseatRecentReaders';
-const HOTSEAT_FLUSH_MS = 30000;
-const hotseatReaderBuffer = new Map(); // groupId -> Map(reader -> timestamp)
-let hotseatFlushTimer = null;
-function bufferHotseatReader(groupId, reader, timestamp) {
-    let readers = hotseatReaderBuffer.get(groupId);
-    if (!readers) { readers = new Map(); hotseatReaderBuffer.set(groupId, readers); }
-    readers.set(reader, Math.max(readers.get(reader) || 0, timestamp));
-    if (!hotseatFlushTimer) {
-        hotseatFlushTimer = setTimeout(() => { hotseatFlushTimer = null; flushHotseatReaders().catch(() => { }); }, HOTSEAT_FLUSH_MS);
-        hotseatFlushTimer.unref?.();
-    }
-}
-async function flushHotseatReaders() {
-    const pending = [...hotseatReaderBuffer.entries()];
-    hotseatReaderBuffer.clear();
-    for (const [groupId, readers] of pending) {
-        try {
-            const data = (await store.getSetting(groupId, HOTSEAT_READERS_KEY)) || {};
-            for (const [jid, seenAt] of readers) data[jid] = Math.max(Number(data[jid] || 0), seenAt);
-            const cutoff = Date.now() - 5 * 60 * 60 * 1000;
-            for (const [jid, seenAt] of Object.entries(data)) if (Number(seenAt) < cutoff) delete data[jid];
-            await store.saveSetting(groupId, HOTSEAT_READERS_KEY, data);
-        } catch (error) {
-            printLog('warning', `Hot Seat receipt tracking skipped: ${error.message}`);
-        }
-    }
-}
 let shutdownFlushStarted = false;
 async function flushPendingStateBeforeShutdown(signal) {
     if (shutdownFlushStarted) return;
@@ -171,7 +142,6 @@ async function flushPendingStateBeforeShutdown(signal) {
         // restore stale keys (which causes bad_mac / decrypt_failed after a deploy).
         typeof flushSessionBackupQueue === 'function' ? flushSessionBackupQueue() : Promise.resolve(),
         mongoKeyStore ? mongoKeyStore.flush() : Promise.resolve(),
-        flushHotseatReaders(),
     ]);
     clearTimeout(timeout);
     const failures = results.filter(result => result.status === 'rejected');
