@@ -9,6 +9,7 @@ import { trackGroup } from './schedule.js';
 const LEGACY_MUTE_KEY = 'softMutes';
 const MIGRATION_KEY = 'softMutesMigratedToIndividual';
 const ACTIVE_COUNT_KEY = 'softMuteActiveCount';
+const ACTIVE_UNTIL_KEY = 'softMuteActiveUntil';
 const MUTE_DURATION_KEY = 'softMuteDurationHours';
 const RECORD_PREFIX = 'softMute:';
 const DEFAULT_MUTE_HOURS = Number(config.muteDurationHours) > 0 ? Number(config.muteDurationHours) : 10;
@@ -86,14 +87,30 @@ function invalidateGroupCount(chatId) { groupCountCache.delete(chatId); }
 async function getActiveCount(chatId) {
     const cached = groupCountCache.get(chatId);
     if (cached && Date.now() - cached.at < GROUP_COUNT_CACHE_TTL_MS) return cached.value;
-    const value = Math.max(0, Number(await store.getSetting(chatId, ACTIVE_COUNT_KEY)) || 0);
+    const [storedCount, storedUntil] = await Promise.all([
+        store.getSetting(chatId, ACTIVE_COUNT_KEY),
+        store.getSetting(chatId, ACTIVE_UNTIL_KEY)
+    ]);
+    const value = Number(storedUntil) > 0 && Number(storedUntil) <= Date.now()
+        ? 0
+        : Math.max(0, Number(storedCount) || 0);
     groupCountCache.set(chatId, { value, at: Date.now() });
     return value;
 }
-async function setActiveCount(chatId, value) {
+async function setActiveCount(chatId, value, until = null) {
     const count = Math.max(0, Number(value) || 0);
     if (!await store.saveSettingVerified(chatId, ACTIVE_COUNT_KEY, count)) {
         throw new Error('Soft-mute active count could not be persisted.');
+    }
+    if (count === 0) {
+        if (!await store.saveSettingVerified(chatId, ACTIVE_UNTIL_KEY, 0)) {
+            throw new Error('Soft-mute active expiry could not be cleared.');
+        }
+    } else if (Number.isFinite(Number(until)) && Number(until) > 0) {
+        const previousUntil = Number(await store.getSetting(chatId, ACTIVE_UNTIL_KEY)) || 0;
+        if (!await store.saveSettingVerified(chatId, ACTIVE_UNTIL_KEY, Math.max(previousUntil, Number(until)))) {
+            throw new Error('Soft-mute active expiry could not be persisted.');
+        }
     }
     groupCountCache.set(chatId, { value: count, at: Date.now() });
 }
@@ -152,6 +169,10 @@ async function ensureLegacyMuteMigration(chatId) {
         if (!await store.saveSettingVerified(chatId, ACTIVE_COUNT_KEY, migrated.size)) {
             throw new Error('Soft-mute migration count could not be verified.');
         }
+        const latestExpiry = Math.max(0, ...[...migrated.values()].map(entry => Number(entry.until) || 0));
+        if (!await store.saveSettingVerified(chatId, ACTIVE_UNTIL_KEY, latestExpiry)) {
+            throw new Error('Soft-mute migration expiry could not be verified.');
+        }
         if (!await store.saveSettingVerified(chatId, MIGRATION_KEY, true)) {
             throw new Error('Soft-mute migration marker could not be verified.');
         }
@@ -209,7 +230,7 @@ export async function softMuteUser(sock, chatId, userId, durationMs = null) {
     const entry = { until: now + duration, mutedAt: now, original: userId, canonical: canonicalKey };
     await saveRecord(chatId, canonicalKey, entry);
     if (!existing || Number(existing.until) <= now) {
-        await setActiveCount(chatId, (await getActiveCount(chatId)) + 1);
+        await setActiveCount(chatId, (await getActiveCount(chatId)) + 1, entry.until);
     }
     await trackGroup(chatId);
     return duration;
