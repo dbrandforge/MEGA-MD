@@ -14,6 +14,53 @@ export function patchMessagesSend(source) {
     throw new Error('Baileys LID session-refresh call was not found; refusing an unsafe partial patch.');
 }
 
+export function patchLargeSessionDiagnostics(source) {
+    if (source.includes('[Baileys session diagnostic]')) {
+        return { source, changed: false };
+    }
+
+    const functionMarker = 'const assertSessions = async';
+    const keyListMarker = /const jidsRequiringFetch = \\[\\];?/;
+    const validationBlock = /if\\s*\\(sessionValidation\\.exists\\)\\s*\\{\\s*continue;?\\s*\\}/;
+    const fetchBlock = /if\\s*\\(jidsRequiringFetch\\.length\\)\\s*\\{/;
+
+    if (!source.includes(functionMarker) || !keyListMarker.test(source) || !validationBlock.test(source) || !fetchBlock.test(source)) {
+        throw new Error('Baileys assertSessions validation flow was not found; refusing an unsafe diagnostic patch.');
+    }
+
+    source = source.replace(
+        functionMarker,
+        'let lastLargeSessionDiagnosticAt = 0;\\n\\tconst assertSessions = async'
+    );
+    source = source.replace(
+        keyListMarker,
+        match => match + '\\n\\t\\tlet openSessionCount = 0;\\n\\t\\tlet missingSessionCount = 0;\\n\\t\\tlet closedSessionCount = 0;\\n\\t\\tlet validationErrorCount = 0;'
+    );
+    source = source.replace(
+        validationBlock,
+        `if (sessionValidation.exists) {
+                    openSessionCount++;
+                    continue;
+                }
+                if (sessionValidation.reason === 'no session') missingSessionCount++;
+                else if (sessionValidation.reason === 'no open session') closedSessionCount++;
+                else validationErrorCount++;`
+    );
+    source = source.replace(
+        fetchBlock,
+        `const diagnosticNow = Date.now();
+        if (uniqueJids.length >= 100 && diagnosticNow - lastLargeSessionDiagnosticAt >= 5 * 60 * 1000) {
+            lastLargeSessionDiagnosticAt = diagnosticNow;
+            const lidTargets = uniqueJids.filter(jid => isLidUser(jid) || isHostedLidUser(jid)).length;
+            const pnTargets = uniqueJids.length - lidTargets;
+            console.warn(`[Baileys session diagnostic] targets=${uniqueJids.length} open=${openSessionCount} missing=${missingSessionCount} closed=${closedSessionCount} validationErrors=${validationErrorCount} fetch=${jidsRequiringFetch.length} lid=${lidTargets} pn=${pnTargets} force=${!!force}`);
+        }
+        if (jidsRequiringFetch.length) {`
+    );
+
+    return { source, changed: true };
+}
+
 export function patchMessagesReceive(source) {
     let changed = false;
     const retryCall = /await sendRetryRequest\(node,\s*!encNode\)/;
@@ -72,14 +119,16 @@ function resolveBaileysSocketFile(filename) {
 export function applyBaileysLidSessionPatches() {
     const sendPath = resolveBaileysSocketFile('messages-send.js');
     const receivePath = resolveBaileysSocketFile('messages-recv.js');
-    const sendResult = patchMessagesSend(fs.readFileSync(sendPath, 'utf8'));
+    const sendChurnResult = patchMessagesSend(fs.readFileSync(sendPath, 'utf8'));
+    const sendDiagnosticResult = patchLargeSessionDiagnostics(sendChurnResult.source);
     const receiveResult = patchMessagesReceive(fs.readFileSync(receivePath, 'utf8'));
 
-    if (sendResult.changed) fs.writeFileSync(sendPath, sendResult.source);
+    if (sendChurnResult.changed || sendDiagnosticResult.changed) fs.writeFileSync(sendPath, sendDiagnosticResult.source);
     if (receiveResult.changed) fs.writeFileSync(receivePath, receiveResult.source);
 
     console.log(
-        '[Baileys compatibility] LID session churn guard=' + (sendResult.changed ? 'patched' : 'already patched') +
+        '[Baileys compatibility] LID session churn guard=' + (sendChurnResult.changed ? 'patched' : 'already patched') +
+        '; session validation diagnostics=' + (sendDiagnosticResult.changed ? 'patched' : 'already patched') +
         '; first-retry key recovery=' + (receiveResult.changed ? 'patched' : 'already patched')
     );
 }
