@@ -65,6 +65,21 @@ const migrationPromises = new Map();
 const migratedGroups = new Set();
 const groupCountQueues = new Map();
 
+export function invalidateSoftMuteCache(chatId = null) {
+    if (chatId) {
+        groupCountCache.delete(chatId);
+        for (const key of memberMuteCache.keys()) {
+            if (key.startsWith(`${chatId}:`)) memberMuteCache.delete(key);
+        }
+        migratedGroups.delete(chatId);
+        return;
+    }
+    memberMuteCache.clear();
+    groupCountCache.clear();
+    counterpartCache.clear();
+    migratedGroups.clear();
+}
+
 function cacheMember(chatId, userId, value) {
     const key = `${chatId}:${cleanId(userId)}`;
     memberMuteCache.delete(key);
