@@ -4,7 +4,9 @@ const mocks = vi.hoisted(() => ({
     getSetting: vi.fn(async () => null),
     saveSettingVerified: vi.fn(async () => true),
     trackGroup: vi.fn(async () => true),
-    softMuteUser: vi.fn(async () => 0)
+    softMuteUser: vi.fn(async () => 900000),
+    parseMuteDuration: vi.fn(token => token === '15m' ? 900000 : Number(token) * 60000),
+    formatMuteDuration: vi.fn(ms => `${ms / 60000} minutes`)
 }));
 
 vi.mock('../../lib/lightweight_store.js', () => ({
@@ -17,7 +19,9 @@ vi.mock('../../plugins/schedule.js', () => ({
     trackGroup: mocks.trackGroup
 }));
 vi.mock('../../plugins/softmute.js', () => ({
-    softMuteUser: mocks.softMuteUser
+    softMuteUser: mocks.softMuteUser,
+    parseMuteDuration: mocks.parseMuteDuration,
+    formatMuteDuration: mocks.formatMuteDuration
 }));
 vi.mock('../../config.js', () => ({
     default: { muteDurationHours: 10 }
@@ -33,6 +37,7 @@ describe('.mute timed group persistence', () => {
         vi.clearAllMocks();
         mocks.getSetting.mockResolvedValue(null);
         mocks.saveSettingVerified.mockResolvedValue(true);
+        mocks.softMuteUser.mockResolvedValue(900000);
     });
 
     it('persists the timed expiry before changing WhatsApp group settings', async () => {
@@ -72,6 +77,24 @@ describe('.mute timed group persistence', () => {
             GROUP,
             expect.objectContaining({ text: expect.stringContaining('error') }),
             { quoted: message }
+        );
+    });
+
+    it('applies a custom duration to an individually tagged member', async () => {
+        const user = '2348000000000@s.whatsapp.net';
+        const taggedMessage = {
+            key: { remoteJid: GROUP },
+            message: { extendedTextMessage: { contextInfo: { mentionedJid: [user] } } }
+        };
+        const sock = { sendMessage: vi.fn(async () => {}) };
+
+        await mute.handler(sock, taggedMessage, [`@${user.split('@')[0]}`, '15m'], { chatId: GROUP, channelInfo: {} });
+
+        expect(mocks.softMuteUser).toHaveBeenCalledWith(sock, GROUP, user, 900000);
+        expect(sock.sendMessage).toHaveBeenCalledWith(
+            GROUP,
+            expect.objectContaining({ text: expect.stringContaining('15 minutes') }),
+            { quoted: taggedMessage }
         );
     });
 });
