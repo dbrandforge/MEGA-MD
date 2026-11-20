@@ -1,16 +1,15 @@
 /**
- * Soft Mute System
- * - .mute @user  → mute for 10 hours (deletes their messages)
- * - .unmute @user
- * - Auto-mute after 3 warnings
- * Works without special WhatsApp restrict permission
+ * Per-member soft mute records.
+ * Message checks read only the sender's identifiers; no group-wide mute map.
  */
 import store from '../lib/lightweight_store.js';
 import config from '../config.js';
 import { trackGroup } from './schedule.js';
 
-const MUTE_KEY = 'softMutes';
+const LEGACY_MUTE_KEY = 'softMutes';
+const MIGRATION_KEY = 'softMutesMigratedToIndividual';
 const MUTE_DURATION_KEY = 'softMuteDurationHours';
+const RECORD_PREFIX = 'softMute:';
 const DEFAULT_MUTE_HOURS = Number(config.muteDurationHours) > 0 ? Number(config.muteDurationHours) : 10;
 
 export async function getSoftMuteDurationHours(chatId) {
@@ -18,50 +17,40 @@ export async function getSoftMuteDurationHours(chatId) {
     return Number.isFinite(configured) && configured >= 1 && configured <= 168 ? configured : DEFAULT_MUTE_HOURS;
 }
 
-function mention(jid) {
-    return `@${(jid || '').split('@')[0]}`;
-}
-
-function cleanId(jid) {
-    // Strip only the device suffix, preserving the JID domain so
-    // device-qualified and plain PN/LID addresses share the same key.
-    return String(jid || '').replace(/:\d+(?=@)/, '');
-}
-
-const muteCache = new Map();
-const MUTE_CACHE_TTL_MS = 10000;
-const MAX_CACHED_MUTE_GROUPS = 500;
-
-function cacheMutes(chatId, value) {
-    muteCache.delete(chatId);
-    muteCache.set(chatId, { value, at: Date.now() });
-    while (muteCache.size > MAX_CACHED_MUTE_GROUPS) {
-        muteCache.delete(muteCache.keys().next().value);
+export function parseMuteDuration(token) {
+    const value = String(token || '').trim().toLowerCase();
+    if (!value) return null;
+    if (/^\d+$/.test(value)) {
+        const minutes = Number(value);
+        return Number.isSafeInteger(minutes) && minutes > 0 && minutes <= 10080 ? minutes * 60000 : null;
     }
+    const pattern = /^(?:\d+d)?(?:\d+h)?(?:\d+m)?(?:\d+s)?$/;
+    if (!pattern.test(value) || !/\d/.test(value)) return null;
+    const parts = [...value.matchAll(/(\d+)([dhms])/g)];
+    if (!parts.length || parts.map(part => part[0]).join('') !== value) return null;
+    const units = { d: 86400000, h: 3600000, m: 60000, s: 1000 };
+    const duration = parts.reduce((sum, part) => sum + Number(part[1]) * units[part[2]], 0);
+    return Number.isSafeInteger(duration) && duration > 0 && duration <= 7 * 86400000 ? duration : null;
 }
 
-export function invalidateSoftMuteCache(chatId = null) {
-    if (chatId) muteCache.delete(chatId);
-    else { muteCache.clear(); counterpartCache.clear(); }
+export function formatMuteDuration(durationMs) {
+    const units = [['d', 86400000, 'day'], ['h', 3600000, 'hour'], ['m', 60000, 'minute'], ['s', 1000, 'second']];
+    let remaining = Math.max(0, Number(durationMs) || 0);
+    const parts = [];
+    for (const [suffix, size, label] of units) {
+        const count = Math.floor(remaining / size);
+        if (count) {
+            parts.push(`${count} ${label}${count === 1 ? '' : 's'}`);
+            remaining %= size;
+        }
+    }
+    return parts.join(' ') || 'less than a second';
 }
 
-async function getMutes(chatId) {
-    const cached = muteCache.get(chatId);
-    if (cached && Date.now() - cached.at < MUTE_CACHE_TTL_MS) return cached.value;
-    const value = (await store.getSetting(chatId, MUTE_KEY)) || {};
-    cacheMutes(chatId, value);
-    return value;
-}
+function mention(jid) { return `@${(jid || '').split('@')[0]}`; }
+function cleanId(jid) { return String(jid || '').replace(/:\\d+(?=@)/, ''); }
+function recordKey(jid) { return RECORD_PREFIX + cleanId(jid); }
 
-async function saveMutes(chatId, data) {
-    const saved = await store.saveSettingVerified(chatId, MUTE_KEY, data);
-    if (!saved) throw new Error('Soft-mute state could not be persisted.');
-    cacheMutes(chatId, data);
-}
-
-// Counterpart lookups (LID <-> PN) are cached, including misses, so a busy
-// group never repeats the same mapping lookup for the same member. Only a
-// handful of mutes ever exist, so this stays tiny and bounded.
 const counterpartCache = new Map();
 const COUNTERPART_HIT_TTL_MS = 10 * 60 * 1000;
 const COUNTERPART_MISS_TTL_MS = 60 * 1000;
@@ -93,162 +82,123 @@ async function resolveCounterpart(sock, id, { fresh = false } = {}) {
 export async function normalizeSoftMuteUserId(sock, userId) {
     const key = cleanId(userId);
     if (!key.endsWith('@lid')) return key;
-    try {
-        const mappedPN = await sock?.signalRepository?.lidMapping?.getPNForLID?.(userId);
-        if (typeof mappedPN === 'string' && mappedPN.endsWith('@s.whatsapp.net')) {
-            return cleanId(mappedPN);
+    const mappedPN = await resolveCounterpart(sock, key);
+    return mappedPN || key;
+}
+
+// One-time compatibility migration only. All live reads/writes after this are per member.
+const migratedGroups = new Set();
+const migrationPromises = new Map();
+async function ensureLegacyMuteMigration(chatId) {
+    if (migratedGroups.has(chatId)) return;
+    if (migrationPromises.has(chatId)) return migrationPromises.get(chatId);
+    const promise = (async () => {
+        if (await store.getSetting(chatId, MIGRATION_KEY) === true) {
+            migratedGroups.add(chatId);
+            return;
         }
-    } catch (error) {
-        console.warn('[SOFTMUTE] Could not resolve user LID to PN:', error.message);
+        const legacy = (await store.getSetting(chatId, LEGACY_MUTE_KEY)) || {};
+        for (const [key, entry] of Object.entries(legacy)) {
+            if (!entry || !Number.isFinite(Number(entry.until)) || Number(entry.until) <= Date.now()) continue;
+            const ids = [...new Set([key, entry.original, entry.canonical].map(cleanId).filter(Boolean))];
+            for (const id of ids) {
+                if (!await store.saveSettingVerified(chatId, recordKey(id), entry)) {
+                    throw new Error('Legacy soft-mute migration could not be verified.');
+                }
+            }
+        }
+        if (!await store.saveSettingVerified(chatId, MIGRATION_KEY, true)) {
+            throw new Error('Soft-mute migration marker could not be verified.');
+        }
+        migratedGroups.add(chatId);
+    })();
+    migrationPromises.set(chatId, promise);
+    try { await promise; } finally { migrationPromises.delete(chatId); }
+}
+
+async function getRecord(chatId, id) {
+    if (!id) return null;
+    return await store.getSetting(chatId, recordKey(id));
+}
+async function saveRecord(chatId, id, value) {
+    if (!id) return;
+    if (!await store.saveSettingVerified(chatId, recordKey(id), value)) {
+        throw new Error('Soft-mute record could not be persisted.');
     }
-    return key;
 }
 
 export async function isSoftMuted(chatId, userId, sock = null, extraIds = []) {
-    const mutes = await getMutes(chatId);
-    // Almost every group has no active mute: exit before doing any work.
-    if (!mutes || Object.keys(mutes).length === 0) return false;
-
-    // Match on every identifier the message carries (resolved PN, raw LID,
-    // alternate PN) before falling back to any mapping lookup.
-    const ids = [...new Set([cleanId(userId), userId, ...extraIds.map(cleanId)].filter(id => typeof id === 'string' && id))];
-    let matchedKey = null;
-    for (const id of ids) {
-        if (Object.hasOwn(mutes, id)) { matchedKey = id; break; }
-    }
-
-    if (!matchedKey && sock) {
-        // Sender arrived as a LID but the mute was stored under its PN.
-        for (const id of ids.filter(i => i.endsWith('@lid'))) {
-            const pn = await resolveCounterpart(sock, id);
-            if (pn && Object.hasOwn(mutes, pn)) { matchedKey = pn; break; }
+    if (!chatId?.endsWith('@g.us')) return false;
+    await ensureLegacyMuteMigration(chatId);
+    const ids = [...new Set([userId, ...extraIds].map(cleanId).filter(Boolean))];
+    const expanded = new Set(ids);
+    if (sock) {
+        for (const id of ids) {
+            const counterpart = await resolveCounterpart(sock, id);
+            if (counterpart) expanded.add(counterpart);
         }
     }
-    if (!matchedKey && sock && ids.some(i => i.endsWith('@s.whatsapp.net'))) {
-        // Older records may contain only a LID while the message identifies the
-        // same member by PN. Resolve each stored LID (cached) and compare.
-        for (const storedKey of Object.keys(mutes)) {
-            if (!storedKey.endsWith('@lid')) continue;
-            const pn = await resolveCounterpart(sock, storedKey);
-            if (pn && ids.includes(pn)) { matchedKey = storedKey; break; }
-        }
+    for (const id of expanded) {
+        const entry = await getRecord(chatId, id);
+        if (!entry) continue;
+        const until = Number(entry.until);
+        if (Number.isFinite(until) && until > Date.now()) return true;
+        await saveRecord(chatId, id, null);
     }
-
-    const entry = matchedKey ? mutes[matchedKey] : null;
-    if (!entry) return false;
-    const until = Number(entry.until);
-    if (!Number.isFinite(until) || until <= 0 || Date.now() >= until) {
-        const idSet = new Set([...ids, matchedKey, cleanId(entry.original), cleanId(entry.canonical)]);
-        for (const [storedKey, storedEntry] of Object.entries(mutes)) {
-            if (idSet.has(storedKey) || idSet.has(cleanId(storedEntry?.original)) || idSet.has(cleanId(storedEntry?.canonical))) {
-                delete mutes[storedKey];
-            }
-        }
-        await saveMutes(chatId, mutes);
-        return false;
-    }
-    return true;
+    return false;
 }
 
-export async function softMuteUser(sock, chatId, userId, hours = null) {
-    const durationHours = Number.isFinite(Number(hours)) && Number(hours) > 0 ? Number(hours) : await getSoftMuteDurationHours(chatId);
-    const duration = durationHours * 60 * 60 * 1000;
-    const mutes = await getMutes(chatId);
+export async function softMuteUser(sock, chatId, userId, durationMs = null) {
+    await ensureLegacyMuteMigration(chatId);
+    const duration = Number.isFinite(Number(durationMs)) && Number(durationMs) > 0
+        ? Math.min(Number(durationMs), 7 * 86400000)
+        : (await getSoftMuteDurationHours(chatId)) * 3600000;
     const key = cleanId(userId);
     const canonicalKey = await normalizeSoftMuteUserId(sock, userId);
-    const entry = {
-        until: Date.now() + duration,
-        mutedAt: Date.now(),
-        original: userId,
-        canonical: canonicalKey
-    };
-    mutes[key] = entry;
-    // Store a canonical PN alias as well so incoming PN-resolved messages
-    // still match a target that was mentioned using a Baileys LID.
-    if (canonicalKey !== key) mutes[canonicalKey] = entry;
-    // Resolve the other identity format once, now, so later messages match with
-    // a plain lookup instead of a mapping call on every message.
-    for (const id of [key, canonicalKey]) {
+    const ids = new Set([key, canonicalKey]);
+    for (const id of [...ids]) {
         const other = await resolveCounterpart(sock, id, { fresh: true });
-        if (other && !Object.hasOwn(mutes, other)) mutes[other] = entry;
+        if (other) ids.add(other);
     }
-    await saveMutes(chatId, mutes);
-    // The scheduler must know every group that contains an individual mute.
+    const entry = { until: Date.now() + duration, mutedAt: Date.now(), original: userId, canonical: canonicalKey };
+    for (const id of ids) await saveRecord(chatId, id, entry);
     await trackGroup(chatId);
     return duration;
 }
 
-export async function cleanExpiredSoftMutes(chatId, now = Date.now(), { sock = null } = {}) {
-    if (!chatId?.endsWith('@g.us')) return 0;
-    const mutes = await getMutes(chatId);
-    const removedIds = new Map(); // member id -> JID to mention
-    for (const [key, entry] of Object.entries(mutes)) {
-        const until = Number(entry?.until);
-        if (!Number.isFinite(until) || until <= 0 || now >= until) {
-            const id = cleanId(entry?.canonical || entry?.original || key);
-            if (!removedIds.has(id)) removedIds.set(id, entry?.original || entry?.canonical || key);
-            delete mutes[key];
-        }
+export async function softUnmuteUser(chatId, userId, sock = global.__forgeSock) {
+    await ensureLegacyMuteMigration(chatId);
+    const ids = new Set([cleanId(userId)]);
+    const counterpart = await resolveCounterpart(sock, cleanId(userId));
+    if (counterpart) ids.add(counterpart);
+    for (const id of [...ids]) {
+        const other = await resolveCounterpart(sock, id);
+        if (other) ids.add(other);
     }
-    const removed = removedIds.size;
-    if (removed) {
-        await saveMutes(chatId, mutes);
-        if (sock) {
-            // Best effort: tell the group the mute ended. Never blocks cleanup.
-            try {
-                const jids = [...removedIds.values()].slice(0, 10);
-                await sock.sendMessage(chatId, {
-                    text: `🔊 Soft-mute expired for ${jids.map(mention).join(', ')}. They can send messages again.`,
-                    mentions: jids
-                });
-            } catch (error) {
-                console.warn('[SOFTMUTE] Could not announce mute expiry:', error.message);
-            }
-        }
-    }
-    return removed;
+    for (const id of ids) await saveRecord(chatId, id, null);
 }
 
-export async function softUnmuteUser(chatId, userId) {
-    const mutes = await getMutes(chatId);
-    const key = cleanId(userId);
-    for (const [storedKey, entry] of Object.entries(mutes)) {
-        const originalKey = cleanId(entry?.original);
-        const canonicalKey = cleanId(entry?.canonical);
-        if (storedKey === key || storedKey === userId || originalKey === key || canonicalKey === key) {
-            delete mutes[storedKey];
-        }
-    }
-    await saveMutes(chatId, mutes);
-}
+// Expiry is enforced lazily on the next message from that member. No group-wide scan.
+export async function cleanExpiredSoftMutes() { return 0; }
 
 const deleteFailureLoggedAt = new Map();
-
-/**
- * Call this on every group message - delete if user is soft-muted
- */
 export async function handleSoftMuteMessage(sock, chatId, message, senderId) {
     try {
-        if (!chatId?.endsWith('@g.us')) return false;
-        if (message.key.fromMe) return false;
-
+        if (!chatId?.endsWith('@g.us') || message?.key?.fromMe) return false;
         const muted = await isSoftMuted(chatId, senderId, sock, [message.key.participant, message.key.participantAlt]);
         if (!muted) return false;
-
-        // Delete their message
         try {
             await sock.sendMessage(chatId, { delete: message.key });
-        } catch (e) {
-            // Bot needs admin + delete permission. Log at most once a minute per group.
+        } catch (error) {
             const last = deleteFailureLoggedAt.get(chatId) || 0;
             if (Date.now() - last > 60000) {
                 deleteFailureLoggedAt.set(chatId, Date.now());
-                console.error(`[SOFTMUTE] Could not delete muted user message in ${chatId}: ${e.message}`);
+                console.error(`[SOFTMUTE] Could not delete muted user message in group: ${error.message}`);
             }
         }
         return true;
-    } catch (e) {
-        console.error('[SOFTMUTE] Mute check failed:', e.message);
+    } catch (error) {
+        console.error('[SOFTMUTE] Mute check failed:', error.message);
         return false;
     }
 }
@@ -257,35 +207,26 @@ export default {
     command: 'softmute',
     aliases: ['smute'],
     category: 'admin',
-    description: 'Mute a user for 10 hours (soft mute - deletes their messages)',
-    usage: '.softmute @user',
+    description: 'Soft-mute a user for a chosen duration; their messages are deleted',
+    usage: '.softmute @user [15m|1h|1h30m|2d]',
     groupOnly: true,
     adminOnly: true,
     async handler(sock, message, args, context) {
-        const { chatId, senderId, channelInfo } = context;
-
-        let userToMute = null;
+        const { chatId, channelInfo } = context;
         const mentioned = message.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-        if (mentioned.length > 0) {
-            userToMute = mentioned[0];
-        } else if (message.message?.extendedTextMessage?.contextInfo?.participant) {
-            userToMute = message.message.extendedTextMessage.contextInfo.participant;
-        }
-
+        const userToMute = mentioned[0] || message.message?.extendedTextMessage?.contextInfo?.participant;
         if (!userToMute) {
-            return sock.sendMessage(chatId, {
-                text: 'Tag or reply to the user you want to mute.\nExample: *.mute @user*',
-                ...channelInfo
-            }, { quoted: message });
+            return sock.sendMessage(chatId, { text: 'Tag or reply to the user. Example: *.softmute @user 15m*', ...channelInfo }, { quoted: message });
         }
-
-        const duration = await softMuteUser(sock, chatId, userToMute);
-        const hours = duration / (60 * 60 * 1000);
-
+        const durationToken = [...args].reverse().find(arg => /^(?:\d+[dhms])+$/i.test(String(arg)));
+        const durationMs = durationToken ? parseMuteDuration(durationToken) : null;
+        if (durationToken && !durationMs) {
+            return sock.sendMessage(chatId, { text: 'Invalid duration. Use 15m, 1h, 1h30m or 2d (maximum 7 days).', ...channelInfo }, { quoted: message });
+        }
+        const duration = await softMuteUser(sock, chatId, userToMute, durationMs);
         await sock.sendMessage(chatId, {
-            text: `🔇 ${mention(userToMute)} has been *soft-muted for ${hours} hours*.\n\nTheir messages will be automatically deleted until the mute expires.\n\nUse *.unmute @user* to unmute early.`,
-            mentions: [userToMute],
-            ...channelInfo
+            text: `🔇 ${mention(userToMute)} has been soft-muted for *${formatMuteDuration(duration)}*. Their messages will be deleted automatically.`,
+            mentions: [userToMute], ...channelInfo
         }, { quoted: message });
     }
 };
@@ -300,27 +241,12 @@ export const unmuteCmd = {
     adminOnly: true,
     async handler(sock, message, args, context) {
         const { chatId, channelInfo } = context;
-
-        let user = null;
         const mentioned = message.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-        if (mentioned.length > 0) user = mentioned[0];
-        else if (message.message?.extendedTextMessage?.contextInfo?.participant) {
-            user = message.message.extendedTextMessage.contextInfo.participant;
-        }
-
+        const user = mentioned[0] || message.message?.extendedTextMessage?.contextInfo?.participant;
         if (!user) {
-            return sock.sendMessage(chatId, {
-                text: 'Tag or reply to the user to unmute.\nExample: *.unmute @user*',
-                ...channelInfo
-            }, { quoted: message });
+            return sock.sendMessage(chatId, { text: 'Tag or reply to the user to unmute.', ...channelInfo }, { quoted: message });
         }
-
-        await softUnmuteUser(chatId, user);
-
-        await sock.sendMessage(chatId, {
-            text: `🔊 ${mention(user)} has been unmuted.`,
-            mentions: [user],
-            ...channelInfo
-        }, { quoted: message });
+        await softUnmuteUser(chatId, user, sock);
+        await sock.sendMessage(chatId, { text: `🔊 ${mention(user)} has been unmuted.`, mentions: [user], ...channelInfo }, { quoted: message });
     }
 };
