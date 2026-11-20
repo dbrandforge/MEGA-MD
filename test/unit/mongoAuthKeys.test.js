@@ -61,7 +61,7 @@ describe('mongo auth key store', () => {
     it('limits write batches to 200 operations and applies a real cooldown between batches', async () => {
         const batchSizes = [];
         const model = { bulkWrite: async operations => { batchSizes.push(operations.length); } };
-        const store = createMongoKeyStore({ getModel: async () => model, BufferJSON, proto: null, flushMs: 10000, batchCooldownMs: 20 });
+        const store = createMongoKeyStore({ getModel: async () => model, BufferJSON, proto: null, flushMs: 10000, batchCooldownMs: 75 });
         const keys = Object.fromEntries(Array.from({ length: 201 }, (_, i) => [String(i), { value: i }]));
         await store.set({ session: keys });
         const startedAt = Date.now();
