@@ -214,6 +214,44 @@ describe('mongo auth key store', () => {
         expect(store.pendingCount()).toBe(0);
     });
 
+    it('retries the newest deferred session value when an in-flight Mongo batch fails', async () => {
+        let releaseWrite;
+        let markStarted;
+        const blocked = new Promise(resolve => { releaseWrite = resolve; });
+        const started = new Promise(resolve => { markStarted = resolve; });
+        let calls = 0;
+        const persisted = [];
+        const model = {
+            bulkWrite: async operations => {
+                calls++;
+                if (calls === 1) {
+                    markStarted();
+                    await blocked;
+                    throw new Error('temporary MongoDB failure');
+                }
+                persisted.push(...operations);
+            },
+        };
+        const store = createMongoKeyStore({
+            getModel: async () => model, BufferJSON, proto: null,
+            flushMs: 10000, batchCooldownMs: 0, sessionFlushMs: 60_000,
+        });
+        await store.set({ session: { same: { value: 1 } } });
+        await store.flush();
+        await store.set({ session: { same: { value: 2 } } });
+        const failedFlush = store.flush();
+        await started;
+        await store.set({ session: { same: { value: 3 } } });
+        releaseWrite();
+        await failedFlush;
+        await store.flush();
+        store.close();
+        expect(calls).toBe(2);
+        expect(persisted).toHaveLength(1);
+        expect(JSON.parse(persisted[0].updateOne.update.$set.content).value).toBe(3);
+        expect(store.pendingCount()).toBe(0);
+    });
+
     it('keeps the MongoDB comparison baseline for keys beyond the parsed-cache limit', async () => {
         const model = fakeModel();
         const keys = Object.fromEntries(Array.from({ length: 300 }, (_, i) => [String(i), { ratchet: i }]));
