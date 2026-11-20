@@ -389,7 +389,6 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                 at: Date.now()
             });
             if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
-            await saveChatHistory(memoryKey, history, true);
         }
 
         const languageInput = quotedText && /^(answer this|answer|explain this|tell me about this|what about this|help me with this)[.!?\s👇]*$/i.test(cleanForHistory) ? quotedText : cleanForHistory;
