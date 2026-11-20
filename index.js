@@ -730,20 +730,6 @@ async function startQasimDev() {
         };
         QasimDev.ev.on('creds.update', _saveCreds);
         store.bind(QasimDev.ev);
-        // Record group read receipts for Hot Seat's recent-reader selection.
-        // Keep a compact rolling map per group; stealth mode intentionally suppresses receipts upstream.
-        QasimDev.ev.on('message-receipt.update', (updates = []) => {
-            // Read receipts arrive in large bursts in big groups. Buffer them in
-            // memory and persist one merged update per group every 30 seconds,
-            // instead of a database read, clone and write per receipt.
-            for (const update of updates) {
-                const groupId = update?.key?.remoteJid;
-                const reader = update?.receipt?.userJid || update?.receipt?.participant || update?.key?.participant;
-                if (!MEMBER_FEATURES_ENABLED || !FEATURE_GROUPS.includes(groupId) || !reader) continue;
-                const timestamp = Number(update?.receipt?.readTimestamp || update?.receipt?.receiptTimestamp || Math.floor(Date.now() / 1000)) * 1000;
-                bufferHotseatReader(groupId, reader, timestamp);
-            }
-        });
         // Track WhatsApp server/delivery acknowledgements for messages sent by the bot.
         QasimDev.ev.on('messages.update', (updates = []) => {
             for (const item of updates) {
