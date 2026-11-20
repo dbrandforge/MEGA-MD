@@ -20,9 +20,9 @@ export function patchLargeSessionDiagnostics(source) {
     }
 
     const functionMarker = 'const assertSessions = async';
-    const keyListMarker = /const jidsRequiringFetch = \\[\\];?/;
-    const validationBlock = /if\\s*\\(sessionValidation\\.exists\\)\\s*\\{\\s*continue;?\\s*\\}/;
-    const fetchBlock = /if\\s*\\(jidsRequiringFetch\\.length\\)\\s*\\{/;
+    const keyListMarker = /const jidsRequiringFetch = \[\];?/;
+    const validationBlock = /if\s*\(sessionValidation\.exists\)\s*\{\s*continue;?\s*\}/;
+    const fetchBlock = /if\s*\(jidsRequiringFetch\.length\)\s*\{/;
 
     if (!source.includes(functionMarker) || !keyListMarker.test(source) || !validationBlock.test(source) || !fetchBlock.test(source)) {
         throw new Error('Baileys assertSessions validation flow was not found; refusing an unsafe diagnostic patch.');
@@ -30,11 +30,11 @@ export function patchLargeSessionDiagnostics(source) {
 
     source = source.replace(
         functionMarker,
-        'let lastLargeSessionDiagnosticAt = 0;\\n\\tconst assertSessions = async'
+        'let lastLargeSessionDiagnosticAt = 0;\n\tconst assertSessions = async'
     );
     source = source.replace(
         keyListMarker,
-        match => match + '\\n\\t\\tlet openSessionCount = 0;\\n\\t\\tlet missingSessionCount = 0;\\n\\t\\tlet closedSessionCount = 0;\\n\\t\\tlet validationErrorCount = 0;'
+        match => match + '\n\t\tlet openSessionCount = 0;\n\t\tlet missingSessionCount = 0;\n\t\tlet closedSessionCount = 0;\n\t\tlet validationErrorCount = 0;'
     );
     source = source.replace(
         validationBlock,
