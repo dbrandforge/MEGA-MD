@@ -14,7 +14,7 @@ describe('Baileys LID session compatibility patch', () => {
             "} catch (e) { logger.warn({ e, count: lidResults.length }, 'failed to assert sessions for newly mapped LIDs'); }",
             '}',
             'const extracted = extractDeviceJids(result.list);'
-        ].join('\\n');
+        ].join(' ');
         const result = patchMessagesSend(input);
         expect(result.changed).toBe(true);
         expect(result.source).toContain('const stored = await signalRepository.lidMapping.storeLIDPNMappings');
@@ -30,7 +30,7 @@ describe('Baileys LID session compatibility patch', () => {
             'export class LIDMappingStore {',
             'async storeLIDPNMappings(pairs) { return; }',
             '}'
-        ].join('\\n');
+        ].join(' ');
         const result = patchLidMappingStore(input);
         expect(result.changed).toBe(true);
         expect(result.source).toContain('storeLIDPNMappings returns newly mapped pairs');
@@ -75,7 +75,7 @@ describe('Baileys LID session compatibility patch', () => {
             'const fromJid = node.attrs.from;',
             'const sessionId = signalRepository.jidToSignalProtocolAddress(fromJid);',
             '};'
-        ].join('\\n');
+        ].join(' ');
         const result = patchMessagesReceive(input);
         expect(result.source).toContain('await sendRetryRequest(node, true);');
         expect(result.source).toContain('let fromJid = node.attrs.participant || node.attrs.from;');
