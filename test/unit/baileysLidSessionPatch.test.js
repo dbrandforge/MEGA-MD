@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { patchMessagesReceive, patchMessagesSend } from '../../scripts/patch-baileys-lid-sessions.js';
+import { patchLargeSessionDiagnostics, patchMessagesReceive, patchMessagesSend } from '../../scripts/patch-baileys-lid-sessions.js';
 
 describe('Baileys LID session compatibility patch', () => {
     it('does not force-recreate every mapped LID session during device lookup', () => {
@@ -8,6 +8,34 @@ describe('Baileys LID session compatibility patch', () => {
         expect(result.source).toBe('await assertSessions(lids);');
         expect(result.changed).toBe(true);
         expect(patchMessagesSend(result.source).changed).toBe(false);
+    });
+
+    it('reports why large recipient session sets are being fetched without logging JIDs', () => {
+        const input = [
+            'const assertSessions = async (jids, force) => {',
+            'const uniqueJids = [...new Set(jids)];',
+            'const jidsRequiringFetch = [];',
+            'for (const jid of uniqueJids) {',
+            'if (!force) {',
+            'const sessionValidation = await signalRepository.validateSession(jid);',
+            'if (sessionValidation.exists) {',
+            'continue;',
+            '}',
+            '}',
+            'jidsRequiringFetch.push(jid);',
+            '}',
+            'if (jidsRequiringFetch.length) {',
+            'return true;',
+            '}',
+            '};'
+        ].join('\\n');
+        const result = patchLargeSessionDiagnostics(input);
+        expect(result.changed).toBe(true);
+        expect(result.source).toContain('openSessionCount++');
+        expect(result.source).toContain("sessionValidation.reason === 'no open session'");
+        expect(result.source).toContain('[Baileys session diagnostic]');
+        expect(result.source).not.toContain('console.warn(jid');
+        expect(patchLargeSessionDiagnostics(result.source).changed).toBe(false);
     });
 
     it('sends key material on the first decrypt retry and targets the real group participant', () => {
