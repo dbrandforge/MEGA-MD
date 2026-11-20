@@ -42,7 +42,7 @@ function cacheMutes(chatId, value) {
 
 export function invalidateSoftMuteCache(chatId = null) {
     if (chatId) muteCache.delete(chatId);
-    else muteCache.clear();
+    else { muteCache.clear(); counterpartCache.clear(); }
 }
 
 async function getMutes(chatId) {
@@ -59,6 +59,37 @@ async function saveMutes(chatId, data) {
     cacheMutes(chatId, data);
 }
 
+// Counterpart lookups (LID <-> PN) are cached, including misses, so a busy
+// group never repeats the same mapping lookup for the same member. Only a
+// handful of mutes ever exist, so this stays tiny and bounded.
+const counterpartCache = new Map();
+const COUNTERPART_HIT_TTL_MS = 10 * 60 * 1000;
+const COUNTERPART_MISS_TTL_MS = 60 * 1000;
+const COUNTERPART_CACHE_MAX = 1000;
+
+async function resolveCounterpart(sock, id, { fresh = false } = {}) {
+    if (!sock || !id) return null;
+    const cached = fresh ? null : counterpartCache.get(id);
+    if (cached && Date.now() - cached.at < (cached.value ? COUNTERPART_HIT_TTL_MS : COUNTERPART_MISS_TTL_MS)) return cached.value;
+    let value = null;
+    try {
+        const mapping = sock.signalRepository?.lidMapping;
+        if (id.endsWith('@lid')) {
+            const pn = await mapping?.getPNForLID?.(id);
+            if (typeof pn === 'string' && pn.endsWith('@s.whatsapp.net')) value = cleanId(pn);
+        } else if (id.endsWith('@s.whatsapp.net')) {
+            const lid = await mapping?.getLIDForPN?.(id);
+            if (typeof lid === 'string' && lid.endsWith('@lid')) value = cleanId(lid);
+        }
+    } catch (error) {
+        console.warn('[SOFTMUTE] Could not resolve identity counterpart:', error.message);
+    }
+    counterpartCache.delete(id);
+    counterpartCache.set(id, { value, at: Date.now() });
+    while (counterpartCache.size > COUNTERPART_CACHE_MAX) counterpartCache.delete(counterpartCache.keys().next().value);
+    return value;
+}
+
 export async function normalizeSoftMuteUserId(sock, userId) {
     const key = cleanId(userId);
     if (!key.endsWith('@lid')) return key;
@@ -73,37 +104,43 @@ export async function normalizeSoftMuteUserId(sock, userId) {
     return key;
 }
 
-export async function isSoftMuted(chatId, userId, sock = null) {
+export async function isSoftMuted(chatId, userId, sock = null, extraIds = []) {
     const mutes = await getMutes(chatId);
-    const key = cleanId(userId);
-    let matchedKey = Object.hasOwn(mutes, key) ? key : (Object.hasOwn(mutes, userId) ? userId : null);
-    let entry = matchedKey ? mutes[matchedKey] : null;
+    // Almost every group has no active mute: exit before doing any work.
+    if (!mutes || Object.keys(mutes).length === 0) return false;
 
-    // Older records may contain only a LID, while current Baileys messages
-    // identify that same member by PN. Resolve stored LIDs during lookup so
-    // those pre-alias records remain enforceable after identity-format changes.
-    if (!entry && sock && key.endsWith('@s.whatsapp.net')) {
-        for (const [storedKey, storedEntry] of Object.entries(mutes)) {
+    // Match on every identifier the message carries (resolved PN, raw LID,
+    // alternate PN) before falling back to any mapping lookup.
+    const ids = [...new Set([cleanId(userId), userId, ...extraIds.map(cleanId)].filter(id => typeof id === 'string' && id))];
+    let matchedKey = null;
+    for (const id of ids) {
+        if (Object.hasOwn(mutes, id)) { matchedKey = id; break; }
+    }
+
+    if (!matchedKey && sock) {
+        // Sender arrived as a LID but the mute was stored under its PN.
+        for (const id of ids.filter(i => i.endsWith('@lid'))) {
+            const pn = await resolveCounterpart(sock, id);
+            if (pn && Object.hasOwn(mutes, pn)) { matchedKey = pn; break; }
+        }
+    }
+    if (!matchedKey && sock && ids.some(i => i.endsWith('@s.whatsapp.net'))) {
+        // Older records may contain only a LID while the message identifies the
+        // same member by PN. Resolve each stored LID (cached) and compare.
+        for (const storedKey of Object.keys(mutes)) {
             if (!storedKey.endsWith('@lid')) continue;
-            try {
-                const mappedPN = await sock?.signalRepository?.lidMapping?.getPNForLID?.(storedKey);
-                if (typeof mappedPN === 'string' && cleanId(mappedPN) === key) {
-                    matchedKey = storedKey;
-                    entry = storedEntry;
-                    break;
-                }
-            } catch (error) {
-                console.warn('[SOFTMUTE] Could not resolve stored LID during lookup:', error.message);
-            }
+            const pn = await resolveCounterpart(sock, storedKey);
+            if (pn && ids.includes(pn)) { matchedKey = storedKey; break; }
         }
     }
 
+    const entry = matchedKey ? mutes[matchedKey] : null;
     if (!entry) return false;
     const until = Number(entry.until);
     if (!Number.isFinite(until) || until <= 0 || Date.now() >= until) {
-        const ids = new Set([key, cleanId(userId), matchedKey, cleanId(entry.original), cleanId(entry.canonical)]);
+        const idSet = new Set([...ids, matchedKey, cleanId(entry.original), cleanId(entry.canonical)]);
         for (const [storedKey, storedEntry] of Object.entries(mutes)) {
-            if (ids.has(storedKey) || ids.has(cleanId(storedEntry?.original)) || ids.has(cleanId(storedEntry?.canonical))) {
+            if (idSet.has(storedKey) || idSet.has(cleanId(storedEntry?.original)) || idSet.has(cleanId(storedEntry?.canonical))) {
                 delete mutes[storedKey];
             }
         }
@@ -129,26 +166,46 @@ export async function softMuteUser(sock, chatId, userId, hours = null) {
     // Store a canonical PN alias as well so incoming PN-resolved messages
     // still match a target that was mentioned using a Baileys LID.
     if (canonicalKey !== key) mutes[canonicalKey] = entry;
+    // Resolve the other identity format once, now, so later messages match with
+    // a plain lookup instead of a mapping call on every message.
+    for (const id of [key, canonicalKey]) {
+        const other = await resolveCounterpart(sock, id, { fresh: true });
+        if (other && !Object.hasOwn(mutes, other)) mutes[other] = entry;
+    }
     await saveMutes(chatId, mutes);
     // The scheduler must know every group that contains an individual mute.
     await trackGroup(chatId);
     return duration;
 }
 
-export async function cleanExpiredSoftMutes(chatId, now = Date.now()) {
+export async function cleanExpiredSoftMutes(chatId, now = Date.now(), { sock = null } = {}) {
     if (!chatId?.endsWith('@g.us')) return 0;
     const mutes = await getMutes(chatId);
-    let removed = 0;
-    const removedIds = new Set();
+    const removedIds = new Map(); // member id -> JID to mention
     for (const [key, entry] of Object.entries(mutes)) {
         const until = Number(entry?.until);
         if (!Number.isFinite(until) || until <= 0 || now >= until) {
-            removedIds.add(cleanId(entry?.canonical || entry?.original || key));
+            const id = cleanId(entry?.canonical || entry?.original || key);
+            if (!removedIds.has(id)) removedIds.set(id, entry?.original || entry?.canonical || key);
             delete mutes[key];
         }
     }
-    removed = removedIds.size;
-    if (removed) await saveMutes(chatId, mutes);
+    const removed = removedIds.size;
+    if (removed) {
+        await saveMutes(chatId, mutes);
+        if (sock) {
+            // Best effort: tell the group the mute ended. Never blocks cleanup.
+            try {
+                const jids = [...removedIds.values()].slice(0, 10);
+                await sock.sendMessage(chatId, {
+                    text: `🔊 Soft-mute expired for ${jids.map(mention).join(', ')}. They can send messages again.`,
+                    mentions: jids
+                });
+            } catch (error) {
+                console.warn('[SOFTMUTE] Could not announce mute expiry:', error.message);
+            }
+        }
+    }
     return removed;
 }
 
@@ -165,6 +222,8 @@ export async function softUnmuteUser(chatId, userId) {
     await saveMutes(chatId, mutes);
 }
 
+const deleteFailureLoggedAt = new Map();
+
 /**
  * Call this on every group message - delete if user is soft-muted
  */
@@ -173,18 +232,23 @@ export async function handleSoftMuteMessage(sock, chatId, message, senderId) {
         if (!chatId?.endsWith('@g.us')) return false;
         if (message.key.fromMe) return false;
 
-        const muted = await isSoftMuted(chatId, senderId, sock);
+        const muted = await isSoftMuted(chatId, senderId, sock, [message.key.participant, message.key.participantAlt]);
         if (!muted) return false;
 
         // Delete their message
         try {
             await sock.sendMessage(chatId, { delete: message.key });
         } catch (e) {
-            // Bot needs admin + delete permission
-            console.error('Could not delete muted user message:', e.message);
+            // Bot needs admin + delete permission. Log at most once a minute per group.
+            const last = deleteFailureLoggedAt.get(chatId) || 0;
+            if (Date.now() - last > 60000) {
+                deleteFailureLoggedAt.set(chatId, Date.now());
+                console.error(`[SOFTMUTE] Could not delete muted user message in ${chatId}: ${e.message}`);
+            }
         }
         return true;
     } catch (e) {
+        console.error('[SOFTMUTE] Mute check failed:', e.message);
         return false;
     }
 }

@@ -226,7 +226,7 @@ export function startSchedulerEngine(sock) {
                 }
                 try {
                     const { cleanExpiredSoftMutes } = await import('./softmute.js');
-                    const removed = await cleanExpiredSoftMutes(chatId);
+                    const removed = await cleanExpiredSoftMutes(chatId, Date.now(), { sock: activeSocket });
                     if (removed) console.log(`[SCHEDULE] Cleaned ${removed} expired soft mute(s) in ${chatId}`);
                 } catch (e) {
                     console.error(`[SCHEDULE] Soft-mute cleanup failed for ${chatId}: ${e.stack || e.message}`);

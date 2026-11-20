@@ -120,4 +120,41 @@ describe('mongo auth key store', () => {
         expect(store.pendingCount()).toBe(0);
     });
 
+    it('runs only one database pass at a time even when flush is called concurrently', async () => {
+        let inFlight = 0;
+        let maxInFlight = 0;
+        const model = {
+            bulkWrite: async () => {
+                inFlight++;
+                maxInFlight = Math.max(maxInFlight, inFlight);
+                await new Promise(resolve => setTimeout(resolve, 15));
+                inFlight--;
+            },
+        };
+        const store = createMongoKeyStore({ getModel: async () => model, BufferJSON, proto: null, flushMs: 10000, batchCooldownMs: 0 });
+        await store.set({ session: Object.fromEntries(Array.from({ length: 250 }, (_, i) => [String(i), { value: i }])) });
+        const first = [store.flush(), store.flush(), store.flush()];
+        await store.set({ 'sender-key-memory': { group: { a: 1 } } });
+        await Promise.all([...first, store.flush(), store.flush()]);
+        store.close();
+        expect(maxInFlight).toBe(1);
+        expect(store.pendingCount()).toBe(0);
+    });
+
+    it('does not rewrite keys whose content is unchanged and reports key types in the log', async () => {
+        const logs = [];
+        const model = fakeModel();
+        const store = createMongoKeyStore({ getModel: async () => model, BufferJSON, proto: null, flushMs: 10000, batchCooldownMs: 0, log: (_level, message) => logs.push(message) });
+        await store.set({ session: { a: { value: 1 }, b: { value: 2 } } });
+        await store.flush();
+        await store.set({ session: { a: { value: 1 }, b: { value: 2 } } });
+        expect(store.pendingCount()).toBe(0);
+        await store.set({ session: { a: { value: 9 } } });
+        expect(store.pendingCount()).toBe(1);
+        await store.flush();
+        store.close();
+        expect(model.stats.bulk).toBe(2);
+        expect(logs.some(line => line.includes('kinds=session=2'))).toBe(true);
+    });
+
 });
