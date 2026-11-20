@@ -69,3 +69,11 @@ describe('WhatsApp upsert processing policy', () => {
     expect(shouldProcessMessageUpsert('notify', sentBeforeRestart, { now: now + 24 * 60 * 60 * 1000 })).toBe(false);
   });
 });
+
+describe('replays of messages sent before this process started', () => {
+  it('ignores messages sent before boot but keeps ones sent after', () => {
+    const startedAtMs = now - 60 * 1000;
+    expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(90) }), { now, startedAtMs })).toBe(false);
+    expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(30) }), { now, startedAtMs })).toBe(true);
+  });
+});
