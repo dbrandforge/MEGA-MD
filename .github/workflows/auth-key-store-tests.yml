@@ -9,6 +9,7 @@ on:
   push:
     branches:
       - main
+      - fix/auth-key-inflight-dedup
     paths:
       - "lib/mongoAuthKeys.js"
       - "test/unit/mongoAuthKeys.test.js"
