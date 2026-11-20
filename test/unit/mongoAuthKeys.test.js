@@ -154,6 +154,105 @@ describe('mongo auth key store', () => {
         expect(store.pendingCount()).toBe(0);
     });
 
+    it('does not queue a duplicate batch when Baileys repeats identical keys during an in-flight Mongo write', async () => {
+        let releaseWrite;
+        let markStarted;
+        const blocked = new Promise(resolve => { releaseWrite = resolve; });
+        const started = new Promise(resolve => { markStarted = resolve; });
+        const batchSizes = [];
+        const logs = [];
+        const model = {
+            bulkWrite: async operations => {
+                batchSizes.push(operations.length);
+                if (batchSizes.length === 1) { markStarted(); await blocked; }
+            },
+        };
+        const keys = Object.fromEntries(Array.from({ length: 250 }, (_, i) => [String(i), { ratchet: i }]));
+        const store = createMongoKeyStore({
+            getModel: async () => model, BufferJSON, proto: null,
+            flushMs: 10000, batchCooldownMs: 0,
+            log: (_level, message) => logs.push(message),
+        });
+        await store.set({ session: keys });
+        const firstFlush = store.flush();
+        await started;
+        await store.set({ session: keys });
+        expect(store.pendingCount()).toBe(0);
+        releaseWrite();
+        await firstFlush;
+        await store.flush();
+        store.close();
+        expect(batchSizes).toEqual([200, 50]);
+        expect(store.pendingCount()).toBe(0);
+        expect(logs.filter(line => line.includes('Persisted 250 changed key(s)'))).toHaveLength(1);
+        expect(logs.some(line => line.includes('kinds=session=250'))).toBe(true);
+    });
+
+    it('preserves a genuine newer update to a key while its previous value is in flight', async () => {
+        let releaseWrite;
+        let markStarted;
+        const blocked = new Promise(resolve => { releaseWrite = resolve; });
+        const started = new Promise(resolve => { markStarted = resolve; });
+        const persisted = [];
+        const model = {
+            bulkWrite: async operations => {
+                if (persisted.length === 0) { markStarted(); await blocked; }
+                persisted.push(...operations);
+            },
+        };
+        const store = createMongoKeyStore({ getModel: async () => model, BufferJSON, proto: null, flushMs: 10000, batchCooldownMs: 0 });
+        await store.set({ 'pre-key': { same: { value: 1 } } });
+        const firstFlush = store.flush();
+        await started;
+        await store.set({ 'pre-key': { same: { value: 2 } } });
+        releaseWrite();
+        await firstFlush;
+        await store.flush();
+        store.close();
+        expect(persisted).toHaveLength(2);
+        expect(JSON.parse(persisted[1].updateOne.update.$set.content).value).toBe(2);
+        expect(store.pendingCount()).toBe(0);
+    });
+
+    it('retries the newest deferred session value when an in-flight Mongo batch fails', async () => {
+        let releaseWrite;
+        let markStarted;
+        const blocked = new Promise(resolve => { releaseWrite = resolve; });
+        const started = new Promise(resolve => { markStarted = resolve; });
+        let calls = 0;
+        const persisted = [];
+        const model = {
+            bulkWrite: async operations => {
+                calls++;
+                if (calls === 2) {
+                    markStarted();
+                    await blocked;
+                    throw new Error('temporary MongoDB failure');
+                }
+                persisted.push(...operations);
+            },
+        };
+        const store = createMongoKeyStore({
+            getModel: async () => model, BufferJSON, proto: null,
+            flushMs: 10000, batchCooldownMs: 0, sessionFlushMs: 60_000,
+        });
+        await store.set({ session: { same: { value: 1 } } });
+        await store.flush();
+        await store.set({ session: { same: { value: 2 } } });
+        const failedFlush = store.flush();
+        await started;
+        await store.set({ session: { same: { value: 3 } } });
+        releaseWrite();
+        await failedFlush;
+        await store.flush();
+        store.close();
+        expect(calls).toBe(3);
+        expect(persisted).toHaveLength(2);
+        expect(JSON.parse(persisted[0].updateOne.update.$set.content).value).toBe(1);
+        expect(JSON.parse(persisted[1].updateOne.update.$set.content).value).toBe(3);
+        expect(store.pendingCount()).toBe(0);
+    });
+
     it('keeps the MongoDB comparison baseline for keys beyond the parsed-cache limit', async () => {
         const model = fakeModel();
         const keys = Object.fromEntries(Array.from({ length: 300 }, (_, i) => [String(i), { ratchet: i }]));

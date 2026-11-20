@@ -1,0 +1,36 @@
+name: Auth key store regression tests
+
+on:
+  pull_request:
+    paths:
+      - "lib/mongoAuthKeys.js"
+      - "test/unit/mongoAuthKeys.test.js"
+      - ".github/workflows/auth-key-store-tests.yml"
+  push:
+    branches:
+      - main
+      - fix/auth-key-inflight-dedup
+    paths:
+      - "lib/mongoAuthKeys.js"
+      - "test/unit/mongoAuthKeys.test.js"
+      - ".github/workflows/auth-key-store-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  mongo-auth-key-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Run Mongo auth-key store regression tests
+        run: npx vitest run test/unit/mongoAuthKeys.test.js
