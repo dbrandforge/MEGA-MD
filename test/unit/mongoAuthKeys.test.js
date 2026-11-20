@@ -58,7 +58,7 @@ describe('mongo auth key store', () => {
         store.close(); held.close();
     });
 
-    it('limits write batches to 100 operations and applies a real cooldown between batches', async () => {
+    it('limits write batches to 200 operations and applies a real cooldown between batches', async () => {
         const batchSizes = [];
         const model = { bulkWrite: async operations => { batchSizes.push(operations.length); } };
         const store = createMongoKeyStore({ getModel: async () => model, BufferJSON, proto: null, flushMs: 10000, batchCooldownMs: 20 });
@@ -68,9 +68,22 @@ describe('mongo auth key store', () => {
         await store.flush();
         const elapsed = Date.now() - startedAt;
         store.close();
-        expect(batchSizes).toEqual([100, 100, 1]);
-        expect(elapsed).toBeGreaterThanOrEqual(35);
+        expect(batchSizes).toEqual([200, 1]);
+        expect(elapsed).toBeGreaterThanOrEqual(70);
         expect(store.pendingCount()).toBe(0);
+    });
+
+    it('coalesces repeated updates to the same key before a flush', async () => {
+        const model = fakeModel();
+        const store = createMongoKeyStore({ getModel: async () => model, BufferJSON, proto: null, flushMs: 10000 });
+        for (let value = 0; value < 100; value++) {
+            await store.set({ session: { shared: { value } } });
+        }
+        expect(store.pendingCount()).toBe(1);
+        await store.flush();
+        store.close();
+        expect(model.stats.bulk).toBe(1);
+        expect(JSON.parse(model.db.get('session-shared.json')).value).toBe(99);
     });
 
     it('requeues a failed batch without losing pending keys', async () => {
