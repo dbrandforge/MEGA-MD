@@ -48,7 +48,7 @@ export function formatMuteDuration(durationMs) {
 }
 
 function mention(jid) { return `@${(jid || '').split('@')[0]}`; }
-function cleanId(jid) { return String(jid || '').replace(/:\\d+(?=@)/, ''); }
+function cleanId(jid) { return String(jid || '').replace(/:\d+(?=@)/, ''); }
 function recordKey(jid) { return RECORD_PREFIX + cleanId(jid); }
 
 const counterpartCache = new Map();
