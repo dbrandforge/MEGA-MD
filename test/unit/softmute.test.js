@@ -142,4 +142,85 @@ describe('soft mute expiry and scheduler registration', () => {
         const mutes = await store.getSetting(GROUP, 'softMutes');
         expect(mutes['2348000000000@s.whatsapp.net'].until).toBeGreaterThan(Date.now());
     });
+
+    it('deletes messages from a member who arrives as a LID when the mute was stored under their PN', async () => {
+        const lid = '555000111@lid';
+        const pn = '2348000000000@s.whatsapp.net';
+        await store.saveSetting(GROUP, 'softMutes', {
+            [pn]: { until: Date.now() + 60_000, original: pn, canonical: pn }
+        });
+        const sock = {
+            signalRepository: { lidMapping: { getPNForLID: vi.fn(async () => pn) } },
+            sendMessage: vi.fn(async () => ({}))
+        };
+        const message = { key: { id: 'lid-sender', remoteJid: GROUP, participant: lid, fromMe: false } };
+
+        await expect(handleSoftMuteMessage(sock, GROUP, message, lid)).resolves.toBe(true);
+        expect(sock.sendMessage).toHaveBeenCalledWith(GROUP, { delete: message.key });
+    });
+
+    it('matches on the alternate PN carried by the message key without any mapping lookup', async () => {
+        const lid = '555000111@lid';
+        const pn = '2348000000000@s.whatsapp.net';
+        await store.saveSetting(GROUP, 'softMutes', {
+            [pn]: { until: Date.now() + 60_000, original: pn, canonical: pn }
+        });
+        const getPNForLID = vi.fn(async () => null);
+        const sock = { signalRepository: { lidMapping: { getPNForLID } }, sendMessage: vi.fn(async () => ({})) };
+        const message = { key: { id: 'alt', remoteJid: GROUP, participant: lid, participantAlt: pn, fromMe: false } };
+
+        await expect(handleSoftMuteMessage(sock, GROUP, message, lid)).resolves.toBe(true);
+        expect(getPNForLID).not.toHaveBeenCalled();
+    });
+
+    it('does no identity lookups at all when the group has no active mutes', async () => {
+        const getPNForLID = vi.fn(async () => null);
+        const sock = { signalRepository: { lidMapping: { getPNForLID } }, sendMessage: vi.fn(async () => ({})) };
+        const message = { key: { id: 'free', remoteJid: GROUP, participant: '777@lid', fromMe: false } };
+
+        await expect(handleSoftMuteMessage(sock, GROUP, message, '777@lid')).resolves.toBe(false);
+        expect(getPNForLID).not.toHaveBeenCalled();
+    });
+
+    it('caches identity lookups so a busy group does not repeat them for the same member', async () => {
+        await store.saveSetting(GROUP, 'softMutes', {
+            '2348000000000@s.whatsapp.net': { until: Date.now() + 60_000 }
+        });
+        const getPNForLID = vi.fn(async () => '2349999999999@s.whatsapp.net');
+        const sock = { signalRepository: { lidMapping: { getPNForLID } }, sendMessage: vi.fn(async () => ({})) };
+        const lid = '888000222@lid';
+        for (let i = 0; i < 5; i++) {
+            const message = { key: { id: `chat-${i}`, remoteJid: GROUP, participant: lid, fromMe: false } };
+            await expect(handleSoftMuteMessage(sock, GROUP, message, lid)).resolves.toBe(false);
+        }
+        expect(getPNForLID).toHaveBeenCalledTimes(1);
+    });
+
+    it('stores the opposite identity format when it can be resolved at mute time', async () => {
+        const pn = '2348000000000@s.whatsapp.net';
+        const lid = '999000333@lid';
+        const sock = { signalRepository: { lidMapping: { getLIDForPN: vi.fn(async () => lid) } } };
+
+        await softMuteUser(sock, GROUP, pn, 10);
+
+        const saved = await store.getSetting(GROUP, 'softMutes');
+        expect(saved[pn]).toBeTruthy();
+        expect(saved[lid]).toBeTruthy();
+        expect(await isSoftMuted(GROUP, lid)).toBe(true);
+    });
+
+    it('announces expiry in the group when the scheduler supplies a socket', async () => {
+        const pn = '2348000000000@s.whatsapp.net';
+        await store.saveSetting(GROUP, 'softMutes', {
+            [pn]: { until: Date.now() - 1, original: pn, canonical: pn }
+        });
+        const sock = { sendMessage: vi.fn(async () => ({})) };
+
+        await expect(cleanExpiredSoftMutes(GROUP, Date.now(), { sock })).resolves.toBe(1);
+        expect(sock.sendMessage).toHaveBeenCalledTimes(1);
+        expect(sock.sendMessage.mock.calls[0][1].mentions).toEqual([pn]);
+        expect(await store.getSetting(GROUP, 'softMutes')).toEqual({});
+        await expect(cleanExpiredSoftMutes(GROUP, Date.now(), { sock })).resolves.toBe(0);
+        expect(sock.sendMessage).toHaveBeenCalledTimes(1);
+    });
 });
