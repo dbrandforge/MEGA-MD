@@ -11,12 +11,12 @@ const message = (overrides = {}) => ({
 const secondsAgo = seconds => Math.floor((now - seconds * 1000) / 1000);
 
 describe('WhatsApp upsert processing policy', () => {
-  it.each(['notify', 'append'])('accepts %s messages within the 180-second window', type => {
-    expect(shouldProcessMessageUpsert(type, message({ messageTimestamp: secondsAgo(179) }), { now })).toBe(true);
+  it.each(['notify', 'append'])('accepts %s messages within the 60-second window', type => {
+    expect(shouldProcessMessageUpsert(type, message({ messageTimestamp: secondsAgo(59) }), { now })).toBe(true);
   });
 
-  it.each(['notify', 'append'])('rejects %s messages older than 180 seconds', type => {
-    const stale = message({ messageTimestamp: secondsAgo(181) });
+  it.each(['notify', 'append'])('rejects %s messages older than 60 seconds', type => {
+    const stale = message({ messageTimestamp: secondsAgo(61) });
     expect(shouldProcessMessageUpsert(type, stale, { now })).toBe(false);
     expect(isMessageTooOld(stale, now)).toBe(true);
   });
@@ -64,7 +64,7 @@ describe('WhatsApp upsert processing policy', () => {
   });
 
   it('uses the original message timestamp, independent of process restart time', () => {
-    const sentBeforeRestart = message({ messageTimestamp: secondsAgo(181) });
+    const sentBeforeRestart = message({ messageTimestamp: secondsAgo(61) });
     expect(shouldProcessMessageUpsert('notify', sentBeforeRestart, { now })).toBe(false);
     expect(shouldProcessMessageUpsert('notify', sentBeforeRestart, { now: now + 24 * 60 * 60 * 1000 })).toBe(false);
   });
@@ -73,7 +73,7 @@ describe('WhatsApp upsert processing policy', () => {
 describe('replays of messages sent before this process started', () => {
   it('ignores messages sent before boot but keeps ones sent after', () => {
     const startedAtMs = now - 60 * 1000;
-    expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(90) }), { now, startedAtMs })).toBe(false);
-    expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(30) }), { now, startedAtMs })).toBe(true);
+    expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(50) }), { now, startedAtMs: now - 10 * 1000 })).toBe(false);
+    expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(5) }), { now, startedAtMs: now - 10 * 1000 })).toBe(true);
   });
 });

@@ -190,4 +190,39 @@ describe('mongo auth key store', () => {
         expect(logs.some(line => line.includes('kinds=session=2'))).toBe(true);
     });
 
+    it('batches rewrites of already-stored sessions and flushes them on demand', async () => {
+        const model = fakeModel();
+        const store = createMongoKeyStore({ getModel: async () => model, BufferJSON, proto: null, flushMs: 10, sessionFlushMs: 60_000 });
+        await store.set({ session: { a: { v: 1 }, b: { v: 1 } } });
+        await store.flush();
+        expect(model.stats.bulk).toBe(1);
+        // Baileys rewrites existing sessions with changed content: deferred, not written.
+        await store.set({ session: { a: { v: 2 }, b: { v: 2 } } });
+        await new Promise(r => setTimeout(r, 40));
+        expect(model.stats.bulk).toBe(1);
+        expect(JSON.parse(model.db.get('session-a.json')).v).toBe(1);
+        // Memory stays authoritative.
+        expect((await store.get('session', ['a']))['a'].v).toBe(2);
+        expect(model.stats.finds).toBe(0);
+        // New sessions are still written promptly.
+        await store.set({ session: { c: { v: 1 } } });
+        await new Promise(r => setTimeout(r, 40));
+        expect(model.db.has('session-c.json')).toBe(true);
+        // Shutdown flush writes everything that was deferred.
+        await store.flush();
+        expect(JSON.parse(model.db.get('session-a.json')).v).toBe(2);
+        expect(JSON.parse(model.db.get('session-b.json')).v).toBe(2);
+        store.close();
+    });
+
+    it('writes deferred sessions when the batch interval elapses', async () => {
+        const model = fakeModel();
+        const store = createMongoKeyStore({ getModel: async () => model, BufferJSON, proto: null, flushMs: 5, sessionFlushMs: 30 });
+        await store.set({ session: { a: { v: 1 } } });
+        await store.flush();
+        await store.set({ session: { a: { v: 3 } } });
+        await new Promise(r => setTimeout(r, 120));
+        expect(JSON.parse(model.db.get('session-a.json')).v).toBe(3);
+        store.close();
+    });
 });
