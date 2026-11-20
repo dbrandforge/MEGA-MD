@@ -49,3 +49,16 @@ describe('WhatsApp upsert processing policy', () => {
     expect(shouldProcessMessageUpsert('replace', message(), { now })).toBe(false);
   });
 });
+
+describe('stale notify backlog after reconnect', () => {
+  const base = (ts) => ({ key: { remoteJid: '1@g.us', id: 'A1', fromMe: false }, message: { conversation: 'hi' }, messageTimestamp: ts });
+  it('drops notify messages older than the live window', () => {
+    const now = Date.now();
+    expect(shouldProcessMessageUpsert('notify', base(Math.floor((now - 10 * 60 * 1000) / 1000)), { now })).toBe(false);
+  });
+  it('keeps fresh notify messages and ones without a timestamp', () => {
+    const now = Date.now();
+    expect(shouldProcessMessageUpsert('notify', base(Math.floor((now - 5000) / 1000)), { now })).toBe(true);
+    expect(shouldProcessMessageUpsert('notify', base(undefined), { now })).toBe(true);
+  });
+});
