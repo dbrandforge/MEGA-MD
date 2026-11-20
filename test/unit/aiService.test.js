@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import axios from 'axios';
-import { isUsefulAutomaticAnswer, buildConversationPrompt, shouldUseLiveSearchForMessage, askFastAI } from '../../lib/aiService.js';
+import { isUsefulAutomaticAnswer, buildConversationPrompt, buildFallbackPrompt, shouldUseLiveSearchForMessage, askFastAI } from '../../lib/aiService.js';
 
 vi.mock('axios', () => ({ default: { post: vi.fn(), get: vi.fn() } }));
 
@@ -26,7 +26,8 @@ describe('bounded automatic AI provider failover', () => {
     expect(answer).toContain('Photosynthesis');
     expect(axios.post).toHaveBeenCalledTimes(1);
     expect(axios.get).toHaveBeenCalledTimes(1);
-    expect(axios.get.mock.calls[0][1].timeout).toBeLessThanOrEqual(1200);
+    expect(axios.get.mock.calls[0][1].timeout).toBeLessThanOrEqual(1100);
+    expect(axios.get.mock.calls[0][0].length).toBeLessThan(12000);
   });
 
   it('does not call a second backup after the first backup succeeds', async () => {
@@ -38,6 +39,18 @@ describe('bounded automatic AI provider failover', () => {
     expect(axios.get).toHaveBeenCalledTimes(1);
   });
 });
+
+
+  it('uses a compact contextual prompt for legacy GET failover providers', () => {
+    const prompt = buildFallbackPrompt('Why did that happen?', [
+      { name: 'User', text: 'I was asking about the project.' },
+      { name: 'Forge Bot', text: 'We were discussing the deployment.' }
+    ], 'Relevant project context', 'english');
+    expect(prompt).toContain('RECENT CONVERSATION');
+    expect(prompt).toContain('Relevant project context');
+    expect(prompt).toContain('CURRENT MESSAGE');
+    expect(prompt.length).toBeLessThanOrEqual(2600);
+  });
 
 describe('Forge Guard conversation style instructions', () => {
   it('does not steer casual conversations toward business by default', () => {
