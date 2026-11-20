@@ -28,7 +28,7 @@ import { printLog } from './lib/print.js';
 import { writeErrorLog } from './lib/logger.js';
 import { handleMessages, handleGroupParticipantUpdate, handleStatus, handleCall } from './lib/messageHandler.js';
 import commandHandler from './lib/commandHandler.js';
-import { shouldProcessMessageUpsert } from './lib/messageEventPolicy.js';
+import { shouldProcessMessageUpsert, isMessageTooOld } from './lib/messageEventPolicy.js';
 import { startSchedulerEngine, trackGroup } from './plugins/schedule.js';
 import { FEATURE_GROUPS } from './lib/featureGroups.js';
 import { resumeHotSeatSession } from './plugins/hotseat.js';
@@ -42,11 +42,29 @@ import { createPerChatMessageQueue } from './lib/perChatMessageQueue.js';
 installSignalDiagnosticGuard();
 global.__forgeWhatsAppConnected = false;
 
+let staleMessageDropCount = 0;
+function recordStaleMessageDrop() {
+    staleMessageDropCount += 1;
+}
+const staleMessageReportTimer = setInterval(() => {
+    if (staleMessageDropCount > 0) {
+        printLog('warning', `Stale WhatsApp messages dropped in last interval: count=${staleMessageDropCount}`);
+        staleMessageDropCount = 0;
+    }
+}, 60000);
+staleMessageReportTimer.unref?.();
+
 const incomingMessageQueue = createPerChatMessageQueue({
     maxConcurrentChats: 4,
     processMessage: async ({ sock, update, queuedAt }) => {
         const mek = update.messages?.[0];
         try {
+            // Recheck at execution time: a valid message may become stale while
+            // waiting behind other work in the per-chat queue.
+            if (!shouldProcessMessageUpsert(update?.type, mek)) {
+                if (isMessageTooOld(mek)) recordStaleMessageDrop();
+                return;
+            }
             const handlerStartedAt = process.hrtime.bigint();
             const queueWaitMs = Math.max(0, Date.now() - (Number.isFinite(queuedAt) ? queuedAt : Date.now()));
             await handleMessages(sock, update);
@@ -792,8 +810,10 @@ async function startQasimDev() {
                     // messages before logging or queueing them. Previously these events
                     // entered the per-chat queue and consumed CPU just to be discarded
                     // later by handleMessages().
-                    if (!shouldProcessMessageUpsert(chatUpdate?.type, mek))
+                    if (!shouldProcessMessageUpsert(chatUpdate?.type, mek)) {
+                        if (isMessageTooOld(mek)) recordStaleMessageDrop();
                         continue;
+                    }
 
                     if (debugEvents) {
                         const rawTimestamp = mek?.messageTimestamp && typeof mek.messageTimestamp.toNumber === 'function'
