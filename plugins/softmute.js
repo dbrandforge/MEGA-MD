@@ -209,6 +209,8 @@ async function ensureLegacyMuteMigration(chatId) {
         if (!await store.saveSettingVerified(chatId, MIGRATION_KEY, true)) {
             throw new Error('Soft-mute migration marker could not be verified.');
         }
+        // Individual records are verified; retire the legacy group-wide map.
+        await store.saveSettingVerified(chatId, LEGACY_MUTE_KEY, null);
         groupCountCache.set(chatId, { value: migrated.size, at: Date.now() });
         migratedGroups.add(chatId);
     })();
