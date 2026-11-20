@@ -7,107 +7,12 @@ import { isFeatureGroup } from '../lib/featureGroups.js';
 
 
 const HOTSEAT_KEY = 'hotseatSession';
-const READERS_KEY = 'hotseatRecentReaders';
-const READER_WINDOW_MS = Number(config.hotseatReaderWindowHours || 5) * 60 * 60 * 1000;
 const ADJUSTMENT_MS = Number(config.hotseatAdjustmentMinutes || 10) * 60 * 1000;
 const SESSION_MS = Number(config.hotseatSessionHours || 2) * 60 * 60 * 1000;
 const ANSWER_TIMEOUT_MS = Number(config.hotseatAnswerMinutes || 5) * 60 * 1000;
-const MUTE_MS = Number(config.hotseatMuteHours || config.muteDurationHours || 10) * 60 * 60 * 1000;
 const NEXT_QUESTION_MS = Number(config.hotseatNextQuestionSeconds || 60) * 1000;
 const MIN_PLAYERS = 2;
 const MAX_PLAYERS = 4;
-const READER_TOUCH_INTERVAL_MS = 60 * 1000;
-const READER_TOUCH_CACHE_MAX = 20000;
-const READER_PENDING_MAX = 20000;
-const READER_FLUSH_INTERVAL_MS = 30000;
-const readerTouchCache = new Map();
-const pendingReaderTouches = new Map();
-let readerFlushPromise = null;
-
-function trimReaderTouchCache(now = Date.now()) {
-    const cutoff = now - READER_WINDOW_MS;
-    for (const [key, timestamp] of readerTouchCache) {
-        if (timestamp < cutoff) readerTouchCache.delete(key);
-    }
-    while (readerTouchCache.size > READER_TOUCH_CACHE_MAX) {
-        readerTouchCache.delete(readerTouchCache.keys().next().value);
-    }
-}
-
-function queueReaderTouch(chatId, userId, timestamp) {
-    let groupTouches = pendingReaderTouches.get(chatId);
-    if (!groupTouches) {
-        groupTouches = new Map();
-        pendingReaderTouches.set(chatId, groupTouches);
-    }
-    groupTouches.set(userId, timestamp);
-
-    let pendingCount = 0;
-    for (const touches of pendingReaderTouches.values()) pendingCount += touches.size;
-    while (pendingCount > READER_PENDING_MAX) {
-        const oldestGroup = pendingReaderTouches.keys().next().value;
-        const oldestTouches = pendingReaderTouches.get(oldestGroup);
-        if (!oldestTouches?.size) {
-            pendingReaderTouches.delete(oldestGroup);
-            continue;
-        }
-        oldestTouches.delete(oldestTouches.keys().next().value);
-        pendingCount--;
-        if (!oldestTouches.size) pendingReaderTouches.delete(oldestGroup);
-    }
-}
-
-export async function flushHotSeatReaders() {
-    if (readerFlushPromise) return readerFlushPromise;
-    if (!pendingReaderTouches.size) return 0;
-
-    readerFlushPromise = (async () => {
-        const batches = [...pendingReaderTouches.entries()];
-        pendingReaderTouches.clear();
-        let persisted = 0;
-
-        for (const [chatId, touches] of batches) {
-            try {
-                const stored = (await store.getSetting(chatId, READERS_KEY)) || {};
-                const cutoff = Date.now() - READER_WINDOW_MS;
-                const readers = Object.fromEntries(
-                    Object.entries(stored).filter(([, timestamp]) => Number(timestamp) >= cutoff)
-                );
-                for (const [userId, timestamp] of touches) {
-                    readers[userId] = Math.max(Number(readers[userId]) || 0, timestamp);
-                }
-                await saveGameState(chatId, READERS_KEY, readers);
-                persisted += touches.size;
-            } catch {
-                // Keep failed activity writes queued for the next flush. Do not
-                // overwrite a newer touch that arrived while this batch was saving.
-                for (const [userId, timestamp] of touches) {
-                    queueReaderTouch(chatId, userId, timestamp);
-                    const cacheKey = `${chatId}:${userId}`;
-                    if (readerTouchCache.get(cacheKey) === timestamp) readerTouchCache.delete(cacheKey);
-                }
-            }
-        }
-        return persisted;
-    })();
-
-    try {
-        return await readerFlushPromise;
-    } finally {
-        readerFlushPromise = null;
-    }
-}
-
-const readerFlushTimer = setInterval(() => {
-    flushHotSeatReaders().catch(() => {});
-}, READER_FLUSH_INTERVAL_MS);
-readerFlushTimer.unref?.();
-
-const readerCacheCleanupTimer = setInterval(() => {
-    trimReaderTouchCache();
-}, 10 * 60 * 1000);
-readerCacheCleanupTimer.unref?.();
-
 function shuffle(items) { return [...items].sort(() => Math.random() - 0.5); }
 function mention(jid) { return '@' + String(jid || '').split('@')[0]; }
 function stripDevice(jid) { return String(jid || '').replace(/:\d+(?=@)/, ''); }
@@ -152,13 +57,6 @@ async function saveGameState(chatId, key, value) {
 }
 async function saveSession(chatId, session) { await saveGameState(chatId, HOTSEAT_KEY, session); }
 async function clearSession(chatId) { await saveGameState(chatId, HOTSEAT_KEY, null); }
-async function getReaders(chatId) {
-    const data = (await store.getSetting(chatId, READERS_KEY)) || {};
-    const cutoff = Date.now() - READER_WINDOW_MS;
-    const clean = Object.fromEntries(Object.entries(data).filter(([, ts]) => Number(ts) >= cutoff));
-    if (Object.keys(clean).length !== Object.keys(data).length) await saveGameState(chatId, READERS_KEY, clean);
-    return clean;
-}
 function getMentions(message) {
     const context = message?.message?.extendedTextMessage?.contextInfo
         || message?.message?.imageMessage?.contextInfo
@@ -181,6 +79,8 @@ async function scheduleHotSeatTimeout(sock, chatId, player, questionId) {
     const timeoutToken = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     state.timeoutToken = timeoutToken;
     await saveSession(chatId, latest);
+    const elapsed = Math.max(0, Date.now() - Number(state.questionAskedAt || Date.now()));
+    const remainingMs = Math.max(0, ANSWER_TIMEOUT_MS - elapsed);
     setTimeout(async () => {
         const current = await getSession(chatId);
         if (!current || current.status !== 'active') return;
@@ -188,7 +88,6 @@ async function scheduleHotSeatTimeout(sock, chatId, player, questionId) {
         if (!currentState || currentState.status !== 'active' || !currentState.waiting) return;
         if (currentState.questionId !== questionId || currentState.timeoutToken !== timeoutToken) return;
         const access = await isGameAllowed(chatId, 'hotseat');
-        // A manual/day lock pauses the response clock; unlock schedules a fresh window.
         if (!access.ok) return;
         currentState.status = 'out';
         currentState.waiting = false;
@@ -196,7 +95,7 @@ async function scheduleHotSeatTimeout(sock, chatId, player, questionId) {
         await saveSession(chatId, current);
         await muteUser(sock, chatId, player);
         await sock.sendMessage(chatId, {
-            text: `⏰ ${mention(player)} did not answer in 5 minutes → 10-hour mute. Out of Hot Seat.`,
+            text: `⏰ ${mention(player)} did not answer in time → 10-hour mute. Out of Hot Seat.`,
             mentions: [player]
         });
         const remaining = current.players.filter(id => current.playerStates?.[id]?.status === 'active');
@@ -204,7 +103,63 @@ async function scheduleHotSeatTimeout(sock, chatId, player, questionId) {
             await clearSession(chatId);
             await sock.sendMessage(chatId, { text: '🛑 *Hot Seat ended* — no active players left.' });
         }
-    }, ANSWER_TIMEOUT_MS);
+    }, remainingMs);
+    return true;
+}
+
+async function scheduleGenderDeadline(sock, chatId, player) {
+    const latest = await getSession(chatId);
+    const state = latest?.playerStates?.[player];
+    if (!latest || latest.status !== 'active' || !state?.waitingForGender) return false;
+    const token = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    state.genderDeadlineToken = token;
+    await saveSession(chatId, latest);
+    const remainingMs = Math.max(0, Number(state.genderDeadlineAt || Date.now()) - Date.now());
+    setTimeout(async () => {
+        const current = await getSession(chatId);
+        const currentState = current?.playerStates?.[player];
+        if (!current || current.status !== 'active' || !currentState || currentState.status !== 'active') return;
+        if (!currentState.waitingForGender || currentState.genderDeadlineToken !== token) return;
+        let gender = null;
+        try { gender = await getUserGender(player); } catch {}
+        if (gender) {
+            currentState.waitingForGender = false;
+            currentState.genderDeadlineToken = null;
+            await saveSession(chatId, current);
+            await sendPlayerQuestion(sock, chatId, player);
+            return;
+        }
+        currentState.status = 'out';
+        currentState.waitingForGender = false;
+        currentState.genderDeadlineToken = null;
+        await saveSession(chatId, current);
+        await sock.sendMessage(chatId, {
+            text: `⌛ ${mention(player)} did not register a gender within 2 minutes and has been removed from Hot Seat.`,
+            mentions: [player]
+        });
+        if (!current.players.some(id => current.playerStates?.[id]?.status === 'active')) {
+            await clearSession(chatId);
+            await sock.sendMessage(chatId, { text: '🛑 *Hot Seat ended* — no active players left.' });
+        }
+    }, remainingMs);
+    return true;
+}
+
+async function scheduleNextQuestion(sock, chatId, player, answeredAt) {
+    const latest = await getSession(chatId);
+    const state = latest?.playerStates?.[player];
+    if (!latest || latest.status !== 'active' || !state || state.status !== 'active' || state.waiting) return false;
+    if (state.lastAnsweredAt !== answeredAt) return false;
+    const remainingMs = Math.max(0, Number(state.nextQuestionAt || (answeredAt + NEXT_QUESTION_MS)) - Date.now());
+    setTimeout(async () => {
+        const current = await getSession(chatId);
+        const currentState = current?.playerStates?.[player];
+        if (!current || current.status !== 'active' || !currentState || currentState.status !== 'active') return;
+        if (currentState.lastAnsweredAt !== answeredAt || currentState.waiting) return;
+        currentState.nextQuestionAt = null;
+        await saveSession(chatId, current);
+        await sendPlayerQuestion(sock, chatId, player);
+    }, remainingMs);
     return true;
 }
 
@@ -228,12 +183,21 @@ async function sendPlayerQuestion(sock, chatId, player) {
     try { gender = await getUserGender(await normalizeHotSeatJid(sock, player)); } catch {}
     // If no gender set, prompt once and skip question until they register
     if (!gender) {
+        state.waiting = false;
+        state.waitingForGender = true;
+        state.genderDeadlineAt = state.genderDeadlineAt || (Date.now() + 2 * 60 * 1000);
+        await saveSession(chatId, session);
         await sock.sendMessage(chatId, {
-            text: `${mention(player)} set your gender first to get Hot Seat questions:\n.gender guy\nor\n.gender lady`,
+            text: `${mention(player)} register your gender within *2 minutes* to continue:\n.gender guy\nor\n.gender lady`,
             mentions: [player]
         });
-        return;
+        await scheduleGenderDeadline(sock, chatId, player);
+        return true;
     }
+    state.waitingForGender = false;
+    state.genderDeadlineAt = null;
+    state.genderDeadlineToken = null;
+    state.nextQuestionAt = null;
     const bank = getHotSeatQuestions(gender === 'lady' ? 'lady' : 'guy');
     const usedKey = gender === 'lady' ? 'usedLady' : 'usedGuy';
     if (!Array.isArray(session[usedKey])) session[usedKey] = [];
@@ -273,7 +237,11 @@ export async function resumeHotSeatPlayer(sock, chatId, player) {
     if (!session || session.status !== 'active') return false;
     const playerKey = await resolveSessionPlayerKey(sock, session, player);
     const state = session.playerStates?.[playerKey];
-    if (!state || state.status !== 'active' || state.waiting) return false;
+    if (!state || state.status !== 'active' || (state.waiting && !state.waitingForGender)) return false;
+    if (state.waitingForGender) {
+        state.genderDeadlineAt = state.genderDeadlineAt || (Date.now() + 2 * 60 * 1000);
+        await saveSession(chatId, session);
+    }
     await sendPlayerQuestion(sock, chatId, playerKey);
     return true;
 }
@@ -281,7 +249,22 @@ export async function resumeHotSeatPlayer(sock, chatId, player) {
 export async function resumeHotSeatSession(sock, chatId) {
     if (!isFeatureGroup(chatId)) return 0;
     const session = await getSession(chatId);
-    if (!session || session.status !== 'active') return 0;
+    if (!session) return 0;
+    if (session.status === 'pending') {
+        const remaining = Math.max(0, Number(session.adjustmentEndsAt || Date.now()) - Date.now());
+        setTimeout(async () => {
+            const latest = await getSession(chatId);
+            if (latest?.status === 'pending' && latest.createdAt === session.createdAt) {
+                if ((latest.players || []).length >= MIN_PLAYERS) await beginGame(sock, chatId, latest);
+                else {
+                    await clearSession(chatId);
+                    await sock.sendMessage(chatId, { text: '⌛ Hot Seat selection expired because fewer than two players were selected.' });
+                }
+            }
+        }, remaining);
+        return 1;
+    }
+    if (session.status !== 'active') return 0;
     const access = await isGameAllowed(chatId, 'hotseat');
     if (!access.ok) {
         await sock.sendMessage(chatId, { text: access.msg });
@@ -291,8 +274,16 @@ export async function resumeHotSeatSession(sock, chatId) {
     for (const player of session.players || []) {
         const state = session.playerStates?.[player];
         if (!state || state.status !== 'active') continue;
+        if (state.waitingForGender) {
+            if (await scheduleGenderDeadline(sock, chatId, player)) resumed++;
+            continue;
+        }
         if (state.waiting && state.questionId) {
             if (await scheduleHotSeatTimeout(sock, chatId, player, state.questionId)) resumed++;
+            continue;
+        }
+        if (state.nextQuestionAt) {
+            if (await scheduleNextQuestion(sock, chatId, player, state.lastAnsweredAt)) resumed++;
             continue;
         }
         if (await sendPlayerQuestion(sock, chatId, player)) resumed++;
@@ -336,8 +327,10 @@ export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
     }
 
     state.waiting = false;
+    state.waitingForGender = false;
     state.timeoutToken = null;
     state.lastAnsweredAt = Date.now();
+    state.nextQuestionAt = Date.now() + NEXT_QUESTION_MS;
     state.questionsAnswered = (state.questionsAnswered || 0) + 1;
     await saveSession(chatId, session);
 
@@ -347,19 +340,16 @@ export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
     });
 
     const answeredAt = state.lastAnsweredAt;
-    setTimeout(async () => {
-        const latest = await getSession(chatId);
-        if (!latest || latest.status !== 'active') return;
-        const st = latest.playerStates?.[playerKey];
-        if (!st || st.status !== 'active') return;
-        if (st.lastAnsweredAt !== answeredAt) return;
-        if (st.waiting) return;
-        await sendPlayerQuestion(sock, chatId, playerKey);
-    }, NEXT_QUESTION_MS);
+    await scheduleNextQuestion(sock, chatId, playerKey, answeredAt);
     return true;
 }
 
 async function beginGame(sock, chatId, session) {
+    if (!Array.isArray(session.players) || session.players.length < MIN_PLAYERS) {
+        await clearSession(chatId);
+        await sock.sendMessage(chatId, { text: '⌛ Hot Seat selection ended: an admin must select at least two players before starting.' });
+        return false;
+    }
     session.status = 'active';
     session.startedAt = Date.now();
     session.adjustmentEndsAt = null;
@@ -368,8 +358,9 @@ async function beginGame(sock, chatId, session) {
     session.usedGuy = [];
     session.usedLady = [];
     session.playerStates = Object.fromEntries(session.players.map(id => [id, {
-        status: 'active', waiting: false, questionsAnswered: 0,
-        lastAnsweredAt: null, questionId: null, questionMessageId: null, currentQuestion: null
+        status: 'active', waiting: false, waitingForGender: false, questionsAnswered: 0,
+        lastAnsweredAt: null, nextQuestionAt: null, genderDeadlineAt: null,
+        questionId: null, questionMessageId: null, currentQuestion: null
     }]));
     await saveSession(chatId, session);
     await sock.sendMessage(chatId, {
@@ -382,22 +373,6 @@ async function beginGame(sock, chatId, session) {
     }
 }
 
-async function eligibleMembers(sock, chatId) {
-    try {
-        const meta = await sock.groupMetadata(chatId);
-        const members = [];
-        for (const participant of meta.participants || []) {
-            if (participant.admin) continue;
-            const candidate = participant.phoneNumber || participant.id || participant.lid;
-            const normalized = await normalizeHotSeatJid(sock, candidate);
-            if (normalized && !normalized.includes('status') && !members.includes(normalized)) {
-                members.push(normalized);
-            }
-        }
-        return members;
-    } catch { return []; }
-}
-
 async function sendList(sock, chatId, session) {
     const remaining = Math.max(0, Math.ceil(((session.adjustmentEndsAt || Date.now()) - Date.now()) / 60000));
     await sock.sendMessage(chatId, {
@@ -405,21 +380,6 @@ async function sendList(sock, chatId, session) {
         mentions: session.players
     });
 }
-export async function trackHotSeatReader(chatId, userId) {
-    if (!isFeatureGroup(chatId) || !userId) return false;
-    const cacheKey = `${chatId}:${userId}`;
-    const now = Date.now();
-    if (now - (readerTouchCache.get(cacheKey) || 0) < READER_TOUCH_INTERVAL_MS) return false;
-
-    if (readerTouchCache.size >= READER_TOUCH_CACHE_MAX) trimReaderTouchCache(now);
-    if (readerTouchCache.size >= READER_TOUCH_CACHE_MAX) {
-        readerTouchCache.delete(readerTouchCache.keys().next().value);
-    }
-    readerTouchCache.set(cacheKey, now);
-    queueReaderTouch(chatId, userId, now);
-    return true;
-}
-
 export default {
     command: 'hotseat',
     aliases: ['hs', 'hot'],
@@ -463,12 +423,9 @@ export default {
             const tagged = await getNormalizedMentions(sock, message);
             if (!tagged.length) return reply('Tag 1 to 4 people in the same message: *.hotseat add @user1 @user2 @user3 @user4*');
             if (tagged.length > MAX_PLAYERS || !unique(tagged)) return reply(`Tag no more than ${MAX_PLAYERS} different people per command.`);
-            const members = await eligibleMembers(sock, chatId);
-            const invalid = tagged.filter(id => !members.includes(id));
-            if (invalid.length) return reply('Every participant must be a non-admin member of this group. Check the tagged accounts and try again.');
-            const basePlayers = session.manualSelection ? await Promise.all(session.players.map(id => normalizeHotSeatJid(sock, id))) : [];
+            const basePlayers = await Promise.all((session.players || []).map(id => normalizeHotSeatJid(sock, id)));
             const additions = tagged.filter(id => !basePlayers.includes(id));
-            if (!session.manualSelection && additions.length < MIN_PLAYERS) return reply(`Choose at least ${MIN_PLAYERS} people when setting the manual Hot Seat list.`);
+            if (basePlayers.length + additions.length < MIN_PLAYERS) return reply(`Select at least ${MIN_PLAYERS} players. Tag two or more people in your first add command.`);
             if (basePlayers.length + additions.length > MAX_PLAYERS) return reply(`Hot Seat supports a maximum of ${MAX_PLAYERS} participants. Current list:\n${formatPlayers(basePlayers)}`);
             if (!additions.length) return reply('Those people are already on the Hot Seat list.');
             session.players = [...basePlayers, ...additions];
@@ -489,8 +446,6 @@ export default {
             const index = session.players.indexOf(current);
             if (index === -1) return reply('The first tagged person is not in the current Hot Seat selection. Check *.hotseat list*.');
             if (session.players.includes(replacement)) return reply('The replacement is already on the Hot Seat list.');
-            const members = await eligibleMembers(sock, chatId);
-            if (!members.includes(replacement)) return reply('The replacement must be a non-admin member of this group.');
             session.players[index] = replacement;
             await saveSession(chatId, session);
             return sendList(sock, chatId, session);
@@ -519,30 +474,29 @@ export default {
         if (session && ['pending', 'active'].includes(session.status)) {
             return reply(session.status === 'pending' ? 'Selection already open. *.hotseat list*' : 'Already running. *.endhotseat*');
         }
-        const members = await eligibleMembers(sock, chatId);
-        if (members.length < MIN_PLAYERS) return reply('Not enough non-admin members.');
-        const readers = await getReaders(chatId);
-        const recentReaders = Object.keys(readers).filter(id => members.includes(id));
-        const pool = recentReaders.length >= MIN_PLAYERS ? recentReaders : members;
-        const count = Math.min(pool.length, MIN_PLAYERS + Math.floor(Math.random() * (MAX_PLAYERS - MIN_PLAYERS + 1)));
         session = {
             status: 'pending',
-            players: shuffle(pool).slice(0, count),
+            players: [],
             startedBy: senderId,
             createdAt: Date.now(),
             adjustmentEndsAt: Date.now() + ADJUSTMENT_MS,
-            readerSelectionUsed: recentReaders.length >= MIN_PLAYERS,
-            manualSelection: false,
+            manualSelection: true,
             usedQuestions: [], usedGuy: [], usedLady: []
         };
         await saveSession(chatId, session);
         await sock.sendMessage(chatId, {
-            text: `🎟️ *HOT SEAT SELECTION OPEN*\n\n${formatPlayers(session.players)}\n\n10 min to adjust.\n*.hotseat list* · *.hotseat add @user* · *.hotseat start*`,
+            text: `🎟️ *HOT SEAT SELECTION OPEN*\n\nAdmin: select 2–4 players using *.hotseat add @user1 @user2*.\n\nYou have 10 minutes to add, replace or rearrange players.\n*.hotseat list* · *.hotseat change @current @replacement* · *.hotseat arrange @user1 @user2* · *.hotseat start*`,
             mentions: session.players
         });
         setTimeout(async () => {
             const latest = await getSession(chatId);
-            if (latest?.status === 'pending' && latest.createdAt === session.createdAt) await beginGame(sock, chatId, latest);
+            if (latest?.status === 'pending' && latest.createdAt === session.createdAt) {
+                if ((latest.players || []).length >= MIN_PLAYERS) await beginGame(sock, chatId, latest);
+                else {
+                    await clearSession(chatId);
+                    await sock.sendMessage(chatId, { text: '⌛ Hot Seat selection expired because fewer than two players were selected.' });
+                }
+            }
         }, ADJUSTMENT_MS);
     }
 };
