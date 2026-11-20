@@ -53,7 +53,7 @@ export function patchLargeSessionDiagnostics(source) {
             lastLargeSessionDiagnosticAt = diagnosticNow;
             const lidTargets = uniqueJids.filter(jid => isLidUser(jid) || isHostedLidUser(jid)).length;
             const pnTargets = uniqueJids.length - lidTargets;
-            console.warn(`[Baileys session diagnostic] targets=${uniqueJids.length} open=${openSessionCount} missing=${missingSessionCount} closed=${closedSessionCount} validationErrors=${validationErrorCount} fetch=${jidsRequiringFetch.length} lid=${lidTargets} pn=${pnTargets} force=${!!force}`);
+            console.warn('[Baileys session diagnostic] targets=' + uniqueJids.length + ' open=' + openSessionCount + ' missing=' + missingSessionCount + ' closed=' + closedSessionCount + ' validationErrors=' + validationErrorCount + ' fetch=' + jidsRequiringFetch.length + ' lid=' + lidTargets + ' pn=' + pnTargets + ' force=' + !!force);
         }
         if (jidsRequiringFetch.length) {`
     );
