@@ -30,6 +30,24 @@ describe('bounded automatic AI provider failover', () => {
     expect(axios.get.mock.calls[0][0].length).toBeLessThan(12000);
   });
 
+
+  it('caps simultaneous automatic AI requests to protect the bot process', async () => {
+    const pending = [];
+    axios.post.mockImplementation(() => new Promise(resolve => pending.push(() => resolve({
+      data: { candidates: [{ content: { parts: [{ text: 'Photosynthesis is how green plants use sunlight to make food from water and carbon dioxide.' }] } }] }
+    }))));
+    const requests = [
+      askFastAI('What is photosynthesis?', { timeoutMs: 5000 }),
+      askFastAI('Explain photosynthesis.', { timeoutMs: 5000 }),
+      askFastAI('How do plants make food?', { timeoutMs: 5000 })
+    ];
+    await expect(askFastAI('Define photosynthesis.', { timeoutMs: 5000 }))
+      .rejects.toMatchObject({ code: 'AI_CAPACITY' });
+    expect(axios.post).toHaveBeenCalledTimes(3);
+    pending.forEach(resolve => resolve());
+    await expect(Promise.all(requests)).resolves.toHaveLength(3);
+  });
+
   it('does not call a second backup after the first backup succeeds', async () => {
     axios.post.mockRejectedValueOnce(Object.assign(new Error('timeout'), { code: 'ETIMEDOUT' }));
     axios.get.mockResolvedValueOnce({ data: { data: { response: 'Photosynthesis allows green plants to convert light energy, water and carbon dioxide into glucose and oxygen.' } } });
