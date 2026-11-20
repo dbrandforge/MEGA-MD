@@ -28,7 +28,7 @@ describe('Baileys LID session compatibility patch', () => {
             'return true;',
             '}',
             '};'
-        ].join('\\n');
+        ].join(' ');
         const result = patchLargeSessionDiagnostics(input);
         expect(result.changed).toBe(true);
         expect(result.source).toContain('openSessionCount++');
