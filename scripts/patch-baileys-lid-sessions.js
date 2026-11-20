@@ -20,7 +20,7 @@ export function patchMessagesSend(source) {
         'const stored = await signalRepository.lidMapping.storeLIDPNMappings(lidResults.map(a => ({ lid: a.lid, pn: a.id })))'
     );
 
-    const refreshBlock = /try\\s*\\{\\s*const lids = lidResults\\.map\\(a => a\\.lid\\)\\s*;?\\s*if\\s*\\(lids\\.length\\)\\s*\\{\\s*await assertSessions\\(lids(?:,\\s*true)?\\)\\s*;?\\s*\\}\\s*\\}\\s*catch\\s*\\((\\w+)\\)\\s*\\{\\s*logger\\.warn\\(\\{\\s*\\1,\\s*count:\\s*lidResults\\.length\\s*\\},\\s*(['"])failed to assert sessions for newly mapped LIDs\\2\\)\\s*;?\\s*\\}/;
+    const refreshBlock = /try\s*\{\s*const lids = lidResults\.map\(a => a\.lid\)\s*;?\s*if\s*\(lids\.length\)\s*\{\s*await assertSessions\(lids(?:,\s*true)?\)\s*;?\s*\}\s*\}\s*catch\s*\((\w+)\)\s*\{\s*logger\.warn\(\{\s*\1,\s*count:\s*lidResults\.length\s*\},\s*(['"])failed to assert sessions for newly mapped LIDs\2\)\s*;?\s*\}/;
     if (!refreshBlock.test(source)) {
         throw new Error('Baileys LID session-refresh block was not found; refusing an unsafe partial patch.');
     }
