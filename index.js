@@ -31,6 +31,7 @@ import commandHandler from './lib/commandHandler.js';
 import { shouldProcessMessageUpsert } from './lib/messageEventPolicy.js';
 import { startSchedulerEngine, trackGroup } from './plugins/schedule.js';
 import { FEATURE_GROUPS } from './lib/featureGroups.js';
+import { resumeHotSeatSession } from './plugins/hotseat.js';
 import { getCachedGroupMetadata } from './lib/isOwner.js';
 
 import { installSignalDiagnosticGuard } from './lib/signalDiagnostics.js';
@@ -959,6 +960,15 @@ async function startQasimDev() {
                 // Group automation must not depend on someone running .schedule manually.
                 for (const groupId of FEATURE_GROUPS) trackGroup(groupId);
                 startSchedulerEngine(QasimDev);
+                // Restore only the persisted Hot Seat session for each configured
+                // feature group; each session contains at most four named players.
+                for (const groupId of FEATURE_GROUPS) {
+                    try {
+                        await resumeHotSeatSession(QasimDev, groupId);
+                    } catch (error) {
+                        printLog('warning', `Hot Seat continuity restore failed for a configured group: ${error.message}`);
+                    }
+                }
                 if (MEMBER_FEATURES_ENABLED) try {
                     const welcomeModule = await import('./plugins/sincity-welcome.js');
                     if (typeof welcomeModule.restoreWelcomeJobs === 'function') await welcomeModule.restoreWelcomeJobs(QasimDev);
