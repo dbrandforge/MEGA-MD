@@ -46,7 +46,7 @@ global.__forgeChatbotCacheStats = () => ({ histories: chatMemory.messages.size, 
 const runConversationSerial = createKeyedSerialExecutor();
 const runLocalMemoryWriteSerial = createKeyedSerialExecutor();
 const MEMORY_SETTING = 'chatbotConversationMemory';
-const MAX_HISTORY_MESSAGES = 30;
+const MAX_HISTORY_MESSAGES = 16;
 const MAX_HISTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 // A participant may continue their own group conversation without re-tagging for 10 minutes.
 const GROUP_FOLLOWUP_WINDOW_MS = 10 * 60 * 1000;
@@ -343,7 +343,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         } else {
             // Explicitly addressed messages and enabled DMs may load their own transcript.
             // Group history remains isolated by (group, participant).
-            history = await loadChatHistory(memoryKey, isGroup ? null : chatId, Boolean(identity));
+            history = await loadChatHistory(memoryKey, isGroup ? null : chatId, true);
         }
 
         if (isGroup) {
@@ -368,7 +368,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
             history.push({ name: message.pushName || 'You', text: cleanForHistory.slice(0, 500), at: Date.now() });
             history.push({ name: 'Forge Bot', text: FORGE_GUARD_REPLICATION_REPLY, at: Date.now() });
             if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
-            await saveChatHistory(memoryKey, history, Boolean(identity));
+            await saveChatHistory(memoryKey, history, true);
             console.info('[Chatbot Protection] handled Forge Guard replication inquiry.');
             return;
         }
@@ -389,7 +389,6 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                 at: Date.now()
             });
             if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
-            await saveChatHistory(memoryKey, history, Boolean(identity));
         }
 
         const languageInput = quotedText && /^(answer this|answer|explain this|tell me about this|what about this|help me with this)[.!?\s👇]*$/i.test(cleanForHistory) ? quotedText : cleanForHistory;
@@ -426,7 +425,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                 } else {
                     try {
                         const liveReply = await askFastAI(chatbotQuery, {
-                            timeoutMs: 6500,
+                            timeoutMs: 7500,
                             history: history.slice(0, -1).slice(-8),
                             liveContext: [buildLiveKnowledgeContext(liveResult), combinedProfileContext].filter(Boolean).join(String.fromCharCode(10, 10)),
                             language: responseLanguage
@@ -475,7 +474,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                     const aiStartedAt = Date.now();
                     try {
                         response = sanitizeAIResponse(await askFastAI(chatbotQuery, {
-                            timeoutMs: 5000,
+                            timeoutMs: 7500,
                             history: priorTurns,
                             liveContext: combinedProfileContext,
                             language: responseLanguage,
@@ -522,7 +521,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
 
         history.push({ name: 'Forge Bot', text: response.slice(0, 500), at: Date.now() });
         if (history.length > MAX_HISTORY_MESSAGES) history.splice(0, history.length - MAX_HISTORY_MESSAGES);
-        await saveChatHistory(memoryKey, history, Boolean(identity));
+        await saveChatHistory(memoryKey, history, true);
 
     } catch (e) {
         printLog('error', `[Chatbot DM] Reply failed: ${String(e?.message || e).slice(0, 400)}`);
