@@ -27,56 +27,18 @@ vi.mock('../../lib/featureGroups.js', () => ({
     isFeatureGroup: vi.fn(() => true)
 }));
 
-describe('Hot Seat reader activity batching', () => {
+describe('Hot Seat per-member selection', () => {
     beforeEach(() => {
         vi.resetModules();
-        vi.useFakeTimers();
         vi.clearAllMocks();
-        getSetting.mockResolvedValue({ existing: Date.now() - 1000 });
-        saveSettingVerified.mockResolvedValue(true);
     });
 
-    afterEach(() => {
-        vi.clearAllTimers();
-        vi.useRealTimers();
-    });
-
-    it('batches multiple reader touches into one read and one write per group', async () => {
-        const { trackHotSeatReader, flushHotSeatReaders } = await import('../../plugins/hotseat.js');
-        const chatId = '120363000000000001@g.us';
-
-        expect(await trackHotSeatReader(chatId, '2348000000001@s.whatsapp.net')).toBe(true);
-        expect(await trackHotSeatReader(chatId, '2348000000001@s.whatsapp.net')).toBe(false);
-        expect(await trackHotSeatReader(chatId, '2348000000002@s.whatsapp.net')).toBe(true);
-
+    it('does not expose or persist a group-wide recent-reader map', async () => {
+        const hotseat = await import('../../plugins/hotseat.js');
+        expect(hotseat).not.toHaveProperty('trackHotSeatReader');
+        expect(hotseat).not.toHaveProperty('flushHotSeatReaders');
         expect(getSetting).not.toHaveBeenCalled();
         expect(saveSettingVerified).not.toHaveBeenCalled();
-
-        expect(await flushHotSeatReaders()).toBe(2);
-        expect(getSetting).toHaveBeenCalledTimes(1);
-        expect(saveSettingVerified).toHaveBeenCalledTimes(1);
-
-        const [savedChat, savedKey, readers] = saveSettingVerified.mock.calls[0];
-        expect(savedChat).toBe(chatId);
-        expect(savedKey).toBe('hotseatRecentReaders');
-        expect(Object.keys(readers)).toEqual(expect.arrayContaining([
-            'existing',
-            '2348000000001@s.whatsapp.net',
-            '2348000000002@s.whatsapp.net'
-        ]));
-    });
-
-    it('retries a failed batch without losing the queued reader touch', async () => {
-        const { trackHotSeatReader, flushHotSeatReaders } = await import('../../plugins/hotseat.js');
-        saveSettingVerified.mockRejectedValueOnce(new Error('temporary database failure'));
-        const chatId = '120363000000000002@g.us';
-        const userId = '2348000000003@s.whatsapp.net';
-
-        expect(await trackHotSeatReader(chatId, userId)).toBe(true);
-        expect(await flushHotSeatReaders()).toBe(0);
-        expect(await flushHotSeatReaders()).toBe(1);
-        expect(saveSettingVerified).toHaveBeenCalledTimes(2);
-        expect(saveSettingVerified.mock.calls[1][2][userId]).toBeTypeOf('number');
     });
 });
 
