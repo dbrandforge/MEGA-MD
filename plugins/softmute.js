@@ -140,7 +140,7 @@ async function ensureLegacyMuteMigration(chatId) {
         const legacy = (await store.getSetting(chatId, LEGACY_MUTE_KEY)) || {};
         const migrated = new Map();
         for (const [key, entry] of Object.entries(legacy)) {
-            if (!entry || Number(entry.until) <= Date.now()) continue;
+            if (!entry || !Number.isFinite(Number(entry.until)) || Number(entry.until) <= Date.now()) continue;
             const id = cleanId(entry.canonical || entry.original || key);
             if (id) migrated.set(id, entry);
         }
@@ -218,10 +218,15 @@ export async function softMuteUser(sock, chatId, userId, durationMs = null) {
 export async function softUnmuteUser(chatId, userId, sock = global.__forgeSock) {
     await ensureLegacyMuteMigration(chatId);
     const canonicalKey = await normalizeSoftMuteUserId(sock, userId);
-    const existing = await getRecord(chatId, canonicalKey);
-    if (existing) {
-        await saveRecord(chatId, canonicalKey, null);
+    const ids = new Set([canonicalKey]);
+    const counterpart = await resolveCounterpart(sock, canonicalKey);
+    if (counterpart) ids.add(counterpart);
+    for (const id of ids) {
+        const existing = await getRecord(chatId, id);
+        if (!existing) continue;
+        await saveRecord(chatId, id, null);
         await setActiveCount(chatId, Math.max(0, (await getActiveCount(chatId)) - 1));
+        break;
     }
 }
 
@@ -231,7 +236,7 @@ const deleteFailureLoggedAt = new Map();
 export async function handleSoftMuteMessage(sock, chatId, message, senderId) {
     try {
         if (!chatId?.endsWith('@g.us') || message?.key?.fromMe) return false;
-        const muted = await isSoftMuted(sock ? chatId : chatId, senderId, sock, [message.key.participant, message.key.participantAlt]);
+        const muted = await isSoftMuted(chatId, senderId, sock, [message.key.participant, message.key.participantAlt]);
         if (!muted) return false;
         try {
             await sock.sendMessage(chatId, { delete: message.key });
