@@ -33,6 +33,8 @@ async function ensureLegacyGenderMigration() {
         if (!await store.saveSettingVerified('global', MIGRATION_KEY, true)) {
             throw new Error('Gender migration marker could not be verified.');
         }
+        // The per-member copies are verified; retire the legacy group-wide map.
+        await store.saveSettingVerified('global', LEGACY_GENDER_KEY, null);
         migrationChecked = true;
     })();
     try { await migrationPromise; } finally { migrationPromise = null; }
