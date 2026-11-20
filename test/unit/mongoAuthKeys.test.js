@@ -224,7 +224,7 @@ describe('mongo auth key store', () => {
         const model = {
             bulkWrite: async operations => {
                 calls++;
-                if (calls === 1) {
+                if (calls === 2) {
                     markStarted();
                     await blocked;
                     throw new Error('temporary MongoDB failure');
@@ -246,9 +246,10 @@ describe('mongo auth key store', () => {
         await failedFlush;
         await store.flush();
         store.close();
-        expect(calls).toBe(2);
-        expect(persisted).toHaveLength(1);
-        expect(JSON.parse(persisted[0].updateOne.update.$set.content).value).toBe(3);
+        expect(calls).toBe(3);
+        expect(persisted).toHaveLength(2);
+        expect(JSON.parse(persisted[0].updateOne.update.$set.content).value).toBe(1);
+        expect(JSON.parse(persisted[1].updateOne.update.$set.content).value).toBe(3);
         expect(store.pendingCount()).toBe(0);
     });
 
