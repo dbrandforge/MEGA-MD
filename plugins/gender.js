@@ -41,9 +41,10 @@ async function ensureLegacyGenderMigration() {
 function withUserMutationLock(userKey, operation) {
     const previous = userMutationQueues.get(userKey) || Promise.resolve();
     const current = previous.then(operation, operation);
-    userMutationQueues.set(userKey, current.then(() => undefined, () => undefined));
+    const queued = current.then(() => undefined, () => undefined);
+    userMutationQueues.set(userKey, queued);
     return current.finally(() => {
-        if (userMutationQueues.get(userKey) === current) userMutationQueues.delete(userKey);
+        if (userMutationQueues.get(userKey) === queued) userMutationQueues.delete(userKey);
     });
 }
 
