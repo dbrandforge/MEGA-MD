@@ -23,7 +23,7 @@ export default {
             if (userToMute === botId || userToMute.endsWith('@g.us')) {
                 return sock.sendMessage(chatId, { text: '❌ That account cannot be muted with this command.', ...channelInfo }, { quoted: message });
             }
-            const durationToken = [...args].reverse().find(arg => /^\\d+(?:[dhms]\\d*)*$/i.test(String(arg)));
+            const durationToken = [...args].reverse().find(arg => /^\d+(?:[dhms]\d*)*$/i.test(String(arg)));
             const durationMs = durationToken ? parseMuteDuration(durationToken) : null;
             if (durationToken && !durationMs) {
                 return sock.sendMessage(chatId, { text: 'Invalid duration. Use 15m, 1h, 1h30m or 2d (maximum 7 days).', ...channelInfo }, { quoted: message });
