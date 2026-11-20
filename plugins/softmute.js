@@ -63,6 +63,7 @@ const groupCountCache = new Map();
 const GROUP_COUNT_CACHE_TTL_MS = 5000;
 const migrationPromises = new Map();
 const migratedGroups = new Set();
+const groupCountQueues = new Map();
 
 function cacheMember(chatId, userId, value) {
     const key = `${chatId}:${cleanId(userId)}`;
@@ -113,6 +114,23 @@ async function setActiveCount(chatId, value, until = null) {
         }
     }
     groupCountCache.set(chatId, { value: count, at: Date.now() });
+}
+
+function withGroupCountLock(chatId, operation) {
+    const previous = groupCountQueues.get(chatId) || Promise.resolve();
+    const current = previous.then(operation, operation);
+    const queued = current.then(() => undefined, () => undefined);
+    groupCountQueues.set(chatId, queued);
+    return current.finally(() => {
+        if (groupCountQueues.get(chatId) === queued) groupCountQueues.delete(chatId);
+    });
+}
+
+async function adjustActiveCount(chatId, delta, until = null) {
+    return withGroupCountLock(chatId, async () => {
+        const current = await getActiveCount(chatId);
+        await setActiveCount(chatId, current + delta, until);
+    });
 }
 
 async function resolveCounterpart(sock, id, { fresh = false } = {}) {
@@ -214,7 +232,7 @@ export async function isSoftMuted(chatId, userId, sock = null, extraIds = []) {
         if (!entry) continue;
         if (Number(entry.until) > Date.now()) return true;
         await saveRecord(chatId, id, null);
-        await setActiveCount(chatId, Math.max(0, (await getActiveCount(chatId)) - 1));
+        await adjustActiveCount(chatId, -1);
     }
     return false;
 }
@@ -230,7 +248,7 @@ export async function softMuteUser(sock, chatId, userId, durationMs = null) {
     const entry = { until: now + duration, mutedAt: now, original: userId, canonical: canonicalKey };
     await saveRecord(chatId, canonicalKey, entry);
     if (!existing || Number(existing.until) <= now) {
-        await setActiveCount(chatId, (await getActiveCount(chatId)) + 1, entry.until);
+        await adjustActiveCount(chatId, 1, entry.until);
     }
     await trackGroup(chatId);
     return duration;
