@@ -339,6 +339,11 @@ export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
 }
 
 async function beginGame(sock, chatId, session) {
+    if (!Array.isArray(session.players) || session.players.length < MIN_PLAYERS) {
+        await clearSession(chatId);
+        await sock.sendMessage(chatId, { text: '⌛ Hot Seat selection ended: an admin must select at least two players before starting.' });
+        return false;
+    }
     session.status = 'active';
     session.startedAt = Date.now();
     session.adjustmentEndsAt = null;
@@ -347,8 +352,9 @@ async function beginGame(sock, chatId, session) {
     session.usedGuy = [];
     session.usedLady = [];
     session.playerStates = Object.fromEntries(session.players.map(id => [id, {
-        status: 'active', waiting: false, questionsAnswered: 0,
-        lastAnsweredAt: null, questionId: null, questionMessageId: null, currentQuestion: null
+        status: 'active', waiting: false, waitingForGender: false, questionsAnswered: 0,
+        lastAnsweredAt: null, nextQuestionAt: null, genderDeadlineAt: null,
+        questionId: null, questionMessageId: null, currentQuestion: null
     }]));
     await saveSession(chatId, session);
     await sock.sendMessage(chatId, {
@@ -411,12 +417,9 @@ export default {
             const tagged = await getNormalizedMentions(sock, message);
             if (!tagged.length) return reply('Tag 1 to 4 people in the same message: *.hotseat add @user1 @user2 @user3 @user4*');
             if (tagged.length > MAX_PLAYERS || !unique(tagged)) return reply(`Tag no more than ${MAX_PLAYERS} different people per command.`);
-            const members = await eligibleMembers(sock, chatId);
-            const invalid = tagged.filter(id => !members.includes(id));
-            if (invalid.length) return reply('Every participant must be a non-admin member of this group. Check the tagged accounts and try again.');
-            const basePlayers = session.manualSelection ? await Promise.all(session.players.map(id => normalizeHotSeatJid(sock, id))) : [];
+            const basePlayers = await Promise.all((session.players || []).map(id => normalizeHotSeatJid(sock, id)));
             const additions = tagged.filter(id => !basePlayers.includes(id));
-            if (!session.manualSelection && additions.length < MIN_PLAYERS) return reply(`Choose at least ${MIN_PLAYERS} people when setting the manual Hot Seat list.`);
+            if (basePlayers.length + additions.length < MIN_PLAYERS) return reply(`Select at least ${MIN_PLAYERS} players. Tag two or more people in your first add command.`);
             if (basePlayers.length + additions.length > MAX_PLAYERS) return reply(`Hot Seat supports a maximum of ${MAX_PLAYERS} participants. Current list:\n${formatPlayers(basePlayers)}`);
             if (!additions.length) return reply('Those people are already on the Hot Seat list.');
             session.players = [...basePlayers, ...additions];
@@ -437,8 +440,6 @@ export default {
             const index = session.players.indexOf(current);
             if (index === -1) return reply('The first tagged person is not in the current Hot Seat selection. Check *.hotseat list*.');
             if (session.players.includes(replacement)) return reply('The replacement is already on the Hot Seat list.');
-            const members = await eligibleMembers(sock, chatId);
-            if (!members.includes(replacement)) return reply('The replacement must be a non-admin member of this group.');
             session.players[index] = replacement;
             await saveSession(chatId, session);
             return sendList(sock, chatId, session);
@@ -467,30 +468,29 @@ export default {
         if (session && ['pending', 'active'].includes(session.status)) {
             return reply(session.status === 'pending' ? 'Selection already open. *.hotseat list*' : 'Already running. *.endhotseat*');
         }
-        const members = await eligibleMembers(sock, chatId);
-        if (members.length < MIN_PLAYERS) return reply('Not enough non-admin members.');
-        const readers = await getReaders(chatId);
-        const recentReaders = Object.keys(readers).filter(id => members.includes(id));
-        const pool = recentReaders.length >= MIN_PLAYERS ? recentReaders : members;
-        const count = Math.min(pool.length, MIN_PLAYERS + Math.floor(Math.random() * (MAX_PLAYERS - MIN_PLAYERS + 1)));
         session = {
             status: 'pending',
-            players: shuffle(pool).slice(0, count),
+            players: [],
             startedBy: senderId,
             createdAt: Date.now(),
             adjustmentEndsAt: Date.now() + ADJUSTMENT_MS,
-            readerSelectionUsed: recentReaders.length >= MIN_PLAYERS,
-            manualSelection: false,
+            manualSelection: true,
             usedQuestions: [], usedGuy: [], usedLady: []
         };
         await saveSession(chatId, session);
         await sock.sendMessage(chatId, {
-            text: `🎟️ *HOT SEAT SELECTION OPEN*\n\n${formatPlayers(session.players)}\n\n10 min to adjust.\n*.hotseat list* · *.hotseat add @user* · *.hotseat start*`,
+            text: `🎟️ *HOT SEAT SELECTION OPEN*\n\nAdmin: select 2–4 players using *.hotseat add @user1 @user2*.\n\nYou have 10 minutes to add, replace or rearrange players.\n*.hotseat list* · *.hotseat change @current @replacement* · *.hotseat arrange @user1 @user2* · *.hotseat start*`,
             mentions: session.players
         });
         setTimeout(async () => {
             const latest = await getSession(chatId);
-            if (latest?.status === 'pending' && latest.createdAt === session.createdAt) await beginGame(sock, chatId, latest);
+            if (latest?.status === 'pending' && latest.createdAt === session.createdAt) {
+                if ((latest.players || []).length >= MIN_PLAYERS) await beginGame(sock, chatId, latest);
+                else {
+                    await clearSession(chatId);
+                    await sock.sendMessage(chatId, { text: '⌛ Hot Seat selection expired because fewer than two players were selected.' });
+                }
+            }
         }, ADJUSTMENT_MS);
     }
 };
