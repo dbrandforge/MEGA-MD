@@ -154,6 +154,26 @@ describe('mongo auth key store', () => {
         expect(store.pendingCount()).toBe(0);
     });
 
+    it('keeps the MongoDB comparison baseline for keys beyond the parsed-cache limit', async () => {
+        const model = fakeModel();
+        const keys = Object.fromEntries(Array.from({ length: 300 }, (_, i) => [String(i), { ratchet: i }]));
+        const store = createMongoKeyStore({ getModel: async () => model, BufferJSON, proto: null, cacheMax: 25, flushMs: 10000, batchCooldownMs: 0 });
+        await store.set({ session: keys });
+        await store.flush();
+        expect(model.stats.bulk).toBe(2);
+        await store.set({ session: keys });
+        expect(store.pendingCount()).toBe(0);
+        await store.flush();
+        store.close();
+        expect(model.stats.bulk).toBe(2);
+        // A genuine ratchet change must still be persisted after cache eviction.
+        await store.set({ session: { '299': { ratchet: 'advanced' } } });
+        expect(store.pendingCount()).toBe(1);
+        await store.flush();
+        expect(model.stats.bulk).toBe(3);
+        expect(JSON.parse(model.db.get('session-299.json')).ratchet).toBe('advanced');
+    });
+
     it('does not rewrite keys whose content is unchanged and reports key types in the log', async () => {
         const logs = [];
         const model = fakeModel();
