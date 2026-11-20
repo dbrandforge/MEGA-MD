@@ -121,14 +121,11 @@ describe('handleMessages', () => {
         expect(handleAutoread).toHaveBeenCalled();
     });
 
-    it('tracks recent activity from group members for Hot Seat selection', async () => {
+    it('does not perform group-wide Hot Seat reader tracking for ordinary messages', async () => {
         const { trackHotSeatReader } = await import('../../plugins/hotseat.js');
         const msg = createMockMessage({ text: 'hello', isGroup: true });
         await handleMessages(sock, { messages: [msg], type: 'notify' });
-        expect(trackHotSeatReader).toHaveBeenCalledWith(
-            msg.key.remoteJid,
-            msg.key.participant
-        );
+        expect(trackHotSeatReader).not.toHaveBeenCalled();
     });
 
     it('prioritizes an active Hot Seat answer over the generic bot keyword trigger', async () => {
