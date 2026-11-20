@@ -68,6 +68,15 @@ describe('isOwnerOrSudo', () => {
         expect(sock.groupMetadata).toHaveBeenCalledTimes(1);
     });
 
+    it('backs off repeated WhatsApp rate-limited group metadata requests', async () => {
+        const rateLimit = Object.assign(new Error('rate-overlimit'), { data: 429 });
+        const sock = { groupMetadata: vi.fn(async () => { throw rateLimit; }) };
+
+        expect(await isOwnerOrSudo('owner-lid@lid', sock, 'group-rate-limit@g.us')).toBe(false);
+        expect(await isOwnerOrSudo('owner-lid@lid', sock, 'group-rate-limit@g.us')).toBe(false);
+        expect(sock.groupMetadata).toHaveBeenCalledTimes(1);
+    });
+
     it('invalidates cached group metadata after participant changes', async () => {
         const sock = {
             groupMetadata: vi.fn(async () => ({
