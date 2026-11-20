@@ -4,7 +4,8 @@ const mocks = vi.hoisted(() => ({
     saveSetting: vi.fn(async () => {}),
     getSetting: vi.fn(async () => null),
     saveSettingVerified: vi.fn(async () => true),
-    setManualUnlock: vi.fn(async () => true)
+    setManualUnlock: vi.fn(async () => true),
+    softUnmuteUser: vi.fn(async () => true)
 }));
 
 vi.mock('../../lib/lightweight_store.js', () => ({
@@ -16,6 +17,9 @@ vi.mock('../../lib/groupFeatureAccess.js', () => ({
 vi.mock('../../plugins/grouplock.js', () => ({
     setManualGroupUnlockOverride: mocks.setManualUnlock
 }));
+vi.mock('../../plugins/softmute.js', () => ({
+    softUnmuteUser: mocks.softUnmuteUser
+}));
 
 import store from '../../lib/lightweight_store.js';
 import { setManualGroupUnlockOverride } from '../../plugins/grouplock.js';
@@ -26,6 +30,20 @@ const GROUP = '120363000000000001@g.us';
 describe('.unmute group inverse behaviour', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+    });
+
+    it('passes the live socket when unmuting an individual member', async () => {
+        const user = '2348000000000@s.whatsapp.net';
+        const sock = { groupSettingUpdate: vi.fn(async () => {}), sendMessage: vi.fn(async () => {}) };
+        const message = {
+            key: { remoteJid: GROUP },
+            message: { extendedTextMessage: { contextInfo: { mentionedJid: [user] } } }
+        };
+
+        await unmute.handler(sock, message, [], { chatId: GROUP, channelInfo: {} });
+
+        expect(mocks.softUnmuteUser).toHaveBeenCalledWith(GROUP, user, sock);
+        expect(sock.groupSettingUpdate).not.toHaveBeenCalled();
     });
 
     it('unlocks the group and clears timed-mute state when no member is tagged', async () => {

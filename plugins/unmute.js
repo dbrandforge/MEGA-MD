@@ -54,7 +54,7 @@ export default {
             }, { quoted: message });
         }
 
-        await softUnmuteUser(chatId, user);
+        await softUnmuteUser(chatId, user, sock);
 
         await sock.sendMessage(chatId, {
             text: `🔊 ${mention(user)} has been unmuted.`,

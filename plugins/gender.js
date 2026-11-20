@@ -1,41 +1,60 @@
 /**
- * Gender memory
- * Members can set ONCE. After that only admins can change.
+ * Per-member gender records. Members choose once; only admins may change it.
+ * Legacy global-map data is migrated once, then every live lookup is per person.
  */
 import store from '../lib/lightweight_store.js';
 import { resumePendingGenderGame } from '../lib/genderGameContinuation.js';
 import { getWhatsAppIdentity } from '../lib/whatsappIdentity.js';
 
-const GENDER_KEY = 'userGenders';
+const LEGACY_GENDER_KEY = 'userGenders';
+const MIGRATION_KEY = 'userGendersMigratedToIndividual';
+const GENDER_RECORD_KEY = 'gender';
+let migrationChecked = false;
+let migrationPromise = null;
+const userMutationQueues = new Map();
 
-// Serialize read/modify/write operations. The gender map is one global setting,
-// so concurrent first-time registrations must not overwrite each other's updates.
-let genderMutationQueue = Promise.resolve();
-
-function withGenderMutationLock(operation) {
-    const result = genderMutationQueue.then(operation, operation);
-    genderMutationQueue = result.then(() => undefined, () => undefined);
-    return result;
-}
-
-async function getAllGenders() {
-    const value = (await store.getSetting('global', GENDER_KEY)) || {};
-    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
-}
-
-async function saveAllGenders(data) {
-    if (typeof store.saveSettingVerified === 'function') {
-        if (!await store.saveSettingVerified('global', GENDER_KEY, data)) {
-            throw new Error('Saved gender could not be verified in storage.');
+async function ensureLegacyGenderMigration() {
+    if (migrationChecked) return;
+    if (migrationPromise) return migrationPromise;
+    migrationPromise = (async () => {
+        if (await store.getSetting('global', MIGRATION_KEY) === true) {
+            migrationChecked = true;
+            return;
         }
-        return;
-    }
-    await store.saveSetting('global', GENDER_KEY, data);
+        const legacy = (await store.getSetting('global', LEGACY_GENDER_KEY)) || {};
+        if (legacy && typeof legacy === 'object' && !Array.isArray(legacy)) {
+            for (const [userId, gender] of Object.entries(legacy)) {
+                if (!userId || !['guy', 'lady'].includes(String(gender).toLowerCase())) continue;
+                if (!await store.saveSettingVerified(userId, GENDER_RECORD_KEY, String(gender).toLowerCase())) {
+                    throw new Error('Legacy gender migration could not be verified.');
+                }
+            }
+        }
+        if (!await store.saveSettingVerified('global', MIGRATION_KEY, true)) {
+            throw new Error('Gender migration marker could not be verified.');
+        }
+        // The per-member copies are verified; retire the legacy group-wide map.
+        await store.saveSettingVerified('global', LEGACY_GENDER_KEY, null);
+        migrationChecked = true;
+    })();
+    try { await migrationPromise; } finally { migrationPromise = null; }
 }
 
-function findGenderForIdentity(all, aliases) {
-    for (const key of aliases) {
-        if (typeof all[key] === 'string') return all[key];
+function withUserMutationLock(userKey, operation) {
+    const previous = userMutationQueues.get(userKey) || Promise.resolve();
+    const current = previous.then(operation, operation);
+    const queued = current.then(() => undefined, () => undefined);
+    userMutationQueues.set(userKey, queued);
+    return current.finally(() => {
+        if (userMutationQueues.get(userKey) === queued) userMutationQueues.delete(userKey);
+    });
+}
+
+async function readGenderForAliases(aliases) {
+    for (const alias of aliases) {
+        if (!alias) continue;
+        const value = await store.getSetting(alias, GENDER_RECORD_KEY);
+        if (value === 'guy' || value === 'lady') return value;
     }
     return null;
 }
@@ -45,39 +64,31 @@ async function persistGender(userId, gender, sock, { allowChange = false } = {})
     if (normalizedGender !== 'guy' && normalizedGender !== 'lady') {
         return { ok: false, reason: 'invalid_gender' };
     }
+    await ensureLegacyGenderMigration();
+    const identity = await getWhatsAppIdentity(sock, userId);
+    if (!identity.canonical) return { ok: false, reason: 'identity' };
 
-    return withGenderMutationLock(async () => {
-        // Resolve storage and WhatsApp identity concurrently, then perform one
-        // read/modify/write cycle instead of repeating both lookups.
-        const [all, identity] = await Promise.all([
-            getAllGenders(),
-            getWhatsAppIdentity(sock, userId)
-        ]);
-        if (!identity.canonical) return { ok: false, reason: 'identity' };
-
-        const existing = findGenderForIdentity(all, identity.aliases);
+    return withUserMutationLock(identity.canonical, async () => {
+        const existing = await readGenderForAliases(identity.aliases);
         if (existing && existing !== normalizedGender && !allowChange) {
             return { ok: false, reason: 'locked', existing };
         }
-
-        all[identity.canonical] = normalizedGender;
-        for (const key of identity.aliases) {
-            if (!String(key).includes('@') || key.endsWith('@lid')) {
-                all[key] = normalizedGender;
+        // Store only this person's aliases as individual setting records.
+        for (const alias of new Set([identity.canonical, ...identity.aliases])) {
+            if (!alias) continue;
+            if (!await store.saveSettingVerified(alias, GENDER_RECORD_KEY, normalizedGender)) {
+                throw new Error('Saved gender could not be verified in storage.');
             }
         }
-
-        await saveAllGenders(all);
         return { ok: true, existing };
     });
 }
 
 export async function getUserGender(userId, sock = global.__forgeSock) {
-    const [all, identity] = await Promise.all([
-        getAllGenders(),
-        getWhatsAppIdentity(sock, userId)
-    ]);
-    return findGenderForIdentity(all, identity.aliases);
+    await ensureLegacyGenderMigration();
+    const identity = await getWhatsAppIdentity(sock, userId);
+    if (!identity.canonical) return null;
+    return readGenderForAliases(identity.aliases);
 }
 
 export async function setUserGender(userId, gender, sock = global.__forgeSock) {
@@ -86,15 +97,13 @@ export async function setUserGender(userId, gender, sock = global.__forgeSock) {
 }
 
 export async function getOppositeGender(userId) {
-    const g = await getUserGender(userId);
-    if (g === 'guy') return 'lady';
-    if (g === 'lady') return 'guy';
+    const gender = await getUserGender(userId);
+    if (gender === 'guy') return 'lady';
+    if (gender === 'lady') return 'guy';
     return null;
 }
 
 function resumeGenderDependentGames(sock, chatId, target, message, channelInfo) {
-    // The gender confirmation is the command's critical response. Game
-    // continuation is secondary work and must not hold the command queue open.
     void (async () => {
         try {
             const { resumeHotSeatPlayer } = await import('./hotseat.js');
@@ -121,31 +130,21 @@ export default {
         const arg0 = (args[0] || '').toLowerCase();
         const arg1 = (args[1] || '').toLowerCase();
         const isAdmin = isSenderAdmin || senderIsOwnerOrSudo;
-
-        // Admin changing someone else: .gender @user guy
         const mentioned = message.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+
         if (mentioned.length && (arg1 === 'guy' || arg1 === 'lady' || arg0 === 'guy' || arg0 === 'lady')) {
             if (!isAdmin) {
-                return sock.sendMessage(chatId, {
-                    text: 'Only admins can change another member\'s gender.',
-                    ...channelInfo
-                }, { quoted: message });
+                return sock.sendMessage(chatId, { text: 'Only admins can change another member\'s gender.', ...channelInfo }, { quoted: message });
             }
-
             const target = mentioned[0];
             const gender = (arg1 === 'guy' || arg1 === 'lady') ? arg1 : arg0;
             const result = await persistGender(target, gender, sock, { allowChange: true });
             if (!result.ok) {
-                return sock.sendMessage(chatId, {
-                    text: 'I could not resolve that member\'s WhatsApp identity. Please try again.',
-                    ...channelInfo
-                }, { quoted: message });
+                return sock.sendMessage(chatId, { text: 'I could not resolve that member\'s WhatsApp identity. Please try again.', ...channelInfo }, { quoted: message });
             }
-
             await sock.sendMessage(chatId, {
                 text: `✅ Gender for @${target.split('@')[0]} set to *${gender}* (admin).`,
-                mentions: [target],
-                ...channelInfo
+                mentions: [target], ...channelInfo
             }, { quoted: message });
             resumeGenderDependentGames(sock, chatId, target, message, channelInfo);
             return;
@@ -166,10 +165,7 @@ export default {
         }
 
         if (arg0 !== 'guy' && arg0 !== 'lady') {
-            return sock.sendMessage(chatId, {
-                text: 'Use: *.gender guy* or *.gender lady*',
-                ...channelInfo
-            }, { quoted: message });
+            return sock.sendMessage(chatId, { text: 'Use: *.gender guy* or *.gender lady*', ...channelInfo }, { quoted: message });
         }
 
         const result = await persistGender(senderId, arg0, sock, { allowChange: isAdmin });
@@ -192,7 +188,6 @@ export default {
                 : `✅ Gender set to *${arg0}*.\nGames will use the correct list for you.`,
             ...channelInfo
         }, { quoted: message });
-
         resumeGenderDependentGames(sock, chatId, senderId, message, channelInfo);
     }
 };
