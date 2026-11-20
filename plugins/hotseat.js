@@ -7,6 +7,12 @@ import { isFeatureGroup } from '../lib/featureGroups.js';
 
 
 const HOTSEAT_KEY = 'hotseatSession';
+const ADJUSTMENT_MS = Number(config.hotseatAdjustmentMinutes || 10) * 60 * 1000;
+const SESSION_MS = Number(config.hotseatSessionHours || 2) * 60 * 60 * 1000;
+const ANSWER_TIMEOUT_MS = Number(config.hotseatAnswerMinutes || 5) * 60 * 1000;
+const NEXT_QUESTION_MS = Number(config.hotseatNextQuestionSeconds || 60) * 1000;
+const MIN_PLAYERS = 2;
+const MAX_PLAYERS = 4;
 function shuffle(items) { return [...items].sort(() => Math.random() - 0.5); }
 function mention(jid) { return '@' + String(jid || '').split('@')[0]; }
 function stripDevice(jid) { return String(jid || '').replace(/:\d+(?=@)/, ''); }
