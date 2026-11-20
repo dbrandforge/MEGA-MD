@@ -31,6 +31,7 @@ import commandHandler from './lib/commandHandler.js';
 import { shouldProcessMessageUpsert } from './lib/messageEventPolicy.js';
 import { startSchedulerEngine, trackGroup } from './plugins/schedule.js';
 import { FEATURE_GROUPS } from './lib/featureGroups.js';
+import { resumeHotSeatSession } from './plugins/hotseat.js';
 import { getCachedGroupMetadata } from './lib/isOwner.js';
 
 import { installSignalDiagnosticGuard } from './lib/signalDiagnostics.js';
@@ -126,35 +127,6 @@ setInterval(() => {
     }
 }, 120000);
 
-// Hot Seat recent-reader tracking, buffered to keep database traffic low.
-const HOTSEAT_READERS_KEY = 'hotseatRecentReaders';
-const HOTSEAT_FLUSH_MS = 30000;
-const hotseatReaderBuffer = new Map(); // groupId -> Map(reader -> timestamp)
-let hotseatFlushTimer = null;
-function bufferHotseatReader(groupId, reader, timestamp) {
-    let readers = hotseatReaderBuffer.get(groupId);
-    if (!readers) { readers = new Map(); hotseatReaderBuffer.set(groupId, readers); }
-    readers.set(reader, Math.max(readers.get(reader) || 0, timestamp));
-    if (!hotseatFlushTimer) {
-        hotseatFlushTimer = setTimeout(() => { hotseatFlushTimer = null; flushHotseatReaders().catch(() => { }); }, HOTSEAT_FLUSH_MS);
-        hotseatFlushTimer.unref?.();
-    }
-}
-async function flushHotseatReaders() {
-    const pending = [...hotseatReaderBuffer.entries()];
-    hotseatReaderBuffer.clear();
-    for (const [groupId, readers] of pending) {
-        try {
-            const data = (await store.getSetting(groupId, HOTSEAT_READERS_KEY)) || {};
-            for (const [jid, seenAt] of readers) data[jid] = Math.max(Number(data[jid] || 0), seenAt);
-            const cutoff = Date.now() - 5 * 60 * 60 * 1000;
-            for (const [jid, seenAt] of Object.entries(data)) if (Number(seenAt) < cutoff) delete data[jid];
-            await store.saveSetting(groupId, HOTSEAT_READERS_KEY, data);
-        } catch (error) {
-            printLog('warning', `Hot Seat receipt tracking skipped: ${error.message}`);
-        }
-    }
-}
 let shutdownFlushStarted = false;
 async function flushPendingStateBeforeShutdown(signal) {
     if (shutdownFlushStarted) return;
@@ -171,7 +143,6 @@ async function flushPendingStateBeforeShutdown(signal) {
         // restore stale keys (which causes bad_mac / decrypt_failed after a deploy).
         typeof flushSessionBackupQueue === 'function' ? flushSessionBackupQueue() : Promise.resolve(),
         mongoKeyStore ? mongoKeyStore.flush() : Promise.resolve(),
-        flushHotseatReaders(),
     ]);
     clearTimeout(timeout);
     const failures = results.filter(result => result.status === 'rejected');
@@ -760,20 +731,6 @@ async function startQasimDev() {
         };
         QasimDev.ev.on('creds.update', _saveCreds);
         store.bind(QasimDev.ev);
-        // Record group read receipts for Hot Seat's recent-reader selection.
-        // Keep a compact rolling map per group; stealth mode intentionally suppresses receipts upstream.
-        QasimDev.ev.on('message-receipt.update', (updates = []) => {
-            // Read receipts arrive in large bursts in big groups. Buffer them in
-            // memory and persist one merged update per group every 30 seconds,
-            // instead of a database read, clone and write per receipt.
-            for (const update of updates) {
-                const groupId = update?.key?.remoteJid;
-                const reader = update?.receipt?.userJid || update?.receipt?.participant || update?.key?.participant;
-                if (!MEMBER_FEATURES_ENABLED || !FEATURE_GROUPS.includes(groupId) || !reader) continue;
-                const timestamp = Number(update?.receipt?.readTimestamp || update?.receipt?.receiptTimestamp || Math.floor(Date.now() / 1000)) * 1000;
-                bufferHotseatReader(groupId, reader, timestamp);
-            }
-        });
         // Track WhatsApp server/delivery acknowledgements for messages sent by the bot.
         QasimDev.ev.on('messages.update', (updates = []) => {
             for (const item of updates) {
@@ -1003,6 +960,15 @@ async function startQasimDev() {
                 // Group automation must not depend on someone running .schedule manually.
                 for (const groupId of FEATURE_GROUPS) trackGroup(groupId);
                 startSchedulerEngine(QasimDev);
+                // Restore only the persisted Hot Seat session for each configured
+                // feature group; each session contains at most four named players.
+                for (const groupId of FEATURE_GROUPS) {
+                    try {
+                        await resumeHotSeatSession(QasimDev, groupId);
+                    } catch (error) {
+                        printLog('warning', `Hot Seat continuity restore failed for a configured group: ${error.message}`);
+                    }
+                }
                 if (MEMBER_FEATURES_ENABLED) try {
                     const welcomeModule = await import('./plugins/sincity-welcome.js');
                     if (typeof welcomeModule.restoreWelcomeJobs === 'function') await welcomeModule.restoreWelcomeJobs(QasimDev);
