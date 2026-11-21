@@ -28,7 +28,7 @@ import { printLog } from './lib/print.js';
 import { writeErrorLog } from './lib/logger.js';
 import { handleMessages, handleGroupParticipantUpdate, handleStatus, handleCall } from './lib/messageHandler.js';
 import commandHandler from './lib/commandHandler.js';
-import { shouldProcessMessageUpsert, isMessageTooOld } from './lib/messageEventPolicy.js';
+import { shouldProcessMessageUpsert, isMessageTooOld, setMessageProcessingCutoff } from './lib/messageEventPolicy.js';
 import { startSchedulerEngine, trackGroup } from './plugins/schedule.js';
 import { FEATURE_GROUPS } from './lib/featureGroups.js';
 import { resumeHotSeatSession } from './plugins/hotseat.js';
@@ -970,6 +970,8 @@ async function startQasimDev() {
                     printLog('warning', 'Ignoring open event from a non-active WhatsApp socket.');
                     return;
                 }
+                const messageCutoff = setMessageProcessingCutoff();
+                printLog('info', `Inbound message cutoff established at ${new Date(messageCutoff).toISOString()}; pre-connection messages will be ignored.`);
                 printLog('success', 'Bot connected successfully!');
                 global.__forgeWhatsAppConnected = true;
                 currentSocket = QasimDev;
