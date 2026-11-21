@@ -11,12 +11,12 @@ const message = (overrides = {}) => ({
 const secondsAgo = seconds => Math.floor((now - seconds * 1000) / 1000);
 
 describe('WhatsApp upsert processing policy', () => {
-  it.each(['notify', 'append'])('accepts %s messages within the 60-second window', type => {
-    expect(shouldProcessMessageUpsert(type, message({ messageTimestamp: secondsAgo(59) }), { now })).toBe(true);
+  it.each(['notify', 'append'])('accepts %s messages within the 180-second window', type => {
+    expect(shouldProcessMessageUpsert(type, message({ messageTimestamp: secondsAgo(179) }), { now })).toBe(true);
   });
 
-  it.each(['notify', 'append'])('rejects %s messages older than 60 seconds', type => {
-    const stale = message({ messageTimestamp: secondsAgo(61) });
+  it.each(['notify', 'append'])('rejects %s messages older than 180 seconds', type => {
+    const stale = message({ messageTimestamp: secondsAgo(181) });
     expect(shouldProcessMessageUpsert(type, stale, { now })).toBe(false);
     expect(isMessageTooOld(stale, now)).toBe(true);
   });
@@ -64,7 +64,7 @@ describe('WhatsApp upsert processing policy', () => {
   });
 
   it('uses the original message timestamp, independent of process restart time', () => {
-    const sentBeforeRestart = message({ messageTimestamp: secondsAgo(61) });
+    const sentBeforeRestart = message({ messageTimestamp: secondsAgo(181) });
     expect(shouldProcessMessageUpsert('notify', sentBeforeRestart, { now })).toBe(false);
     expect(shouldProcessMessageUpsert('notify', sentBeforeRestart, { now: now + 24 * 60 * 60 * 1000 })).toBe(false);
   });
