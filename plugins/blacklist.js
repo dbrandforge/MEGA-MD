@@ -1,11 +1,8 @@
 import store from '../lib/lightweight_store.js';
 
 const SETTING_KEY = 'creatorBoundaryReplies';
-const REPLY_COOLDOWN_MS = 24 * 60 * 60 * 1000;
-const MAX_COOLDOWN_ENTRIES = 5000;
 const MAX_SETTINGS_CACHE_ENTRIES = 150;
 const settingsCache = new Map();
-const cooldowns = new Map();
 
 // A deliberately neutral, low-friction boundary bank. No insults, accusations,
 // sexual references, or language inviting other members to pile on.
@@ -76,19 +73,39 @@ function cleanJid(value) {
   return typeof value === 'string' ? value.trim().split(':')[0] : '';
 }
 
-function quotedParticipant(message) {
+function quotedParticipants(message) {
   const context = message?.message?.extendedTextMessage?.contextInfo
     || message?.message?.imageMessage?.contextInfo
-    || message?.message?.videoMessage?.contextInfo;
-  return cleanJid(context?.participant || '');
+    || message?.message?.videoMessage?.contextInfo
+    || message?.message?.documentMessage?.contextInfo;
+  return [...new Set([cleanJid(context?.participant), cleanJid(context?.participantAlt)].filter(Boolean))];
+}
+
+export function senderIdentities(message, senderId) {
+  return [...new Set([
+    cleanJid(senderId),
+    cleanJid(message?.key?.participant),
+    cleanJid(message?.key?.participantAlt),
+    cleanJid(message?.key?.remoteJidAlt)
+  ].filter(Boolean))];
+}
+
+export function matchesTargetIdentity(targetIds, identities) {
+  const targets = Array.isArray(targetIds) ? targetIds.map(cleanJid).filter(Boolean) : [];
+  const senders = Array.isArray(identities) ? identities.map(cleanJid).filter(Boolean) : [];
+  return targets.some(id => senders.includes(id));
 }
 
 async function readSettings(chatId) {
   if (settingsCache.has(chatId)) return settingsCache.get(chatId);
   const saved = await store.getSetting(chatId, SETTING_KEY).catch(() => null);
   const value = saved && typeof saved === 'object'
-    ? { enabled: saved.enabled === true, target: cleanJid(saved.target) }
-    : { enabled: false, target: '' };
+    ? {
+        enabled: saved.enabled === true,
+        target: cleanJid(saved.target),
+        targetIds: [...new Set([cleanJid(saved.target), ...(Array.isArray(saved.targetIds) ? saved.targetIds.map(cleanJid) : [])].filter(Boolean))]
+      }
+    : { enabled: false, target: '', targetIds: [] };
   settingsCache.set(chatId, value);
   while (settingsCache.size > MAX_SETTINGS_CACHE_ENTRIES) {
     settingsCache.delete(settingsCache.keys().next().value);
@@ -97,7 +114,8 @@ async function readSettings(chatId) {
 }
 
 async function saveSettings(chatId, value) {
-  const safe = { enabled: value.enabled === true, target: cleanJid(value.target) };
+  const targetIds = [...new Set([cleanJid(value.target), ...(Array.isArray(value.targetIds) ? value.targetIds.map(cleanJid) : [])].filter(Boolean))];
+  const safe = { enabled: value.enabled === true, target: cleanJid(value.target), targetIds };
   settingsCache.set(chatId, safe);
   while (settingsCache.size > MAX_SETTINGS_CACHE_ENTRIES) {
     settingsCache.delete(settingsCache.keys().next().value);
@@ -112,21 +130,16 @@ function pickBoundaryReply(random = Math.random) {
 
 export async function handleCreatorBoundaryReply(sock, chatId, message, senderId) {
   if (!chatId?.endsWith('@g.us') || message?.key?.fromMe) return false;
-  const sender = cleanJid(senderId || message?.key?.participant);
-  if (!sender) return false;
+  const identities = senderIdentities(message, senderId);
+  if (!identities.length) return false;
 
   try {
     const settings = await readSettings(chatId);
-    if (!settings.enabled || !settings.target || sender !== settings.target) return false;
+    const targetIds = settings.targetIds?.length ? settings.targetIds : [settings.target];
+    if (!settings.enabled || !matchesTargetIdentity(targetIds, identities)) return false;
 
-    const now = Date.now();
-    const cooldownKey = chatId + ':' + sender;
-    if (now < (cooldowns.get(cooldownKey) || 0)) return false;
-    cooldowns.set(cooldownKey, now + REPLY_COOLDOWN_MS);
-    while (cooldowns.size > MAX_COOLDOWN_ENTRIES) {
-      cooldowns.delete(cooldowns.keys().next().value);
-    }
-
+    // No per-day cooldown: every inbound message from the configured target is
+    // intercepted and receives one fixed boundary reply. No AI/game path runs.
     await sock.sendMessage(chatId, { text: pickBoundaryReply() }, { quoted: message });
     return true;
   } catch (error) {
@@ -150,13 +163,14 @@ export default {
     const current = await readSettings(chatId);
 
     if (action === 'set') {
-      const target = quotedParticipant(message);
+      const targetIds = quotedParticipants(message);
+      const target = targetIds[0] || '';
       if (!target) {
         return sock.sendMessage(chatId, {
           text: 'Reply directly to the member’s message with `.blacklist set`. Only the creator can set the target.'
         }, { quoted: message });
       }
-      await saveSettings(chatId, { enabled: false, target });
+      await saveSettings(chatId, { enabled: false, target, targetIds });
       return sock.sendMessage(chatId, {
         text: 'Target saved for this group. The rule is OFF by default. Use `.blacklist on` when you want to enable it.'
       }, { quoted: message });
@@ -170,7 +184,7 @@ export default {
       }
       await saveSettings(chatId, { ...current, enabled: true });
       return sock.sendMessage(chatId, {
-        text: 'Creator boundary replies are ON for this group. The reply bank is rate-limited to one response per target per 24 hours.'
+        text: 'Creator boundary replies are ON for this group. Every message from the configured target will receive a fixed reply; chatbot and game handling are bypassed.'
       }, { quoted: message });
     }
 
@@ -181,7 +195,6 @@ export default {
 
     if (action === 'remove' || action === 'clear') {
       await saveSettings(chatId, { enabled: false, target: '' });
-      cooldowns.delete(chatId + ':' + current.target);
       return sock.sendMessage(chatId, { text: 'Target removed and the rule switched OFF for this group.' }, { quoted: message });
     }
 
@@ -191,7 +204,7 @@ export default {
           '*Status:* ' + (current.enabled ? 'ON' : 'OFF') + '\n' +
           '*Target:* ' + (current.target ? 'configured' : 'not set') + '\n' +
           '*Reply bank:* ' + BOUNDARY_REPLY_BANK.length + ' fixed replies\n' +
-          '*Cooldown:* 24 hours per target\n\n' +
+          '*Reply frequency:* every message from the target\n\n' +
           'Commands: `.blacklist set` (reply to a message), `.blacklist on`, `.blacklist off`, `.blacklist status`, `.blacklist remove`'
       }, { quoted: message });
     }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOUNDARY_REPLY_BANK } from '../../plugins/blacklist.js';
+import { BOUNDARY_REPLY_BANK, matchesTargetIdentity, senderIdentities } from '../../plugins/blacklist.js';
 
 describe('creator boundary reply bank', () => {
   it('contains between 50 and 100 fixed replies', () => {
@@ -15,5 +15,25 @@ describe('creator boundary reply bank', () => {
   it('does not include insults, sexual references, or crash accusations', () => {
     const unsafe = /\b(idiot|stupid|bitch|whore|slut|bdsm|crash caused|you caused the crash)\b/i;
     expect(BOUNDARY_REPLY_BANK.some(reply => unsafe.test(reply))).toBe(false);
+  });
+});
+
+describe('creator boundary identity matching', () => {
+  it('matches a stored LID when the incoming message exposes its alternate PN', () => {
+    const identities = senderIdentities({
+      key: { participant: '12345@lid', participantAlt: '23456@s.whatsapp.net' }
+    }, '23456@s.whatsapp.net');
+    expect(matchesTargetIdentity(['12345@lid'], identities)).toBe(true);
+  });
+
+  it('matches a stored PN when the incoming message exposes its alternate LID', () => {
+    const identities = senderIdentities({
+      key: { participant: '12345@lid', participantAlt: '23456@s.whatsapp.net' }
+    }, '23456@s.whatsapp.net');
+    expect(matchesTargetIdentity(['23456@s.whatsapp.net'], identities)).toBe(true);
+  });
+
+  it('does not match an unrelated sender', () => {
+    expect(matchesTargetIdentity(['11111@s.whatsapp.net'], ['22222@s.whatsapp.net'])).toBe(false);
   });
 });
