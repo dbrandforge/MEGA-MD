@@ -3,7 +3,6 @@ import store from '../lib/lightweight_store.js';
 const SETTING_KEY = 'creatorBoundaryReplies';
 const MAX_SETTINGS_CACHE_ENTRIES = 150;
 const settingsCache = new Map();
-const cooldowns = new Map();
 
 // A deliberately neutral, low-friction boundary bank. No insults, accusations,
 // sexual references, or language inviting other members to pile on.
