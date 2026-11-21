@@ -20,6 +20,7 @@ import { evaluateArithmetic, evaluateArithmeticFollowup, formatArithmeticAnswer 
 import { detectMessageLanguage, getLocalizedAnswerPrefix, getLocalizedSourceSummaryFailure } from '../lib/chatbotLanguage.js';
 import { isTimeSensitiveQuestion, searchLiveKnowledge, buildLiveKnowledgeContext, formatLiveKnowledgeSources, formatLiveKnowledgeEvidenceSummary, formatLiveKnowledgeUnavailable, resolveContextualBusinessFollowup } from '../lib/liveKnowledge.js';
 import { isForgeGuardReplicationRequest, FORGE_GUARD_REPLICATION_REPLY } from '../lib/botProtection.js';
+import { isMessageTooOld } from '../lib/messageEventPolicy.js';
 
 const CHATBOT_AI_ENABLED = process.env.CHATBOT_AI_ENABLED === 'true';
 
@@ -364,6 +365,10 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         // Keep ownership/build inquiries about this specific bot out of the AI
         // context in both DMs and addressed group conversations.
         if (isForgeGuardReplicationRequest(chatbotQuery)) {
+            if (isMessageTooOld(message)) {
+                printLog('warning', '[Chatbot] Suppressed expired reply before send.');
+                return;
+            }
             await sock.sendMessage(chatId, { text: FORGE_GUARD_REPLICATION_REPLY }, { quoted: message });
             history.push({ name: message.pushName || 'You', text: cleanForHistory.slice(0, 500), at: Date.now() });
             history.push({ name: 'Forge Bot', text: FORGE_GUARD_REPLICATION_REPLY, at: Date.now() });
@@ -510,6 +515,13 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         }
         console.info(`[Chatbot] Reply (intent: ${classifyIntent(cleanForHistory)}, identity: ${identity?.role || 'standard'}, gender: ${registeredGender || 'unregistered'}).`);
 
+        // AI/search/database work can outlive the inbound-message window. Recheck
+        // the original WhatsApp timestamp immediately before sending, not just
+        // when the message entered the queue.
+        if (isMessageTooOld(message)) {
+            printLog('warning', '[Chatbot] Suppressed expired reply after response generation.');
+            return;
+        }
         printLog('info', `[Chatbot DM] Attempting reply via destinationType=${chatId.endsWith('@lid') ? 'LID' : 'PN_or_group'}`);
         const sendStartedAt = Date.now();
         const sentMessage = await sock.sendMessage(chatId, { text: response }, { quoted: message });

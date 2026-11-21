@@ -73,7 +73,7 @@ const incomingMessageQueue = createPerChatMessageQueue({
         } catch (err) {
             printLog('error', `Error in handleMessages (jid=${mek?.key?.remoteJid || 'unknown'}): ${String(err?.message || 'Unknown message handler error').slice(0, 300)}`);
             const chatId = mek?.key?.remoteJid;
-            if (chatId) {
+            if (chatId && !isMessageTooOld(mek)) {
                 await sock.sendMessage(chatId, {
                     text: '❌ An error occurred while processing your message.',
                     contextInfo: {
@@ -91,8 +91,9 @@ const incomingMessageQueue = createPerChatMessageQueue({
     },
     onError: (error, item) => {
         printLog('error', `Queued message worker failed: ${String(error?.message || 'Unknown queue error').slice(0, 250)}`);
-        const chatId = item?.update?.messages?.[0]?.key?.remoteJid;
-        if (chatId && item?.sock) {
+        const failedMessage = item?.update?.messages?.[0];
+        const chatId = failedMessage?.key?.remoteJid;
+        if (chatId && item?.sock && !isMessageTooOld(failedMessage)) {
             item.sock.sendMessage(chatId, {
                 text: '❌ An unexpected processing error occurred. Please retry your message.'
             }).catch(() => {});
