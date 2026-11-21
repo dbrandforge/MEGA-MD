@@ -81,13 +81,19 @@ function quotedParticipants(message) {
   return [...new Set([cleanJid(context?.participant), cleanJid(context?.participantAlt)].filter(Boolean))];
 }
 
-function senderIdentities(message, senderId) {
+export function senderIdentities(message, senderId) {
   return [...new Set([
     cleanJid(senderId),
     cleanJid(message?.key?.participant),
     cleanJid(message?.key?.participantAlt),
     cleanJid(message?.key?.remoteJidAlt)
   ].filter(Boolean))];
+}
+
+export function matchesTargetIdentity(targetIds, identities) {
+  const targets = Array.isArray(targetIds) ? targetIds.map(cleanJid).filter(Boolean) : [];
+  const senders = Array.isArray(identities) ? identities.map(cleanJid).filter(Boolean) : [];
+  return targets.some(id => senders.includes(id));
 }
 
 async function readSettings(chatId) {
@@ -130,7 +136,7 @@ export async function handleCreatorBoundaryReply(sock, chatId, message, senderId
   try {
     const settings = await readSettings(chatId);
     const targetIds = settings.targetIds?.length ? settings.targetIds : [settings.target];
-    if (!settings.enabled || !targetIds.some(id => identities.includes(id))) return false;
+    if (!settings.enabled || !matchesTargetIdentity(targetIds, identities)) return false;
 
     // No per-day cooldown: every inbound message from the configured target is
     // intercepted and receives one fixed boundary reply. No AI/game path runs.
