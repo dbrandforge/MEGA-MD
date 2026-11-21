@@ -1,11 +1,11 @@
 name: Oracle Instance Provisioner
 
 on:
-  # Retry Always Free provisioning every six hours when OCI has capacity.
+  # Retry Always Free provisioning every two hours when OCI has capacity.
   # The job is gated by OCI_PROVISIONING_ENABLED and the provisioner blocks
   # every shape outside the explicit Always Free allow-list.
   schedule:
-    - cron: "17 */6 * * *"
+    - cron: "17 */2 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -55,8 +55,9 @@ jobs:
           OCI_INSTANCE_NAME: ${{ vars.OCI_INSTANCE_NAME }}
           OCI_ASSIGN_PUBLIC_IP: ${{ vars.OCI_ASSIGN_PUBLIC_IP }}
           OCI_ALLOWED_SHAPES: ${{ vars.OCI_ALLOWED_SHAPES }}
-          OCI_A1_OCPUS: ${{ vars.OCI_A1_OCPUS }}
-          OCI_A1_MEMORY_GB: ${{ vars.OCI_A1_MEMORY_GB }}
+          # Use a smaller Always Free A1 configuration while capacity is scarce.
+          OCI_A1_OCPUS: "1"
+          OCI_A1_MEMORY_GB: "6"
           OCI_SSH_PUBLIC_KEY: ${{ secrets.OCI_SSH_PUBLIC_KEY }}
           PROVISION_DRY_RUN: ${{ github.event_name == 'schedule' && 'false' || inputs.dry_run }}
         run: python scripts/oracle/provision_instance.py
