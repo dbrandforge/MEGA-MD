@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { shouldProcessMessageUpsert, isMessageTooOld } from '../../lib/messageEventPolicy.js';
+import { shouldProcessMessageUpsert, isMessageTooOld, setMessageProcessingCutoff } from '../../lib/messageEventPolicy.js';
 
 const now = 1_800_000_000_000;
 const message = (overrides = {}) => ({
@@ -75,5 +75,19 @@ describe('replays of messages sent before this process started', () => {
     const startedAtMs = now - 60 * 1000;
     expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(50) }), { now, startedAtMs: now - 10 * 1000 })).toBe(false);
     expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(5) }), { now, startedAtMs: now - 10 * 1000 })).toBe(true);
+  });
+});
+
+
+describe('connection-time message cutoff', () => {
+  it('rejects inbound messages sent before the latest connection cutoff', () => {
+    const cutoff = now - 10_000;
+    setMessageProcessingCutoff(cutoff);
+    expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(11) }), { now })).toBe(false);
+    expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(9) }), { now })).toBe(true);
+  });
+
+  it('rounds the cutoff up to WhatsApp timestamp precision', () => {
+    expect(setMessageProcessingCutoff(now + 1)).toBe(Math.ceil((now + 1) / 1000) * 1000);
   });
 });
