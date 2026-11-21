@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { shouldProcessMessageUpsert, isMessageTooOld, setMessageProcessingCutoff } from '../../lib/messageEventPolicy.js';
+import { shouldProcessMessageUpsert, isMessageTooOld, setMessageProcessingCutoff, getMessageAgeMs } from '../../lib/messageEventPolicy.js';
 
 const now = 1_800_000_000_000;
 const message = (overrides = {}) => ({
@@ -68,6 +68,11 @@ describe('WhatsApp upsert processing policy', () => {
     expect(shouldProcessMessageUpsert('notify', sentBeforeRestart, { now })).toBe(false);
     expect(shouldProcessMessageUpsert('notify', sentBeforeRestart, { now: now + 24 * 60 * 60 * 1000 })).toBe(false);
   });
+
+  it('parses numeric timestamp strings as Unix seconds', () => {
+    const timestamp = String(secondsAgo(10));
+    expect(getMessageAgeMs(message({ messageTimestamp: timestamp }), now)).toBe(10_000);
+  });
 });
 
 describe('replays of messages sent before this process started', () => {
@@ -78,13 +83,24 @@ describe('replays of messages sent before this process started', () => {
   });
 });
 
-
 describe('connection-time message cutoff', () => {
   it('rejects inbound messages sent before the latest connection cutoff', () => {
     const cutoff = now - 10_000;
     setMessageProcessingCutoff(cutoff);
     expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(11) }), { now })).toBe(false);
     expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(9) }), { now })).toBe(true);
+  });
+
+  it('applies the same connection cutoff to append deliveries', () => {
+    const cutoff = now - 10_000;
+    expect(shouldProcessMessageUpsert('append', message({ messageTimestamp: secondsAgo(11) }), {
+      now,
+      startedAtMs: cutoff
+    })).toBe(false);
+    expect(shouldProcessMessageUpsert('append', message({ messageTimestamp: secondsAgo(9) }), {
+      now,
+      startedAtMs: cutoff
+    })).toBe(true);
   });
 
   it('rounds the cutoff up to WhatsApp timestamp precision', () => {
