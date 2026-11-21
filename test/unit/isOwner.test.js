@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('../../config.js', () => ({
     default: { ownerNumber: '923001234567@s.whatsapp.net', creatorNumber: '2349034451454@s.whatsapp.net' }
@@ -12,6 +12,7 @@ describe('isOwnerOrSudo', () => {
     let isOwnerOrSudo, isOwnerOnly, cleanJid, invalidateGroupMetadataCache;
 
     beforeEach(async () => {
+        vi.stubEnv('CREATOR_NUMBERS', '2348000000001,2348000000002');
         vi.resetModules();
         const mod = await import('../../lib/isOwner.js');
         isOwnerOrSudo = mod.default;
@@ -19,6 +20,8 @@ describe('isOwnerOrSudo', () => {
         cleanJid = mod.cleanJid;
         invalidateGroupMetadataCache = mod.invalidateGroupMetadataCache;
     });
+
+    afterEach(() => vi.unstubAllEnvs());
 
     it('owner JID matches', async () => {
         expect(await isOwnerOrSudo('923001234567@s.whatsapp.net')).toBe(true);
@@ -31,6 +34,11 @@ describe('isOwnerOrSudo', () => {
     it('configured Creator number is accepted as owner', async () => {
         expect(await isOwnerOrSudo('2349034451454@s.whatsapp.net')).toBe(true);
         expect(isOwnerOnly('2349034451454:12@s.whatsapp.net')).toBe(true);
+    });
+
+    it('each additional configured Creator number is accepted as owner', async () => {
+        expect(await isOwnerOrSudo('2348000000001@s.whatsapp.net')).toBe(true);
+        expect(isOwnerOnly('2348000000002:4@s.whatsapp.net')).toBe(true);
     });
 
     it('The Queen is not granted owner permissions', async () => {
@@ -57,6 +65,7 @@ describe('isOwnerOrSudo', () => {
     it('cleanJid handles empty string', () => {
         expect(cleanJid('')).toBe('');
     });
+
     it('reuses group metadata for repeated unresolved LID checks in the same group', async () => {
         const sock = {
             groupMetadata: vi.fn(async () => ({
