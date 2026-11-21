@@ -3,6 +3,7 @@ import store from '../lib/lightweight_store.js';
 const SETTING_KEY = 'creatorBoundaryReplies';
 const REPLY_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const MAX_COOLDOWN_ENTRIES = 5000;
+const MAX_SETTINGS_CACHE_ENTRIES = 150;
 const settingsCache = new Map();
 const cooldowns = new Map();
 
@@ -89,12 +90,18 @@ async function readSettings(chatId) {
     ? { enabled: saved.enabled === true, target: cleanJid(saved.target) }
     : { enabled: false, target: '' };
   settingsCache.set(chatId, value);
+  while (settingsCache.size > MAX_SETTINGS_CACHE_ENTRIES) {
+    settingsCache.delete(settingsCache.keys().next().value);
+  }
   return value;
 }
 
 async function saveSettings(chatId, value) {
   const safe = { enabled: value.enabled === true, target: cleanJid(value.target) };
   settingsCache.set(chatId, safe);
+  while (settingsCache.size > MAX_SETTINGS_CACHE_ENTRIES) {
+    settingsCache.delete(settingsCache.keys().next().value);
+  }
   await store.saveSetting(chatId, SETTING_KEY, safe);
   return safe;
 }
