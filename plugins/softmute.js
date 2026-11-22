@@ -64,6 +64,55 @@ const GROUP_COUNT_CACHE_TTL_MS = 5000;
 const migrationPromises = new Map();
 const migratedGroups = new Set();
 const groupCountQueues = new Map();
+const softMuteExpiryTimers = new Map();
+const softMuteOperationQueues = new Map();
+
+function withMuteLock(chatId, userId, operation) {
+    const key = `${chatId}:${cleanId(userId)}`;
+    const previous = softMuteOperationQueues.get(key) || Promise.resolve();
+    const current = previous.then(operation, operation);
+    const queued = current.then(() => undefined, () => undefined);
+    softMuteOperationQueues.set(key, queued);
+    return current.finally(() => {
+        if (softMuteOperationQueues.get(key) === queued) softMuteOperationQueues.delete(key);
+    });
+}
+
+function clearSoftMuteExpiry(chatId, userId) {
+    const key = `${chatId}:${cleanId(userId)}`;
+    const timer = softMuteExpiryTimers.get(key);
+    if (timer) clearTimeout(timer);
+    softMuteExpiryTimers.delete(key);
+}
+
+function armSoftMuteExpiry(chatId, userId, until) {
+    const key = `${chatId}:${cleanId(userId)}`;
+    clearSoftMuteExpiry(chatId, userId);
+    const timer = setTimeout(() => {
+        softMuteExpiryTimers.delete(key);
+        expireSoftMute(chatId, userId).catch(error =>
+            console.error(`[SOFTMUTE] Expiry failed for ${chatId}/${cleanId(userId)}:`, error.message)
+        );
+    }, Math.max(0, Number(until) - Date.now()));
+    timer.unref?.();
+    softMuteExpiryTimers.set(key, timer);
+}
+
+async function expireSoftMute(chatId, userId) {
+    return withMuteLock(chatId, userId, async () => {
+        const entry = await getRecord(chatId, userId);
+        if (!entry) return false;
+        const until = Number(entry.until) || 0;
+        if (until > Date.now()) {
+            armSoftMuteExpiry(chatId, userId, until);
+            return false;
+        }
+        await saveRecord(chatId, userId, null);
+        await adjustActiveCount(chatId, -1);
+        console.log(`[SOFTMUTE] Expired individual mute for ${cleanId(userId)} in ${chatId}`);
+        return true;
+    });
+}
 
 export function invalidateSoftMuteCache(chatId = null) {
     if (chatId) {
@@ -249,6 +298,7 @@ export async function isSoftMuted(chatId, userId, sock = null, extraIds = []) {
         if (!entry) continue;
         if (Number(entry.until) > Date.now()) return true;
         await saveRecord(chatId, id, null);
+        clearSoftMuteExpiry(chatId, id);
         await adjustActiveCount(chatId, -1);
     }
     return false;
@@ -256,17 +306,24 @@ export async function isSoftMuted(chatId, userId, sock = null, extraIds = []) {
 
 export async function softMuteUser(sock, chatId, userId, durationMs = null) {
     await ensureLegacyMuteMigration(chatId);
+    // Read the group's current persisted duration on every mute. Runtime changes
+    // to softMuteDurationHours therefore apply without a redeploy or restart.
     const duration = Number.isFinite(Number(durationMs)) && Number(durationMs) > 0
         ? Math.min(Number(durationMs), 7 * 86400000)
         : (await getSoftMuteDurationHours(chatId)) * 3600000;
     const canonicalKey = await normalizeSoftMuteUserId(sock, userId);
-    const existing = await getRecord(chatId, canonicalKey);
-    const now = Date.now();
-    const entry = { until: now + duration, mutedAt: now, original: userId, canonical: canonicalKey };
-    await saveRecord(chatId, canonicalKey, entry);
-    if (!existing || Number(existing.until) <= now) {
-        await adjustActiveCount(chatId, 1, entry.until);
-    }
+    await withMuteLock(chatId, canonicalKey, async () => {
+        const existing = await getRecord(chatId, canonicalKey);
+        const now = Date.now();
+        const entry = { until: now + duration, mutedAt: now, original: userId, canonical: canonicalKey };
+        await saveRecord(chatId, canonicalKey, entry);
+        if (!existing || Number(existing.until) <= now) {
+            await adjustActiveCount(chatId, 1, entry.until);
+        } else {
+            await setActiveCount(chatId, await getActiveCount(chatId), entry.until);
+        }
+        armSoftMuteExpiry(chatId, canonicalKey, entry.until);
+    });
     await trackGroup(chatId);
     return duration;
 }
@@ -278,15 +335,41 @@ export async function softUnmuteUser(chatId, userId, sock = global.__forgeSock) 
     const counterpart = await resolveCounterpart(sock, canonicalKey);
     if (counterpart) ids.add(counterpart);
     for (const id of ids) {
-        const existing = await getRecord(chatId, id);
-        if (!existing) continue;
-        await saveRecord(chatId, id, null);
-        await setActiveCount(chatId, Math.max(0, (await getActiveCount(chatId)) - 1));
-        break;
+        const removed = await withMuteLock(chatId, id, async () => {
+            const existing = await getRecord(chatId, id);
+            if (!existing) return false;
+            await saveRecord(chatId, id, null);
+            clearSoftMuteExpiry(chatId, id);
+            await adjustActiveCount(chatId, -1);
+            return true;
+        });
+        if (removed) break;
     }
 }
 
-export async function cleanExpiredSoftMutes() { return 0; }
+// Restore only persisted individual mute records once at startup. No recurring
+// group-wide or member-wide polling is used for soft-mute expiry.
+export async function restoreSoftMuteTimers(sock, chatIds = []) {
+    const groups = [...new Set(chatIds.filter(id => id?.endsWith('@g.us')))];
+    let restored = 0;
+    for (const chatId of groups) {
+        await ensureLegacyMuteMigration(chatId);
+        const settings = await store.getAllSettings(chatId);
+        for (const [key, entry] of Object.entries(settings || {})) {
+            if (!key.startsWith(RECORD_PREFIX) || !entry || !Number.isFinite(Number(entry.until))) continue;
+            const userId = key.slice(RECORD_PREFIX.length);
+            if (!userId) continue;
+            if (Number(entry.until) > Date.now()) {
+                armSoftMuteExpiry(chatId, userId, Number(entry.until));
+                restored++;
+            } else {
+                await expireSoftMute(chatId, userId);
+            }
+        }
+    }
+    if (restored) console.log(`[SOFTMUTE] Restored ${restored} individual expiry timer(s)`);
+    return restored;
+}
 
 const deleteFailureLoggedAt = new Map();
 export async function handleSoftMuteMessage(sock, chatId, message, senderId) {
