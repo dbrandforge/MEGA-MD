@@ -294,12 +294,16 @@ export async function isSoftMuted(chatId, userId, sock = null, extraIds = []) {
         if (counterpart) canonicalIds.add(counterpart);
     }
     for (const id of canonicalIds) {
-        const entry = await getRecord(chatId, id);
-        if (!entry) continue;
-        if (Number(entry.until) > Date.now()) return true;
-        await saveRecord(chatId, id, null);
-        clearSoftMuteExpiry(chatId, id);
-        await adjustActiveCount(chatId, -1);
+        const active = await withMuteLock(chatId, id, async () => {
+            const entry = await getRecord(chatId, id);
+            if (!entry) return false;
+            if (Number(entry.until) > Date.now()) return true;
+            await saveRecord(chatId, id, null);
+            clearSoftMuteExpiry(chatId, id);
+            await adjustActiveCount(chatId, -1);
+            return false;
+        });
+        if (active) return true;
     }
     return false;
 }
