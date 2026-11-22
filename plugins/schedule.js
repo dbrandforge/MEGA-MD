@@ -92,6 +92,8 @@ let _activeSocket = null;
 let _trackedGroups = new Set();
 let _trackedGroupsLoaded = false;
 let _trackedGroupsLoadPromise = null;
+let _softMuteTimersRestored = false;
+let _softMuteRestorePromise = null;
 const TRACKED_GROUPS_KEY = 'forgeGuardTrackedGroups';
 
 async function loadTrackedGroupsOnce() {
@@ -163,7 +165,22 @@ export function startSchedulerEngine(sock) {
     // created once, but must never retain a stale, closed Baileys socket.
     if (sock) _activeSocket = sock;
     loadFeatureGroups().catch(error => console.error('[SCHEDULE] Feature-group registry load failed:', error.message));
-    loadTrackedGroupsOnce().catch(error => console.error('[SCHEDULE] Tracked-group registry load failed:', error.message));
+    loadTrackedGroupsOnce().then(async () => {
+        if (_softMuteTimersRestored || _softMuteRestorePromise) return _softMuteRestorePromise;
+        _softMuteRestorePromise = (async () => {
+            await loadFeatureGroups();
+            const { restoreSoftMuteTimers } = await import('./softmute.js');
+            await restoreSoftMuteTimers(_activeSocket, [..._trackedGroups, ...FEATURE_GROUPS]);
+            _softMuteTimersRestored = true;
+        })();
+        try {
+            await _softMuteRestorePromise;
+        } catch (error) {
+            console.error('[SCHEDULE] Soft-mute timer restoration failed:', error.message);
+        } finally {
+            _softMuteRestorePromise = null;
+        }
+    }).catch(error => console.error('[SCHEDULE] Tracked-group registry load failed:', error.message));
     if (_engineStarted) return;
     _engineStarted = true;
 
@@ -224,14 +241,6 @@ export function startSchedulerEngine(sock) {
                 } catch (e) {
                     console.error(`[SCHEDULE] Timed group mute check failed for ${chatId}: ${e.stack || e.message}`);
                 }
-                try {
-                    const { cleanExpiredSoftMutes } = await import('./softmute.js');
-                    const removed = await cleanExpiredSoftMutes(chatId, Date.now(), { sock: activeSocket });
-                    if (removed) console.log(`[SCHEDULE] Cleaned ${removed} expired soft mute(s) in ${chatId}`);
-                } catch (e) {
-                    console.error(`[SCHEDULE] Soft-mute cleanup failed for ${chatId}: ${e.stack || e.message}`);
-                }
-
                 try {
                     const { checkGroupLockSchedule } = await import('./grouplock.js');
                     await checkGroupLockSchedule(activeSocket, chatId);
