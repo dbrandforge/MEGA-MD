@@ -21,7 +21,7 @@ concurrency:
 jobs:
   inspect:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -35,11 +35,22 @@ jobs:
       - name: Install locked dependencies without lifecycle scripts
         run: npm ci --ignore-scripts --omit=dev
 
+      - name: Install OCR engine
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr
+
       - name: Read and classify stored messages (read-only)
         env:
           MONGO_URL: ${{ secrets.MONGO_URL }}
           GROUP_JID: ${{ inputs.group_jid || '120363412352644891@g.us' }}
         run: node scripts/forensics/list-outgoing-images.js
+
+      - name: Decrypt and OCR candidate images for the target text (read-only)
+        env:
+          MONGO_URL: ${{ secrets.MONGO_URL }}
+          GROUP_JID: ${{ inputs.group_jid || '120363412352644891@g.us' }}
+        run: node scripts/forensics/ocr-anonymous-image-cards.js
 
       - name: Upload forensic reports
         if: always()
@@ -49,5 +60,6 @@ jobs:
           path: |
             outgoing-image-forensics.json
             outgoing-image-forensics.csv
+            anonymous-target-ocr-report.json
           if-no-files-found: warn
           retention-days: 7
