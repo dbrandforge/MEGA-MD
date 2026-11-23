@@ -72,32 +72,30 @@ export default {
             }, { quoted: message });
         }
 
-        const reference = (Array.isArray(args) ? args.join(' ') : String(args || '')).trim() || getQuotedMessageId(message);
-        if (!reference) {
-            return sock.sendMessage(chatId, {
-                text: 'Usage: .anontrace <WhatsApp-message-ID>\nYou can also reply to an anonymous image with .anontrace.'
-            }, { quoted: message });
-        }
-        if (reference.length > 160 || /[\r\n]/.test(reference)) {
-            return sock.sendMessage(chatId, {
-                text: 'Invalid message reference.'
-            }, { quoted: message });
-        }
-
         const creatorNumber = cleanNumber(config.creatorNumber || config.ownerNumber);
         if (!creatorNumber) {
             return sock.sendMessage(chatId, {
                 text: 'Creator DM is not configured. No forensic data was disclosed.'
             }, { quoted: message });
         }
+        const creatorJid = creatorNumber + '@s.whatsapp.net';
+        const reference = (Array.isArray(args) ? args.join(' ') : String(args || '')).trim() || getQuotedMessageId(message);
+        if (!reference) {
+            return sock.sendMessage(creatorJid, {
+                text: 'Usage: .anontrace <WhatsApp-message-ID>\nYou can also reply to an anonymous image with .anontrace.'
+            });
+        }
+        if (reference.length > 160 || /[\r\n]/.test(reference)) {
+            return sock.sendMessage(creatorJid, { text: 'Invalid message reference.' });
+        }
 
         try {
             const record = await getAnonymousSubmissionRecord(reference);
             await recordAnonymousAuditLookup({ actorId: context?.senderId, reference, found: Boolean(record) });
             if (!record) {
-                return sock.sendMessage(chatId, {
+                return sock.sendMessage(creatorJid, {
                     text: 'No forensic record was found for that message. It may predate audit logging or the reference may be incorrect.'
-                }, { quoted: message });
+                });
             }
 
             const c = record.client || {};
@@ -133,10 +131,10 @@ export default {
 
             // Always deliver the sensitive report to the primary creator DM only.
             // Never include any forensic field in the originating group response.
-            await sock.sendMessage(creatorNumber + '@s.whatsapp.net', { text: report });
+            await sock.sendMessage(creatorJid, { text: report });
         } catch (error) {
             console.error('Anonymous forensic lookup failed:', String(error?.message || 'unknown').slice(0, 180));
-            await sock.sendMessage(creatorNumber + '@s.whatsapp.net', {
+            await sock.sendMessage(creatorJid, {
                 text: 'Anonymous forensic lookup failed. Check audit database connectivity and encryption-key configuration.'
             }).catch(() => {});
         }
