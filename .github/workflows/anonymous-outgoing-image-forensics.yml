@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: anonymous-outgoing-image-forensics
+  group: anonymous-outgoing-image-forensics-v2
   cancel-in-progress: false
 
 jobs:
