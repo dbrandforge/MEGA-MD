@@ -24,7 +24,7 @@ The service also requires the existing `MONGO_URL`. The application writes to a 
 
 - Records expire automatically after 365 days using a MongoDB TTL index.
 - IP and raw user-agent values are application-encrypted. MongoDB's own encryption-at-rest and network TLS should also remain enabled.
-- There is no public endpoint or group command to retrieve these records. Access should be limited to the database owner/operator for a documented, serious incident.
+- There is no public endpoint to retrieve these records. The `.anontrace` command is strict-creator-only; whether invoked in a group or DM, the report is sent only to the creator's DM. Every lookup attempt is recorded in a separate access collection using keyed hashes of the actor and lookup reference, with 365-day TTL; raw creator numbers are not duplicated in that access log.
 - A separate private Cloudflare R2 bucket (`forge-guard-forensics`, Western Europe) receives incremental archives. The Worker exposes a write-only, Ed25519-authenticated endpoint; there is no public archive-read route.
 - The app reads at most 50 records per backup pass, processes only records after the last successful cursor, gzip-compresses and AES-256-GCM encrypts each batch, and uploads one batch every 10 minutes. It advances the MongoDB checkpoint only after R2 confirms the object write. It never loads the full audit collection into RAM.
 - R2 archive objects expire after 365 days. The batch archive is encrypted independently of the per-field encryption; both use the audit encryption key. Each batch is signed with Ed25519. The private PKCS#8 key stays in Render; only its public SPKI key is embedded in the Worker. The Worker does not need a shared secret.
