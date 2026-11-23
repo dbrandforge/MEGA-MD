@@ -3,7 +3,9 @@ import {
     encryptSensitiveValue,
     decryptSensitiveValue,
     parseAnonymousClient,
-    ANONYMOUS_AUDIT_RETENTION_DAYS
+    ANONYMOUS_AUDIT_RETENTION_DAYS,
+    encryptAuditBackupBatch,
+    decryptAuditBackupBatch
 } from '../../lib/anonymousAudit.js';
 
 describe('anonymous forensic metadata', () => {
@@ -41,6 +43,25 @@ describe('anonymous forensic metadata', () => {
         expect(decryptSensitiveValue(encrypted, key)).toBe('203.0.113.10');
         const tampered = { ...encrypted, data: Buffer.from('tampered').toString('base64') };
         expect(() => decryptSensitiveValue(tampered, key)).toThrow();
+    });
+
+
+    it('encrypts and restores a small archive batch without exposing its JSON payload', async () => {
+        const key = Buffer.alloc(32, 11);
+        const records = [
+            { submissionId: 'sub-1', ipEncrypted: { data: 'ciphertext-a' } },
+            { submissionId: 'sub-2', ipEncrypted: { data: 'ciphertext-b' } }
+        ];
+        const archive = await encryptAuditBackupBatch(records, key);
+        expect(archive.subarray(0, 4).toString('ascii')).toBe('FGA1');
+        expect(archive.includes(Buffer.from('submissionId'))).toBe(false);
+        await expect(decryptAuditBackupBatch(archive, Buffer.alloc(32, 12))).rejects.toThrow();
+        await expect(decryptAuditBackupBatch(archive, key)).resolves.toEqual(records);
+    });
+
+    it('rejects an archive batch larger than the bounded batch ceiling', async () => {
+        const records = Array.from({ length: 101 }, (_, i) => ({ submissionId: String(i) }));
+        await expect(encryptAuditBackupBatch(records, Buffer.alloc(32, 1))).rejects.toThrow();
     });
 
     it('retains records for a defined, bounded period', () => {
