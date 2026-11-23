@@ -10,6 +10,7 @@ import { downloadContentFromMessage } from '@whiskeysockets/baileys';
 const execFileAsync = promisify(execFile);
 const mongoUrl = String(process.env.MONGO_URL || '').trim();
 const groupJid = String(process.env.GROUP_JID || '').trim();
+const targetMessageId = String(process.env.TARGET_MESSAGE_ID || '').trim();
 if (!mongoUrl) throw new Error('MONGO_URL secret is missing.');
 if (!/^\d+@g\.us$/.test(groupJid)) throw new Error('GROUP_JID must be a WhatsApp group JID ending in @g.us.');
 
@@ -87,6 +88,8 @@ async function inspectOne(row, tempDir) {
   const ext = String(image.mimetype || '').includes('png') ? '.png' : '.jpg';
   const imagePath = path.join(tempDir, String(row.id).replace(/[^a-zA-Z0-9_-]/g, '_') + ext);
   await fs.writeFile(imagePath, bytes);
+  const preservedPath = path.resolve('anonymous-card-' + String(row.id).replace(/[^a-zA-Z0-9_-]/g, '_') + ext);
+  await fs.copyFile(imagePath, preservedPath);
   let stdout = '';
   try {
     const result = await execFileAsync('tesseract', [imagePath, 'stdout', '-l', 'eng', '--psm', '6'], {
@@ -103,6 +106,7 @@ async function inspectOne(row, tempDir) {
   return {
     storedAtWAT: new Date(Number(row.ts) + 3600000).toISOString().replace('T', ' ').replace('Z', ''),
     messageId: String(row.id),
+    imageFile: path.basename(preservedPath),
     matchScore: Number(score.toFixed(3)),
     ocrText: String(stdout).trim().slice(0, 1200)
   };
@@ -112,7 +116,7 @@ async function main() {
   await mongoose.connect(mongoUrl, {serverSelectionTimeoutMS: 15000, readPreference: 'secondaryPreferred'});
   const collection = mongoose.connection.db.collection('messages');
   const cursor = collection.find(
-    {jid: groupJid, ts: {$gte: start.getTime(), $lt: end.getTime()}},
+    {jid: groupJid, ts: {$gte: start.getTime(), $lt: end.getTime()}, ...(targetMessageId ? {id: targetMessageId} : {})},
     {projection: {_id: 0, id: 1, data: 1, ts: 1}, batchSize: 100}
   ).sort({ts: 1});
 
@@ -156,6 +160,7 @@ async function main() {
     investigation: 'OCR match for target anonymous card',
     groupJid,
     targetText: target,
+    targetMessageId: targetMessageId || null,
     timezone: 'Africa/Lagos (UTC+01:00)',
     localWindow: '2026-11-21 22:00:00 inclusive to 2026-11-22 00:00:00 exclusive',
     scannedRecords: scanned,
