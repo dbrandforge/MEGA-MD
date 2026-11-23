@@ -60,6 +60,7 @@ export default {
     command: 'anontrace',
     aliases: ['anonlookup', 'anonforensics'],
     category: 'owner',
+    strictOwnerOnly: true,
     description: 'Privately retrieve forensic metadata for an anonymous submission',
     usage: '.anontrace <WhatsApp-message-ID> (or reply to an anonymous image)',
     async handler(sock, message, args, context) {
@@ -71,7 +72,7 @@ export default {
             }, { quoted: message });
         }
 
-        const reference = String(args || '').trim() || getQuotedMessageId(message);
+        const reference = (Array.isArray(args) ? args.join(' ') : String(args || '')).trim() || getQuotedMessageId(message);
         if (!reference) {
             return sock.sendMessage(chatId, {
                 text: 'Usage: .anontrace <WhatsApp-message-ID>\nYou can also reply to an anonymous image with .anontrace.'
