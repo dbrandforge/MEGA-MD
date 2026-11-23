@@ -1,6 +1,6 @@
 import config from '../config.js';
 import { isOwnerOnly, getCachedGroupMetadata } from '../lib/isOwner.js';
-import { getAnonymousSubmissionRecord } from '../lib/anonymousAudit.js';
+import { getAnonymousSubmissionRecord, recordAnonymousAuditLookup } from '../lib/anonymousAudit.js';
 
 function cleanNumber(value) {
     return String(value || '').replace(/\D/g, '');
@@ -93,6 +93,7 @@ export default {
 
         try {
             const record = await getAnonymousSubmissionRecord(reference);
+            await recordAnonymousAuditLookup({ actorId: context?.senderId, reference, found: Boolean(record) });
             if (!record) {
                 return sock.sendMessage(chatId, {
                     text: 'No forensic record was found for that message. It may predate audit logging or the reference may be incorrect.'
