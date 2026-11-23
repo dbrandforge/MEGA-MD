@@ -17,6 +17,7 @@ const start = new Date('2026-11-21T21:00:00.000Z');
 const end = new Date('2026-11-21T23:00:00.000Z');
 const target = 'i don chop caramel work that girl no sabi she just dey make mouth';
 const targetWords = target.split(' ');
+const concurrency = 4;
 
 function asBuffer(value) {
   if (Buffer.isBuffer(value)) return value;
@@ -71,11 +72,40 @@ async function decryptImage(image) {
   for (const field of ['mediaKey', 'fileSha256', 'fileEncSha256', 'jpegThumbnail']) {
     if (normalized[field] != null) normalized[field] = asBuffer(normalized[field]);
   }
-  const stream = await downloadContentFromMessage(normalized, 'image');
+  const stream = await downloadContentFromMessage(normalized, 'image', {
+    options: { signal: AbortSignal.timeout(15000) }
+  });
   const chunks = [];
   for await (const chunk of stream) chunks.push(Buffer.from(chunk));
   if (!chunks.length) throw new Error('Downloaded media was empty.');
   return Buffer.concat(chunks);
+}
+
+async function inspectOne(row, tempDir) {
+  const image = row.image;
+  const bytes = await decryptImage(image);
+  const ext = String(image.mimetype || '').includes('png') ? '.png' : '.jpg';
+  const imagePath = path.join(tempDir, String(row.id).replace(/[^a-zA-Z0-9_-]/g, '_') + ext);
+  await fs.writeFile(imagePath, bytes);
+  let stdout = '';
+  try {
+    const result = await execFileAsync('tesseract', [imagePath, 'stdout', '-l', 'eng', '--psm', '6'], {
+      encoding: 'utf8', timeout: 25000, maxBuffer: 1024 * 1024
+    });
+    stdout = result.stdout;
+  } finally {
+    await fs.unlink(imagePath).catch(() => {});
+  }
+  const words = normalizeWords(stdout);
+  const matched = targetWords.filter(word => targetWordMatched(word, words)).length;
+  const score = matched / targetWords.length;
+  if (score < 0.65) return null;
+  return {
+    storedAtWAT: new Date(Number(row.ts) + 3600000).toISOString().replace('T', ' ').replace('Z', ''),
+    messageId: String(row.id),
+    matchScore: Number(score.toFixed(3)),
+    ocrText: String(stdout).trim().slice(0, 1200)
+  };
 }
 
 async function main() {
@@ -86,42 +116,36 @@ async function main() {
     {projection: {_id: 0, id: 1, data: 1, ts: 1}, batchSize: 100}
   ).sort({ts: 1});
 
+  const imageRows = [];
+  let scanned = 0;
+  for await (const row of cursor) {
+    scanned++;
+    let message;
+    try { message = decodeMessage(row.data); } catch { continue; }
+    if (message?.key?.fromMe !== true || !message?.message?.imageMessage) continue;
+    imageRows.push({id: row.id, ts: row.ts, image: message.message.imageMessage});
+  }
+
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'anon-ocr-'));
-  let scanned = 0, imageCount = 0, downloaded = 0, ocrFailures = 0;
+  let downloaded = 0, ocrFailures = 0;
   const candidates = [];
   try {
-    for await (const row of cursor) {
-      scanned++;
-      let message;
-      try { message = decodeMessage(row.data); } catch { continue; }
-      if (message?.key?.fromMe !== true) continue;
-      const image = message?.message?.imageMessage;
-      if (!image) continue;
-      imageCount++;
-
-      try {
-        const bytes = await decryptImage(image);
-        downloaded++;
-        const ext = String(image.mimetype || '').includes('png') ? '.png' : '.jpg';
-        const imagePath = path.join(tempDir, String(row.id).replace(/[^a-zA-Z0-9_-]/g, '_') + ext);
-        await fs.writeFile(imagePath, bytes);
-        const {stdout} = await execFileAsync('tesseract', [imagePath, 'stdout', '-l', 'eng', '--psm', '6'], {encoding: 'utf8', timeout: 25000, maxBuffer: 1024 * 1024});
-        await fs.unlink(imagePath).catch(() => {});
-        const words = normalizeWords(stdout);
-        const matched = targetWords.filter(word => targetWordMatched(word, words)).length;
-        const score = matched / targetWords.length;
-        if (score >= 0.65) {
-          candidates.push({
-            storedAtWAT: new Date(Number(row.ts) + 3600000).toISOString().replace('T', ' ').replace('Z', ''),
-            messageId: String(row.id),
-            matchScore: Number(score.toFixed(3)),
-            ocrText: String(stdout).trim().slice(0, 1200)
-          });
+    for (let offset = 0; offset < imageRows.length; offset += concurrency) {
+      const batch = imageRows.slice(offset, offset + concurrency);
+      const results = await Promise.all(batch.map(async row => {
+        try {
+          const candidate = await inspectOne(row, tempDir);
+          downloaded++;
+          return candidate;
+        } catch (error) {
+          ocrFailures++;
+          process.stderr.write('[MEDIA_OCR_WARNING] id=' + String(row.id) + ' reason=' + String(error?.message || error).slice(0, 240) + '\n');
+          return null;
         }
-      } catch (error) {
-        ocrFailures++;
-        process.stderr.write('[MEDIA_OCR_WARNING] id=' + String(row.id) + ' reason=' + String(error?.message || error).slice(0, 240) + '\n');
-      }
+      }));
+      candidates.push(...results.filter(Boolean));
+      process.stdout.write('[OCR_PROGRESS] processed=' + Math.min(offset + batch.length, imageRows.length) + '/' + imageRows.length +
+        ' downloaded=' + downloaded + ' failures=' + ocrFailures + '\n');
     }
   } finally {
     await fs.rm(tempDir, {recursive: true, force: true});
@@ -135,7 +159,7 @@ async function main() {
     timezone: 'Africa/Lagos (UTC+01:00)',
     localWindow: '2026-11-21 22:00:00 inclusive to 2026-11-22 00:00:00 exclusive',
     scannedRecords: scanned,
-    outgoingImageCount: imageCount,
+    outgoingImageCount: imageRows.length,
     downloadedImages: downloaded,
     mediaOrOcrFailures: ocrFailures,
     candidateCount: candidates.length,
