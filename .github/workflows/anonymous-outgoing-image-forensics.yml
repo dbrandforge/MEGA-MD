@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: anonymous-outgoing-image-forensics-v2
+  group: anonymous-outgoing-image-forensics-v3
   cancel-in-progress: false
 
 jobs:
@@ -50,6 +50,7 @@ jobs:
         env:
           MONGO_URL: ${{ secrets.MONGO_URL }}
           GROUP_JID: ${{ inputs.group_jid || '120363412352644891@g.us' }}
+          TARGET_MESSAGE_ID: 3EB0DD90DAF9D82822C984
         run: node scripts/forensics/ocr-anonymous-image-cards.js
 
       - name: Upload forensic reports
@@ -61,5 +62,6 @@ jobs:
             outgoing-image-forensics.json
             outgoing-image-forensics.csv
             anonymous-target-ocr-report.json
+            anonymous-card-*
           if-no-files-found: warn
           retention-days: 7
