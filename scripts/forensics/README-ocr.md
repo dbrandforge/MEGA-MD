@@ -7,3 +7,5 @@ anonymous card under investigation.
 It writes only candidate message IDs, stored timestamps, OCR match scores, and
 OCR text for near-matches. It does not write to MongoDB, send WhatsApp messages,
 or alter the production bot.
+
+The OCR script validates the target group JID and runs as a branch-scoped GitHub Actions task.
