@@ -1,0 +1,50 @@
+name: Anonymous Outgoing Image Forensics
+
+on:
+  workflow_dispatch:
+    inputs:
+      group_jid:
+        description: "WhatsApp group JID to inspect (must end in @g.us)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: anonymous-outgoing-image-forensics
+  cancel-in-progress: false
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --omit=dev
+
+      - name: Read and classify stored messages (read-only)
+        env:
+          MONGO_URL: ${{ secrets.MONGO_URL }}
+          GROUP_JID: ${{ inputs.group_jid }}
+        run: node scripts/forensics/list-outgoing-images.js
+
+      - name: Upload forensic reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: outgoing-image-forensics-2026-11-21
+          path: |
+            outgoing-image-forensics.json
+            outgoing-image-forensics.csv
+          if-no-files-found: warn
+          retention-days: 7
