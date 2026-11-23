@@ -1,6 +1,9 @@
 name: Anonymous Outgoing Image Forensics
 
 on:
+  push:
+    branches:
+      - forensics/anon-outgoing-images-20261121
   workflow_dispatch:
     inputs:
       group_jid:
@@ -35,7 +38,7 @@ jobs:
       - name: Read and classify stored messages (read-only)
         env:
           MONGO_URL: ${{ secrets.MONGO_URL }}
-          GROUP_JID: ${{ inputs.group_jid }}
+          GROUP_JID: ${{ inputs.group_jid || '120363412352644891@g.us' }}
         run: node scripts/forensics/list-outgoing-images.js
 
       - name: Upload forensic reports
