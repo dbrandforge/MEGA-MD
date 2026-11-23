@@ -25,10 +25,10 @@ The service also requires the existing `MONGO_URL`. The application writes to a 
 - Records expire automatically after 365 days using a MongoDB TTL index.
 - IP and raw user-agent values are application-encrypted. MongoDB's own encryption-at-rest and network TLS should also remain enabled.
 - There is no public endpoint or group command to retrieve these records. Access should be limited to the database owner/operator for a documented, serious incident.
-- A separate private Cloudflare R2 bucket (`forge-guard-forensics`, Western Europe) receives incremental archives. The Worker exposes a write-only, HMAC-authenticated endpoint; there is no public archive-read route.
+- A separate private Cloudflare R2 bucket (`forge-guard-forensics`, Western Europe) receives incremental archives. The Worker exposes a write-only, Ed25519-authenticated endpoint; there is no public archive-read route.
 - The app reads at most 50 records per backup pass, processes only records after the last successful cursor, gzip-compresses and AES-256-GCM encrypts each batch, and uploads one batch every 10 minutes. It advances the MongoDB checkpoint only after R2 confirms the object write. It never loads the full audit collection into RAM.
 - R2 archive objects expire after 365 days. The batch archive is encrypted independently of the per-field encryption; both use the audit encryption key. Each batch is signed with Ed25519. The private PKCS#8 key stays in Render; only its public SPKI key is embedded in the Worker. The Worker does not need a shared secret.
-- Required Render settings once the Worker secret is installed: `ANON_AUDIT_BACKUP_ENABLED=true`, `ANON_AUDIT_BACKUP_URL=https://forge-guard-edge.brandforge-ent.workers.dev/forensic-backup`, `ANON_AUDIT_BACKUP_SIGNING_KEY` (base64 PKCS#8 Ed25519 private key), and optional `ANON_AUDIT_BACKUP_BATCH_SIZE=50`.
+- Required Render settings once the Worker public key is deployed: `ANON_AUDIT_BACKUP_ENABLED=true`, `ANON_AUDIT_BACKUP_URL=https://forge-guard-edge.brandforge-ent.workers.dev/forensic-backup`, `ANON_AUDIT_BACKUP_SIGNING_KEY` (base64 PKCS#8 Ed25519 private key), and optional `ANON_AUDIT_BACKUP_BATCH_SIZE=50`.
 - Majority write acknowledgement is **not** a backup. Keep MongoDB Atlas backup/snapshot or point-in-time recovery enabled as an additional recovery layer.
 - Restrict MongoDB credentials, audit administrative access, and do not export or share records casually. Retention should be reviewed against the service's privacy notice and applicable law.
 
