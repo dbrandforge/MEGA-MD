@@ -11,7 +11,7 @@ const execFileAsync = promisify(execFile);
 const mongoUrl = String(process.env.MONGO_URL || '').trim();
 const groupJid = String(process.env.GROUP_JID || '').trim();
 if (!mongoUrl) throw new Error('MONGO_URL secret is missing.');
-if (!/^\\d+@g\\.us$/.test(groupJid)) throw new Error('GROUP_JID must be a WhatsApp group JID ending in @g.us.');
+if (!/^\d+@g\.us$/.test(groupJid)) throw new Error('GROUP_JID must be a WhatsApp group JID ending in @g.us.');
 
 const start = new Date('2026-11-21T21:00:00.000Z');
 const end = new Date('2026-11-21T23:00:00.000Z');
@@ -28,7 +28,7 @@ function asBuffer(value) {
   if (value && value.buffer) return Buffer.from(value.buffer);
   if (value && typeof value === 'object') {
     const keys = Object.keys(value);
-    if (keys.length && keys.every(k => /^\\d+$/.test(k))) return Buffer.from(keys.sort((a,b) => Number(a)-Number(b)).map(k => value[k]));
+    if (keys.length && keys.every(k => /^\d+$/.test(k))) return Buffer.from(keys.sort((a,b) => Number(a)-Number(b)).map(k => value[k]));
   }
   throw new Error('Unsupported binary value.');
 }
@@ -44,7 +44,7 @@ function decodeMessage(value) {
 
 function normalizeWords(value) {
   return String(value || '').toLowerCase().normalize('NFKD')
-    .replace(/[^a-z0-9]+/g, ' ').trim().split(/\\s+/).filter(Boolean);
+    .replace(/[^a-z0-9]+/g, ' ').trim().split(/\s+/).filter(Boolean);
 }
 
 function editDistance(a, b) {
@@ -120,7 +120,7 @@ async function main() {
         }
       } catch (error) {
         ocrFailures++;
-        process.stderr.write('[MEDIA_OCR_WARNING] id=' + String(row.id) + ' reason=' + String(error?.message || error).slice(0, 240) + '\\n');
+        process.stderr.write('[MEDIA_OCR_WARNING] id=' + String(row.id) + ' reason=' + String(error?.message || error).slice(0, 240) + '\n');
       }
     }
   } finally {
@@ -141,7 +141,7 @@ async function main() {
     candidateCount: candidates.length,
     candidates
   };
-  await fs.writeFile('anonymous-target-ocr-report.json', JSON.stringify(report, null, 2) + '\\n');
+  await fs.writeFile('anonymous-target-ocr-report.json', JSON.stringify(report, null, 2) + '\n');
   console.log(JSON.stringify({...report, candidates: candidates.map(({storedAtWAT,messageId,matchScore}) => ({storedAtWAT,messageId,matchScore}))}, null, 2));
 }
 
