@@ -32,7 +32,7 @@ describe('creator natural-language command routing', () => {
         ['schedule the group lock for an hour', 'grouplock', ['quicklock', 'now', '60m']],
         ['start trivia game', 'trivia', []],
         ['start maths game', 'math', []],
-        ['start truth or dare', 'truth', []],
+        ['start truth or dare', 'tod', []],
         ['start hot seat', 'hotseat', []],
         ['start hangman', 'hangman', []],
         ['end truth or dare', 'endtod', []],
