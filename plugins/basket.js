@@ -48,7 +48,7 @@ export async function hasActiveBasketSession(chatId, senderId) {
     return Boolean(sessions[senderId]?.questionMessageId && sessions[senderId]?.currentDare);
 }
 
-function basketResponseProblem(dare, message) {
+export function basketResponseProblem(dare, message) {
     const prompt = String(dare || '').toLowerCase();
     const body = String(message.message?.conversation || message.message?.extendedTextMessage?.text
         || message.message?.imageMessage?.caption || message.message?.videoMessage?.caption || '').trim();
