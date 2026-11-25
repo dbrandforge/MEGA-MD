@@ -448,9 +448,7 @@ async function runGroupLockSchedule(sock, chatId) {
 
         // A pending one-off lock owns this group's lifecycle until activation.
         // Do not let the recurring daily self-heal lock it before its requested time.
-        if (quickLock?.status === 'scheduled' && now.getTime() < Number(quickLock.startAt)) {
-            return true;
-        }
+        const quickLockPending = quickLock?.status === 'scheduled' && now.getTime() < Number(quickLock.startAt);
 
         if (quickLock?.status === 'scheduled' && now.getTime() >= Number(quickLock.startAt)) {
             try {
@@ -516,7 +514,7 @@ async function runGroupLockSchedule(sock, chatId) {
         // Lock at scheduled time (start of a fresh night - clears any
         // leftover manual-override flag from the previous day automatically
         // since we always compare against today's `day`).
-        if (!alreadyFiredThisMinute && time === schedule.lock && !state.locked) {
+        if (!quickLockPending && !alreadyFiredThisMinute && time === schedule.lock && !state.locked) {
             await lockGroup(sock, chatId);
             return;
         }
@@ -536,7 +534,7 @@ async function runGroupLockSchedule(sock, chatId) {
         // attempts at 01:00 all failed with "Connection Closed"). It never
         // fights a deliberate manual ".grouplock unlock" because that sets
         // manualOverride for today, which we check here.
-        if (shouldBeLocked && !state.locked && manualOverride.day !== day) {
+        if (!quickLockPending && shouldBeLocked && !state.locked && manualOverride.day !== day) {
             await lockGroup(sock, chatId);
         }
 
