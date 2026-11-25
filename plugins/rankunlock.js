@@ -5,11 +5,10 @@ export default {
     aliases: ['rankingunlock'],
     category: 'owner',
     description: 'Unlock ranking commands in this group.',
-    groupOnly: true,
     strictOwnerOnly: true,
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
-        await store.saveSetting(chatId, 'rankingLocked', false);
+        await store.saveSetting('global', 'rankingLocked', false);
         return sock.sendMessage(chatId, { text: '🔓 Ranking system unlocked. All ranking commands are available again.' }, { quoted: message });
     }
 };
