@@ -49,7 +49,10 @@ async function chooseFreshOptions(chatId) {
 
 export function personalizeWyrOptions(options, gender) {
   const partnerLabel = gender === 'guy' ? 'female partner' : 'male partner';
-  return options.map(option => String(option).replace(/\bpartner\b/gi, partnerLabel));
+  const playerLabel = gender === 'guy' ? 'boy' : 'girl';
+  return options.map(option => String(option)
+    .replace(/\bpartner\b/gi, partnerLabel)
+    .replace(/\bgood (?:boy|girl)\b/gi, `good ${playerLabel}`));
 }
 
 async function sendQuestion(sock, chatId, senderId, quoted, gender) {
