@@ -254,6 +254,7 @@ process.on('SIGINT', () => {
 // one per event.
 let isConnecting = false;
 let reconnectTimer = null;
+let reconnectAttempts = 0;
 let activeSocket = null;
 let activeSocketCacheCleanup = null;
 let authBlocked = false;
@@ -287,11 +288,15 @@ function scheduleReconnect(delayMs, { reason = '' } = {}) {
         printLog('warning', `Reconnect already scheduled - ignoring duplicate request (${reason}).`);
         return;
     }
-    printLog('connection', `Reconnecting in ${Math.round(delayMs / 1000)} seconds...${reason ? ` (${reason})` : ''}`);
+    const baseDelay = Math.max(5000, Number(delayMs) || 5000);
+    const exponentialDelay = Math.min(5 * 60 * 1000, baseDelay * (2 ** Math.min(reconnectAttempts, 6)));
+    const effectiveDelay = Math.round(exponentialDelay * (0.8 + Math.random() * 0.4));
+    reconnectAttempts = Math.min(reconnectAttempts + 1, 7);
+    printLog('connection', `Reconnecting in ${Math.round(effectiveDelay / 1000)} seconds (attempt ${reconnectAttempts}; exponential backoff with jitter)...${reason ? ` (${reason})` : ''}`);
     reconnectTimer = setTimeout(async () => {
         reconnectTimer = null;
         await safeStartQasimDev();
-    }, delayMs);
+    }, effectiveDelay);
 }
 
 // --- Zombie-connection watchdog ---------------------------------------
@@ -967,6 +972,7 @@ async function startQasimDev() {
                 }
             }
             if (connection === "open") {
+                reconnectAttempts = 0;
                 if (activeSocket !== QasimDev) {
                     printLog('warning', 'Ignoring open event from a non-active WhatsApp socket.');
                     return;
