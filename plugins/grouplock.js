@@ -165,6 +165,7 @@ export function parseQuickLockDuration(token) {
 
 export function parseQuickLockStartAt(clock, now = new Date()) {
     const value = String(clock || '').trim().toLowerCase();
+    if (value === 'now') return now.getTime();
     const match12 = value.match(/^(1[0-2]|0?[1-9])(?::([0-5]\d))?\s*(am|pm)$/);
     const match24 = value.match(/^([01]\d|2[0-3]):([0-5]\d)$/);
     if (!match12 && !match24) return null;
@@ -471,6 +472,8 @@ async function runGroupLockSchedule(sock, chatId) {
             } catch (error) { console.error('[GroupLock] One-off quick-lock expiry failed for ' + chatId + ':', error.message); }
         }
 
+        const oneOffLockActive = quickLock?.status === 'locked' && now.getTime() < Number(quickLock.endAt);
+
         // The daily activity is completely independent of lock state now:
         // as soon as we reach (or pass) today's unlock time, send+pin it
         // once. This runs even if the lock never succeeded, and even if
@@ -480,11 +483,16 @@ async function runGroupLockSchedule(sock, chatId) {
             await sendDailyActivityOnce(sock, chatId, day);
             // Keep the WhatsApp setting in sync with "should be unlocked"
             // unless an admin deliberately re-locked it after this time.
-            if (state.locked && manualOverride.day !== day) {
+            if (!oneOffLockActive && state.locked && manualOverride.day !== day) {
                 if (!await unlockGroupSetting(sock, chatId)) return false;
                 await saveGroupSetting(chatId, LOCK_STATE_KEY, { locked: false, at: Date.now() });
             }
         }
+
+        // A live one-off lock takes precedence over the recurring daily schedule.
+        // Daily activity can still be published, but scheduled lock/unlock logic
+        // must not cancel the timed lock before its persisted expiry.
+        if (oneOffLockActive) return true;
 
         // Prevent double-firing the lock/unlock *messages* in the same minute
         const alreadyFiredThisMinute = lastAction.time === time && lastAction.day === day;
@@ -530,7 +538,7 @@ export async function checkGroupLockSchedule(sock, chatId) {
 
 export default {
     command: 'grouplock',
-    aliases: ['lock', 'unlock', 'glock'],
+    aliases: ['lock', 'unlock', 'glock', 'quicklock'],
     category: 'admin',
     description: 'Manually lock/unlock the group and configure its automatic schedule',
     usage: '.grouplock [lock|unlock|status|schedule|set|reset|quicklock]',
@@ -546,8 +554,11 @@ export default {
             }, { quoted: message });
         }
 
-        if (action === 'quicklock') {
-            const subaction = String(args[1] || '').toLowerCase();
+        const quickLockArgs = action === 'quicklock'
+            ? args.slice(1)
+            : (['status', 'cancel'].includes(action) || parseQuickLockStartAt(action) ? args : null);
+        if (quickLockArgs) {
+            const subaction = String(quickLockArgs[0] || '').toLowerCase();
             const existing = await store.getSetting(chatId, QUICK_LOCK_KEY);
             if (subaction === 'status') {
                 if (!existing || ['completed', 'cancelled'].includes(existing.status)) return sock.sendMessage(chatId, { text: 'No active one-off quick lock is scheduled.' }, { quoted: message });
@@ -561,8 +572,8 @@ export default {
                 await saveGroupSetting(chatId, QUICK_LOCK_KEY, { ...existing, status: 'cancelled', cancelledAt: Date.now() });
                 return sock.sendMessage(chatId, { text: '✅ One-off quick lock cancelled.' }, { quoted: message });
             }
-            const startAt = parseQuickLockStartAt(args[1]);
-            const durationMs = parseQuickLockDuration(args[2]);
+            const startAt = parseQuickLockStartAt(quickLockArgs[0]);
+            const durationMs = parseQuickLockDuration(quickLockArgs[1]);
             if (!startAt || !durationMs) return sock.sendMessage(chatId, { text: 'Use `.grouplock quicklock 5pm 2h` or `.grouplock quicklock 17:00 90m`.\nAlso: `.grouplock quicklock status` and `.grouplock quicklock cancel`. Times use Africa/Lagos.' }, { quoted: message });
             if (existing && ['scheduled', 'locked'].includes(existing.status)) return sock.sendMessage(chatId, { text: 'A one-off quick lock is already pending or active. Check `.grouplock quicklock status` first.' }, { quoted: message });
             const record = { status: 'scheduled', startAt, endAt: startAt + durationMs, durationMs, createdAt: Date.now(), createdBy: context.senderId || '' };
