@@ -458,6 +458,7 @@ async function runGroupLockSchedule(sock, chatId) {
                 quickLock = { ...quickLock, status: 'locked', lockedAt, endAt: lockedAt + Number(quickLock.durationMs) };
                 await saveGroupSetting(chatId, QUICK_LOCK_KEY, quickLock);
                 await saveGroupSetting(chatId, LOCK_STATE_KEY, { locked: true, at: lockedAt, source: 'quicklock' });
+                state.locked = true;
                 await saveGroupSetting(chatId, LAST_ACTION_KEY, { action: 'lock', time: getCurrentTimeString(), day: getCurrentDay(), source: 'quicklock' });
                 await sock.sendMessage(chatId, { text: '🔒 *One-off scheduled group lock is now active.*' });
             } catch (error) { console.error('[GroupLock] One-off quick lock failed for ' + chatId + ':', error.message); }
@@ -486,7 +487,7 @@ async function runGroupLockSchedule(sock, chatId) {
             } catch (error) { console.error('[GroupLock] One-off quick-lock expiry failed for ' + chatId + ':', error.message); }
         }
 
-        const oneOffLockActive = quickLock?.status === 'locked' && now.getTime() < Number(quickLock.endAt);
+        const oneOffLockActive = quickLock?.status === 'locked' && Date.now() < Number(quickLock.endAt);
 
         // The daily activity is completely independent of lock state now:
         // as soon as we reach (or pass) today's unlock time, send+pin it
