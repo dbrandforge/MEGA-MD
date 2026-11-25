@@ -91,7 +91,7 @@ function armSoftMuteExpiry(chatId, userId, until, sock = global.__forgeSock) {
     clearSoftMuteExpiry(chatId, userId);
     const timer = setTimeout(() => {
         softMuteExpiryTimers.delete(key);
-        expireSoftMute(chatId, userId, sock || global.__forgeSock).catch(error =>
+        expireSoftMute(chatId, userId, global.__forgeSock || sock).catch(error =>
             console.error(`[SOFTMUTE] Expiry failed for ${chatId}/${cleanId(userId)}:`, error.message)
         );
     }, Math.max(0, Number(until) - Date.now()));
