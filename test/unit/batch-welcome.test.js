@@ -32,7 +32,7 @@ describe('batch member welcome and intro reminders', () => {
 
   afterEach(() => vi.useRealTimers());
 
-  it('sends one shared welcome pack and one reminder tagging all still-pending members', async () => {
+  it('sends exactly two shared welcome messages and one reminder tagging all pending members', async () => {
     const sock = { sendMessage: vi.fn(async () => ({ key: { id: 'sent' } })) };
     const task = handleNewMember(sock, chatId, members);
     await vi.advanceTimersByTimeAsync(2000);
@@ -47,7 +47,7 @@ describe('batch member welcome and intro reminders', () => {
     expect(taggedWelcome[1].mentions).toEqual(members);
     expect(taggedWelcome[0].text).toContain('Kindly introduce yourself properly');
     expect(taggedWelcome[1].text).toContain(groupRules);
-    expect(taggedWelcome[1].text).toContain(\"TODAY'S ACTIVITY\");
+    expect(taggedWelcome[1].text).toContain("TODAY'S ACTIVITY");
 
     await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
     const allMessages = sock.sendMessage.mock.calls.map(([, payload]) => payload);
@@ -59,8 +59,6 @@ describe('batch member welcome and intro reminders', () => {
     expect(Object.keys(pending)).toHaveLength(3);
     expect(Object.values(pending).every(record => record.reminded === true)).toBe(true);
   });
-});
-
 
   it('manual welcome sends exactly two messages and tags the requested member in both', async () => {
     const sock = { sendMessage: vi.fn(async () => ({ key: { id: 'sent' } })) };
@@ -73,3 +71,4 @@ describe('batch member welcome and intro reminders', () => {
       expect(payload.mentions).toEqual([members[0]]);
     }
   });
+});
