@@ -12,6 +12,7 @@ describe('per-group two-message welcome pack settings', () => {
     expect(config.messages).toHaveLength(2);
     expect(config.messages).toEqual(DEFAULT_WELCOME_PACK_MESSAGES);
     expect(config.messages[1]).toContain('{daily_activity}');
+    expect(config.messages[0]).toContain('@user');
     expect(config.messages[1]).toContain('@user');
   });
 
@@ -21,6 +22,12 @@ describe('per-group two-message welcome pack settings', () => {
     expect(config.enabled).toBe(false);
     expect(config.messages[1]).toContain('Custom two');
     expect(config.messages[1]).toContain('{daily_activity}');
+    expect(config.messages[1]).toContain('@user');
+  });
+
+  it('adds a visible mention placeholder to customised messages when missing', () => {
+    const config = normalizeWelcomePackConfig({ messages: ['Custom intro', 'Custom rules'] });
+    expect(config.messages[0]).toContain('@user');
     expect(config.messages[1]).toContain('@user');
   });
 
