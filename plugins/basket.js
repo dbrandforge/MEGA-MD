@@ -42,11 +42,43 @@ function botMentioned(sock, message) {
     });
 }
 
+export async function hasActiveBasketSession(chatId, senderId) {
+    if (!chatId?.endsWith('@g.us') || !senderId) return false;
+    const sessions = (await store.getSetting(chatId, SESSION_KEY)) || {};
+    return Boolean(sessions[senderId]?.questionMessageId && sessions[senderId]?.currentDare);
+}
+
+function basketResponseProblem(dare, message) {
+    const prompt = String(dare || '').toLowerCase();
+    const body = String(message.message?.conversation || message.message?.extendedTextMessage?.text
+        || message.message?.imageMessage?.caption || message.message?.videoMessage?.caption || '').trim();
+    const hasAudio = Boolean(message.message?.audioMessage);
+    const hasImage = Boolean(message.message?.imageMessage);
+    const hasVideo = Boolean(message.message?.videoMessage);
+    if (/voice note|\\bvn\\b|audio message|record (?:a )?(?:short )?audio/i.test(prompt) && !hasAudio) {
+        return 'This dare requires a voice note. Send an audio/voice-note reply to the dare to complete it.';
+    }
+    if (/\\b(photo|picture|pic|selfie|mirror pic)\\b/i.test(prompt) && !hasImage) {
+        return 'This dare requires a photo. Attach an image when replying to complete it.';
+    }
+    if (/\\b(video|record yourself)\\b/i.test(prompt) && !hasVideo) {
+        return 'This dare requires a video. Attach a video when replying to complete it.';
+    }
+    if (!hasAudio && !hasImage && !hasVideo) {
+        const words = body.split(/\\s+/).filter(Boolean);
+        if (body.length < 12 || words.length < 3) {
+            return 'That reply is too short to count as completing the dare. Follow the actual instruction and send a meaningful response, or attach the requested media.';
+        }
+    }
+    return null;
+}
+
 export async function handleBasketContinuity(sock, chatId, message, senderId) {
     if (!chatId?.endsWith('@g.us') || message?.key?.fromMe) return false;
     const ctx = message.message?.extendedTextMessage?.contextInfo
         || message.message?.imageMessage?.contextInfo
-        || message.message?.videoMessage?.contextInfo || {};
+        || message.message?.videoMessage?.contextInfo
+        || message.message?.audioMessage?.contextInfo || {};
     const tagged = botMentioned(sock, message);
     if (!ctx.stanzaId && !tagged) return false;
 
@@ -55,6 +87,13 @@ export async function handleBasketContinuity(sock, chatId, message, senderId) {
     if (!session) return false;
     const replied = !!(ctx.stanzaId && session.questionMessageId && ctx.stanzaId === session.questionMessageId);
     if (!replied && !tagged) return false;
+    if (replied) {
+        const problem = basketResponseProblem(session.currentDare, message);
+        if (problem) {
+            await sock.sendMessage(chatId, { text: problem }, { quoted: message });
+            return true;
+        }
+    }
 
     const allowed = await isGameAllowed(chatId, 'basket');
     if (!allowed.ok) {
@@ -88,7 +127,7 @@ export async function handleBasketContinuity(sock, chatId, message, senderId) {
         text: `*Devil’s Basket — ${gender === 'lady' ? 'Ladies' : 'Guys'} #${selected.number}* 🎰\n\n@${senderId.split('@')[0]}\n\n${selected.dare}\n\nComplete this. Failure = 10h mute.\n\n_Reply to this dare or tag the bot for another._`,
         mentions: [senderId]
     }, { quoted: message });
-    sessions[senderId] = { questionMessageId: sent?.key?.id || null, updatedAt: Date.now(), attempts: session.attempts || 0, lastAttemptAt: session.lastAttemptAt || Date.now() };
+    sessions[senderId] = { questionMessageId: sent?.key?.id || null, currentDare: selected.dare, updatedAt: Date.now(), attempts: session.attempts || 0, lastAttemptAt: session.lastAttemptAt || Date.now() };
     if (!await store.saveSettingVerified(chatId, SESSION_KEY, sessions)) throw new Error('Basket session state could not be persisted.');
     return true;
 }
@@ -171,7 +210,7 @@ export default {
                 mentions: [senderId], ...channelInfo
             }, { quoted: message });
             const sessions = (await store.getSetting(chatId, SESSION_KEY)) || {};
-            sessions[senderId] = { questionMessageId: sent?.key?.id || null, updatedAt: Date.now(), attempts: (sessions[senderId]?.attempts || 0), lastAttemptAt: sessions[senderId]?.lastAttemptAt || null };
+            sessions[senderId] = { questionMessageId: sent?.key?.id || null, currentDare: selected.dare, updatedAt: Date.now(), attempts: (sessions[senderId]?.attempts || 0), lastAttemptAt: sessions[senderId]?.lastAttemptAt || null };
             if (!await store.saveSettingVerified(chatId, SESSION_KEY, sessions)) throw new Error('Basket session state could not be persisted.');
             return;
         } catch (error) {
