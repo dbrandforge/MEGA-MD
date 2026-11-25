@@ -526,9 +526,8 @@ export default {
         if (!await hasMaturedMindedFeatures(chatId)) {
             return sock.sendMessage(chatId, { text: 'This group has not been registered for the Forge Guard feature profile.' }, { quoted: message });
         }
-        await sendWelcomePack(sock, chatId, [senderId]);
-        await sock.sendMessage(chatId, {
-            text: '✅ Two-message welcome test sent (intro + rules and activity).'
-        }, { quoted: message });
+        const result = await sendWelcomePack(sock, chatId, [senderId]);
+        if (!result.sent) return sock.sendMessage(chatId, { text: result.reason === 'disabled' ? 'The welcome pack is currently disabled for this group.' : 'The welcome pack could not be sent for this group.' }, { quoted: message });
+        return;
     }
 };
