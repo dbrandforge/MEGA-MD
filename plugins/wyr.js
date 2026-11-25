@@ -48,7 +48,7 @@ async function chooseFreshOptions(chatId) {
 }
 
 export function personalizeWyrOptions(options, gender) {
-  const partnerLabel = gender === 'guy' ? 'woman' : 'man';
+  const partnerLabel = gender === 'guy' ? 'female partner' : 'male partner';
   return options.map(option => String(option).replace(/\bpartner\b/gi, partnerLabel));
 }
 
