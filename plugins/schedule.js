@@ -185,7 +185,7 @@ export function startSchedulerEngine(sock) {
     if (_engineStarted) return;
     _engineStarted = true;
 
-    console.log('[SCHEDULE] Engine started (60-second interval; non-overlapping ticks)');
+    console.log('[SCHEDULE] Engine started (30-second interval; non-overlapping ticks)');
 
     _engineTimer = setInterval(async () => {
         if (_engineTickInProgress) {
@@ -267,7 +267,7 @@ export function startSchedulerEngine(sock) {
         } finally {
             _engineTickInProgress = false;
         }
-    }, 60000);
+    }, 30000);
 }
 
 export { loadSchedules, saveSchedules, generateId, parseTime, formatTimeLeft };
