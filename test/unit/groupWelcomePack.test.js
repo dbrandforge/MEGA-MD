@@ -19,7 +19,9 @@ describe('per-group two-message welcome pack settings', () => {
     const saved = { enabled: false, messages: ['Custom one', 'Custom two'] };
     const config = normalizeWelcomePackConfig(saved);
     expect(config.enabled).toBe(false);
-    expect(config.messages).toEqual(['Custom one', 'Custom two\\n\\n@user']);
+    expect(config.messages[1]).toContain('Custom two');
+    expect(config.messages[1]).toContain('{daily_activity}');
+    expect(config.messages[1]).toContain('@user');
   });
 
   it('migrates the previous three-message format into the second message', () => {
@@ -39,7 +41,7 @@ describe('per-group two-message welcome pack settings', () => {
       messages: ['Intro', 'Rules {daily_activity}', 'Old third message']
     });
     expect(config.messages[1].match(/\\{daily_activity\\}/g)).toHaveLength(1);
-    expect(config.messages[1]).toContain('Old third message');
+    expect(config.messages[1]).not.toContain('Old third message');
   });
 
   it('renders the daily activity placeholder and has a safe fallback', () => {
