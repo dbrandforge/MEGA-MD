@@ -65,7 +65,6 @@ export function basketResponseProblem(dare, message) {
         return 'This dare requires a video. Attach a video when replying to complete it.';
     }
     if (!hasAudio && !hasImage && !hasVideo) {
-        const words = body.split(/\s+/).filter(Boolean);
         if (body.length < 3 && !/^(?:yes|no)$/i.test(body)) {
             return 'That reply is too short to count as completing the dare. Follow the actual instruction and send a meaningful response, or attach the requested media.';
         }
