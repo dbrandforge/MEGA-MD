@@ -19,14 +19,12 @@ const maskWord = (word, guessed) => [...word].map(char => guessed.includes(char)
 const pick = values => values[Math.floor(Math.random() * values.length)];
 export function getInitialHangmanLetters(word, random = Math.random) {
   const unique = [...new Set(String(word || '').toLowerCase().replace(/[^a-z]/g, ''))];
-  const count = String(word || '').length >= 7 ? 2 : 1;
-  const selected = [];
-  while (selected.length < Math.min(count, unique.length)) {
-    const index = Math.min(unique.length - 1, Math.floor(random() * unique.length));
-    const letter = unique[index];
-    if (!selected.includes(letter)) selected.push(letter);
+  const count = Math.min(String(word || '').length >= 7 ? 2 : 1, unique.length);
+  for (let i = 0; i < count; i++) {
+    const index = i + Math.min(unique.length - i - 1, Math.floor(random() * (unique.length - i)));
+    [unique[i], unique[index]] = [unique[index], unique[i]];
   }
-  return selected;
+  return unique.slice(0, count);
 }
 const getRecords = async chatId => (await store.getSetting(chatId, RECORD_KEY)) || {};
 const saveRecords = async (chatId, records) => {
