@@ -11,14 +11,20 @@ const message = (overrides = {}) => ({
 const secondsAgo = seconds => Math.floor((now - seconds * 1000) / 1000);
 
 describe('WhatsApp upsert processing policy', () => {
-  it.each(['notify', 'append'])('accepts %s messages within the 180-second window', type => {
-    expect(shouldProcessMessageUpsert(type, message({ messageTimestamp: secondsAgo(179) }), { now })).toBe(true);
+  it('accepts live notify messages within the 180-second window', () => {
+    expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(179) }), { now })).toBe(true);
   });
 
-  it.each(['notify', 'append'])('rejects %s messages older than 180 seconds', type => {
+  it('rejects notify messages older than 180 seconds', () => {
     const stale = message({ messageTimestamp: secondsAgo(181) });
-    expect(shouldProcessMessageUpsert(type, stale, { now })).toBe(false);
+    expect(shouldProcessMessageUpsert('notify', stale, { now })).toBe(false);
     expect(isMessageTooOld(stale, now)).toBe(true);
+  });
+
+  it('rejects every append event, including recent history-sync deliveries', () => {
+    expect(shouldProcessMessageUpsert('append', message({ messageTimestamp: secondsAgo(1) }), { now })).toBe(false);
+    expect(shouldProcessMessageUpsert('append', message({ messageTimestamp: secondsAgo(179) }), { now })).toBe(false);
+    expect(shouldProcessMessageUpsert('append', message({ messageTimestamp: secondsAgo(181) }), { now })).toBe(false);
   });
 
   it('accepts messages up to 60 seconds in the future but rejects larger clock skew', () => {
@@ -33,12 +39,6 @@ describe('WhatsApp upsert processing policy', () => {
   it('rejects invalid timestamps and unsupported event types', () => {
     expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: 'not-a-date' }), { now })).toBe(false);
     expect(shouldProcessMessageUpsert('replace', message(), { now })).toBe(false);
-  });
-
-  it('rejects append messages sent by the bot', () => {
-    expect(shouldProcessMessageUpsert('append', message({
-      key: { remoteJid: '120363000000000000@g.us', id: 'MSG-1', fromMe: true }
-    }), { now })).toBe(false);
   });
 
   it('skips sender-key distribution and non-revocation protocol traffic', () => {
@@ -57,8 +57,8 @@ describe('WhatsApp upsert processing policy', () => {
   });
 
   it('rejects placeholders without decrypted content or stable message keys', () => {
-    expect(shouldProcessMessageUpsert('append', message({ message: undefined }), { now })).toBe(false);
-    expect(shouldProcessMessageUpsert('append', message({
+    expect(shouldProcessMessageUpsert('notify', message({ message: undefined }), { now })).toBe(false);
+    expect(shouldProcessMessageUpsert('notify', message({
       key: { remoteJid: 'x@g.us' }
     }), { now })).toBe(false);
   });
@@ -91,16 +91,12 @@ describe('connection-time message cutoff', () => {
     expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(9) }), { now })).toBe(true);
   });
 
-  it('applies the same connection cutoff to append deliveries', () => {
+  it('rejects append deliveries even when they pass the connection cutoff', () => {
     const cutoff = now - 10_000;
-    expect(shouldProcessMessageUpsert('append', message({ messageTimestamp: secondsAgo(11) }), {
-      now,
-      startedAtMs: cutoff
-    })).toBe(false);
     expect(shouldProcessMessageUpsert('append', message({ messageTimestamp: secondsAgo(9) }), {
       now,
       startedAtMs: cutoff
-    })).toBe(true);
+    })).toBe(false);
   });
 
   it('rounds the cutoff up to WhatsApp timestamp precision', () => {
