@@ -111,6 +111,19 @@ async function deliverSoftMuteExpiryNotice(sock, chatId, userId, notice) {
     return true;
 }
 
+async function queueSoftMuteExpiryNotice(sock, chatId, userId, entry) {
+    const notice = { userId: entry.original || userId, expiredAt: Date.now(), status: 'pending' };
+    const noticeKey = EXPIRY_NOTICE_PREFIX + cleanId(userId);
+    if (!await store.saveSettingVerified(chatId, noticeKey, notice)) {
+        throw new Error('Soft-mute expiry announcement could not be queued.');
+    }
+    try {
+        await deliverSoftMuteExpiryNotice(sock, chatId, userId, notice);
+    } catch (error) {
+        console.error(`[SOFTMUTE] Expiry announcement remains queued for ${cleanId(userId)} in ${chatId}:`, error.message);
+    }
+}
+
 async function expireSoftMute(chatId, userId, sock = global.__forgeSock) {
     return withMuteLock(chatId, userId, async () => {
         const entry = await getRecord(chatId, userId);
@@ -122,16 +135,7 @@ async function expireSoftMute(chatId, userId, sock = global.__forgeSock) {
         }
         await saveRecord(chatId, userId, null);
         await adjustActiveCount(chatId, -1);
-        const notice = { userId: entry.original || userId, expiredAt: Date.now(), status: 'pending' };
-        const noticeKey = EXPIRY_NOTICE_PREFIX + cleanId(userId);
-        if (!await store.saveSettingVerified(chatId, noticeKey, notice)) {
-            throw new Error('Soft-mute expiry announcement could not be queued.');
-        }
-        try {
-            await deliverSoftMuteExpiryNotice(sock, chatId, userId, notice);
-        } catch (error) {
-            console.error(`[SOFTMUTE] Expiry announcement remains queued for ${cleanId(userId)} in ${chatId}:`, error.message);
-        }
+        await queueSoftMuteExpiryNotice(sock, chatId, userId, entry);
         console.log(`[SOFTMUTE] Expired individual mute for ${cleanId(userId)} in ${chatId}`);
         return true;
     });
@@ -324,6 +328,7 @@ export async function isSoftMuted(chatId, userId, sock = null, extraIds = []) {
             await saveRecord(chatId, id, null);
             clearSoftMuteExpiry(chatId, id);
             await adjustActiveCount(chatId, -1);
+            await queueSoftMuteExpiryNotice(sock, chatId, id, entry);
             return false;
         });
         if (active) return true;
