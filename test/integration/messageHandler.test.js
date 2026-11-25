@@ -37,7 +37,7 @@ vi.mock('../../plugins/demote.js', () => ({ default: { handleDemotionEvent: vi.f
 vi.mock('../../plugins/autostatus.js', () => ({ default: { handleStatusUpdate: vi.fn(async () => {}) } }));
 vi.mock('../../plugins/anticall.js', () => ({ default: { readState: vi.fn(async () => ({ enabled: true })) } }));
 
-import store from '../../lib/lightweight_store.js';
+import { setMessageProcessingCutoff } from '../../lib/messageEventPolicy.js';
 
 describe('handleMessages', () => {
     let handleMessages;
@@ -48,7 +48,7 @@ describe('handleMessages', () => {
         handleMessages = mod.handleMessages;
     });
 
-    beforeEach(() => { sock = createMockSock(); vi.clearAllMocks(); vi.stubEnv('CHATBOT_ENABLED', 'true'); });
+    beforeEach(() => { sock = createMockSock(); vi.clearAllMocks(); vi.stubEnv('CHATBOT_ENABLED', 'true'); setMessageProcessingCutoff(Date.now() - 2000); });
 
     it('ignores non-notify events', async () => {
         await handleMessages(sock, { messages: [], type: 'append' });
@@ -76,8 +76,6 @@ describe('handleMessages', () => {
         const { handleChatbotResponse } = await import('../../plugins/chatbot.js');
         const msg = createMockMessage({ text: 'Hello Forge Bot', isGroup: false });
         await handleMessages(sock, { messages: [msg], type: 'notify' });
-        const { printLog } = await import('../../lib/print.js');
-        console.log('DM_ROUTING_DIAGNOSTIC', { chatbotEnabled: process.env.CHATBOT_ENABLED, botModeCalls: store.getBotMode.mock.calls.length, printLogCalls: printLog.mock.calls });
         expect(handleChatbotResponse).toHaveBeenCalledWith(
             sock, msg.key.remoteJid, msg, 'hello forge bot', msg.key.remoteJid
         );
