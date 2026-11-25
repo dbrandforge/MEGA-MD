@@ -58,14 +58,14 @@ function basketResponseProblem(dare, message) {
     if (/voice note|\\bvn\\b|audio message|record (?:a )?(?:short )?audio/i.test(prompt) && !hasAudio) {
         return 'This dare requires a voice note. Send an audio/voice-note reply to the dare to complete it.';
     }
-    if (/\\b(photo|picture|pic|selfie|mirror pic)\\b/i.test(prompt) && !hasImage) {
+    if (/\b(photo|picture|pic|selfie|mirror pic)\b/i.test(prompt) && !hasImage) {
         return 'This dare requires a photo. Attach an image when replying to complete it.';
     }
-    if (/\\b(video|record yourself)\\b/i.test(prompt) && !hasVideo) {
+    if (/\b(video|record yourself)\b/i.test(prompt) && !hasVideo) {
         return 'This dare requires a video. Attach a video when replying to complete it.';
     }
     if (!hasAudio && !hasImage && !hasVideo) {
-        const words = body.split(/\\s+/).filter(Boolean);
+        const words = body.split(/\s+/).filter(Boolean);
         if (body.length < 12 || words.length < 3) {
             return 'That reply is too short to count as completing the dare. Follow the actual instruction and send a meaningful response, or attach the requested media.';
         }
