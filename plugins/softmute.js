@@ -86,12 +86,12 @@ function clearSoftMuteExpiry(chatId, userId) {
     softMuteExpiryTimers.delete(key);
 }
 
-function armSoftMuteExpiry(chatId, userId, until) {
+function armSoftMuteExpiry(chatId, userId, until, sock = global.__forgeSock) {
     const key = `${chatId}:${cleanId(userId)}`;
     clearSoftMuteExpiry(chatId, userId);
     const timer = setTimeout(() => {
         softMuteExpiryTimers.delete(key);
-        expireSoftMute(chatId, userId, global.__forgeSock).catch(error =>
+        expireSoftMute(chatId, userId, sock || global.__forgeSock).catch(error =>
             console.error(`[SOFTMUTE] Expiry failed for ${chatId}/${cleanId(userId)}:`, error.message)
         );
     }, Math.max(0, Number(until) - Date.now()));
@@ -349,7 +349,7 @@ export async function softMuteUser(sock, chatId, userId, durationMs = null) {
         } else {
             await setActiveCount(chatId, await getActiveCount(chatId), entry.until);
         }
-        armSoftMuteExpiry(chatId, canonicalKey, entry.until);
+        armSoftMuteExpiry(chatId, canonicalKey, entry.until, sock);
     });
     await trackGroup(chatId);
     return duration;
@@ -396,7 +396,7 @@ export async function restoreSoftMuteTimers(sock, chatIds = []) {
             const userId = key.slice(RECORD_PREFIX.length);
             if (!userId) continue;
             if (Number(entry.until) > Date.now()) {
-                armSoftMuteExpiry(chatId, userId, Number(entry.until));
+                armSoftMuteExpiry(chatId, userId, Number(entry.until), sock);
                 restored++;
             } else {
                 await expireSoftMute(chatId, userId, sock);
