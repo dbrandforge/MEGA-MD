@@ -445,11 +445,21 @@ async function runGroupLockSchedule(sock, chatId) {
 
         // Durable one-off lock: evaluated by this existing scheduler and restored from MongoDB.
         let quickLock = await store.getSetting(chatId, QUICK_LOCK_KEY);
-        if (quickLock?.status === 'scheduled' && now.getTime() >= Number(quickLock.startAt)) {
+
+        // A pending one-off lock owns this group's lifecycle until activation.
+        // Do not let the recurring daily self-heal lock it before its requested time.
+        const quickLockPending = quickLock?.status === 'scheduled' && Date.now() < Number(quickLock.startAt);
+
+        if (quickLock?.status === 'scheduled' && Date.now() >= Number(quickLock.startAt)) {
             try {
+                // Start the duration only after WhatsApp confirms the group was locked.
                 await sock.groupSettingUpdate(chatId, 'announcement');
-                quickLock = { ...quickLock, status: 'locked', lockedAt: Date.now() };
+                const lockedAt = Date.now();
+                quickLock = { ...quickLock, status: 'locked', lockedAt, endAt: lockedAt + Number(quickLock.durationMs) };
                 await saveGroupSetting(chatId, QUICK_LOCK_KEY, quickLock);
+                await saveGroupSetting(chatId, LOCK_STATE_KEY, { locked: true, at: lockedAt, source: 'quicklock' });
+                state.locked = true;
+                await saveGroupSetting(chatId, LAST_ACTION_KEY, { action: 'lock', time: getCurrentTimeString(), day: getCurrentDay(), source: 'quicklock' });
                 await sock.sendMessage(chatId, { text: '🔒 *One-off scheduled group lock is now active.*' });
             } catch (error) { console.error('[GroupLock] One-off quick lock failed for ' + chatId + ':', error.message); }
         }
@@ -463,16 +473,21 @@ async function runGroupLockSchedule(sock, chatId) {
             shouldBeLocked = nowMinutes >= lockMinutes || nowMinutes < unlockMinutes;
         }
 
-        if (quickLock?.status === 'locked' && now.getTime() >= Number(quickLock.endAt)) {
+        if (quickLock?.status === 'locked' && Date.now() >= Number(quickLock.endAt)) {
             const preserveDailyLock = (shouldBeLocked && manualOverride.day !== day) || (manualOverride.day === day && manualOverride.action === 'lock');
             try {
                 if (!preserveDailyLock && !await unlockGroupSetting(sock, chatId)) throw new Error('WhatsApp rejected quick-lock expiry unlock.');
                 await saveGroupSetting(chatId, QUICK_LOCK_KEY, { ...quickLock, status: 'completed', completedAt: Date.now(), completedWithDailyLockPreserved: preserveDailyLock });
+                if (!preserveDailyLock) {
+                    await saveGroupSetting(chatId, LOCK_STATE_KEY, { locked: false, at: Date.now(), source: 'quicklock-expiry' });
+                    await saveGroupSetting(chatId, LAST_ACTION_KEY, { action: 'unlock', time: getCurrentTimeString(), day: getCurrentDay(), source: 'quicklock-expiry' });
+                }
+                state.locked = preserveDailyLock;
                 await sock.sendMessage(chatId, { text: preserveDailyLock ? '🔒 *The one-off lock period has ended. The regular group lock remains active.*' : '🔓 *The one-off scheduled group lock has ended. The group is open again.*' });
             } catch (error) { console.error('[GroupLock] One-off quick-lock expiry failed for ' + chatId + ':', error.message); }
         }
 
-        const oneOffLockActive = quickLock?.status === 'locked' && now.getTime() < Number(quickLock.endAt);
+        const oneOffLockActive = quickLock?.status === 'locked' && Date.now() < Number(quickLock.endAt);
 
         // The daily activity is completely independent of lock state now:
         // as soon as we reach (or pass) today's unlock time, send+pin it
@@ -500,7 +515,7 @@ async function runGroupLockSchedule(sock, chatId) {
         // Lock at scheduled time (start of a fresh night - clears any
         // leftover manual-override flag from the previous day automatically
         // since we always compare against today's `day`).
-        if (!alreadyFiredThisMinute && time === schedule.lock && !state.locked) {
+        if (!quickLockPending && !alreadyFiredThisMinute && time === schedule.lock && !state.locked) {
             await lockGroup(sock, chatId);
             return;
         }
@@ -520,7 +535,7 @@ async function runGroupLockSchedule(sock, chatId) {
         // attempts at 01:00 all failed with "Connection Closed"). It never
         // fights a deliberate manual ".grouplock unlock" because that sets
         // manualOverride for today, which we check here.
-        if (shouldBeLocked && !state.locked && manualOverride.day !== day) {
+        if (!quickLockPending && shouldBeLocked && !state.locked && manualOverride.day !== day) {
             await lockGroup(sock, chatId);
         }
 
@@ -608,16 +623,18 @@ export default {
             const schedules = await getGroupLockSchedule(chatId);
             return sock.sendMessage(chatId, { text: `✅ Default schedule restored.\\nMonday–Saturday: ${schedules.default.lock}–${schedules.default.unlock}\\nSunday: ${schedules.sunday.lock}–${schedules.sunday.unlock}`, ...channelInfo }, { quoted: message });
         }
-        if (action === 'lock') {
-            const day = getCurrentDay();
-            // A deliberate manual lock clears today's "admin unlocked" flag
-            // so the group can be auto-managed normally again afterward.
-            await saveGroupSetting(chatId, MANUAL_OVERRIDE_KEY, { day, action: 'lock' });
-            await lockGroup(sock, chatId);
-            return;
-        }
-        if (action === 'unlock') {
-            await unlockGroup(sock, chatId, { manual: true });
+        if (action === 'lock' || action === 'unlock') {
+            const completed = await runScheduledGroupCheck(chatId, async () => {
+                if (action === 'lock') {
+                    const day = getCurrentDay();
+                    await saveGroupSetting(chatId, MANUAL_OVERRIDE_KEY, { day, action: 'lock' });
+                    return lockGroup(sock, chatId);
+                }
+                return unlockGroup(sock, chatId, { manual: true });
+            });
+            if (completed === false) {
+                return sock.sendMessage(chatId, { text: '⏳ A group lock operation is already running. Please retry in a moment.' }, { quoted: message });
+            }
             return;
         }
 

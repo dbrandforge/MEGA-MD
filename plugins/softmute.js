@@ -12,6 +12,7 @@ const ACTIVE_COUNT_KEY = 'softMuteActiveCount';
 const ACTIVE_UNTIL_KEY = 'softMuteActiveUntil';
 const MUTE_DURATION_KEY = 'softMuteDurationHours';
 const RECORD_PREFIX = 'softMute:';
+const EXPIRY_NOTICE_PREFIX = 'softMuteExpiryNotice:';
 const DEFAULT_MUTE_HOURS = Number(config.muteDurationHours) > 0 ? Number(config.muteDurationHours) : 10;
 
 export async function getSoftMuteDurationHours(chatId) {
@@ -85,12 +86,12 @@ function clearSoftMuteExpiry(chatId, userId) {
     softMuteExpiryTimers.delete(key);
 }
 
-function armSoftMuteExpiry(chatId, userId, until) {
+function armSoftMuteExpiry(chatId, userId, until, sock = global.__forgeSock) {
     const key = `${chatId}:${cleanId(userId)}`;
     clearSoftMuteExpiry(chatId, userId);
     const timer = setTimeout(() => {
         softMuteExpiryTimers.delete(key);
-        expireSoftMute(chatId, userId).catch(error =>
+        expireSoftMute(chatId, userId, global.__forgeSock || sock).catch(error =>
             console.error(`[SOFTMUTE] Expiry failed for ${chatId}/${cleanId(userId)}:`, error.message)
         );
     }, Math.max(0, Number(until) - Date.now()));
@@ -98,7 +99,32 @@ function armSoftMuteExpiry(chatId, userId, until) {
     softMuteExpiryTimers.set(key, timer);
 }
 
-async function expireSoftMute(chatId, userId) {
+async function deliverSoftMuteExpiryNotice(sock, chatId, userId, notice) {
+    if (!sock || !notice || notice.status === 'sent') return false;
+    const jid = notice.userId || userId;
+    await sock.sendMessage(chatId, {
+        text: `🔊 ${mention(jid)}'s soft mute has expired. They can participate in the group again.`,
+        mentions: [jid]
+    });
+    if (!await store.saveSettingVerified(chatId, EXPIRY_NOTICE_PREFIX + cleanId(userId), null)) throw new Error('Soft-mute expiry announcement was sent but its delivery record could not be cleared.');
+    console.log(`[SOFTMUTE] Expiry announced for ${cleanId(jid)} in ${chatId}`);
+    return true;
+}
+
+async function queueSoftMuteExpiryNotice(sock, chatId, userId, entry) {
+    const notice = { userId: entry.original || userId, expiredAt: Date.now(), status: 'pending' };
+    const noticeKey = EXPIRY_NOTICE_PREFIX + cleanId(userId);
+    if (!await store.saveSettingVerified(chatId, noticeKey, notice)) {
+        throw new Error('Soft-mute expiry announcement could not be queued.');
+    }
+    try {
+        await deliverSoftMuteExpiryNotice(sock, chatId, userId, notice);
+    } catch (error) {
+        console.error(`[SOFTMUTE] Expiry announcement remains queued for ${cleanId(userId)} in ${chatId}:`, error.message);
+    }
+}
+
+async function expireSoftMute(chatId, userId, sock = global.__forgeSock) {
     return withMuteLock(chatId, userId, async () => {
         const entry = await getRecord(chatId, userId);
         if (!entry) return false;
@@ -109,6 +135,7 @@ async function expireSoftMute(chatId, userId) {
         }
         await saveRecord(chatId, userId, null);
         await adjustActiveCount(chatId, -1);
+        await queueSoftMuteExpiryNotice(sock, chatId, userId, entry);
         console.log(`[SOFTMUTE] Expired individual mute for ${cleanId(userId)} in ${chatId}`);
         return true;
     });
@@ -301,6 +328,7 @@ export async function isSoftMuted(chatId, userId, sock = null, extraIds = []) {
             await saveRecord(chatId, id, null);
             clearSoftMuteExpiry(chatId, id);
             await adjustActiveCount(chatId, -1);
+            await queueSoftMuteExpiryNotice(sock, chatId, id, entry);
             return false;
         });
         if (active) return true;
@@ -326,7 +354,7 @@ export async function softMuteUser(sock, chatId, userId, durationMs = null) {
         } else {
             await setActiveCount(chatId, await getActiveCount(chatId), entry.until);
         }
-        armSoftMuteExpiry(chatId, canonicalKey, entry.until);
+        armSoftMuteExpiry(chatId, canonicalKey, entry.until, sock);
     });
     await trackGroup(chatId);
     return duration;
@@ -360,14 +388,23 @@ export async function restoreSoftMuteTimers(sock, chatIds = []) {
         await ensureLegacyMuteMigration(chatId);
         const settings = await store.getAllSettings(chatId);
         for (const [key, entry] of Object.entries(settings || {})) {
+            if (key.startsWith(EXPIRY_NOTICE_PREFIX) && entry?.status === 'pending') {
+                const userId = key.slice(EXPIRY_NOTICE_PREFIX.length);
+                try {
+                    await deliverSoftMuteExpiryNotice(sock, chatId, userId, entry);
+                } catch (error) {
+                    console.error(`[SOFTMUTE] Pending expiry announcement will retry on next restart for ${chatId}/${userId}:`, error.message);
+                }
+                continue;
+            }
             if (!key.startsWith(RECORD_PREFIX) || !entry || !Number.isFinite(Number(entry.until))) continue;
             const userId = key.slice(RECORD_PREFIX.length);
             if (!userId) continue;
             if (Number(entry.until) > Date.now()) {
-                armSoftMuteExpiry(chatId, userId, Number(entry.until));
+                armSoftMuteExpiry(chatId, userId, Number(entry.until), sock);
                 restored++;
             } else {
-                await expireSoftMute(chatId, userId);
+                await expireSoftMute(chatId, userId, sock);
             }
         }
     }
