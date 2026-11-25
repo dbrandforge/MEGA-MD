@@ -13,7 +13,7 @@ function mention(jid) {
   return '@' + String(jid || '').split('@')[0].split(':')[0];
 }
 function cleanName(value) {
-  return String(value || '').replace(/[\\r\\n@]/g, '').trim().split(/\\s+/)[0] || 'Member';
+  return String(value || '').replace(/[\r\n@]/g, '').trim().split(/\s+/)[0] || 'Member';
 }
 function recordStats(record, board) {
   if (board.label === 'HANGMAN') return { score: board.metric(record), matches: Number(record?.rounds) || 0, wins: 0 };
