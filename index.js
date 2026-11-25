@@ -992,7 +992,7 @@ async function startQasimDev() {
                         printLog('warning', `Hot Seat continuity restore failed for a configured group: ${error.message}`);
                     }
                 }
-                if (MEMBER_FEATURES_ENABLED) try {
+                try {
                     const welcomeModule = await import('./plugins/sincity-welcome.js');
                     if (typeof welcomeModule.restoreWelcomeJobs === 'function') await welcomeModule.restoreWelcomeJobs(QasimDev);
                 } catch (error) {
