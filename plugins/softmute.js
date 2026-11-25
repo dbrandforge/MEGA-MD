@@ -106,7 +106,7 @@ async function deliverSoftMuteExpiryNotice(sock, chatId, userId, notice) {
         text: `🔊 ${mention(jid)}'s soft mute has expired. They can participate in the group again.`,
         mentions: [jid]
     });
-    await store.saveSettingVerified(chatId, EXPIRY_NOTICE_PREFIX + cleanId(jid), null);
+    await store.saveSettingVerified(chatId, EXPIRY_NOTICE_PREFIX + cleanId(userId), null);
     console.log(`[SOFTMUTE] Expiry announced for ${cleanId(jid)} in ${chatId}`);
     return true;
 }
