@@ -3,6 +3,8 @@ import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
 import { FALLBACK } from '../data/wyrPairs.js';
 import isAdmin from '../lib/isAdmin.js';
+import { getUserGender } from './gender.js';
+import { savePendingGenderGame } from '../lib/genderGameContinuation.js';
 
 const KEY = 'wouldYouRatherSessions';
 const EXPIRY_MS = 30 * 60 * 1000;
@@ -45,8 +47,17 @@ async function chooseFreshOptions(chatId) {
   return options;
 }
 
-async function sendQuestion(sock, chatId, senderId, quoted) {
-  const options = await chooseFreshOptions(chatId);
+export function personalizeWyrOptions(options, gender) {
+  const partnerLabel = gender === 'guy' ? 'female partner' : 'male partner';
+  const playerLabel = gender === 'guy' ? 'boy' : 'girl';
+  return options.map(option => String(option)
+    .replace(/\bpartner\b/gi, partnerLabel)
+    .replace(/\bgood (?:boy|girl)\b/gi, `good ${playerLabel}`));
+}
+
+async function sendQuestion(sock, chatId, senderId, quoted, gender) {
+  const rawOptions = await chooseFreshOptions(chatId);
+  const options = personalizeWyrOptions(rawOptions, gender);
   const sent = await sock.sendMessage(chatId, {
     text: `😈 *WOULD YOU RATHER? — MATURE MINDED*\n\n🅰️ ${options[0]}\n\n🅱️ ${options[1]}\n\n_Choose A or B. Reply to this question or tag me with your choice for the next dilemma. Session limit: 20 questions._`
   }, quoted ? { quoted } : undefined);
@@ -54,6 +65,7 @@ async function sendQuestion(sock, chatId, senderId, quoted) {
   const previous = sessions[senderId] || {};
   sessions[senderId] = {
     ...previous,
+    gender,
     questionMessageId: sent?.key?.id || null,
     questionsAsked: (previous.questionsAsked || 0) + 1,
     questionsAttempted: previous.questionsAttempted || 0,
@@ -124,7 +136,12 @@ export async function handleWyrContinuity(sock, chatId, message, senderId) {
   }
 
   await saveSessions(chatId, sessions);
-  await sendQuestion(sock, chatId, senderId, message);
+  const gender = session.gender || await getUserGender(senderId, sock);
+  if (!gender) {
+    await sock.sendMessage(chatId, { text: 'Set your gender first with *.gender guy* or *.gender lady* to continue WYR.' }, { quoted: message });
+    return true;
+  }
+  await sendQuestion(sock, chatId, senderId, message, gender);
   return true;
 }
 
@@ -195,8 +212,13 @@ export default {
       delete sessions[senderId];
       await saveSessions(chatId, sessions);
     }
+    const gender = await getUserGender(senderId, sock);
+    if (!gender) {
+      await savePendingGenderGame(chatId, senderId, { command: 'wyr', args: [], requester: senderId, pushName: message.pushName });
+      return sock.sendMessage(chatId, { text: 'Set your gender first with *.gender guy* or *.gender lady*. Your WYR request will resume automatically after registration.', ...channelInfo }, { quoted: message });
+    }
     try {
-      await sendQuestion(sock, chatId, senderId, message);
+      await sendQuestion(sock, chatId, senderId, message, gender);
     } catch (error) {
       console.error('WYR send failed:', error);
       await sock.sendMessage(chatId, { text: 'Could not send a Would You Rather question. Please try again.', ...channelInfo }, { quoted: message });

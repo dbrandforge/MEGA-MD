@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { createMockSock, createMockMessage } from '../mocks/baileys.js';
 
+process.env.CHATBOT_ENABLED = 'true';
+
 vi.mock('../../lib/print.js', () => ({ printMessage: vi.fn(async () => {}), printLog: vi.fn(() => {}) }));
 vi.mock('../../lib/lightweight_store.js', () => ({ default: { getSetting: vi.fn(async () => null), saveSetting: vi.fn(async () => {}), saveSettingVerified: vi.fn(async () => true), getBotMode: vi.fn(async () => 'public'), incrementMessageCount: vi.fn(async () => {}), incrementWeeklyMessageCount: vi.fn(async () => {}), messages: {} } }));
 vi.mock('../../lib/logger.js', () => ({ writeErrorLog: vi.fn(() => {}) }));
@@ -35,6 +37,8 @@ vi.mock('../../plugins/demote.js', () => ({ default: { handleDemotionEvent: vi.f
 vi.mock('../../plugins/autostatus.js', () => ({ default: { handleStatusUpdate: vi.fn(async () => {}) } }));
 vi.mock('../../plugins/anticall.js', () => ({ default: { readState: vi.fn(async () => ({ enabled: true })) } }));
 
+import { setMessageProcessingCutoff } from '../../lib/messageEventPolicy.js';
+
 describe('handleMessages', () => {
     let handleMessages;
     let sock;
@@ -44,7 +48,7 @@ describe('handleMessages', () => {
         handleMessages = mod.handleMessages;
     });
 
-    beforeEach(() => { sock = createMockSock(); vi.clearAllMocks(); });
+    beforeEach(() => { sock = createMockSock(); vi.clearAllMocks(); vi.stubEnv('CHATBOT_ENABLED', 'true'); setMessageProcessingCutoff(Date.now() - 2000); });
 
     it('ignores non-notify events', async () => {
         await handleMessages(sock, { messages: [], type: 'append' });

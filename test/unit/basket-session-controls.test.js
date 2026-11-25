@@ -9,7 +9,7 @@ vi.mock('../../lib/isAdmin.js', () => ({ default: vi.fn() }));
 
 import store from '../../lib/lightweight_store.js';
 import { isGameAllowed } from '../../plugins/daylock.js';
-import basket from '../../plugins/basket.js';
+import basket, { basketResponseProblem } from '../../plugins/basket.js';
 
 describe('.basket session controls', () => {
   beforeEach(() => {
@@ -28,5 +28,27 @@ describe('.basket session controls', () => {
     expect(store.saveSettingVerified).toHaveBeenCalledWith(context.chatId, 'devilsBasketSessions', {});
     expect(isGameAllowed).not.toHaveBeenCalled();
     expect(sock.sendMessage).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("Devil's Basket task validation", () => {
+  it('rejects a one-letter reply instead of treating it as completion', () => {
+    const message = { message: { conversation: 'A' } };
+    expect(basketResponseProblem('Write a short paragraph about your ideal date.', message)).toMatch(/too short/i);
+  });
+
+  it('requires a voice note when the dare explicitly asks for one', () => {
+    const textReply = { message: { conversation: 'I can complete this challenge now.' } };
+    expect(basketResponseProblem('Send a voice note saying hello.', textReply)).toMatch(/requires a voice note/i);
+  });
+
+  it('accepts an audio attachment for a voice-note dare', () => {
+    const voiceNote = { message: { audioMessage: { ptt: true } } };
+    expect(basketResponseProblem('Send a voice note saying hello.', voiceNote)).toBeNull();
+  });
+
+  it('requires an image when the dare explicitly asks for a photo', () => {
+    const textReply = { message: { conversation: 'Here is my response to the task.' } };
+    expect(basketResponseProblem('Send a selfie with a caption.', textReply)).toMatch(/requires a photo/i);
   });
 });

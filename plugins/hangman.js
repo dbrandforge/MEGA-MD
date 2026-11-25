@@ -17,6 +17,15 @@ export const QUESTIONS_PER_ROUND = 20;
 const normalize = value => String(value || '').toLowerCase().replace(/[^a-z]/g, '');
 const maskWord = (word, guessed) => [...word].map(char => guessed.includes(char) ? char : '_');
 const pick = values => values[Math.floor(Math.random() * values.length)];
+export function getInitialHangmanLetters(word, random = Math.random) {
+  const unique = [...new Set(String(word || '').toLowerCase().replace(/[^a-z]/g, ''))];
+  const count = Math.min(String(word || '').length >= 7 ? 2 : 1, unique.length);
+  for (let i = 0; i < count; i++) {
+    const index = i + Math.min(unique.length - i - 1, Math.floor(random() * (unique.length - i)));
+    [unique[i], unique[index]] = [unique[index], unique[i]];
+  }
+  return unique.slice(0, count);
+}
 const getRecords = async chatId => (await store.getSetting(chatId, RECORD_KEY)) || {};
 const saveRecords = async (chatId, records) => {
   if (!await store.saveSettingVerified(chatId, RECORD_KEY, records)) throw new Error('Hangman records could not be persisted.');
@@ -143,7 +152,7 @@ async function advanceOrEnd(sock, chatId, game, message, channelInfo, solvedBy) 
   game.soundAlikeHint = next.soundAlikeHint;
   game.extraHints = next.extraHints || [];
   game.hintsRevealed = 0;
-  game.guessed = [];
+  game.guessed = getInitialHangmanLetters(next.word);
   game.wrong = [];
   game.wrongWordGuesses = 0;
   game.wordGuesses = [];
@@ -305,7 +314,7 @@ export default {
     const game = {
       status: 'active', roundWords, questionNumber: 1, word: first.word, category: first.category,
       hint: first.hint, synonymHint: first.synonymHint, soundAlikeHint: first.soundAlikeHint, extraHints: first.extraHints || [],
-      hintsRevealed: 0, difficulty: 'mature', guessed: [], wrong: [], wrongWordGuesses: 0,
+      hintsRevealed: 0, difficulty: 'mature', guessed: getInitialHangmanLetters(first.word), wrong: [], wrongWordGuesses: 0,
       wordGuesses: [], scores: {}, attemptedBy: {}, startedAt: Date.now(), lastMoveAt: Date.now(),
       expiresAt: Date.now() + 30 * 60 * 1000
     };
