@@ -37,7 +37,8 @@ describe('per-group two-message welcome pack settings', () => {
       messages: ['Custom intro', 'Custom rules', 'Custom daily activity: {daily_activity}']
     });
     expect(config.messages).toHaveLength(2);
-    expect(config.messages[0]).toBe('Custom intro');
+    expect(config.messages[0]).toContain('Custom intro');
+    expect(config.messages[0]).toContain('@user');
     expect(config.messages[1]).toContain('Custom rules');
     expect(config.messages[1]).toContain('Custom daily activity: {daily_activity}');
     expect(config.messages[1]).toContain('@user');
