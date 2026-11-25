@@ -1,14 +1,7 @@
 import { handleWelcome } from '../lib/welcome.js';
 import { handleNewMember, startWelcomeCampaign, getPendingIntroductionList, sendPendingIntroductionReminder, buildPendingIntroductionListMessages } from './sincity-welcome.js';
-import { dailyActivities } from '../data/dailyActivities.js';
 import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 
-
-function getLagosDay() {
-    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const str = new Date().toLocaleString('en-US', { timeZone: 'Africa/Lagos' });
-    return days[new Date(str).getDay()];
-}
 
 export default {
     command: 'welcome',
@@ -74,14 +67,6 @@ export default {
                 }, { quoted: message });
             }
             await handleNewMember(sock, chatId, [userId]);
-            try {
-                const day = getLagosDay();
-                const activity = dailyActivities[day];
-                if (activity?.full) {
-                    await new Promise(r => setTimeout(r, 800));
-                    await sock.sendMessage(chatId, { text: activity.full });
-                }
-            } catch {}
             return sock.sendMessage(chatId, {
                 text: `✅ Full welcome sent to @${userId.split('@')[0]}`,
                 mentions: [userId],
