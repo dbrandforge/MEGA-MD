@@ -46,6 +46,19 @@ const chatMemory = { messages: new Map(), loaded: new Set() };
 global.__forgeChatbotCacheStats = () => ({ histories: chatMemory.messages.size, loaded: chatMemory.loaded.size });
 const runConversationSerial = createKeyedSerialExecutor();
 const runLocalMemoryWriteSerial = createKeyedSerialExecutor();
+// Newer inbound turns supersede older queued or still-generating replies for the same person/chat.
+const latestChatbotTurn = new Map();
+const MAX_LATEST_CHATBOT_TURNS = 1000;
+function markLatestChatbotTurn(memoryKey, messageId) {
+    latestChatbotTurn.delete(memoryKey);
+    latestChatbotTurn.set(memoryKey, messageId);
+    while (latestChatbotTurn.size > MAX_LATEST_CHATBOT_TURNS) {
+        latestChatbotTurn.delete(latestChatbotTurn.keys().next().value);
+    }
+}
+function isLatestChatbotTurn(memoryKey, messageId) {
+    return Boolean(messageId) && latestChatbotTurn.get(memoryKey) === messageId;
+}
 const MEMORY_SETTING = 'chatbotConversationMemory';
 const MAX_HISTORY_MESSAGES = 16;
 const MAX_HISTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -181,7 +194,8 @@ async function loadChatHistory(memoryKey, legacyDirectChatId = null, allowPersis
         }
         const fresh = history
             .filter(item => item && typeof item.text === 'string' &&
-                (!item.at || Date.now() - item.at <= MAX_HISTORY_AGE_MS))
+                (Number.isFinite(Number(item.at)) && Number(item.at) > 0 &&
+                Date.now() - Number(item.at) >= -60_000 && Date.now() - Number(item.at) <= MAX_HISTORY_AGE_MS))
             .slice(-MAX_HISTORY_MESSAGES);
         setCachedConversationHistory(chatMemory.messages, chatMemory.loaded, memoryKey, fresh, MAX_CACHED_CONVERSATIONS);
     } catch (error) {
@@ -239,13 +253,19 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
         console.warn('[Chatbot] Skipping group response because the sender identity could not be resolved.');
         return;
     }
+    const messageId = message?.key?.id;
+    markLatestChatbotTurn(memoryKey, messageId);
     return runConversationSerial(memoryKey, () =>
-        handleChatbotResponseForConversation(sock, chatId, message, userMessage, participantId, memoryKey)
+        handleChatbotResponseForConversation(sock, chatId, message, userMessage, participantId, memoryKey, messageId)
     );
 }
 
 // Live replies are selected locally from the curated personality bank.
-async function handleChatbotResponseForConversation(sock, chatId, message, userMessage, senderId, memoryKey) {
+async function handleChatbotResponseForConversation(sock, chatId, message, userMessage, senderId, memoryKey, messageId) {
+    if (!isLatestChatbotTurn(memoryKey, messageId)) {
+        printLog('info', '[Chatbot] Skipped superseded queued turn before context generation.');
+        return;
+    }
     const data = await loadUserGroupData();
     const isGroup = chatId.endsWith('@g.us');
     if (!data.chatbot) data.chatbot = {};
@@ -365,7 +385,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         // Keep ownership/build inquiries about this specific bot out of the AI
         // context in both DMs and addressed group conversations.
         if (isForgeGuardReplicationRequest(chatbotQuery)) {
-            if (isMessageTooOld(message)) {
+            if (!isLatestChatbotTurn(memoryKey, messageId) || isMessageTooOld(message)) {
                 printLog('warning', '[Chatbot] Suppressed expired reply before send.');
                 return;
             }
@@ -518,8 +538,8 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         // AI/search/database work can outlive the inbound-message window. Recheck
         // the original WhatsApp timestamp immediately before sending, not just
         // when the message entered the queue.
-        if (isMessageTooOld(message)) {
-            printLog('warning', '[Chatbot] Suppressed expired reply after response generation.');
+        if (!isLatestChatbotTurn(memoryKey, messageId) || isMessageTooOld(message)) {
+            printLog('warning', '[Chatbot] Suppressed superseded or expired reply after response generation.');
             return;
         }
         printLog('info', `[Chatbot DM] Attempting reply via destinationType=${chatId.endsWith('@lid') ? 'LID' : 'PN_or_group'}`);
