@@ -333,18 +333,22 @@ export async function handleNewMember(sock, chatId, participants) {
         if (welcomePack.enabled) {
             const activity = dailyActivities[getLagosDay()];
             const welcomeBatch = buildWelcomeBatchMessage(newMembers, welcomePack.messages[0]);
-            const thirdMessage = renderWelcomePackMessage(welcomePack.messages[2], activity?.full || '');
+            const rulesAndActivityTemplate = welcomePack.messages[1].includes('@user') || welcomePack.messages[1].includes('{user}')
+                ? welcomePack.messages[1]
+                : `${welcomePack.messages[1]}\\n\\n@user`;
+            const rulesAndActivity = buildWelcomeBatchMessage(
+                newMembers,
+                renderWelcomePackMessage(rulesAndActivityTemplate, activity?.full || '')
+            );
 
-            // One shared, independently configurable three-message pack per join batch.
-            // Disabling it does not disable member history, introduction tracking,
-            // reminders, departures, returns, or other group features.
+            // Exactly two shared messages per join batch. Both carry the same
+            // participant mentions; rules and daily activity are combined.
+            // Tracking/reminders/departures remain independent of pack delivery.
             await sock.sendMessage(chatId, welcomeBatch);
             await new Promise(resolve => setTimeout(resolve, 1000));
-            await sock.sendMessage(chatId, { text: welcomePack.messages[1] });
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            await sock.sendMessage(chatId, { text: thirdMessage });
+            await sock.sendMessage(chatId, rulesAndActivity);
         } else {
-            console.info(`[Welcome] Three-message welcome pack is OFF for ${chatId}; member tracking remains active.`);
+            console.info(`[Welcome] Two-message welcome pack is OFF for ${chatId}; member tracking remains active.`);
         }
 
         await Promise.all(newMembers.map(userId => logWelcome(chatId, userId).catch(() => {})));
