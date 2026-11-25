@@ -274,12 +274,9 @@ export async function sendWelcomePack(sock, chatId, participants) {
 
     const activity = dailyActivities[getLagosDay()];
     const welcomeMessage = buildWelcomeBatchMessage(participantIds, welcomePack.messages[0]);
-    const secondTemplate = welcomePack.messages[1].includes('@user') || welcomePack.messages[1].includes('{user}')
-        ? welcomePack.messages[1]
-        : `${welcomePack.messages[1]}\\n\\n@user`;
     const rulesAndActivity = buildWelcomeBatchMessage(
         participantIds,
-        renderWelcomePackMessage(secondTemplate, activity?.full || '')
+        renderWelcomePackMessage(welcomePack.messages[1], activity?.full || '')
     );
 
     // Exactly two messages per invocation. Both messages tag every recipient.
