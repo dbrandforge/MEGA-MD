@@ -472,6 +472,8 @@ async function runGroupLockSchedule(sock, chatId) {
             } catch (error) { console.error('[GroupLock] One-off quick-lock expiry failed for ' + chatId + ':', error.message); }
         }
 
+        const oneOffLockActive = quickLock?.status === 'locked' && now.getTime() < Number(quickLock.endAt);
+
         // The daily activity is completely independent of lock state now:
         // as soon as we reach (or pass) today's unlock time, send+pin it
         // once. This runs even if the lock never succeeded, and even if
@@ -481,11 +483,16 @@ async function runGroupLockSchedule(sock, chatId) {
             await sendDailyActivityOnce(sock, chatId, day);
             // Keep the WhatsApp setting in sync with "should be unlocked"
             // unless an admin deliberately re-locked it after this time.
-            if (state.locked && manualOverride.day !== day) {
+            if (!oneOffLockActive && state.locked && manualOverride.day !== day) {
                 if (!await unlockGroupSetting(sock, chatId)) return false;
                 await saveGroupSetting(chatId, LOCK_STATE_KEY, { locked: false, at: Date.now() });
             }
         }
+
+        // A live one-off lock takes precedence over the recurring daily schedule.
+        // Daily activity can still be published, but scheduled lock/unlock logic
+        // must not cancel the timed lock before its persisted expiry.
+        if (oneOffLockActive) return true;
 
         // Prevent double-firing the lock/unlock *messages* in the same minute
         const alreadyFiredThisMinute = lastAction.time === time && lastAction.day === day;
