@@ -41,7 +41,7 @@ export default {
     const board = BOARDS[selected];
     if (!board) {
       return sock.sendMessage(chatId, {
-        text: '🏆 *FORGE GUARD — GAME RANKINGS*\\n\\nChoose an all-time leaderboard:\\n• *.gamerank trivia*\\n• *.gamerank math*\\n• *.gamerank hangman*\\n\\nEach board shows the group’s top 10 cumulative performers. There are no weekly rankings.',
+        text: '🏆 *FORGE GUARD — GAME RANKINGS*\n\nChoose an all-time leaderboard:\n• *.gamerank trivia*\n• *.gamerank math*\n• *.gamerank hangman*\n\nEach board shows the group’s top 10 cumulative performers. There are no weekly rankings.',
         ...channelInfo
       }, { quoted: message });
     }
@@ -54,7 +54,7 @@ export default {
         .sort((a, b) => b.score - a.score || b.wins - a.wins || b.matches - a.matches)
         .slice(0, 10);
       if (!ranked.length) {
-        return sock.sendMessage(chatId, { text: `🏆 *${board.label} — ALL-TIME TOP 10*\\n\\nNo recorded scores yet. Complete a match to enter the leaderboard.`, ...channelInfo }, { quoted: message });
+        return sock.sendMessage(chatId, { text: `🏆 *${board.label} — ALL-TIME TOP 10*\n\nNo recorded scores yet. Complete a match to enter the leaderboard.`, ...channelInfo }, { quoted: message });
       }
       const metadata = await sock.groupMetadata(chatId).catch(() => null);
       const participants = metadata?.participants || [];
@@ -71,9 +71,9 @@ export default {
         const detail = board.label === 'HANGMAN'
           ? `${item.score.toLocaleString()} words solved · ${item.matches} rounds`
           : `${item.score.toLocaleString()} points · ${item.wins} wins · ${item.matches} matches`;
-        lines.push(`${MEDALS[i]} *${name}*\\n${mention(item.id)}\\n📊 ${detail}`);
+        lines.push(`${MEDALS[i]} *${name}*\n${mention(item.id)}\n📊 ${detail}`);
       }
-      const text = `🏆 *${board.label} — ALL-TIME TOP 10*\\n📍 Group leaderboard · cumulative records\\n\\n${lines.join('\\n\\n')}\\n\\n_Records are permanent and ranked by total ${board.unit}. No weekly reset._`;
+      const text = `🏆 *${board.label} — ALL-TIME TOP 10*\n📍 Group leaderboard · cumulative records\n\n${lines.join('\n\n')}\n\n_Records are permanent and ranked by total ${board.unit}. No weekly reset._`;
       return sock.sendMessage(chatId, { text, mentions, ...channelInfo }, { quoted: message });
     } catch (error) {
       console.error('[GAME RANK] Leaderboard error:', error);
