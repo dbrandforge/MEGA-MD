@@ -8,7 +8,7 @@ import {
   baseGuyTruths, baseLadyTruths, baseGuyDares, baseLadyDares
 } from './todBase.js';
 
-const truthStyleDare = /^(?:confess|admit|have you|ever\b|what\b|who\b|when\b|where\b|which\b|why\b|how often\b|how many\b|favorite\b|favourite\b|biggest\b|worst\b|best\b|last time\b|tell (?:us|the group)\b|share (?:your|the)\b|body count\b|describe (?:your last|the last time|a time)\b)/i;
+const truthStyleDare = /^(?:confess|admit|have you|ever\b|what\b|who\b|when\b|where\b|which\b|why\b|how often\b|how many\b|favorite\b|favourite\b|biggest\b|worst\b|best\b|last time\b|tell (?:us|the group)\b|share (?:your|the)\b|body count\b|describe (?:your|the last|a time)\b)/i;
 
 function splitPromptPools(truths, dares) {
   const misplacedTruths = dares.filter(prompt => truthStyleDare.test(String(prompt).trim()));
