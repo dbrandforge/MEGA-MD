@@ -14,7 +14,6 @@ function usage() {
     '• .welcomeforge status',
     '• .welcomeforge edit 1 <message>',
     '• .welcomeforge edit 2 <message>',
-    '• .welcomeforge ',
     '• .welcomeforge reset 1|2',
     '',
     'Message 1 contains the introduction guidelines and tags new members.',
