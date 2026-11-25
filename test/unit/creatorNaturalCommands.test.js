@@ -29,6 +29,9 @@ describe('creator natural-language command routing', () => {
         expect(parseCreatorNaturalCommand('mute the group for 30 minutes', { addressedToBot: true })).toMatchObject({
             args: ['quicklock', 'now', '30m']
         });
+        expect(parseCreatorNaturalCommand('@2348012345678 mute the group for 30 minutes', { addressedToBot: true })).toMatchObject({
+            args: ['quicklock', 'now', '30m']
+        });
     });
 
     it('does not turn unrelated conversation into commands', () => {
