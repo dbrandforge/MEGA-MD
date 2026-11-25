@@ -72,7 +72,7 @@ export default {
     if (action === 'edit') {
       const slot = Number(args?.[1]);
       const rawText = String(context.messageText || context.rawText || '');
-      const editCommand = rawText.match(/^\\s*\\S+\\s+edit\\s+[12]\\s*/i);
+      const editCommand = rawText.match(/^\s*\S+\s+edit\s+[12]\s*/i);
       const text = (editCommand ? rawText.slice(editCommand[0].length) : args.slice(2).join(' ')).trim();
       if (![1, 2].includes(slot) || !text) {
         return sock.sendMessage(chatId, { text: 'Usage: .welcomeforge edit 1|2 <new message>\nUse {user} to tag members and {daily_activity} in message 2.' }, { quoted: message });
