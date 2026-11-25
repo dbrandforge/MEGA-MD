@@ -154,7 +154,6 @@ async function advanceOrEnd(sock, chatId, game, message, channelInfo, solvedBy) 
   game.hintsRevealed = 0;
   game.guessed = getInitialHangmanLetters(next.word);
   game.wrong = [];
-  game.wrong = [];
   game.wrongWordGuesses = 0;
   game.wordGuesses = [];
   game.lastMoveAt = Date.now();
