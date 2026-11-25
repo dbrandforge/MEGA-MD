@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getDares, getTruths } from '../../data/todLists.js';
 
-const truthLike = /^(?:confess|admit|have you|ever\b|what\\b|who\\b|when\\b|where\\b|which\\b|why\\b|how often\\b|how many\\b|favorite\\b|favourite\\b|biggest\\b|worst\\b|best\\b|last time\\b|tell (?:us|the group)\\b|share (?:your|the)\\b|body count\\b|describe (?:your last|the last time|a time)\\b)/i;
+const truthLike = /^(?:confess|admit|have you|ever\b|what\\b|who\\b|when\\b|where\\b|which\\b|why\\b|how often\\b|how many\\b|favorite\\b|favourite\\b|biggest\\b|worst\\b|best\\b|last time\\b|tell (?:us|the group)\\b|share (?:your|the)\\b|body count\\b|describe (?:your|the last|a time)\\b)/i;
 
 describe('Truth-or-Dare prompt classification', () => {
   it.each(['guy', 'lady'])('keeps truth-style disclosures out of the %s dare pool', gender => {
