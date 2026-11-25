@@ -23,8 +23,8 @@ export default {
             return sock.sendMessage(chatId, { text: '*RENDER RESTART STATUS*\nState: *' + status.state + '*\nRequested: ' + requested + completed + (status.detail ? '\nDetails: ' + status.detail : '') }, quoted);
         }
         const apiKey = String(process.env.RENDER_API_KEY || '').trim();
-        const serviceId = String(process.env.RENDER_SERVICE_ID || '').trim();
-        if (!apiKey || !serviceId) return sock.sendMessage(chatId, { text: 'Remote restart is not configured yet. Add RENDER_API_KEY and RENDER_SERVICE_ID to the Forge Guard Render environment, then redeploy.' }, quoted);
+        const serviceId = String(process.env.RENDER_SERVICE_ID || 'srv-dc1avj2jnfac7388sbfg').trim();
+        if (!apiKey) return sock.sendMessage(chatId, { text: 'Remote restart is not configured yet. Add RENDER_API_KEY to the Forge Guard Render environment, then redeploy.' }, quoted);
         if (Date.now() - lastRequestAt < REQUEST_COOLDOWN_MS) return sock.sendMessage(chatId, { text: 'A remote restart was requested recently. Use .restart status before requesting another.' }, quoted);
         lastRequestAt = Date.now();
         const requestedAt = Date.now();
