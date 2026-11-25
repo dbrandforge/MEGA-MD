@@ -42,9 +42,12 @@ describe('batch member welcome and intro reminders', () => {
     const taggedWelcome = welcomeMessages.filter(payload =>
       Array.isArray(payload.mentions) && payload.mentions.length === members.length
     );
-    expect(taggedWelcome).toHaveLength(1);
+    expect(taggedWelcome).toHaveLength(2);
     expect(taggedWelcome[0].mentions).toEqual(members);
-    expect(welcomeMessages.filter(payload => payload.text === groupRules)).toHaveLength(1);
+    expect(taggedWelcome[1].mentions).toEqual(members);
+    expect(taggedWelcome[0].text).toContain('Kindly introduce yourself properly');
+    expect(taggedWelcome[1].text).toContain(groupRules);
+    expect(taggedWelcome[1].text).toContain(\"TODAY'S ACTIVITY\");
 
     await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
     const allMessages = sock.sendMessage.mock.calls.map(([, payload]) => payload);
