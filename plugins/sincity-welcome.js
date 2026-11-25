@@ -86,6 +86,7 @@ export async function restoreWelcomeJobs(sock) {
     ]);
     for (const chatId of groups) {
         if (!chatId?.endsWith('@g.us')) continue;
+        if (!await hasMaturedMindedFeatures(chatId)) continue;
         const batch = await store.getSetting(chatId, JOIN_BATCH_KEY);
         if (batch?.flushAt && Array.isArray(batch.participants) && batch.participants.length) {
             scheduleJoinBatchFlush(sock, chatId, batch);
