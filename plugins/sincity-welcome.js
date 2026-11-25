@@ -261,6 +261,31 @@ function scheduleGroupIntroReminder(sock, chatId) {
     }).catch(error => console.error('Could not schedule group intro reminder:', error.message));
 }
 
+export async function sendWelcomePack(sock, chatId, participants) {
+    if (!await hasMaturedMindedFeatures(chatId)) return { sent: false, reason: 'not-configured', count: 0 };
+    const participantIds = [...new Set((participants || [])
+        .map(user => typeof user === 'string' ? user : (user?.id || user?.phoneNumber || user?.lid))
+        .filter(Boolean))];
+    if (!participantIds.length) return { sent: false, reason: 'no-members', count: 0 };
+
+    const savedPack = await store.getSetting(chatId, WELCOME_PACK_SETTING);
+    const welcomePack = normalizeWelcomePackConfig(savedPack);
+    if (!welcomePack.enabled) return { sent: false, reason: 'disabled', count: participantIds.length };
+
+    const activity = dailyActivities[getLagosDay()];
+    const welcomeMessage = buildWelcomeBatchMessage(participantIds, welcomePack.messages[0]);
+    const rulesAndActivity = buildWelcomeBatchMessage(
+        participantIds,
+        renderWelcomePackMessage(welcomePack.messages[1], activity?.full || '')
+    );
+
+    // Exactly two messages per invocation. Both messages tag every recipient.
+    await sock.sendMessage(chatId, welcomeMessage);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await sock.sendMessage(chatId, rulesAndActivity);
+    return { sent: true, count: participantIds.length };
+}
+
 export async function handleNewMember(sock, chatId, participants) {
     if (!await hasMaturedMindedFeatures(chatId)) return;
 
@@ -327,24 +352,9 @@ export async function handleNewMember(sock, chatId, participants) {
 
         if (!newMembers.length) return;
 
-        const savedPack = await store.getSetting(chatId, WELCOME_PACK_SETTING);
-        const welcomePack = normalizeWelcomePackConfig(savedPack);
-
-        if (welcomePack.enabled) {
-            const activity = dailyActivities[getLagosDay()];
-            const welcomeBatch = buildWelcomeBatchMessage(newMembers, welcomePack.messages[0]);
-            const thirdMessage = renderWelcomePackMessage(welcomePack.messages[2], activity?.full || '');
-
-            // One shared, independently configurable three-message pack per join batch.
-            // Disabling it does not disable member history, introduction tracking,
-            // reminders, departures, returns, or other group features.
-            await sock.sendMessage(chatId, welcomeBatch);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            await sock.sendMessage(chatId, { text: welcomePack.messages[1] });
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            await sock.sendMessage(chatId, { text: thirdMessage });
-        } else {
-            console.info(`[Welcome] Three-message welcome pack is OFF for ${chatId}; member tracking remains active.`);
+        const packResult = await sendWelcomePack(sock, chatId, newMembers);
+        if (!packResult.sent && packResult.reason === 'disabled') {
+            console.info(`[Welcome] Two-message welcome pack is OFF for ${chatId}; member tracking remains active.`);
         }
 
         await Promise.all(newMembers.map(userId => logWelcome(chatId, userId).catch(() => {})));
@@ -516,9 +526,8 @@ export default {
         if (!await hasMaturedMindedFeatures(chatId)) {
             return sock.sendMessage(chatId, { text: 'This group has not been registered for the Forge Guard feature profile.' }, { quoted: message });
         }
-        await handleNewMember(sock, chatId, [senderId]);
-        await sock.sendMessage(chatId, {
-            text: '✅ Full welcome test sent (intro + rules + activity).'
-        }, { quoted: message });
+        const result = await sendWelcomePack(sock, chatId, [senderId]);
+        if (!result.sent) return sock.sendMessage(chatId, { text: result.reason === 'disabled' ? 'The welcome pack is currently disabled for this group.' : 'The welcome pack could not be sent for this group.' }, { quoted: message });
+        return;
     }
 };

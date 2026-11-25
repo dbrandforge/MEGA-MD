@@ -1,14 +1,7 @@
 import { handleWelcome } from '../lib/welcome.js';
-import { handleNewMember, startWelcomeCampaign, getPendingIntroductionList, sendPendingIntroductionReminder, buildPendingIntroductionListMessages } from './sincity-welcome.js';
-import { dailyActivities } from '../data/dailyActivities.js';
+import { sendWelcomePack, startWelcomeCampaign, getPendingIntroductionList, sendPendingIntroductionReminder, buildPendingIntroductionListMessages } from './sincity-welcome.js';
 import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 
-
-function getLagosDay() {
-    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const str = new Date().toLocaleString('en-US', { timeZone: 'Africa/Lagos' });
-    return days[new Date(str).getDay()];
-}
 
 export default {
     command: 'welcome',
@@ -47,8 +40,9 @@ export default {
             if (!await hasMaturedMindedFeatures(chatId)) {
                 return sock.sendMessage(chatId, { text: 'This group has not been registered for the Forge Guard feature profile.', ...channelInfo }, { quoted: message });
             }
-            await handleNewMember(sock, chatId, [context.senderId]);
-            return sock.sendMessage(chatId, { text: '✅ Full welcome test sent for your account.', ...channelInfo }, { quoted: message });
+            const result = await sendWelcomePack(sock, chatId, [context.senderId]);
+            if (!result.sent) return sock.sendMessage(chatId, { text: result.reason === 'disabled' ? 'The welcome pack is currently disabled for this group.' : 'The welcome pack could not be sent for this group.' , ...channelInfo }, { quoted: message });
+            return;
         }
 
         // .welcome log → daily log
@@ -73,20 +67,9 @@ export default {
                     ...channelInfo
                 }, { quoted: message });
             }
-            await handleNewMember(sock, chatId, [userId]);
-            try {
-                const day = getLagosDay();
-                const activity = dailyActivities[day];
-                if (activity?.full) {
-                    await new Promise(r => setTimeout(r, 800));
-                    await sock.sendMessage(chatId, { text: activity.full });
-                }
-            } catch {}
-            return sock.sendMessage(chatId, {
-                text: `✅ Full welcome sent to @${userId.split('@')[0]}`,
-                mentions: [userId],
-                ...channelInfo
-            }, { quoted: message });
+            const result = await sendWelcomePack(sock, chatId, [userId]);
+            if (!result.sent) return sock.sendMessage(chatId, { text: result.reason === 'disabled' ? 'The welcome pack is currently disabled for this group.' : 'The welcome pack could not be sent for this group.', ...channelInfo }, { quoted: message });
+            return;
         }
 
         const matchText = args.join(' ');

@@ -14,14 +14,12 @@ function usage() {
     '• .welcomeforge status',
     '• .welcomeforge edit 1 <message>',
     '• .welcomeforge edit 2 <message>',
-    '• .welcomeforge edit 3 <message>',
-    '• .welcomeforge reset 1|2|3',
+    '• .welcomeforge reset 1|2',
     '',
-    'Message 1 welcomes and tags new members.',
-    'Message 2 contains the group rules.',
-    'Message 3 is the daily activity message by default.',
-    'Use {user} in message 1 to insert all new-member mentions.',
-    'Use {daily_activity} in message 3 to insert the daily activity.',
+    'Message 1 contains the introduction guidelines and tags new members.',
+    'Message 2 contains the group welcome, concise rules and daily activity.',
+    'Use {user} in either message to insert all new-member mentions.',
+    'Use {daily_activity} in message 2 to insert the current daily activity.',
     '',
     'Changes affect this group only. The welcome-pack switch does not disable other group features.'
   ].join('\n');
@@ -31,7 +29,7 @@ export default {
   command: 'welcomeforge',
   aliases: ['welcomepack', 'wpack'],
   category: 'admin',
-  description: 'Manage this group’s independent three-message welcome pack.',
+  description: 'Manage this group’s independent two-message welcome pack.',
   usage: '.welcomeforge on/off/status/edit/reset',
   groupOnly: true,
   adminOnly: false,
@@ -66,18 +64,18 @@ export default {
       }
       return sock.sendMessage(chatId, {
         text: action === 'on'
-          ? '✅ The three-message welcome pack is ON for this group.'
-          : '⏸️ The three-message welcome pack is OFF for this group. Other group features, member tracking and lifecycle handling remain unchanged.'
+          ? '✅ The two-message welcome pack is ON for this group.'
+          : '⏸️ The two-message welcome pack is OFF for this group. Other group features, member tracking and lifecycle handling remain unchanged.'
       }, { quoted: message });
     }
 
     if (action === 'edit') {
       const slot = Number(args?.[1]);
       const rawText = String(context.messageText || context.rawText || '');
-      const editCommand = rawText.match(/^\\s*\\S+\\s+edit\\s+[123]\\s*/i);
+      const editCommand = rawText.match(/^\s*\S+\s+edit\s+[12]\s*/i);
       const text = (editCommand ? rawText.slice(editCommand[0].length) : args.slice(2).join(' ')).trim();
-      if (![1, 2, 3].includes(slot) || !text) {
-        return sock.sendMessage(chatId, { text: 'Usage: .welcomeforge edit 1|2|3 <new message>\nUse {user} in message 1 and {daily_activity} in message 3 when needed.' }, { quoted: message });
+      if (![1, 2].includes(slot) || !text) {
+        return sock.sendMessage(chatId, { text: 'Usage: .welcomeforge edit 1|2 <new message>\nUse {user} to tag members and {daily_activity} in message 2.' }, { quoted: message });
       }
       if (text.length > 3500) {
         return sock.sendMessage(chatId, { text: '❌ Keep each welcome message under 3,500 characters.' }, { quoted: message });
@@ -87,20 +85,20 @@ export default {
       if (!await store.saveSettingVerified(chatId, WELCOME_PACK_SETTING, next)) {
         return sock.sendMessage(chatId, { text: '❌ Could not verify the message update. The saved pack was not confirmed.' }, { quoted: message });
       }
-      return sock.sendMessage(chatId, { text: `✅ Welcome pack message ${slot} updated for this group. The other two messages were preserved.` }, { quoted: message });
+      return sock.sendMessage(chatId, { text: `✅ Welcome pack message ${slot} updated for this group. The other message was preserved.` }, { quoted: message });
     }
 
     if (action === 'reset') {
       const slot = Number(args?.[1]);
-      if (![1, 2, 3].includes(slot)) {
-        return sock.sendMessage(chatId, { text: 'Usage: .welcomeforge reset 1|2|3' }, { quoted: message });
+      if (![1, 2].includes(slot)) {
+        return sock.sendMessage(chatId, { text: 'Usage: .welcomeforge reset 1|2' }, { quoted: message });
       }
       const next = { ...config, messages: [...config.messages] };
       next.messages[slot - 1] = DEFAULT_WELCOME_PACK_MESSAGES[slot - 1];
       if (!await store.saveSettingVerified(chatId, WELCOME_PACK_SETTING, next)) {
         return sock.sendMessage(chatId, { text: '❌ Could not verify the reset. The saved message was not confirmed.' }, { quoted: message });
       }
-      return sock.sendMessage(chatId, { text: `↩️ Welcome pack message ${slot} restored to its default. The other messages and pack switch were preserved.` }, { quoted: message });
+      return sock.sendMessage(chatId, { text: `↩️ Welcome pack message ${slot} restored to its default. The other message and pack switch were preserved.` }, { quoted: message });
     }
 
     return sock.sendMessage(chatId, { text: usage() }, { quoted: message });
