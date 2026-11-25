@@ -261,6 +261,34 @@ function scheduleGroupIntroReminder(sock, chatId) {
     }).catch(error => console.error('Could not schedule group intro reminder:', error.message));
 }
 
+export async function sendWelcomePack(sock, chatId, participants) {
+    if (!await hasMaturedMindedFeatures(chatId)) return { sent: false, reason: 'not-configured', count: 0 };
+    const participantIds = [...new Set((participants || [])
+        .map(user => typeof user === 'string' ? user : (user?.id || user?.phoneNumber || user?.lid))
+        .filter(Boolean))];
+    if (!participantIds.length) return { sent: false, reason: 'no-members', count: 0 };
+
+    const savedPack = await store.getSetting(chatId, WELCOME_PACK_SETTING);
+    const welcomePack = normalizeWelcomePackConfig(savedPack);
+    if (!welcomePack.enabled) return { sent: false, reason: 'disabled', count: participantIds.length };
+
+    const activity = dailyActivities[getLagosDay()];
+    const welcomeMessage = buildWelcomeBatchMessage(participantIds, welcomePack.messages[0]);
+    const secondTemplate = welcomePack.messages[1].includes('@user') || welcomePack.messages[1].includes('{user}')
+        ? welcomePack.messages[1]
+        : `${welcomePack.messages[1]}\\n\\n@user`;
+    const rulesAndActivity = buildWelcomeBatchMessage(
+        participantIds,
+        renderWelcomePackMessage(secondTemplate, activity?.full || '')
+    );
+
+    // Exactly two messages per invocation. Both messages tag every recipient.
+    await sock.sendMessage(chatId, welcomeMessage);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await sock.sendMessage(chatId, rulesAndActivity);
+    return { sent: true, count: participantIds.length };
+}
+
 export async function handleNewMember(sock, chatId, participants) {
     if (!await hasMaturedMindedFeatures(chatId)) return;
 
@@ -327,27 +355,8 @@ export async function handleNewMember(sock, chatId, participants) {
 
         if (!newMembers.length) return;
 
-        const savedPack = await store.getSetting(chatId, WELCOME_PACK_SETTING);
-        const welcomePack = normalizeWelcomePackConfig(savedPack);
-
-        if (welcomePack.enabled) {
-            const activity = dailyActivities[getLagosDay()];
-            const welcomeBatch = buildWelcomeBatchMessage(newMembers, welcomePack.messages[0]);
-            const rulesAndActivityTemplate = welcomePack.messages[1].includes('@user') || welcomePack.messages[1].includes('{user}')
-                ? welcomePack.messages[1]
-                : `${welcomePack.messages[1]}\\n\\n@user`;
-            const rulesAndActivity = buildWelcomeBatchMessage(
-                newMembers,
-                renderWelcomePackMessage(rulesAndActivityTemplate, activity?.full || '')
-            );
-
-            // Exactly two shared messages per join batch. Both carry the same
-            // participant mentions; rules and daily activity are combined.
-            // Tracking/reminders/departures remain independent of pack delivery.
-            await sock.sendMessage(chatId, welcomeBatch);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            await sock.sendMessage(chatId, rulesAndActivity);
-        } else {
+        const packResult = await sendWelcomePack(sock, chatId, newMembers);
+        if (!packResult.sent && packResult.reason === 'disabled') {
             console.info(`[Welcome] Two-message welcome pack is OFF for ${chatId}; member tracking remains active.`);
         }
 
@@ -520,9 +529,9 @@ export default {
         if (!await hasMaturedMindedFeatures(chatId)) {
             return sock.sendMessage(chatId, { text: 'This group has not been registered for the Forge Guard feature profile.' }, { quoted: message });
         }
-        await handleNewMember(sock, chatId, [senderId]);
+        await sendWelcomePack(sock, chatId, [senderId]);
         await sock.sendMessage(chatId, {
-            text: '✅ Full welcome test sent (intro + rules + activity).'
+            text: '✅ Two-message welcome test sent (intro + rules and activity).'
         }, { quoted: message });
     }
 };
