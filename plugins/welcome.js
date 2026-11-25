@@ -1,5 +1,5 @@
 import { handleWelcome } from '../lib/welcome.js';
-import { handleNewMember, startWelcomeCampaign, getPendingIntroductionList, sendPendingIntroductionReminder, buildPendingIntroductionListMessages } from './sincity-welcome.js';
+import { handleNewMember, sendWelcomePack, startWelcomeCampaign, getPendingIntroductionList, sendPendingIntroductionReminder, buildPendingIntroductionListMessages } from './sincity-welcome.js';
 import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
 
 
@@ -40,7 +40,7 @@ export default {
             if (!await hasMaturedMindedFeatures(chatId)) {
                 return sock.sendMessage(chatId, { text: 'This group has not been registered for the Forge Guard feature profile.', ...channelInfo }, { quoted: message });
             }
-            await handleNewMember(sock, chatId, [context.senderId]);
+            await sendWelcomePack(sock, chatId, [context.senderId]);
             return sock.sendMessage(chatId, { text: '✅ Full welcome test sent for your account.', ...channelInfo }, { quoted: message });
         }
 
@@ -66,7 +66,7 @@ export default {
                     ...channelInfo
                 }, { quoted: message });
             }
-            await handleNewMember(sock, chatId, [userId]);
+            await sendWelcomePack(sock, chatId, [userId]);
             return sock.sendMessage(chatId, {
                 text: `✅ Full welcome sent to @${userId.split('@')[0]}`,
                 mentions: [userId],
