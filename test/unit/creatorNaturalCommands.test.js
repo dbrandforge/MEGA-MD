@@ -12,6 +12,7 @@ describe('creator natural-language command parser', () => {
 
     it('maps kick and remove requests without inventing a target', () => {
         expect(parseCreatorNaturalCommand('bot kick @member')).toEqual({ command: 'kick', args: [], action: 'remove-member' });
+        expect(parseCreatorNaturalCommand('bot kick/remove @member')).toEqual({ command: 'kick', args: [], action: 'remove-member' });
         expect(parseCreatorNaturalCommand('bot remove this person')).toEqual({ command: 'kick', args: [], action: 'remove-member' });
     });
 
