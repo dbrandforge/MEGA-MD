@@ -129,7 +129,12 @@ export async function handleWyrContinuity(sock, chatId, message, senderId) {
   }
 
   await saveSessions(chatId, sessions);
-  await sendQuestion(sock, chatId, senderId, message, session.gender || await getUserGender(senderId));
+  const gender = session.gender || await getUserGender(senderId, sock);
+  if (!gender) {
+    await sock.sendMessage(chatId, { text: 'Set your gender first with *.gender guy* or *.gender lady* to continue WYR.' }, { quoted: message });
+    return true;
+  }
+  await sendQuestion(sock, chatId, senderId, message, gender);
   return true;
 }
 
