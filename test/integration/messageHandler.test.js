@@ -44,7 +44,7 @@ describe('handleMessages', () => {
         handleMessages = mod.handleMessages;
     });
 
-    beforeEach(() => { sock = createMockSock(); vi.clearAllMocks(); });
+    beforeEach(() => { sock = createMockSock(); vi.clearAllMocks(); vi.stubEnv('CHATBOT_ENABLED', 'true'); });
 
     it('ignores non-notify events', async () => {
         await handleMessages(sock, { messages: [], type: 'append' });
