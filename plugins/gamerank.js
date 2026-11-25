@@ -1,5 +1,6 @@
 import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
+import { isRankingLocked } from './rank.js';
 
 const BOARDS = Object.freeze({
   trivia: { key: 'triviaRecords', label: 'TRIVIA', metric: record => Number(record?.points) || 0, unit: 'points' },
@@ -30,6 +31,9 @@ export default {
   async handler(sock, message, args, context) {
     const chatId = context.chatId || message.key.remoteJid;
     const channelInfo = context.channelInfo || {};
+    if (await isRankingLocked(chatId)) {
+      return sock.sendMessage(chatId, { text: '🔒 Ranking commands are temporarily locked by the creator.', ...channelInfo }, { quoted: message });
+    }
     if (!isFeatureGroup(chatId)) {
       return sock.sendMessage(chatId, { text: 'Game rankings are available in the designated Forge Guard game groups.', ...channelInfo }, { quoted: message });
     }
