@@ -55,7 +55,7 @@ function basketResponseProblem(dare, message) {
     const hasAudio = Boolean(message.message?.audioMessage);
     const hasImage = Boolean(message.message?.imageMessage);
     const hasVideo = Boolean(message.message?.videoMessage);
-    if (/voice note|\\bvn\\b|audio message|record (?:a )?(?:short )?audio/i.test(prompt) && !hasAudio) {
+    if (/voice note|\bvn\b|audio message|record (?:a )?(?:short )?audio/i.test(prompt) && !hasAudio) {
         return 'This dare requires a voice note. Send an audio/voice-note reply to the dare to complete it.';
     }
     if (/\b(photo|picture|pic|selfie|mirror pic)\b/i.test(prompt) && !hasImage) {
