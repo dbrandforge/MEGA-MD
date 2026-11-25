@@ -47,10 +47,14 @@ async function chooseFreshOptions(chatId) {
   return options;
 }
 
+export function personalizeWyrOptions(options, gender) {
+  const partnerLabel = gender === 'guy' ? 'woman' : 'man';
+  return options.map(option => String(option).replace(/\bpartner\b/gi, partnerLabel));
+}
+
 async function sendQuestion(sock, chatId, senderId, quoted, gender) {
   const rawOptions = await chooseFreshOptions(chatId);
-  const partnerLabel = gender === 'guy' ? 'woman' : 'man';
-  const options = rawOptions.map(option => option.replace(/\bpartner\b/gi, partnerLabel));
+  const options = personalizeWyrOptions(rawOptions, gender);
   const sent = await sock.sendMessage(chatId, {
     text: `😈 *WOULD YOU RATHER? — MATURE MINDED*\n\n🅰️ ${options[0]}\n\n🅱️ ${options[1]}\n\n_Choose A or B. Reply to this question or tag me with your choice for the next dilemma. Session limit: 20 questions._`
   }, quoted ? { quoted } : undefined);
