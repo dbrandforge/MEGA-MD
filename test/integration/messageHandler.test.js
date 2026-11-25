@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { createMockSock, createMockMessage } from '../mocks/baileys.js';
 
+process.env.CHATBOT_ENABLED = 'true';
+
 vi.mock('../../lib/print.js', () => ({ printMessage: vi.fn(async () => {}), printLog: vi.fn(() => {}) }));
 vi.mock('../../lib/lightweight_store.js', () => ({ default: { getSetting: vi.fn(async () => null), saveSetting: vi.fn(async () => {}), saveSettingVerified: vi.fn(async () => true), getBotMode: vi.fn(async () => 'public'), incrementMessageCount: vi.fn(async () => {}), incrementWeeklyMessageCount: vi.fn(async () => {}), messages: {} } }));
 vi.mock('../../lib/logger.js', () => ({ writeErrorLog: vi.fn(() => {}) }));
