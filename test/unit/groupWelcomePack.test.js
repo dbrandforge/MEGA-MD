@@ -40,7 +40,7 @@ describe('per-group two-message welcome pack settings', () => {
     const config = normalizeWelcomePackConfig({
       messages: ['Intro', 'Rules {daily_activity}', 'Old third message']
     });
-    expect(config.messages[1].match(/\\{daily_activity\\}/g)).toHaveLength(1);
+    expect(config.messages[1].split('{daily_activity}').length - 1).toBe(1);
     expect(config.messages[1]).not.toContain('Old third message');
   });
 
