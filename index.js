@@ -972,11 +972,11 @@ async function startQasimDev() {
                 }
             }
             if (connection === "open") {
-                reconnectAttempts = 0;
                 if (activeSocket !== QasimDev) {
                     printLog('warning', 'Ignoring open event from a non-active WhatsApp socket.');
                     return;
                 }
+                reconnectAttempts = 0;
                 const messageCutoff = setMessageProcessingCutoff();
                 printLog('info', `Inbound message cutoff established at ${new Date(messageCutoff).toISOString()}; pre-connection messages will be ignored.`);
                 printLog('success', 'Bot connected successfully!');
