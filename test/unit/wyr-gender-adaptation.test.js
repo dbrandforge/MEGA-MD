@@ -8,7 +8,7 @@ describe('WYR gender adaptation', () => {
   });
 
   it('uses male partner references for members registered as ladies', () => {
-    expect(personalizeWyrOptions(['A partner who listens', 'Tell your partner'], 'lady'))
+    expect(personalizeWyrOptions(['A partner who listens', 'Tell your partner', 'Be told you are a good boy'], 'lady'))
       .toEqual(['A male partner who listens', 'Tell your male partner', 'Be told you are a good girl']);
   });
 });
