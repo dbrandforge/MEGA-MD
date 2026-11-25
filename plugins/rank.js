@@ -81,7 +81,7 @@ export default {
 };
 
 export async function isRankingLocked(chatId) {
-    return (await store.getSetting(chatId, 'rankingLocked')) === true;
+    return (await store.getSetting('global', 'rankingLocked')) === true;
 }
 
 /** ISO-style Lagos week key; weeks run Monday through Sunday. */
