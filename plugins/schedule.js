@@ -88,6 +88,7 @@ let _engineStarted = false;
 let _engineTimer = null;
 let _lastBirthdayCheckMinute = null;
 let _birthdayCheckInProgress = false;
+let _engineTickInProgress = false;
 let _activeSocket = null;
 let _trackedGroups = new Set();
 let _trackedGroupsLoaded = false;
@@ -184,12 +185,18 @@ export function startSchedulerEngine(sock) {
     if (_engineStarted) return;
     _engineStarted = true;
 
-    console.log('[SCHEDULE] Engine started (15-second interval)');
+    console.log('[SCHEDULE] Engine started (60-second interval; non-overlapping ticks)');
 
     _engineTimer = setInterval(async () => {
+        if (_engineTickInProgress) {
+            console.warn('[SCHEDULE] Previous tick is still running; overlapping tick skipped.');
+            return;
+        }
+        _engineTickInProgress = true;
         const activeSocket = _activeSocket;
         if (!activeSocket) {
             console.warn('[SCHEDULE] Tick skipped: no active WhatsApp socket');
+            _engineTickInProgress = false;
             return;
         }
         try {
@@ -257,8 +264,10 @@ export function startSchedulerEngine(sock) {
             }
         } catch (e) {
             console.error('[SCHEDULE] Engine error:', e.stack || e.message);
+        } finally {
+            _engineTickInProgress = false;
         }
-    }, 15000);
+    }, 60000);
 }
 
 export { loadSchedules, saveSchedules, generateId, parseTime, formatTimeLeft };
