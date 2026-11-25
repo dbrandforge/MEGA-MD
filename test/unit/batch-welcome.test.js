@@ -14,7 +14,7 @@ vi.mock('../../plugins/welcomelog.js', () => ({ logWelcome: vi.fn(async () => {}
 
 import store from '../../lib/lightweight_store.js';
 import { groupRules } from '../../data/welcomeData.js';
-import { handleNewMember } from '../../plugins/sincity-welcome.js';
+import { handleNewMember, sendWelcomePack } from '../../plugins/sincity-welcome.js';
 
 describe('batch member welcome and intro reminders', () => {
   const chatId = '120363000000000000@g.us';
@@ -60,3 +60,16 @@ describe('batch member welcome and intro reminders', () => {
     expect(Object.values(pending).every(record => record.reminded === true)).toBe(true);
   });
 });
+
+
+  it('manual welcome sends exactly two messages and tags the requested member in both', async () => {
+    const sock = { sendMessage: vi.fn(async () => ({ key: { id: 'sent' } })) };
+    const task = sendWelcomePack(sock, chatId, [members[0]]);
+    await vi.advanceTimersByTimeAsync(1000);
+    const result = await task;
+    expect(result).toMatchObject({ sent: true, count: 1 });
+    expect(sock.sendMessage).toHaveBeenCalledTimes(2);
+    for (const [, payload] of sock.sendMessage.mock.calls) {
+      expect(payload.mentions).toEqual([members[0]]);
+    }
+  });
