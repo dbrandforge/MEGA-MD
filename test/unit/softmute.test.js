@@ -82,6 +82,26 @@ describe('per-member soft mute', () => {
         expect(sock.sendMessage).toHaveBeenCalledWith(GROUP, { delete: message.key });
     });
 
+    it('announces an individual soft-mute expiry and clears the persisted notice', async () => {
+        vi.useFakeTimers();
+        try {
+            const sock = { sendMessage: vi.fn(async () => ({})) };
+            await softMuteUser(sock, GROUP, USER, 1000);
+
+            await vi.advanceTimersByTimeAsync(1000);
+
+            expect(await store.getSetting(GROUP, recordKey(USER))).toBeNull();
+            expect(await store.getSetting(GROUP, 'softMuteActiveCount')).toBe(0);
+            expect(sock.sendMessage).toHaveBeenCalledWith(GROUP, expect.objectContaining({
+                text: expect.stringContaining('soft mute has expired'),
+                mentions: [USER]
+            }));
+            expect(await store.getSetting(GROUP, `softMuteExpiryNotice:${USER}`)).toBeNull();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
     it('removes an individual mute on unmute and resets the active-count gate', async () => {
         await softMuteUser({}, GROUP, USER, 10 * 60 * 1000);
         await softUnmuteUser(GROUP, USER);
