@@ -29,6 +29,7 @@ describe('creator natural-language command routing', () => {
         ['lock games', 'gamelock', ['on']],
         ['unlock games', 'gamelock', ['off']],
         ['bypass TOD for an hour', 'bypass', ['tod', '60m']],
+        ['schedule the group lock for an hour', 'grouplock', ['quicklock', 'now', '60m']],
         ['start trivia game', 'trivia', []],
         ['start maths game', 'math', []],
         ['start truth or dare', 'truth', []],
@@ -36,7 +37,7 @@ describe('creator natural-language command routing', () => {
         ['start hangman', 'hangman', []],
         ['end truth or dare', 'endtod', []],
         ['end basket game', 'endbasket', []],
-        ['end hot seat', 'hotseat-end', []],
+        ['end hot seat', 'endhotseat', []],
     ])('maps "%s" to the registered command and arguments', (phrase, command, args) => {
         expect(parseCreatorNaturalCommand(phrase, { addressedToBot: true })).toMatchObject({ command, args });
     });
