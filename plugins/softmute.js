@@ -387,7 +387,7 @@ export async function handleSoftMuteMessage(sock, chatId, message, senderId) {
             const last = deleteFailureLoggedAt.get(chatId) || 0;
             if (Date.now() - last > 60000) {
                 deleteFailureLoggedAt.set(chatId, Date.now());
-                console.error(`[SOFTMUTE] Could not delete muted user message in group: ${error.message}`);
+                console.error(`[SOFTMUTE] Could not delete muted message in ${chatId}; verify bot admin rights and message-delete permissions. code=${error?.data?.statusCode || error?.output?.statusCode || error?.code || 'unknown'} error=${error.message}`);
             }
         }
         return true;
@@ -407,6 +407,9 @@ export default {
     adminOnly: true,
     async handler(sock, message, args, context) {
         const { chatId, channelInfo } = context;
+        if (!context.isBotAdmin) {
+            return sock.sendMessage(chatId, { text: '❌ I need to be a group admin to delete messages. No soft mute was applied.' , ...channelInfo }, { quoted: message });
+        }
         const mentioned = message.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
         const userToMute = mentioned[0] || message.message?.extendedTextMessage?.contextInfo?.participant;
         if (!userToMute) {
