@@ -4,12 +4,14 @@ vi.mock('../../lib/lightweight_store.js', () => ({
   default: { getSetting: vi.fn() }
 }));
 vi.mock('../../lib/featureGroups.js', () => ({ isFeatureGroup: vi.fn(() => true) }));
+vi.mock('../../plugins/rank.js', () => ({ isRankingLocked: vi.fn() }));
 
 import store from '../../lib/lightweight_store.js';
 import gamerank from '../../plugins/gamerank.js';
+import { isRankingLocked } from '../../plugins/rank.js';
 
 describe('.gamerank all-time leaderboards', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); isRankingLocked.mockResolvedValue(false); });
 
   it.each([
     ['trivia', 'triviaRecords', { points: 85, wins: 3, matches: 5 }, '85 points'],
@@ -34,6 +36,15 @@ describe('.gamerank all-time leaderboards', () => {
     expect(sent[0].text).toContain('ALL-TIME TOP 10');
     expect(sent[0].text).toContain(expected);
     expect(sent[0].text).toContain('No weekly reset');
+  });
+
+  it('honours the global ranking lock before reading game records', async () => {
+    isRankingLocked.mockResolvedValue(true);
+    const sock = { sendMessage: vi.fn() };
+    const chatId = '120363000000000000@g.us';
+    await gamerank.handler(sock, { key: { remoteJid: chatId } }, ['trivia'], { chatId });
+    expect(sock.sendMessage).toHaveBeenCalledWith(chatId, expect.objectContaining({ text: expect.stringContaining('locked') }), { quoted: expect.anything() });
+    expect(store.getSetting).not.toHaveBeenCalled();
   });
 
   it('does not clear or mutate stored records', async () => {
