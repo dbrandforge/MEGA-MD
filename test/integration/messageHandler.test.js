@@ -37,6 +37,8 @@ vi.mock('../../plugins/demote.js', () => ({ default: { handleDemotionEvent: vi.f
 vi.mock('../../plugins/autostatus.js', () => ({ default: { handleStatusUpdate: vi.fn(async () => {}) } }));
 vi.mock('../../plugins/anticall.js', () => ({ default: { readState: vi.fn(async () => ({ enabled: true })) } }));
 
+import store from '../../lib/lightweight_store.js';
+
 describe('handleMessages', () => {
     let handleMessages;
     let sock;
@@ -74,6 +76,8 @@ describe('handleMessages', () => {
         const { handleChatbotResponse } = await import('../../plugins/chatbot.js');
         const msg = createMockMessage({ text: 'Hello Forge Bot', isGroup: false });
         await handleMessages(sock, { messages: [msg], type: 'notify' });
+        const { printLog } = await import('../../lib/print.js');
+        console.log('DM_ROUTING_DIAGNOSTIC', { chatbotEnabled: process.env.CHATBOT_ENABLED, botModeCalls: store.getBotMode.mock.calls.length, printLogCalls: printLog.mock.calls });
         expect(handleChatbotResponse).toHaveBeenCalledWith(
             sock, msg.key.remoteJid, msg, 'hello forge bot', msg.key.remoteJid
         );
