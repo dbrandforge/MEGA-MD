@@ -19,8 +19,8 @@ export default {
             const status = await store.getSetting('global', STATUS_KEY);
             if (!status) return sock.sendMessage(chatId, { text: 'No remote restart request has been recorded.' }, quoted);
             const requested = new Date(status.requestedAt).toLocaleString('en-NG', { timeZone: 'Africa/Lagos' });
-            const completed = status.completedAt ? '\\nCompleted: ' + new Date(status.completedAt).toLocaleString('en-NG', { timeZone: 'Africa/Lagos' }) : '';
-            return sock.sendMessage(chatId, { text: '*RENDER RESTART STATUS*\\nState: *' + status.state + '*\\nRequested: ' + requested + completed + (status.detail ? '\\nDetails: ' + status.detail : '') }, quoted);
+            const completed = status.completedAt ? '\nCompleted: ' + new Date(status.completedAt).toLocaleString('en-NG', { timeZone: 'Africa/Lagos' }) : '';
+            return sock.sendMessage(chatId, { text: '*RENDER RESTART STATUS*\nState: *' + status.state + '*\nRequested: ' + requested + completed + (status.detail ? '\nDetails: ' + status.detail : '') }, quoted);
         }
         const apiKey = String(process.env.RENDER_API_KEY || '').trim();
         const serviceId = String(process.env.RENDER_SERVICE_ID || '').trim();
