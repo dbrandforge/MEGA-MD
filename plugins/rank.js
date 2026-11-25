@@ -15,11 +15,14 @@ export default {
     command: 'rank',
     aliases: ['top', 'topusers', 'leaderboard', 'ranks'],
     category: 'group',
-    description: 'Show the top five all-time group contributors.',
+    description: 'Show the top ten all-time group contributors.',
     usage: '.rank',
     groupOnly: true,
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
+        if (await isRankingLocked(chatId)) {
+            return sock.sendMessage(chatId, { text: '🔒 Ranking commands are temporarily locked by the creator.' }, { quoted: message });
+        }
         try {
             // The canonical messageCount store is cumulative and scoped by chat.
             // Weekly counters are retained for other features, but must not drive .rank.
@@ -42,7 +45,7 @@ export default {
                 const userId = lidMap[id] || id;
                 resolved[userId] = (resolved[userId] || 0) + count;
             }
-            const sorted = Object.entries(resolved).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            const sorted = Object.entries(resolved).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
             if (!sorted.length) {
                 return sock.sendMessage(chatId, {
@@ -50,8 +53,8 @@ export default {
                 }, { quoted: message });
             }
 
-            const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
-            let output = '🏆 *ALL-TIME GROUP RANKING*\n📊 Cumulative group message counts\n\n';
+            const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+            let output = '🏆 *ALL-TIME GROUP TOP 10*\n📊 Cumulative group message counts\n\n';
             const mentions = [];
             for (let i = 0; i < sorted.length; i++) {
                 const [userId, count] = sorted[i];
@@ -62,11 +65,13 @@ export default {
                     await Promise.resolve(sock.getName(userId)).catch(() => '');
                 const name = cleanName(rawName);
                 const gender = await getUserGender(userId).catch(() => null);
-                const title = (TITLES[gender] || TITLES.unknown)[Math.min(i, 4)];
+                const title = i < 5
+                    ? (TITLES[gender] || TITLES.unknown)[i]
+                    : `Top Contributor #${i + 1}`;
                 output += `${medals[i]} *${title} — ${name}*\n@${userId.split('@')[0]}\n💬 *${count.toLocaleString()} messages*\n\n`;
                 mentions.push(userId);
             }
-            output += '_Rankings are all-time for this group. Each group has its own independent message totals. Stickers are excluded._';
+            output += '_All-time ranking for this group. Existing cumulative records are preserved. Stickers and game activity are excluded from new counts._';
             return sock.sendMessage(chatId, { text: output, mentions }, { quoted: message });
         } catch (error) {
             console.error('[RANK] All-time leaderboard error:', error);
@@ -75,7 +80,11 @@ export default {
     }
 };
 
-/** Retained for weekly activity housekeeping; .rank itself is all-time. */
+export async function isRankingLocked(chatId) {
+    return (await store.getSetting(chatId, 'rankingLocked')) === true;
+}
+
+/** ISO-style Lagos week key; weeks run Monday through Sunday. */
 export function getLagosWeekKey(date = new Date()) {
     const local = new Date(date.getTime() + 60 * 60 * 1000);
     const day = local.getUTCDay() || 7;
