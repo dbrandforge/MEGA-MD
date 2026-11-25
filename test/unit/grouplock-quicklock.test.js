@@ -94,5 +94,16 @@ describe('quicklock scheduler lifecycle', () => {
             expect.objectContaining({ locked: true, source: 'quicklock' })
         );
         expect(sock.sendMessage).toHaveBeenCalledTimes(1);
+
+        // The group remains locked until the duration really expires.
+        await vi.advanceTimersByTimeAsync(120000);
+        await checkGroupLockSchedule(sock, GROUP);
+
+        const completed = await mockStore.getSetting(GROUP, QUICK_LOCK_KEY);
+        expect(completed.status).toBe('completed');
+        expect(completed.completedWithDailyLockPreserved).toBe(true);
+        expect(sock.groupSettingUpdate).toHaveBeenCalledTimes(1);
+        expect(sock.sendMessage).toHaveBeenCalledTimes(2);
+        expect(sock.sendMessage.mock.calls[1][1].text).toContain('regular group lock remains active');
     });
 });
