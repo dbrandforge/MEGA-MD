@@ -157,16 +157,16 @@ async function sendDayUnlockGreetingOnce(sock, chatId) {
 
 export function parseQuickLockDuration(token) {
     const value = String(token || '').trim().toLowerCase();
-    if (!/^(?:(\\d+)d)?(?:(\\d+)h)?(?:(\\d+)m)?$/.test(value) || !/\\d/.test(value)) return null;
-    const match = value.match(/^(?:(\\d+)d)?(?:(\\d+)h)?(?:(\\d+)m)?$/);
+    if (!/^(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?$/.test(value) || !/\d/.test(value)) return null;
+    const match = value.match(/^(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?$/);
     const duration = Number(match[1] || 0) * 86400000 + Number(match[2] || 0) * 3600000 + Number(match[3] || 0) * 60000;
     return Number.isSafeInteger(duration) && duration >= 60000 && duration <= 7 * 86400000 ? duration : null;
 }
 
 export function parseQuickLockStartAt(clock, now = new Date()) {
     const value = String(clock || '').trim().toLowerCase();
-    const match12 = value.match(/^(1[0-2]|0?[1-9])(?::([0-5]\\d))?\\s*(am|pm)$/);
-    const match24 = value.match(/^([01]\\d|2[0-3]):([0-5]\\d)$/);
+    const match12 = value.match(/^(1[0-2]|0?[1-9])(?::([0-5]\d))?\s*(am|pm)$/);
+    const match24 = value.match(/^([01]\d|2[0-3]):([0-5]\d)$/);
     if (!match12 && !match24) return null;
     let hour = Number(match12 ? match12[1] : match24[1]);
     const minute = Number(match12 ? match12[2] || 0 : match24[2]);
