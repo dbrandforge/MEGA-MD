@@ -448,9 +448,9 @@ async function runGroupLockSchedule(sock, chatId) {
 
         // A pending one-off lock owns this group's lifecycle until activation.
         // Do not let the recurring daily self-heal lock it before its requested time.
-        const quickLockPending = quickLock?.status === 'scheduled' && now.getTime() < Number(quickLock.startAt);
+        const quickLockPending = quickLock?.status === 'scheduled' && Date.now() < Number(quickLock.startAt);
 
-        if (quickLock?.status === 'scheduled' && now.getTime() >= Number(quickLock.startAt)) {
+        if (quickLock?.status === 'scheduled' && Date.now() >= Number(quickLock.startAt)) {
             try {
                 // Start the duration only after WhatsApp confirms the group was locked.
                 await sock.groupSettingUpdate(chatId, 'announcement');
@@ -472,7 +472,7 @@ async function runGroupLockSchedule(sock, chatId) {
             shouldBeLocked = nowMinutes >= lockMinutes || nowMinutes < unlockMinutes;
         }
 
-        if (quickLock?.status === 'locked' && now.getTime() >= Number(quickLock.endAt)) {
+        if (quickLock?.status === 'locked' && Date.now() >= Number(quickLock.endAt)) {
             const preserveDailyLock = (shouldBeLocked && manualOverride.day !== day) || (manualOverride.day === day && manualOverride.action === 'lock');
             try {
                 if (!preserveDailyLock && !await unlockGroupSetting(sock, chatId)) throw new Error('WhatsApp rejected quick-lock expiry unlock.');
