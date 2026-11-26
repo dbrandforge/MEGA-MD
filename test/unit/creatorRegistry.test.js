@@ -16,6 +16,7 @@ describe('protected Forge creator registry', () => {
 
     beforeEach(async () => {
         state.value = [];
+        vi.clearAllMocks();
         vi.resetModules();
         registry = await import('../../lib/creatorRegistry.js');
         await registry.initializeCreatorRegistry();
