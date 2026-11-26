@@ -463,8 +463,8 @@ export default {
                 return reply('The adjustment window has closed. Hot Seat is starting.');
             }
             const tagged = await getNormalizedMentions(sock, message);
-            if (!tagged.length) return reply('Tag 1 to 4 people in the same message: *.hotseat add @user1 @user2 @user3 @user4*');
             const limits = playerLimits(session);
+            if (!tagged.length) return reply(session.gameType === 'pick_your_sin' ? 'Tag up to five participants: *.hotseat add @user1 @user2 @user3 @user4 @user5*.' : 'Tag 1 to 4 people in the same message: *.hotseat add @user1 @user2 @user3 @user4*');
             if (tagged.length > limits.max || !unique(tagged)) return reply(`Tag no more than ${limits.max} different people per command.`);
             const basePlayers = await Promise.all((session.players || []).map(id => normalizeHotSeatJid(sock, id)));
             const additions = tagged.filter(id => !basePlayers.includes(id));
