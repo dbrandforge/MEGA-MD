@@ -57,6 +57,24 @@ describe('Pick Your Sin sessions', () => {
     expect(session.playerStates[players[0]].currentCard).not.toBe(session.playerStates[players[1]].currentCard);
     expect(session.usedPromptKeys).toHaveLength(2);
   });
+  it('does not send a schedule-bypass reply to ordinary messages from an active player', async () => {
+    const sock = { user: { id: '234899999999:1@s.whatsapp.net' }, sendMessage: vi.fn(async () => ({ key: { id: 'prompt' } })) };
+    await beginPickYourSinSession(sock, chatId, players, 'admin@s.whatsapp.net');
+    await handlePickYourSinMessage(sock, chatId, colorMessage('red'), 'red', players[0]);
+    const { isGameAllowed } = await import('../../plugins/daylock.js');
+    vi.mocked(isGameAllowed).mockClear();
+    const sentBefore = sock.sendMessage.mock.calls.length;
+
+    const handled = await handlePickYourSinMessage(sock, chatId, {
+      key: { id: 'ordinary-1', fromMe: false },
+      message: { conversation: 'just chatting with everyone' }
+    }, 'just chatting with everyone', players[0]);
+
+    expect(handled).toBe(false);
+    expect(sock.sendMessage).toHaveBeenCalledTimes(sentBefore);
+    expect(isGameAllowed).not.toHaveBeenCalled();
+  });
+
   it('requires a different colour on consecutive turns and enforces the cooldown', async () => {
     let sent = 0;
     const sock = { user: { id: '234899999999:1@s.whatsapp.net' }, sendMessage: vi.fn(async () => ({ key: { id: `bot-${++sent}` } })) };
@@ -146,6 +164,39 @@ describe('Pick Your Sin sessions', () => {
     session = Object.values(state.pickYourSinSessions)[0];
     expect(session.playerStates[players[0]].step).toBe(6);
     expect(session.playerStates[players[0]].waiting).toBe(false);
+  });
+
+  it('accepts an unquoted view-once video for the active dare and records response metadata only', async () => {
+    let sent = 0;
+    const sock = { user: { id: '234899999999:1@s.whatsapp.net' }, sendMessage: vi.fn(async () => ({ key: { id: `bot-${++sent}` } })) };
+    await beginPickYourSinSession(sock, chatId, players, 'admin@s.whatsapp.net');
+    await handlePickYourSinMessage(sock, chatId, colorMessage('red'), 'red', players[0]);
+
+    const nextColors = ['ash', 'red', 'ash', 'red', 'ash'];
+    for (const color of nextColors) {
+      const session = Object.values(state.pickYourSinSessions)[0];
+      const promptId = session.playerStates[players[0]].questionMessageId;
+      await handlePickYourSinMessage(sock, chatId, {
+        key: { fromMe: false },
+        message: { extendedTextMessage: { text: goodTruthAnswer, contextInfo: { stanzaId: promptId } } }
+      }, goodTruthAnswer, players[0]);
+      await vi.advanceTimersByTimeAsync(30_000);
+      await handlePickYourSinMessage(sock, chatId, colorMessage(color), color, players[0]);
+    }
+
+    let session = Object.values(state.pickYourSinSessions)[0];
+    expect(session.playerStates[players[0]].currentType).toBe('dare');
+    const handled = await handlePickYourSinMessage(sock, chatId, {
+      key: { id: 'view-once-dare-proof', fromMe: false },
+      message: { viewOnceMessageV2: { message: { videoMessage: {} } } }
+    }, '', players[0]);
+
+    session = Object.values(state.pickYourSinSessions)[0];
+    expect(handled).toBe(true);
+    expect(session.playerStates[players[0]].step).toBe(6);
+    expect(session.playerStates[players[0]].responses.at(-1)).toMatchObject({
+      type: 'dare', mediaKind: 'video', messageId: 'view-once-dare-proof', viewOnce: true
+    });
   });
 
   it('rejects non-selected participants', async () => {
