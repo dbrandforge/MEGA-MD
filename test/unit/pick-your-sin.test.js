@@ -130,6 +130,38 @@ describe('Pick Your Sin sessions', () => {
     expect(sock.sendMessage.mock.calls.at(-1)[1].text).toContain('only be used on a TRUTH');
   });
 
+  it('does not consume the pass when a participant tries to use it on a dare', async () => {
+    let sent = 0;
+    const sock = { user: { id: '234899999999:1@s.whatsapp.net' }, sendMessage: vi.fn(async () => ({ key: { id: `bot-${++sent}` } })) };
+    await beginPickYourSinSession(sock, chatId, players, 'admin@s.whatsapp.net');
+    await handlePickYourSinMessage(sock, chatId, { key: { fromMe: false }, message: { conversation: 'red' } }, 'red', players[0]);
+
+    const colors = ['green', 'yellow', 'orange', 'red', 'green'];
+    for (const color of colors) {
+      let session = Object.values(state.pickYourSinSessions)[0];
+      let promptId = session.playerStates[players[0]].questionMessageId;
+      await handlePickYourSinMessage(sock, chatId, {
+        key: { fromMe: false },
+        message: { extendedTextMessage: { contextInfo: { stanzaId: promptId } } }
+      }, 'answer', players[0]);
+      await vi.advanceTimersByTimeAsync(30_000);
+      await handlePickYourSinMessage(sock, chatId, { key: { fromMe: false }, message: { conversation: color } }, color, players[0]);
+    }
+
+    const session = Object.values(state.pickYourSinSessions)[0];
+    expect(session.playerStates[players[0]].currentType).toBe('dare');
+    const dareId = session.playerStates[players[0]].questionMessageId;
+    await handlePickYourSinMessage(sock, chatId, {
+      key: { fromMe: false },
+      message: { extendedTextMessage: { contextInfo: { stanzaId: dareId } } }
+    }, 'pass', players[0]);
+    const after = Object.values(state.pickYourSinSessions)[0].playerStates[players[0]];
+    expect(after.step).toBe(5);
+    expect(after.passUsed).toBe(false);
+    expect(after.waiting).toBe(true);
+    expect(sock.sendMessage.mock.calls.at(-1)[1].text).toContain('only be used on a TRUTH');
+  });
+
   it('blocks a participant who has already completed today', async () => {
     const day = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Africa/Lagos', year: 'numeric', month: '2-digit', day: '2-digit'
