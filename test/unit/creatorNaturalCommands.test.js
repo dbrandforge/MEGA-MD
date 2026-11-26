@@ -63,6 +63,14 @@ describe('creator natural-language command routing', () => {
         });
     });
 
+    it('routes the overloaded .remove alias to member removal only when a member is targeted', () => {
+        expect(parseCreatorNaturalCommand('.remove @user', { addressedToBot: true })).toMatchObject({
+            command: 'kick', action: 'remove-member'
+        });
+        expect(parseCreatorNaturalCommand('.remove 5', { addressedToBot: true })).toBeNull();
+        expect(parseCreatorNaturalCommand('.remove 5 messages', { addressedToBot: true })).toBeNull();
+    });
+
     it('maps voice-mode natural language to the setting command', () => {
         expect(parseCreatorNaturalCommand('Enable voicemode', { addressedToBot: true })).toMatchObject({
             command: 'voicemode', args: ['on'], action: 'voice-mode-on'
