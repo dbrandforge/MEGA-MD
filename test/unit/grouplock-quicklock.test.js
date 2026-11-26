@@ -33,7 +33,7 @@ vi.mock('../../data/groupLifecycleMessages.js', () => ({
 }));
 vi.mock('../../config.js', () => ({ default: {} }));
 
-import { checkGroupLockSchedule } from '../../plugins/grouplock.js';
+import groupLockCommand, { checkGroupLockSchedule } from '../../plugins/grouplock.js';
 
 const GROUP = '120363000000000001@g.us';
 const QUICK_LOCK_KEY = 'groupQuickLock_v1';
@@ -94,6 +94,10 @@ describe('quicklock scheduler lifecycle', () => {
             expect.objectContaining({ locked: true, source: 'quicklock' })
         );
         expect(sock.sendMessage).toHaveBeenCalledTimes(1);
+        expect(sock.sendMessage.mock.calls[0][1]).toMatchObject({ mentionAll: true });
+        expect(sock.sendMessage.mock.calls[0][1].text).toContain('2 minutes');
+        expect(sock.sendMessage.mock.calls[0][1].text).toContain('Automatic unlock');
+        expect(sock.sendMessage.mock.calls[0][1]).not.toHaveProperty('mentions');
 
         // The group remains locked until the duration really expires.
         await vi.advanceTimersByTimeAsync(120000);
@@ -106,4 +110,30 @@ describe('quicklock scheduler lifecycle', () => {
         expect(sock.sendMessage).toHaveBeenCalledTimes(2);
         expect(sock.sendMessage.mock.calls[1][1].text).toContain('regular group lock remains active');
     });
+
+    it('announces every manual lock with native @all even if the nightly announcement was already sent', async () => {
+        vi.setSystemTime(new Date('2026-11-25T02:01:00.000Z'));
+        await mockStore.saveSettingVerified(GROUP, 'groupLockGoodnightSent', {
+            date: '2026-11-25',
+            sentAt: Date.now() - 60000
+        });
+        const sock = {
+            groupSettingUpdate: vi.fn(async () => {}),
+            sendMessage: vi.fn(async () => {})
+        };
+        const message = { key: { remoteJid: GROUP }, message: { conversation: '.lock' } };
+
+        await groupLockCommand.handler(sock, message, ['lock'], {
+            chatId: GROUP,
+            channelInfo: {},
+            senderId: '2348000000001@s.whatsapp.net'
+        });
+
+        expect(sock.groupSettingUpdate).toHaveBeenCalledWith(GROUP, 'announcement');
+        expect(sock.sendMessage).toHaveBeenCalledTimes(1);
+        expect(sock.sendMessage.mock.calls[0][1]).toMatchObject({ mentionAll: true });
+        expect(sock.sendMessage.mock.calls[0][1].text).toContain('locked by an admin');
+        expect(sock.sendMessage.mock.calls[0][1]).not.toHaveProperty('mentions');
+    });
+
 });
