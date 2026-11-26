@@ -160,7 +160,7 @@ async function schedulePlayerInactivity(sock, chatId, sessionId, playerId, token
         const sessions = await getSessions(chatId);
         const session = sessions[sessionId];
         const state = session?.playerStates?.[playerId];
-        if (!session || session.status !== 'active' || !state || state.status !== 'active' || !state.waiting || state.inactivityToken !== token) return;
+        if (!session || session.status !== 'active' || !state || state.status !== 'active' || !state.waiting || state.inactivityToken !== token || Date.now() >= waitingSince + PLAYER_INACTIVITY_MS) return;
         await sock.sendMessage(chatId, { text: `⏰ ${mention(playerId)}, your PICK YOUR SIN prompt is still unanswered. You have five more minutes before you are removed from this session.`, mentions: [playerId] });
       });
     } catch (error) { console.error('[PICK YOUR SIN] Reminder failed:', error); }
