@@ -30,7 +30,7 @@ describe('creator natural-language command routing', () => {
         ['unlock games', 'gamelock', ['off']],
         ['bypass TOD for an hour', 'bypass', ['tod', '60m']],
         ['schedule the group lock for an hour', 'grouplock', ['quicklock', 'now', '60m']],
-        ['start trivia game', 'trivia', []],
+        ['start trivia game', 'trivia', ['mixed']],
         ['start maths game', 'math', []],
         ['start truth or dare', 'tod', []],
         ['start hot seat', 'hotseat', []],
@@ -44,13 +44,13 @@ describe('creator natural-language command routing', () => {
 
     it.each([
         ['I need you to remove @user', 'kick', []],
-        ['I want you to start trivia', 'trivia', []],
+        ['I want you to start trivia', 'trivia', ['mixed']],
         ['Could you lock this group for 2 hours?', 'grouplock', ['quicklock', 'now', '120m']],
         ['Do me a favour and tag everyone', 'tagall', []],
         ["Let's start hot seat", 'hotseat', []],
         ['When you get a chance, send me the activities of the day', 'activity', []],
         ['Also, unlock games', 'gamelock', ['off']],
-        ['Can we start trivia?', 'trivia', []],
+        ['Can we start trivia?', 'trivia', ['mixed']],
         ['Please, start hangman', 'hangman', []],
         ['I was hoping you could lock the group', 'grouplock', ['lock']]
     ])('understands conversational instruction "%s"', (phrase, command, args) => {
@@ -102,7 +102,15 @@ describe('creator natural-language command routing', () => {
         });
     });
 
-    it('routes trivia defaults, maths grades and PICK YOUR SIN conversational starts', () => {\n        expect(parseCreatorNaturalCommand('Start trivia game', { addressedToBot: true })).toMatchObject({ command: 'trivia', args: ['mixed'] });\n        expect(parseCreatorNaturalCommand('Start trivia maths game easy', { addressedToBot: true })).toMatchObject({ command: 'math', args: ['easy'] });\n        expect(parseCreatorNaturalCommand('Starts trivia maths easy', { addressedToBot: true })).toMatchObject({ command: 'math', args: ['easy'] });\n        expect(parseCreatorNaturalCommand('Start picksin', { addressedToBot: true })).toMatchObject({ command: 'picksin', args: ['start'] });\n        expect(parseCreatorNaturalCommand('Start Pick Your Sin', { addressedToBot: true })).toMatchObject({ command: 'picksin', args: ['start'] });\n    });\n\n    it('asks which game to end when the creator says only “end game”', () => {
+    it('routes trivia defaults, maths grades and PICK YOUR SIN conversational starts', () => {
+        expect(parseCreatorNaturalCommand('Start trivia game', { addressedToBot: true })).toMatchObject({ command: 'trivia', args: ['mixed'] });
+        expect(parseCreatorNaturalCommand('Start trivia maths game easy', { addressedToBot: true })).toMatchObject({ command: 'math', args: ['easy'] });
+        expect(parseCreatorNaturalCommand('Starts trivia maths easy', { addressedToBot: true })).toMatchObject({ command: 'math', args: ['easy'] });
+        expect(parseCreatorNaturalCommand('Start picksin', { addressedToBot: true })).toMatchObject({ command: 'picksin', args: ['start'] });
+        expect(parseCreatorNaturalCommand('Start Pick Your Sin', { addressedToBot: true })).toMatchObject({ command: 'picksin', args: ['start'] });
+    });
+
+    it('asks which game to end when the creator says only “end game”', () => {
         expect(parseCreatorNaturalCommand('end game', { addressedToBot: true })).toMatchObject({
             action: 'clarify',
             clarification: expect.stringContaining('Which game should I end')

@@ -1,6 +1,6 @@
 import store from '../lib/lightweight_store.js';
 import { getUserGender } from './gender.js';
-import { getTruths } from '../data/todLists.js';
+import { buildPickYourSinBank, normalizePickYourSinPrompt } from '../data/pickYourSinBank.js';
 import { isGameAllowed } from './daylock.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { sameWhatsAppUser, canonicalWhatsAppUserId } from '../lib/whatsappIdentity.js';
@@ -8,7 +8,12 @@ import { sameWhatsAppUser, canonicalWhatsAppUserId } from '../lib/whatsappIdenti
 const KEY = 'pickYourSinSessions';
 const DAILY_KEY = 'pickYourSinDailyCompletions';
 const COOLDOWN_MS = 30_000;
+const NO_ANSWER_REMINDER_MS = 5 * 60 * 1000;
+const PLAYER_INACTIVITY_MS = 10 * 60 * 1000;
+const REPLACEMENT_WINDOW_MS = 5 * 60 * 1000;
 const chatQueues = new Map();
+const inactivityTimers = new Map();
+const replacementTimers = new Map();
 async function withChatLock(chatId, task) {
   const previous = chatQueues.get(chatId) || Promise.resolve();
   let release;
@@ -116,29 +121,130 @@ async function saveSessions(chatId, sessions) {
     throw new Error('Pick Your Sin session state could not be persisted.');
   }
 }
-function buildDecks() {
-  const decks = {};
-  for (const gender of ['guy', 'lady']) {
-    const truths = shuffle([...new Set(getTruths(gender).filter(Boolean).map(String))]);
-    const dares = shuffle(ACTION_DARES);
-    const truthFallback = [
-      'What intimate desire have you kept private because you fear being judged?',
-      'What is one adult fantasy you have seriously considered but never discussed?',
-      'What is the most personal truth about your attraction patterns that you rarely admit?',
-      'What boundary or desire took you the longest to understand about yourself?'
-    ];
-    for (const [colorIndex, color] of Object.keys(COLORS).entries()) {
-      const truthCards = [];
-      const dareCards = [];
-      for (let i = 0; i < 42; i++) {
-        const sourceIndex = colorIndex * 42 + i;
-        truthCards.push(truths[sourceIndex % Math.max(1, truths.length)] || truthFallback[i % truthFallback.length]);
+function scheduleReplacementExpiry(sock, chatId, sessionId, playerId, deadline) {
+  const key = `${sessionId}:${playerId}:${deadline}`;
+  if (replacementTimers.has(key)) return;
+  const timer = setTimeout(async () => {
+    replacementTimers.delete(key);
+    try {
+      await withChatLock(chatId, async () => {
+        const latest = await getSessions(chatId);
+        const current = latest[sessionId];
+        const currentState = current?.playerStates?.[playerId];
+        if (!current || current.status !== 'active' || !currentState || currentState.status !== 'out' || !currentState.waitingForReplacement || currentState.replacementDeadlineAt !== deadline) return;
+        currentState.waitingForReplacement = false;
+        currentState.replacementExpired = true;
+        latest[sessionId] = current;
+        await saveSessions(chatId, latest);
+        await sock.sendMessage(chatId, { text: `⌛ The replacement window for ${mention(playerId)} has expired. PICK YOUR SIN continues with the remaining players.` });
+        if (current.players.every(id => ['complete', 'out'].includes(current.playerStates?.[id]?.status))) {
+          current.status = 'complete';
+          current.completedAt = Date.now();
+          latest[sessionId] = current;
+          await saveSessions(chatId, latest);
+          await sock.sendMessage(chatId, { text: '🔥 *PICK YOUR SIN is complete.* All remaining players have finished or been removed.' });
+        }
+      });
+    } catch (error) { console.error('[PICK YOUR SIN] Replacement-window expiry failed:', error); }
+  }, Math.max(0, deadline - Date.now()));
+  replacementTimers.set(key, timer);
+}
+
+async function schedulePlayerInactivity(sock, chatId, sessionId, playerId, token, waitingSince) {
+  if (!token || inactivityTimers.has(token)) return;
+  const reminderDelay = Math.max(0, waitingSince + NO_ANSWER_REMINDER_MS - Date.now());
+  const removalDelay = Math.max(0, waitingSince + PLAYER_INACTIVITY_MS - Date.now());
+  const reminderTimer = setTimeout(async () => {
+    try {
+      await withChatLock(chatId, async () => {
+        const sessions = await getSessions(chatId);
+        const session = sessions[sessionId];
+        const state = session?.playerStates?.[playerId];
+        if (!session || session.status !== 'active' || !state || state.status !== 'active' || !state.waiting || state.inactivityToken !== token || Date.now() >= waitingSince + PLAYER_INACTIVITY_MS) return;
+        await sock.sendMessage(chatId, { text: `⏰ ${mention(playerId)}, your PICK YOUR SIN prompt is still unanswered. You have five more minutes before you are removed from this session.`, mentions: [playerId] });
+      });
+    } catch (error) { console.error('[PICK YOUR SIN] Reminder failed:', error); }
+  }, reminderDelay);
+  const removalTimer = setTimeout(async () => {
+    inactivityTimers.delete(token);
+    try {
+      await withChatLock(chatId, async () => {
+        const sessions = await getSessions(chatId);
+        const session = sessions[sessionId];
+        const state = session?.playerStates?.[playerId];
+        if (!session || session.status !== 'active' || !state || state.status !== 'active' || !state.waiting || state.inactivityToken !== token) return;
+        state.status = 'out';
+        state.waiting = false;
+        state.inactivityToken = null;
+        state.waitingSince = null;
+        state.removedAt = Date.now();
+        state.waitingForReplacement = true;
+        state.replacementDeadlineAt = Date.now() + REPLACEMENT_WINDOW_MS;
+        sessions[sessionId] = session;
+        await saveSessions(chatId, sessions);
+        await sock.sendMessage(chatId, { text: `⌛ ${mention(playerId)} has been removed after 10 minutes without an answer. An admin has five minutes to replace them with *.picksin replace @${playerId.split('@')[0]} @replacement*. Other players continue normally.`, mentions: [playerId] });
+        scheduleReplacementExpiry(sock, chatId, sessionId, playerId, state.replacementDeadlineAt);
+      });
+    } catch (error) { console.error('[PICK YOUR SIN] Inactivity removal failed:', error); }
+  }, removalDelay);
+  inactivityTimers.set(token, [reminderTimer, removalTimer]);
+}
+
+export async function resumePickYourSinSessions(sock, chatId) {
+  const sessions = await getSessions(chatId);
+  const pendingInactivity = [];
+  const pendingReplacement = [];
+  let changed = false;
+  for (const session of Object.values(sessions)) {
+    if (session.status !== 'active') continue;
+    for (const [playerId, state] of Object.entries(session.playerStates || {})) {
+      if (state.status === 'active' && state.waiting) {
+        if (!state.inactivityToken) {
+          state.waitingSince = Number(state.waitingSince || Date.now());
+          state.inactivityToken = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+          changed = true;
+        }
+        pendingInactivity.push({ sessionId: session.id, playerId, token: state.inactivityToken, waitingSince: state.waitingSince });
       }
-      for (let i = 0; i < 8; i++) dareCards.push(dares[(colorIndex * 8 + i) % dares.length]);
-      decks[`${gender}:${color}`] = { truths: truthCards, dares: dareCards };
+      if (state.status === 'out' && state.waitingForReplacement && state.replacementDeadlineAt) {
+        pendingReplacement.push({ sessionId: session.id, playerId, deadline: state.replacementDeadlineAt });
+      }
     }
   }
-  return decks;
+  if (changed) await saveSessions(chatId, sessions);
+  for (const item of pendingInactivity) await schedulePlayerInactivity(sock, chatId, item.sessionId, item.playerId, item.token, item.waitingSince);
+  for (const item of pendingReplacement) scheduleReplacementExpiry(sock, chatId, item.sessionId, item.playerId, item.deadline);
+  return pendingInactivity.length + pendingReplacement.length;
+}
+async function replaceInactivePlayer(sock, chatId, message, session) {
+  const tagged = await Promise.all(getMentions(message).map(async id => (await canonicalWhatsAppUserId(sock, id)) || id));
+  const uniqueTags = [...new Set(tagged)];
+  if (uniqueTags.length !== 2 || uniqueTags.length !== tagged.length) return sock.sendMessage(chatId, { text: 'Tag the removed participant first and the replacement second: *.picksin replace @removed @replacement*.', quoted: message });
+  const [removedId, replacementId] = uniqueTags;
+  const removedState = session.playerStates?.[removedId];
+  if (!session.players.includes(removedId) || !removedState || removedState.status !== 'out' || !removedState.waitingForReplacement || Date.now() > Number(removedState.replacementDeadlineAt || 0)) return sock.sendMessage(chatId, { text: 'That participant is not within an active five-minute replacement window.', quoted: message });
+  if (session.players.includes(replacementId)) return sock.sendMessage(chatId, { text: 'The replacement is already in this PICK YOUR SIN session.', quoted: message });
+  const daily = (await store.getSetting(chatId, DAILY_KEY)) || {};
+  if ((daily[lagosDateKey()] || []).includes(replacementId)) return sock.sendMessage(chatId, { text: 'That replacement has already completed PICK YOUR SIN today and cannot take another daily slot.', quoted: message });
+  const replacementTimerKey = `${session.id}:${removedId}:${removedState.replacementDeadlineAt}`;
+  const replacementTimer = replacementTimers.get(replacementTimerKey);
+  if (replacementTimer) clearTimeout(replacementTimer);
+  replacementTimers.delete(replacementTimerKey);
+  const gender = await getUserGender(replacementId, sock);
+  const nextState = { ...removedState, status: 'active', gender: gender || null, waitingForGender: !gender, color: null, lastColor: null, awaitingColor: true, waiting: false, questionMessageId: null, currentCard: null, currentType: null, waitingSince: null, inactivityToken: null, waitingForReplacement: false, replacementDeadlineAt: null, replacementExpired: false, removedAt: null, cooldownUntil: null, nextPromptToken: null, replacedPlayer: removedId };
+  session.players = session.players.map(id => id === removedId ? replacementId : id);
+  delete session.playerStates[removedId];
+  session.playerStates[replacementId] = nextState;
+  const sessions = await getSessions(chatId);
+  sessions[session.id] = session;
+  await saveSessions(chatId, sessions);
+  await sock.sendMessage(chatId, { text: `🔁 ${mention(replacementId)} has replaced ${mention(removedId)} and will continue from the same game progress.`, mentions: [replacementId, removedId] });
+  if (nextState.waitingForGender) await sock.sendMessage(chatId, { text: `${mention(replacementId)}, register your gender with *.gender guy* or *.gender lady*, then choose a colour.`, mentions: [replacementId] });
+  else await sendColorPrompt(sock, chatId, session, replacementId);
+  return true;
+}
+function buildDecks() {
+  return buildPickYourSinBank();
 }
 
 async function findPlayerKey(sock, players, userId) {
@@ -164,39 +270,56 @@ async function sendPrompt(sock, chatId, session, playerId) {
       text: `🏁 ${mention(playerId)} has completed PICK YOUR SIN — 10 truths and 2 dares.`,
       mentions: [playerId]
     });
-    if (session.players.every(id => session.playerStates[id]?.status === 'complete')) {
+    if (session.players.every(id => ['complete', 'out'].includes(session.playerStates[id]?.status))) {
       session.status = 'complete';
       session.completedAt = Date.now();
       const completedSessions = await getSessions(chatId);
       completedSessions[session.id] = session;
       await saveSessions(chatId, completedSessions);
-      await sock.sendMessage(chatId, { text: '🔥 *PICK YOUR SIN is complete.* All five selected players have finished.' });
+      await sock.sendMessage(chatId, { text: '🔥 *PICK YOUR SIN is complete.* All remaining players have finished or been removed.' });
     }
     return true;
   }
   const type = questionType(state.step);
   const deck = session.decks[`${state.gender}:${state.color}`];
-  const indexKey = type === 'truth' ? 'truthIndex' : 'dareIndex';
   const cards = type === 'truth' ? deck.truths : deck.dares;
-  const card = cards[state[indexKey] % cards.length];
-  state[indexKey] += 1;
+  if (!Array.isArray(session.usedPromptKeys)) session.usedPromptKeys = [];
+  if (!Array.isArray(session.usedPromptIds)) session.usedPromptIds = [];
+  const usedKeys = new Set(session.usedPromptKeys);
+  const card = cards.find(item => !usedKeys.has(normalizePickYourSinPrompt(typeof item === 'string' ? item : item.text)));
+  if (!card) {
+    state.status = 'out';
+    state.waiting = false;
+    const latest = await getSessions(chatId);
+    latest[session.id] = session;
+    await saveSessions(chatId, latest);
+    await sock.sendMessage(chatId, { text: `⚠️ ${mention(playerId)} has no unused ${type} cards left in this colour. The rest of the players can continue.`, mentions: [playerId] });
+    return false;
+  }
+  const cardText = typeof card === 'string' ? card : card.text;
+  const cardId = typeof card === 'string' ? normalizePickYourSinPrompt(cardText) : card.id;
+  session.usedPromptKeys.push(normalizePickYourSinPrompt(cardText));
+  if (cardId) session.usedPromptIds.push(cardId);
   state.currentType = type;
   state.awaitingColor = false;
-  state.currentCard = card;
+  state.currentCard = cardText;
   state.waiting = true;
   state.cooldownUntil = null;
   const label = type === 'truth' ? '🔥 *TRUTH*' : '💀 *DARE — ACTION REQUIRED*';
-  const progress = type === 'truth'
-    ? `Truth ${state.step < 5 ? state.step + 1 : state.step - 5}/5`
-    : `Dare ${state.step === 5 ? 1 : 2}/2`;
+  const progress = type === 'truth' ? `Truth ${state.step < 5 ? state.step + 1 : state.step - 5}/5` : `Dare ${state.step === 5 ? 1 : 2}/2`;
   const sent = await sock.sendMessage(chatId, {
-    text: `🎭 *PICK YOUR SIN* — ${COLORS[state.color].emoji} ${COLORS[state.color].label}\n${label} · ${progress}\n\n${card}\n\n_Reply to this prompt or tag the bot when you've completed it. You may use your one session pass on a TRUTH only. You have 30 seconds between prompts._`,
+    text: `🎭 *PICK YOUR SIN* — ${COLORS[state.color].emoji} ${COLORS[state.color].label}\n${mention(playerId)}, this prompt is for you.\n${label} · ${progress}\n\n${cardText}\n\n_Reply to this prompt or tag the bot when you've completed it. You may use your one session pass on a TRUTH only. You have 30 seconds between prompts._`,
     mentions: [playerId]
   });
   state.questionMessageId = sent?.key?.id || null;
   const latestSessions = await getSessions(chatId);
   latestSessions[session.id] = session;
   await saveSessions(chatId, latestSessions);
+  state.waitingSince = Date.now();
+  state.inactivityToken = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  latestSessions[session.id] = session;
+  await saveSessions(chatId, latestSessions);
+  await schedulePlayerInactivity(sock, chatId, session.id, playerId, state.inactivityToken, state.waitingSince);
   return true;
 }
 
@@ -382,7 +505,9 @@ async function beginPickYourSinSessionLocked(sock, chatId, players, startedBy) {
     startedBy,
     players: Object.keys(states),
     playerStates: states,
-    decks: buildDecks()
+    decks: buildDecks(),
+    usedPromptKeys: [],
+    usedPromptIds: []
   };
   const sessions = await getSessions(chatId);
   if (Object.values(sessions).some(item => item.status === 'active')) {
@@ -391,7 +516,7 @@ async function beginPickYourSinSessionLocked(sock, chatId, players, startedBy) {
   sessions[session.id] = session;
   await saveSessions(chatId, sessions);
   await sock.sendMessage(chatId, {
-    text: `🔥 *PICK YOUR SIN — SELECTION COMPLETE*\n\nFive participants are in. Each player is playing independently and simultaneously.\n\nChoose one colour by typing its name or sending its emoji:\n❤️ RED · 💚 GREEN · 💛 YELLOW · 🧡 ORANGE\n\nEach player gets two rounds: five truths and one action dare per round. One pass per session. 30-second cooldown between prompts.`,
+    text: `🔥 *PICK YOUR SIN — SELECTION COMPLETE*\n\nFive participants are in: ${session.players.map(mention).join(' ')}\nEach player is playing independently and simultaneously.\n\nChoose one colour by typing its name or sending its emoji:\n❤️ RED · 💚 GREEN · 💛 YELLOW · 🧡 ORANGE\n\nEach player gets two rounds: five truths and one action dare per round. One pass per session. 30-second cooldown between prompts.`,
     mentions: session.players
   });
   for (const [playerId, state] of Object.entries(states)) {
@@ -488,8 +613,14 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
     await sock.sendMessage(chatId, { text: 'Your one pass for this session has already been used.' }, { quoted: message });
     return true;
   }
+  if (state.inactivityToken) {
+    for (const timer of inactivityTimers.get(state.inactivityToken) || []) clearTimeout(timer);
+    inactivityTimers.delete(state.inactivityToken);
+  }
   if (isPass) state.passUsed = true;
   else state.step += 1;
+  state.inactivityToken = null;
+  state.waitingSince = null;
 
   state.waiting = false;
   state.color = null;
@@ -538,6 +669,7 @@ export default {
     const sub = String(args?.[0] || '').toLowerCase();
     const sessions = await getSessions(chatId);
     const session = Object.values(sessions).find(item => item.status === 'active');
+    if (sub === 'replace' && session) return replaceInactivePlayer(sock, chatId, message, session);
     if (sub === 'end' || sub === 'stop') {
       if (!session) {
         const pending = await getSelection(chatId);

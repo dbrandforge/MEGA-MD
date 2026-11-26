@@ -4,6 +4,7 @@ import { isGameAllowed } from './daylock.js';
 import isAdmin from '../lib/isAdmin.js';
 import { startNoParticipationGrace, hasNoParticipation, isNoParticipationGraceExpired } from '../lib/gameTimeouts.js';
 import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES } from '../data/nigeriaTrivia.js';
+import { sendGroupAll } from '../lib/groupMentions.js';
 
 const STATE_KEY = 'triviaArenaV2';
 const LEGACY_STATE_KEY = 'triviaGame';
@@ -238,10 +239,7 @@ async function endMatch(sock, chatId, game, reason = 'completed', quoted) {
   game.winner = ranking[0]?.[0] || null;
   await saveGame(chatId, game);
   await saveMatchRecords(chatId, game);
-  await sock.sendMessage(chatId, {
-    text: `🏁 *TRIVIA ARENA — ${reason === 'completed' ? 'MATCH COMPLETE' : reason === 'no-participation' ? 'MATCH ENDED: NO PARTICIPATION' : 'MATCH ENDED'}*\n\n${reason === 'no-participation' ? 'Nobody submitted an answer. After the five-minute waiting period, this match ended automatically.\n\n' : ''}${formatScores(game.scores, 10).join('\n') || 'No points were scored.'}\n\n🏆 Champion: ${game.winner ? mention(game.winner) : 'No winner'}`,
-    mentions: ranking.map(([jid]) => jid)
-  }, quoted ? { quoted } : undefined);
+  await sendGroupAll(sock, chatId, `🏁 *TRIVIA ARENA — ${reason === 'completed' ? 'MATCH COMPLETE' : reason === 'no-participation' ? 'MATCH ENDED: NO PARTICIPATION' : 'MATCH ENDED'}*\n\n${reason === 'no-participation' ? 'Nobody submitted an answer. After the five-minute waiting period, this match ended automatically.\n\n' : ''}${formatScores(game.scores, 10).join('\n') || 'No points were scored.'}\n\n🏆 Champion: ${game.winner ? mention(game.winner) : 'No winner'}`, { mentions: ranking.map(([jid]) => jid) }, quoted ? { quoted } : undefined);
 }
 
 async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
@@ -269,14 +267,9 @@ async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
     const result = correctPlayers.length
       ? correctPlayers.map(item => `✅ ${mention(item.jid)} +${item.points}`).join('\n')
       : 'No correct answers this round.';
-    await sock.sendMessage(chatId, {
-      text: `⏱️ *QUESTION ${game.round} CLOSED*\n\nCorrect answer: *${game.answer}*\n\n${result}\n\n${answerRows.length} player(s) submitted.`,
-      mentions: winners
-    });
+    await sendGroupAll(sock, chatId, `⏱️ *QUESTION ${game.round} CLOSED*\n\nCorrect answer: *${game.answer}*\n\n${result}\n\n${answerRows.length} player(s) submitted.`, { mentions: winners });
     if (noParticipation) {
-      await sock.sendMessage(chatId, {
-        text: '⏸️ *TRIVIA ARENA ON HOLD*\n\nNobody submitted an answer for this question. The match is paused for *5 minutes*. No new question will be generated during this period.\n\nThe match will end automatically when the five-minute hold expires.'
-      });
+      await sendGroupAll(sock, chatId, '⏸️ *TRIVIA ARENA ON HOLD*\n\nNobody submitted an answer for this question. The match is paused for *5 minutes*. No new question will be generated during this period.\n\nThe match will end automatically when the five-minute hold expires.');
       armTimer(sock, chatId, game);
       return true;
     }
@@ -318,7 +311,7 @@ async function postNextQuestion(sock, chatId, game) {
   Object.assign(game, getQuestion(game));
   game.closesAt = game.roundStartedAt + (game.answerSeconds * 1000);
   game.roundToken = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-  const sent = await sock.sendMessage(chatId, { text: renderQuestion(game) });
+  const sent = await sendGroupAll(sock, chatId, renderQuestion(game));
   game.questionMessageId = sent?.key?.id || null;
   await saveGame(chatId, game);
   armTimer(sock, chatId, game);
@@ -521,10 +514,7 @@ export default {
       startedBy: senderId, startedAt: Date.now(), matchExpiresAt: Date.now() + MATCH_EXPIRY_MS
     };
     await saveGame(chatId, game);
-    await sock.sendMessage(chatId, {
-      text: `🎮 *TRIVIA ARENA MATCH STARTED*\n\nCategory: *${category.toUpperCase()}*\nDifficulty: *${(difficulty || 'MIXED').toUpperCase()}*\nQuestions: *${totalRounds}*\n\nEveryone can play. Each player gets one answer per question. Time is grade-based: Easy 20s, Normal 30s, Hard 45s, Expert 60s.\n\n*.trivia status* · *.trivia score* · *.trivia stop*`,
-      ...channelInfo
-    }, { quoted: message });
+    await sendGroupAll(sock, chatId, `🎮 *TRIVIA ARENA MATCH STARTED*\n\nCategory: *${category.toUpperCase()}*\nDifficulty: *${(difficulty || 'MIXED').toUpperCase()}*\nQuestions: *${totalRounds}*\n\nEveryone can play. Each player gets one answer per question. Time is grade-based: Easy 20s, Normal 30s, Hard 45s, Expert 60s.\n\n*.trivia status* · *.trivia score* · *.trivia stop*`, channelInfo, { quoted: message });
     try {
       await postNextQuestion(sock, chatId, game);
     } catch (error) {

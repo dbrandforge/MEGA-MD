@@ -1,5 +1,6 @@
 import { dailyActivities } from '../data/dailyActivities.js';
 import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
+import { sendGroupAll } from '../lib/groupMentions.js';
 
 /**
  * Lets anyone (admin or not) check today's scheduled activity on demand,
@@ -40,9 +41,6 @@ export default {
             ? activity.full
             : `*Today is ${day.charAt(0).toUpperCase() + day.slice(1)}*\n\nEnjoy the group!`;
 
-        await sock.sendMessage(replyChatId, {
-            text: `📅 *Today's Activity*\n\n${activityText}`,
-            ...channelInfo
-        }, { quoted: replyMessage });
+        await sendGroupAll(sock, replyChatId, `📅 *Today's Activity*\n\n${activityText}`, channelInfo, { quoted: replyMessage });
     }
 };

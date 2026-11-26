@@ -1,3 +1,4 @@
+import { sendGroupAll } from '../lib/groupMentions.js';
 import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
@@ -136,11 +137,7 @@ async function advanceOrEnd(sock, chatId, game, message, channelInfo, solvedBy) 
       ? scores.map(([id, n], i) => `${i + 1}. @${id.split('@')[0]} — *${n}/${game.roundWords?.length || QUESTIONS_PER_ROUND}*`).join('\n')
       : '_No points this round._';
     const mentions = scores.map(([id]) => id);
-    await sock.sendMessage(chatId, {
-      text: `🏁 *HANGMAN ROUND COMPLETE*\n\n${solvedBy ? `Last word solved by @${solvedBy.split('@')[0]}.\n\n` : ''}*Round scores:*\n${scoreLines}\n\n_Use *.hangman* for another 20-question round._`,
-      mentions,
-      ...channelInfo
-    }, { quoted: message });
+    await sendGroupAll(sock, chatId, `🏁 *HANGMAN ROUND COMPLETE*\n\n${solvedBy ? `Last word solved by @${solvedBy.split('@')[0]}.\n\n` : ''}*Round scores:*\n${scoreLines}\n\n_Use *.hangman* for another 20-question round._`, { mentions, ...channelInfo }, { quoted: message });
     return;
   }
   const next = game.roundWords[idx];
@@ -159,11 +156,7 @@ async function advanceOrEnd(sock, chatId, game, message, channelInfo, solvedBy) 
   game.lastMoveAt = Date.now();
   game.expiresAt = Date.now() + 30 * 60 * 1000;
   await writeGame(chatId, game);
-  await sock.sendMessage(chatId, {
-    text: renderBoard(game, solvedBy ? `✅ @${solvedBy.split('@')[0]} solved it. Next question:\n` : ''),
-    mentions: solvedBy ? [solvedBy] : [],
-    ...channelInfo
-  }, { quoted: message });
+  await sendGroupAll(sock, chatId, renderBoard(game, solvedBy ? `✅ @${solvedBy.split('@')[0]} solved it. Next question:\n` : ''), { mentions: solvedBy ? [solvedBy] : [], ...channelInfo }, { quoted: message });
 }
 
 export function canEndHangman(game, senderId, isAdmin = false) {
@@ -319,9 +312,6 @@ export default {
       expiresAt: Date.now() + 30 * 60 * 1000
     };
     await writeGame(chatId, game);
-    return sock.sendMessage(chatId, {
-      text: `🎮 *FORGE GUARD — HANGMAN CHALLENGE*\n\nTwenty questions. Shared board. Points per solved word. Pool: *${WORDS.length}* mature words.\n\n${renderBoard(game)}\n\n_Type *.guess <letter>* or *.guess <whole-word>*._`,
-      ...channelInfo
-    }, { quoted: message });
+    return sendGroupAll(sock, chatId, `🎮 *FORGE GUARD — HANGMAN CHALLENGE*\n\nTwenty questions. Shared board. Points per solved word. Pool: *${WORDS.length}* mature words.\n\n${renderBoard(game)}\n\n_Type *.guess <letter>* or *.guess <whole-word>*._`, channelInfo, { quoted: message });
   }
 };
