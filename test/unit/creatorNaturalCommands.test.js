@@ -173,6 +173,7 @@ describe('creator natural-language command routing', () => {
     it('parses compound durations directly and rejects unsupported trailing text', () => {
         expect(parseHumanDuration('1 hour and 50 minutes')).toBe(110);
         expect(parseHumanDuration('one hour fifty minutes')).toBe(110);
+        expect(parseHumanDuration('an hour and fifty minutes')).toBe(110);
         expect(parseHumanDuration('1d 2h 15m')).toBe(1575);
         expect(parseHumanDuration('1 hour and then maybe later')).toBeNull();
         expect(parseHumanDuration('200 hours')).toBeNull();
