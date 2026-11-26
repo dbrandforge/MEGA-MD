@@ -30,7 +30,7 @@ describe('creator natural-language command routing', () => {
         ['unlock games', 'gamelock', ['off']],
         ['bypass TOD for an hour', 'bypass', ['tod', '60m']],
         ['schedule the group lock for an hour', 'grouplock', ['quicklock', 'now', '60m']],
-        ['start trivia game', 'trivia', []],
+        ['start trivia game', 'trivia', ['mixed']],
         ['start maths game', 'math', []],
         ['start truth or dare', 'tod', []],
         ['start hot seat', 'hotseat', []],
@@ -44,13 +44,13 @@ describe('creator natural-language command routing', () => {
 
     it.each([
         ['I need you to remove @user', 'kick', []],
-        ['I want you to start trivia', 'trivia', []],
+        ['I want you to start trivia', 'trivia', ['mixed']],
         ['Could you lock this group for 2 hours?', 'grouplock', ['quicklock', 'now', '120m']],
         ['Do me a favour and tag everyone', 'tagall', []],
         ["Let's start hot seat", 'hotseat', []],
         ['When you get a chance, send me the activities of the day', 'activity', []],
         ['Also, unlock games', 'gamelock', ['off']],
-        ['Can we start trivia?', 'trivia', []],
+        ['Can we start trivia?', 'trivia', ['mixed']],
         ['Please, start hangman', 'hangman', []],
         ['I was hoping you could lock the group', 'grouplock', ['lock']]
     ])('understands conversational instruction "%s"', (phrase, command, args) => {
