@@ -29,9 +29,9 @@ async function withChatLock(chatId, task) {
 }
 const COLORS = {
   red: { emoji: '❤️', label: 'RED' },
-  green: { emoji: '💚', label: 'GREEN' },
   yellow: { emoji: '💛', label: 'YELLOW' },
-  orange: { emoji: '🧡', label: 'ORANGE' }
+  orange: { emoji: '🧡', label: 'ORANGE' },
+  ash: { emoji: '🩶', label: 'ASH' }
 };
 
 const ACTION_DARES = [
@@ -81,9 +81,10 @@ function colorFromText(value) {
   const text = String(value || '').replace(/@[\d.-]+/g, '').trim().toLowerCase();
   const aliases = {
     red: 'red', '❤️': 'red', '❤': 'red', '🔴': 'red',
-    green: 'green', '💚': 'green', '🟢': 'green',
     yellow: 'yellow', '💛': 'yellow', '🟡': 'yellow',
-    orange: 'orange', '🧡': 'orange', '🟠': 'orange'
+    orange: 'orange', '🧡': 'orange', '🟠': 'orange',
+    ash: 'ash', 'grey': 'ash', 'gray': 'ash', '🩶': 'ash', '⚪': 'ash',
+    green: 'ash', '💚': 'ash', '🟢': 'ash'
   };
   return aliases[text] || null;
 }
@@ -104,7 +105,7 @@ async function sendColorPrompt(sock, chatId, session, playerId) {
   state.questionMessageId = null;
   const previous = state.lastColor ? ` Your previous colour was ${COLORS[state.lastColor].label}; choose a different one.` : '';
   await sock.sendMessage(chatId, {
-    text: `🎨 @${playerId.split('@')[0]}, choose your next colour: ❤️ RED · 💚 GREEN · 💛 YELLOW · 🧡 ORANGE.${previous}`,
+    text: `🎨 @${playerId.split('@')[0]}, choose your next folder: ❤️ RED · 💛 YELLOW · 🧡 ORANGE · 🩶 ASH.${previous}`,
     mentions: [playerId]
   });
   const latest = await getSessions(chatId);
@@ -281,7 +282,8 @@ async function sendPrompt(sock, chatId, session, playerId) {
     return true;
   }
   const type = questionType(state.step);
-  const deck = session.decks[`${state.gender}:${state.color}`];
+  const deck = session.decks[`${state.gender}:${state.color}`] || (state.color === 'ash' ? session.decks[`${state.gender}:green`] : null);
+  if (!deck) throw new Error(`Missing PICK YOUR SIN deck for ${state.gender}/${state.color}.`);
   const cards = type === 'truth' ? deck.truths : deck.dares;
   if (!Array.isArray(session.usedPromptKeys)) session.usedPromptKeys = [];
   if (!Array.isArray(session.usedPromptIds)) session.usedPromptIds = [];
@@ -540,7 +542,7 @@ async function beginPickYourSinSessionLocked(sock, chatId, players, startedBy) {
   sessions[session.id] = session;
   await saveSessions(chatId, sessions);
   await sock.sendMessage(chatId, {
-    text: `🔥 *PICK YOUR SIN — GAME OPEN*\n\nFive participants are in: ${session.players.map(mention).join(' ')}\nEach player is playing independently and simultaneously.\n\nChoose one colour by typing its name or sending its emoji:\n❤️ RED · 💚 GREEN · 💛 YELLOW · 🧡 ORANGE\n\nEach player gets two rounds: five truths and one action dare per round. One pass per session. 30-second cooldown between prompts.`,
+    text: `🔥 *PICK YOUR SIN — THE FOUR FOLDERS ARE OPEN*\n\nFive participants are in: ${session.players.map(mention).join(' ')}\nEach player plays independently. The four folders contain different hidden intensity levels — the colour never reveals the level.\n\nChoose one folder by typing its name or sending its emoji:\n❤️ RED · 💛 YELLOW · 🧡 ORANGE · 🩶 ASH\n\nYour gender selects the question bank; your folder selects the hidden intensity. Each player gets two rounds: five truths and one action dare per round. One pass per session. 30-second cooldown between prompts.`,
     mentions: session.players
   });
   for (const [playerId, state] of Object.entries(states)) {
