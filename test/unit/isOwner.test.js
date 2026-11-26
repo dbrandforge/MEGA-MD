@@ -12,7 +12,6 @@ describe('isOwnerOrSudo', () => {
     let isOwnerOrSudo, isOwnerOnly, cleanJid, invalidateGroupMetadataCache;
 
     beforeEach(async () => {
-        vi.stubEnv('CREATOR_NUMBERS', '2348000000001,2348000000002');
         vi.resetModules();
         const mod = await import('../../lib/isOwner.js');
         isOwnerOrSudo = mod.default;
@@ -36,9 +35,17 @@ describe('isOwnerOrSudo', () => {
         expect(isOwnerOnly('2349034451454:12@s.whatsapp.net')).toBe(true);
     });
 
-    it('each additional configured Creator number is accepted as owner', async () => {
-        expect(await isOwnerOrSudo('2348000000001@s.whatsapp.net')).toBe(true);
-        expect(isOwnerOnly('2348000000002:4@s.whatsapp.net')).toBe(true);
+    it('the second protected Forge account is accepted as creator', async () => {
+        expect(await isOwnerOrSudo('2348124542393@s.whatsapp.net')).toBe(true);
+        expect(isOwnerOnly('2348124542393:4@s.whatsapp.net')).toBe(true);
+    });
+
+    it('unregistered numbers in legacy CREATOR_NUMBERS are not granted creator access', async () => {
+        vi.stubEnv('CREATOR_NUMBERS', '2348000000001,2348000000002');
+        vi.resetModules();
+        const mod = await import('../../lib/isOwner.js');
+        expect(await mod.default('2348000000001@s.whatsapp.net')).toBe(false);
+        expect(mod.isOwnerOnly('2348000000002@s.whatsapp.net')).toBe(false);
     });
 
     it('The Queen is not granted owner permissions', async () => {
