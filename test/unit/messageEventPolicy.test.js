@@ -92,7 +92,7 @@ describe('message revocation guard', () => {
 describe('replays of messages sent before this process started', () => {
   it('ignores messages sent before boot but keeps ones sent after', () => {
     const startedAtMs = now - 60 * 1000;
-    expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(50) }), { now, startedAtMs: now - 10 * 1000 })).toBe(false);
+    expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(15) }), { now, startedAtMs: now - 10 * 1000 })).toBe(false);
     expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(5) }), { now, startedAtMs: now - 10 * 1000 })).toBe(true);
   });
 });
