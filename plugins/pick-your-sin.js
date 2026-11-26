@@ -288,15 +288,21 @@ async function handleSelectionCommand(sock, message, args, context, chatId) {
     }
     selection.status = 'starting';
     await saveSelection(chatId, selection);
-    const started = await beginPickYourSinSession(sock, chatId, selection.players, selection.startedBy);
-    if (started === false) {
+    try {
+      const started = await beginPickYourSinSession(sock, chatId, selection.players, selection.startedBy);
+      if (started === false) {
+        selection.status = 'ready';
+        await saveSelection(chatId, selection);
+        return;
+      }
+      selection.status = 'started';
+      selection.openedAt = Date.now();
+      await saveSelection(chatId, selection);
+    } catch (error) {
       selection.status = 'ready';
       await saveSelection(chatId, selection);
-      return;
+      throw error;
     }
-    selection.status = 'started';
-    selection.openedAt = Date.now();
-    await saveSelection(chatId, selection);
     return;
   }
   if (sub === 'endselection' || sub === 'cancel') {
