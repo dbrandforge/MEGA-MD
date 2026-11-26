@@ -61,6 +61,13 @@ describe('PICK YOUR SIN expanded banks', () => {
     }
   });
 
+  it('assigns the same unique action identity across all gender and colour banks', () => {
+    const expected = Array.from({ length: 30 }, (_, index) => `dare-${String(index + 1).padStart(3, '0')}`);
+    for (const deck of Object.values(bank)) {
+      expect(deck.dares.map(item => item.reuseKey)).toEqual(expected);
+    }
+  });
+
   it('normalizes prompt text consistently for session-wide duplicate prevention', () => {
     expect(normalizePickYourSinPrompt('  HELLO,   World! ')).toBe('hello world');
   });
