@@ -544,6 +544,10 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
             return;
         }
         printLog('info', `[Chatbot DM] Attempting reply via destinationType=${chatId.endsWith('@lid') ? 'LID' : 'PN_or_group'}`);
+        const responseChars = Array.from(response).length;
+        const replacementChars = (response.match(/\\uFFFD/g) || []).length;
+        const controlChars = Array.from(response).filter(char => /[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/u.test(char)).length;
+        console.info(`[Chatbot Output Integrity] chars=${responseChars} replacement_chars=${replacementChars} control_chars=${controlChars} destination=group_or_dm`);
         const sendStartedAt = Date.now();
         const sentMessage = await sock.sendMessage(chatId, { text: response }, { quoted: message });
         const sendLatencyMs = Date.now() - sendStartedAt;
