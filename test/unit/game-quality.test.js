@@ -169,7 +169,7 @@ describe('game quality foundations', () => {
 
   it('exposes admin lock controls for every game, including scheduled games', () => {
     expect(Object.keys(getManualLockableGames()).sort()).toEqual([
-      'anonymous', 'basket', 'hangman', 'hotseat', 'math', 'tictactoe', 'tod', 'trivia', 'wcw', 'wyr'
+      'anonymous', 'basket', 'hangman', 'hotseat', 'math', 'pickyoursin', 'tictactoe', 'tod', 'trivia', 'wcw', 'wyr'
     ]);
   });
 
