@@ -270,7 +270,7 @@ function promptUsageKey(card, type) {
   const text = typeof card === 'string' ? card : card?.text;
   if (type !== 'dare') return normalizePickYourSinPrompt(text);
   if (card?.reuseKey) return card.reuseKey;
-  const match = String(card?.id || '').match(/^dare-(?:guy|lady)-(?:red|yellow|orange|ash)-(\\d+)$/);
+  const match = String(card?.id || '').match(/^dare-(?:guy|lady)-(?:red|yellow|orange|ash)-(\d+)$/);
   return match ? `dare-${Number(match[1])}` : `dare-${normalizePickYourSinPrompt(text)}`;
 }
 
@@ -318,7 +318,7 @@ async function sendPrompt(sock, chatId, session, playerId) {
     // Older active sessions stored colour-specific IDs. Convert those IDs to the
     // shared action index so a dare already issued before this fix is not repeated.
     for (const id of session.usedPromptIds) {
-      const match = String(id || '').match(/^dare-(?:guy|lady)-(?:red|yellow|orange|ash)-(\\d+)$/);
+      const match = String(id || '').match(/^dare-(?:guy|lady)-(?:red|yellow|orange|ash)-(\d+)$/);
       if (match) usedKeys.add(`dare-${Number(match[1])}`);
     }
   }
