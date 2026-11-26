@@ -101,7 +101,9 @@ async function sendPrompt(sock, chatId, session, playerId) {
   if (state.step >= 12) {
     state.status = 'complete';
     state.completedAt = Date.now();
-    await saveSessions(chatId, { [session.id]: session });
+    const latestSessions = await getSessions(chatId);
+    latestSessions[session.id] = session;
+    await saveSessions(chatId, latestSessions);
     await sock.sendMessage(chatId, {
       text: `🏁 ${mention(playerId)} has completed PICK YOUR SIN — 10 truths and 2 dares.`,
       mentions: [playerId]
@@ -133,7 +135,9 @@ async function sendPrompt(sock, chatId, session, playerId) {
     mentions: [playerId]
   });
   state.questionMessageId = sent?.key?.id || null;
-  await saveSessions(chatId, { [session.id]: session });
+  const latestSessions = await getSessions(chatId);
+  latestSessions[session.id] = session;
+  await saveSessions(chatId, latestSessions);
   return true;
 }
 
@@ -149,7 +153,7 @@ export async function beginPickYourSinSession(sock, chatId, players, startedBy) 
   }
   const states = {};
   for (const rawId of players) {
-    const playerId = await canonicalWhatsAppUserId(sock, rawId);
+    const playerId = (await canonicalWhatsAppUserId(sock, rawId)) || rawId;
     const gender = await getUserGender(playerId, sock);
     states[playerId] = {
       status: 'active',
