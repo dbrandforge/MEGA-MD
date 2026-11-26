@@ -8,6 +8,7 @@ import { canonicalWhatsAppUserId, sameWhatsAppUser } from '../lib/whatsappIdenti
 const SESSIONS_KEY = 'todSessions';
 const TIMEOUT_MS = 10 * 60 * 1000;
 const WARNING_MS = 7 * 60 * 1000;
+const NEXT_QUESTION_COOLDOWN_MS = 30 * 1000;
 
 async function getSessions(chatId) {
     return (await store.getSetting(chatId, SESSIONS_KEY)) || {};
@@ -56,6 +57,7 @@ async function startRound(sock, chatId, session) {
     session.advancing = false;
     session.questionMessageId = null;
     session.round += 1;
+    session.nextQuestionAt = null;
     session.lastActivity = Date.now();
     session.warningSent = false;
 
@@ -190,6 +192,7 @@ export async function completeTodTurn(sock, chatId, senderId, options = {}) {
     session.lastCompletedBy = sessionPlayerId;
     session.lastCompletedAt = Date.now();
     session.lastActivity = Date.now();
+    session.nextQuestionAt = null;
     session.warningSent = false;
 
     if (options.endAfter) {
@@ -205,10 +208,11 @@ export async function completeTodTurn(sock, chatId, senderId, options = {}) {
         return true;
     }
 
+    session.nextQuestionAt = Date.now() + NEXT_QUESTION_COOLDOWN_MS;
     sessions[session.id] = session;
     await saveSessions(chatId, sessions);
     await sock.sendMessage(chatId, {
-        text: `✅ ${mention(senderId)} is done!\\n\\nNext round coming up...`,
+        text: `✅ ${mention(senderId)} is done!\\n\\n⏳ Next question in *30 seconds*.`,
         mentions: session.players
     }, options.message ? { quoted: options.message } : undefined);
 
@@ -221,7 +225,7 @@ export async function completeTodTurn(sock, chatId, senderId, options = {}) {
         } catch (error) {
             console.error('TOD next-round error:', error);
         }
-    }, 1500);
+    }, NEXT_QUESTION_COOLDOWN_MS);
     return true;
 }
 
