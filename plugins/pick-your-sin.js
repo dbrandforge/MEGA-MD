@@ -443,13 +443,13 @@ async function handleSelectionCommand(sock, message, args, context, chatId) {
     return sock.sendMessage(chatId, { text: 'No open selection. Start one with *.picksin start*.' }, { quoted: message });
   }
   if (Date.now() >= selection.adjustmentEndsAt && selection.status === 'pending') {
-    selection.status = selection.players.length === 5 ? 'ready' : 'expired';
+    selection.status = selection.players.length >= 2 && selection.players.length <= 5 ? 'ready' : 'expired';
     await saveSelection(chatId, selection);
     if (selection.status === 'expired') {
       return sock.sendMessage(chatId, { text: 'The 10-minute selection window has closed before the minimum of two participants was selected.' }, { quoted: message });
     }
     if (sub !== 'list') {
-      return sock.sendMessage(chatId, { text: 'The selection window has closed. All five participants are locked in; use *.picksin open* when ready.' }, { quoted: message });
+      return sock.sendMessage(chatId, { text: 'The selection window has closed. The selected 2–5 participants are locked in; use *.picksin open* when ready.' }, { quoted: message });
     }
   }
   if (selection.status === 'ready' && !['list'].includes(sub)) {
