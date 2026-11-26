@@ -31,7 +31,9 @@ const COLORS = {
   red: { emoji: '❤️', label: 'RED' },
   yellow: { emoji: '💛', label: 'YELLOW' },
   orange: { emoji: '🧡', label: 'ORANGE' },
-  ash: { emoji: '🩶', label: 'ASH' }
+  ash: { emoji: '🩶', label: 'ASH' },
+  // Legacy active sessions may still contain GREEN; render them as ASH.
+  green: { emoji: '🩶', label: 'ASH' }
 };
 
 const ACTION_DARES = [
