@@ -7,7 +7,7 @@ import { PRIMARY_FEATURE_GROUP } from '../lib/featureGroups.js';
 
 /**
  * Group Lock / Unlock + Daily Activity Announcer
- * Target group: Mature minded
+ * Target group: Matured Minded Room
  *
  * Lock: 01:00 every day
  * Unlock: 06:00 (Mon-Sat) | 12:00 (Sunday)
