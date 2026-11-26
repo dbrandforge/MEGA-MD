@@ -452,7 +452,9 @@ export function pickPersonalityReply(text, options = {}) {
   if (['definition', 'slangDefinition', 'activityInfo', 'error'].includes(intent)) {
     try {
       const exact = pickLibraryReply(input, previousReply);
-      if (exact) return exact;
+      if (exact) return identityRole === 'queen'
+        ? applyQueenConversationTone(exact, category, input)
+        : exact;
     } catch {}
   }
 
