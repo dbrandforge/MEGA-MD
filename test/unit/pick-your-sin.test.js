@@ -116,6 +116,8 @@ describe('Pick Your Sin sessions', () => {
         message: { extendedTextMessage: { contextInfo: { stanzaId: promptId } } }
       }, 'answer', players[0]);
     }
+    await vi.advanceTimersByTimeAsync(30_000);
+    await handlePickYourSinMessage(sock, chatId, { key: { fromMe: false }, message: { conversation: 'yellow' } }, 'yellow', players[0]);
     session = Object.values(state.pickYourSinSessions)[0];
     expect(session.playerStates[players[0]].currentType).toBe('dare');
     const dareId = session.playerStates[players[0]].questionMessageId;
