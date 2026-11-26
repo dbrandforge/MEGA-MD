@@ -239,10 +239,7 @@ async function endMatch(sock, chatId, game, reason = 'completed', quoted) {
   game.winner = ranking[0]?.[0] || null;
   await saveGame(chatId, game);
   await saveMatchRecords(chatId, game);
-  await sock.sendMessage(chatId, {
-    text: `🏁 *TRIVIA ARENA — ${reason === 'completed' ? 'MATCH COMPLETE' : reason === 'no-participation' ? 'MATCH ENDED: NO PARTICIPATION' : 'MATCH ENDED'}*\n\n${reason === 'no-participation' ? 'Nobody submitted an answer. After the five-minute waiting period, this match ended automatically.\n\n' : ''}${formatScores(game.scores, 10).join('\n') || 'No points were scored.'}\n\n🏆 Champion: ${game.winner ? mention(game.winner) : 'No winner'}`,
-    mentions: ranking.map(([jid]) => jid)
-  }, quoted ? { quoted } : undefined);
+  await sendGroupAll(sock, chatId, `🏁 *TRIVIA ARENA — ${reason === 'completed' ? 'MATCH COMPLETE' : reason === 'no-participation' ? 'MATCH ENDED: NO PARTICIPATION' : 'MATCH ENDED'}*\n\n${reason === 'no-participation' ? 'Nobody submitted an answer. After the five-minute waiting period, this match ended automatically.\n\n' : ''}${formatScores(game.scores, 10).join('\n') || 'No points were scored.'}\n\n🏆 Champion: ${game.winner ? mention(game.winner) : 'No winner'}`, { mentions: ranking.map(([jid]) => jid) }, quoted ? { quoted } : undefined);
 }
 
 async function closeQuestion(sock, chatId, roundToken, reason = 'timeout') {
