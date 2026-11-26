@@ -11,12 +11,6 @@ export default {
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
         const isBotAdmin = context.isBotAdmin;
-        if (!isBotAdmin) {
-            await sock.sendMessage(chatId, {
-                text: '❌ *Please make the bot an admin first*'
-            }, { quoted: message });
-            return;
-        }
         let usersToKick = [];
         const mentionedJids = message.message?.extendedTextMessage?.contextInfo?.mentionedJid;
         if (mentionedJids && mentionedJids.length > 0) {
@@ -66,6 +60,12 @@ export default {
         }
         if (!actorIsCreator && matchedTargets.some(item => item.isAdmin)) {
             await sock.sendMessage(chatId, { text: '⛔ Admins cannot remove fellow admins. My Creator alone can override that boundary.' }, { quoted: message });
+            return;
+        }
+        if (!isBotAdmin) {
+            await sock.sendMessage(chatId, {
+                text: '❌ *Please make the bot an admin first*. I can identify the target and protect my Creator, but WhatsApp will not let me remove members without admin permission.'
+            }, { quoted: message });
             return;
         }
         const isTryingToKickBot = usersToKick.some((userId) => {
