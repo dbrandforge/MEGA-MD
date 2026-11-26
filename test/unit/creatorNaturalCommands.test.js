@@ -49,7 +49,10 @@ describe('creator natural-language command routing', () => {
         ['Do me a favour and tag everyone', 'tagall', []],
         ["Let's start hot seat", 'hotseat', []],
         ['When you get a chance, send me the activities of the day', 'activity', []],
-        ['Also, unlock games', 'gamelock', ['off']]
+        ['Also, unlock games', 'gamelock', ['off']],
+        ['Can we start trivia?', 'trivia', []],
+        ['Please, start hangman', 'hangman', []],
+        ['I was hoping you could lock the group', 'grouplock', ['lock']]
     ])('understands conversational instruction "%s"', (phrase, command, args) => {
         expect(parseCreatorNaturalCommand(phrase, { addressedToBot: true })).toMatchObject({ command, args });
     });
