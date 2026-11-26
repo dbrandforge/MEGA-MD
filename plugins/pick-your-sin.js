@@ -101,6 +101,20 @@ function lagosDateKey() {
     timeZone: 'Africa/Lagos', year: 'numeric', month: '2-digit', day: '2-digit'
   }).format(new Date());
 }
+
+export async function resetPickYourSinDailyCount(chatId, playerId) {
+  if (!chatId || !playerId) return { reset: false, count: 0 };
+  const daily = (await store.getSetting(chatId, DAILY_KEY)) || {};
+  const dayKey = lagosDateKey();
+  const completed = Array.isArray(daily[dayKey]) ? daily[dayKey] : [];
+  const remaining = completed.filter(id => id !== playerId);
+  if (remaining.length === completed.length) return { reset: false, count: completed.length };
+  daily[dayKey] = remaining;
+  if (!await store.saveSettingVerified(chatId, DAILY_KEY, daily)) {
+    throw new Error('PICK YOUR SIN daily completion count could not be reset.');
+  }
+  return { reset: true, count: remaining.length };
+}
 async function sendColorPrompt(sock, chatId, session, playerId) {
   const state = session.playerStates[playerId];
   if (!state || state.status !== 'active') return false;
@@ -486,7 +500,7 @@ async function handleSelectionCommand(sock, message, args, context, chatId) {
     await saveSelection(chatId, selection);
     return sendSelectionList(sock, chatId, selection);
   }
-  return sock.sendMessage(chatId, { text: 'PICK YOUR SIN commands: *.picksin start*, *.picksin add*, *.picksin list*, *.picksin change*, *.picksin arrange*, *.picksin open*, *.picksin status*, *.picksin end*.' }, { quoted: message });
+  return sock.sendMessage(chatId, { text: 'PICK YOUR SIN commands: *.picksin start*, *.picksin add*, *.picksin list*, *.picksin change*, *.picksin arrange*, *.picksin open*, *.picksin status*, *.picksin resetday @user*, *.picksin end*.' }, { quoted: message });
 }
 
 
@@ -718,6 +732,20 @@ export default {
   async handler(sock, message, args, context) {
     const chatId = context.chatId || message.key.remoteJid;
     const sub = String(args?.[0] || '').toLowerCase();
+    if (['resetday', 'resetcount', 'clearcount'].includes(sub)) {
+      const tagged = await Promise.all(getMentions(message).map(async id => (await canonicalWhatsAppUserId(sock, id)) || id));
+      const uniqueTags = [...new Set(tagged)];
+      if (uniqueTags.length !== 1 || uniqueTags.length !== tagged.length) {
+        return sock.sendMessage(chatId, { text: 'Tag exactly one participant: *.picksin resetday @user*.', quoted: message });
+      }
+      const result = await resetPickYourSinDailyCount(chatId, uniqueTags[0]);
+      return sock.sendMessage(chatId, {
+        text: result.reset
+          ? `♻️ ${mention(uniqueTags[0])}'s PICK YOUR SIN daily completion has been cleared. They may join a new session today.`
+          : `ℹ️ ${mention(uniqueTags[0])} has no PICK YOUR SIN completion recorded for today.`,
+        mentions: uniqueTags
+      }, { quoted: message });
+    }
     const sessions = await getSessions(chatId);
     const session = Object.values(sessions).find(item => item.status === 'active');
     if (sub === 'replace' && session) return replaceInactivePlayer(sock, chatId, message, session);

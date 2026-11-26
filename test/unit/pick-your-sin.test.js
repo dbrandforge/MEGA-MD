@@ -16,7 +16,7 @@ vi.mock('../../lib/whatsappIdentity.js', () => ({
   sameWhatsAppUser: vi.fn(async (_sock, a, b) => a === b)
 }));
 
-import { beginPickYourSinSession, handlePickYourSinMessage } from '../../plugins/pick-your-sin.js';
+import pickYourSinPlugin, { beginPickYourSinSession, handlePickYourSinMessage, resetPickYourSinDailyCount } from '../../plugins/pick-your-sin.js';
 
 const chatId = '120363000000000000@g.us';
 const goodTruthAnswer = 'I remember that moment clearly because it happened after our first date and changed how I felt.';
@@ -264,6 +264,37 @@ describe('Pick Your Sin sessions', () => {
     expect(session.playerStates[players[0]].replacementExpired).toBe(true);
     expect(session.playerStates[players[1]].status).toBe('active');
   });
+  it('exposes resetday as a tagged-player admin command', async () => {
+    const day = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Africa/Lagos', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(new Date());
+    state.pickYourSinDailyCompletions = { [day]: [players[0], players[1]] };
+    const sock = { sendMessage: vi.fn(async () => ({ key: { id: 'reply' } })) };
+    const message = {
+      key: { remoteJid: chatId, participant: 'admin@s.whatsapp.net' },
+      message: { extendedTextMessage: { text: '.picksin resetday @user', contextInfo: { mentionedJid: [players[0]] } } }
+    };
+
+    await pickYourSinPlugin.handler(sock, message, ['resetday'], { chatId, senderId: 'admin@s.whatsapp.net' });
+    expect(state.pickYourSinDailyCompletions[day]).toEqual([players[1]]);
+    expect(sock.sendMessage.mock.calls.at(-1)[1].text).toContain('daily completion has been cleared');
+  });
+
+  it('allows an admin reset helper to clear only the selected player from today’s completion list', async () => {
+    const day = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Africa/Lagos', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(new Date());
+    state.pickYourSinDailyCompletions = { [day]: [players[0], players[1]] };
+
+    const result = await resetPickYourSinDailyCount(chatId, players[0]);
+    expect(result).toEqual({ reset: true, count: 1 });
+    expect(state.pickYourSinDailyCompletions[day]).toEqual([players[1]]);
+
+    const missing = await resetPickYourSinDailyCount(chatId, players[0]);
+    expect(missing).toEqual({ reset: false, count: 1 });
+    expect(state.pickYourSinDailyCompletions[day]).toEqual([players[1]]);
+  });
+
   it('blocks a participant who has already completed today', async () => {
     const day = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Africa/Lagos', year: 'numeric', month: '2-digit', day: '2-digit'

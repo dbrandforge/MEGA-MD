@@ -16,8 +16,8 @@ export const dailyActivities = {
     full: "*Today is Women Crush Wednesday* \ud83d\udc96\n\nLadies: Send your picture + name + location.\n\nGuys: You have 5 minutes to shoot your shot under a lady's post.\n\nAfter shooting your shot, the lady has 3 options:\n1. Accept\n2. Offer the other option (Relationship \u2194 Sneaky link)\n3. Reject\n\nRejection = View Once instruction from the bot."
   },
   thursday: {
-    title: "Throwback Thursday",
-    full: "*Today is Throwback Thursday* \ud83d\udcf8\n\nPost a throwback picture + tell us your throwback music.\n\nYou can ask the bot to download the music for you.\n\nFailure to participate may attract consequences."
+    title: "Throwback Thursday + PICK YOUR SIN",
+    full: "*Today is Throwback Thursday* 📸\n\n*Throwback Challenge*\nPost a throwback picture + tell us your throwback music. You can ask the bot to download the music for you.\n\n*PICK YOUR SIN — Thursday Game* 🎭\nPICK YOUR SIN is part of Thursday's activities. Admins can open participant selection with *.picksin start*, select 2–5 players, then launch with *.picksin open*. Each player progresses independently through two rounds of five truths and one action dare. Truths require meaningful written answers; dares require a voice note, image or video.\n\nBring your throwbacks and get ready to play."
   },
   friday: {
     title: "Hot Seat + Freaky Friday",
