@@ -11,12 +11,12 @@ const message = (overrides = {}) => ({
 const secondsAgo = seconds => Math.floor((now - seconds * 1000) / 1000);
 
 describe('WhatsApp upsert processing policy', () => {
-  it('accepts live notify messages within the 180-second window', () => {
-    expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(179) }), { now })).toBe(true);
+  it('accepts live notify messages within the 30-second window', () => {
+    expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(29) }), { now })).toBe(true);
   });
 
-  it('rejects notify messages older than 180 seconds', () => {
-    const stale = message({ messageTimestamp: secondsAgo(181) });
+  it('rejects notify messages older than 30 seconds', () => {
+    const stale = message({ messageTimestamp: secondsAgo(31) });
     expect(shouldProcessMessageUpsert('notify', stale, { now })).toBe(false);
     expect(isMessageTooOld(stale, now)).toBe(true);
   });
@@ -27,12 +27,12 @@ describe('WhatsApp upsert processing policy', () => {
     expect(shouldProcessMessageUpsert('append', message({ messageTimestamp: secondsAgo(181) }), { now })).toBe(false);
   });
 
-  it('accepts messages up to 60 seconds in the future but rejects larger clock skew', () => {
+  it('accepts messages up to 10 seconds in the future but rejects larger clock skew', () => {
     expect(shouldProcessMessageUpsert('notify', message({
-      messageTimestamp: Math.floor((now + 60 * 1000) / 1000)
+      messageTimestamp: Math.floor((now + 10 * 1000) / 1000)
     }), { now })).toBe(true);
     expect(shouldProcessMessageUpsert('notify', message({
-      messageTimestamp: Math.floor((now + 61 * 1000) / 1000)
+      messageTimestamp: Math.floor((now + 11 * 1000) / 1000)
     }), { now })).toBe(false);
   });
 
