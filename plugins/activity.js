@@ -29,7 +29,7 @@ export default {
 
         if (!await hasMaturedMindedFeatures(chatId)) {
             return sock.sendMessage(replyChatId, {
-                text: 'Today’s scheduled group activity is part of the Matured Minded package and is not enabled in this group.',
+                text: 'Today’s scheduled group activity is part of the Matured Minded Room package and is not enabled in this group.',
                 ...channelInfo
             }, { quoted: replyMessage });
         }
@@ -43,6 +43,6 @@ export default {
         await sock.sendMessage(replyChatId, {
             text: `📅 *Today's Activity*\n\n${activityText}`,
             ...channelInfo
-        }, { quoted: message });
+        }, { quoted: replyMessage });
     }
 };
