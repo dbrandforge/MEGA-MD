@@ -7,6 +7,7 @@ import { pickPersonalityReply } from '../data/forgeBotPersonalityBank.js';
 import { pickDualReply } from '../data/chatDual/dualBankSelector.js';
 import { getUserGender } from './gender.js';
 import { printLog } from '../lib/print.js';
+import { PRIMARY_FEATURE_GROUP } from '../lib/featureGroups.js';
 import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
 import { getIdentityClaimReply, buildGenderInteractionContext, buildTaggedPeopleContext } from '../lib/chatbotConversationEnhancements.js';
 import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
@@ -153,7 +154,7 @@ export async function isChatbotEnabledForMessage(chatId, senderId) {
     const data = await loadUserGroupData();
     if (!data.chatbot || typeof data.chatbot !== 'object') data.chatbot = {};
     if (String(chatId || '').endsWith('@g.us')) {
-        const TARGET = '120363405434471171@g.us';
+        const TARGET = PRIMARY_FEATURE_GROUP;
         if (chatId === TARGET && data.chatbot[chatId] === undefined) {
             data.chatbot[chatId] = true;
             await saveUserGroupData(data);
