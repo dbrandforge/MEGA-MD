@@ -37,7 +37,7 @@ import { getCachedGroupMetadata } from './lib/isOwner.js';
 import { installSignalDiagnosticGuard } from './lib/signalDiagnostics.js';
 import { parseGroupSenderKeyRecoveryTargets, resetGroupSenderKeyMemoryBeforeSend } from './lib/groupSenderKeyRecovery.js';
 import { createPerChatMessageQueue } from './lib/perChatMessageQueue.js';
-import { createMessageScopedSocket } from './lib/messageScopedSocket.js';
+import { runWithMessageScope } from './lib/messageScopedSocket.js';
 
 // Keep libsignal diagnostics useful without allowing serialized ratchets or key material into logs.
 installSignalDiagnosticGuard();
@@ -72,7 +72,7 @@ const incomingMessageQueue = createPerChatMessageQueue({
             }
             const handlerStartedAt = process.hrtime.bigint();
             const queueWaitMs = Math.max(0, Date.now() - (Number.isFinite(queuedAt) ? queuedAt : Date.now()));
-            await handleMessages(createMessageScopedSocket(sock, mek), update);
+            await runWithMessageScope(sock, mek, () => handleMessages(sock, update));
             const handlerLatencyMs = Number(process.hrtime.bigint() - handlerStartedAt) / 1e6;
             printLog('info', `Message processed: jid=${mek?.key?.remoteJid || 'unknown'} id=${mek?.key?.id || 'unknown'} queue_wait_ms=${queueWaitMs} handler_ms=${handlerLatencyMs.toFixed(1)}`);
         } catch (err) {
@@ -297,8 +297,7 @@ function scheduleReconnect(delayMs, { reason = '' } = {}) {
     const exponentialDelay = Math.min(5 * 60 * 1000, baseDelay * (2 ** Math.min(reconnectAttempts, 6)));
     const effectiveDelay = Math.round(exponentialDelay * (0.8 + Math.random() * 0.4));
     reconnectAttempts = Math.min(reconnectAttempts + 1, 7);
-    printLog('connection', `Reconnecting in ${Math.round(effectiveDelay / 1000)} seconds (attempt ${reconnectAttempts}; exponential backoff with jitter)...${reason ? ` (${reason})` : ''}`);
-    reconnectTimer = setTimeout(async () => {        reconnectTimer = null;
+    printLog('connection', `Reconnecting in ${Math.round(effectiveDelay / 1000)} seconds (attempt ${reconnectAttempts}; exponential backoff with jitter)...${reason ? ` (${reason})` : ''}`);    reconnectTimer = setTimeout(async () => {        reconnectTimer = null;
         await safeStartQasimDev();
     }, effectiveDelay);
 }
@@ -597,8 +596,7 @@ async function startQasimDev() {
                 signalKeyCache.set(key, { value, expiresAt: Date.now() + SIGNAL_KEY_CACHE_TTL_MS });
                 while (signalKeyCache.size > SIGNAL_KEY_CACHE_MAX_ENTRIES) {
                     signalKeyCache.delete(signalKeyCache.keys().next().value);
-                }            },
-            async flushAll() {
+                }            },            async flushAll() {
                 signalKeyCache.clear();
             },
         };
@@ -897,8 +895,7 @@ async function startQasimDev() {
                         v = QasimDev.groupMetadata(id) || {};
                     resolve(v.name || v.subject || PhoneNumber(`+${ id.replace('@s.whatsapp.net', '')}`).number?.international);
                 });            else
-                v = id === '0@s.whatsapp.net' ? {
-                    id,
+                v = id === '0@s.whatsapp.net' ? {                    id,
                     name: 'WhatsApp'
                 } : id === QasimDev.decodeJid(QasimDev.user.id) ?
                     QasimDev.user :
