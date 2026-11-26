@@ -1,3 +1,5 @@
+import { sendGroupAll } from '../lib/groupMentions.js';
+
 export default {
     command: 'tagall',
     aliases: ['everyone', 'all'],
@@ -9,25 +11,7 @@ export default {
     async handler(sock, message, args, context) {
         const { chatId, channelInfo } = context;
         try {
-            const groupMetadata = await sock.groupMetadata(chatId);
-            const participants = groupMetadata.participants;
-            if (!participants || participants.length === 0) {
-                await sock.sendMessage(chatId, {
-                    text: 'No participants found in the group.',
-                    ...channelInfo
-                }, { quoted: message });
-                return;
-            }
-            let messageText = '🔊 *Hello Everyone:*\n\n';
-            participants.forEach((participant) => {
-                messageText += `@${participant.id.split('@')[0]}\n`;
-            });
-            await sock.sendMessage(chatId, {
-                text: messageText,
-                mentions: participants.map((p) => p.id),
-                ...channelInfo
-            });
-        }
+            return await sendGroupAll(sock, chatId, '🔊 *Hello everyone:* Please check the latest group announcement.', channelInfo);\n        }
         catch (error) {
             console.error('Error in tagall command:', error);
             await sock.sendMessage(chatId, {
