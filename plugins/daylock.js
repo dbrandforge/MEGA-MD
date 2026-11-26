@@ -5,11 +5,12 @@
 import store from '../lib/lightweight_store.js';
 
 const BYPASS_KEY = 'gameBypass';
-const GAME_DAYS = { basket: [2], wcw: [3], hotseat: [5], anonymous: [6], tod: [0] };
+const GAME_DAYS = { basket: [2], wcw: [3], pickyoursin: [4], hotseat: [5], anonymous: [6], tod: [0] };
 const GAME_NAMES = {
   basket: "Devil's Basket",
   wcw: 'Women Crush Wednesday',
   hotseat: 'Hot Seat',
+  pickyoursin: 'Pick Your Sin',
   anonymous: 'Anonymous Night',
   tod: 'Truth or Dare'
 };
@@ -38,6 +39,7 @@ const MANUAL_GAMES = {
   basket: "Devil's Basket",
   wcw: 'Women Crush Wednesday',
   hotseat: 'Hot Seat',
+  pickyoursin: 'Pick Your Sin',
   anonymous: 'Anonymous Night',
   tod: 'Truth or Dare',
 };
