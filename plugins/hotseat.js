@@ -13,6 +13,12 @@ const ANSWER_TIMEOUT_MS = Number(config.hotseatAnswerMinutes || 5) * 60 * 1000;
 const NEXT_QUESTION_MS = Number(config.hotseatNextQuestionSeconds || 60) * 1000;
 const MIN_PLAYERS = 2;
 const MAX_PLAYERS = 4;
+const PICK_SIN_PLAYERS = 5;
+function playerLimits(session) {
+    return session?.gameType === 'pick_your_sin'
+        ? { min: PICK_SIN_PLAYERS, max: PICK_SIN_PLAYERS }
+        : { min: MIN_PLAYERS, max: MAX_PLAYERS };
+}
 function shuffle(items) { return [...items].sort(() => Math.random() - 0.5); }
 function mention(jid) { return '@' + String(jid || '').split('@')[0]; }
 function stripDevice(jid) { return String(jid || '').replace(/:\d+(?=@)/, ''); }
@@ -255,7 +261,8 @@ export async function resumeHotSeatSession(sock, chatId) {
         setTimeout(async () => {
             const latest = await getSession(chatId);
             if (latest?.status === 'pending' && latest.createdAt === session.createdAt) {
-                if ((latest.players || []).length >= MIN_PLAYERS) await beginGame(sock, chatId, latest);
+                const limits = playerLimits(latest);
+                if ((latest.players || []).length >= limits.min && (latest.gameType !== 'pick_your_sin' || latest.players.length === limits.max)) await beginGame(sock, chatId, latest);
                 else {
                     await clearSession(chatId);
                     await sock.sendMessage(chatId, { text: '⌛ Hot Seat selection expired because fewer than two players were selected.' });
@@ -345,7 +352,18 @@ export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
 }
 
 async function beginGame(sock, chatId, session) {
-    if (!Array.isArray(session.players) || session.players.length < MIN_PLAYERS) {
+    const limits = playerLimits(session);
+    if (session?.gameType === 'pick_your_sin') {
+        if (!Array.isArray(session.players) || session.players.length !== limits.min) {
+            await clearSession(chatId);
+            await sock.sendMessage(chatId, { text: '⌛ PICK YOUR SIN selection ended: exactly five participants must be selected.' });
+            return false;
+        }
+        await clearSession(chatId);
+        const { beginPickYourSinSession } = await import('./pick-your-sin.js');
+        return beginPickYourSinSession(sock, chatId, session.players, session.startedBy);
+    }
+    if (!Array.isArray(session.players) || session.players.length < limits.min) {
         await clearSession(chatId);
         await sock.sendMessage(chatId, { text: '⌛ Hot Seat selection ended: an admin must select at least two players before starting.' });
         return false;
@@ -395,12 +413,36 @@ export default {
         }
         const senderId = context.senderId || message.key.participant || message.key.remoteJid;
         const reply = (text) => sock.sendMessage(chatId, { text }, { quoted: message });
-        const allowed = await isGameAllowed(chatId, 'hotseat');
-        if (!allowed.ok && !(args[0] || '').toLowerCase().includes('end')) {
-            return reply(allowed.msg || 'Hot Seat is day-locked.');
-        }
         const sub = (args[0] || '').toLowerCase();
         let session = await getSession(chatId);
+        const gameKey = sub === 'sin' || session?.gameType === 'pick_your_sin' ? 'pickyoursin' : 'hotseat';
+        const allowed = await isGameAllowed(chatId, gameKey);
+        if (!allowed.ok && !(sub || '').includes('end')) {
+            return reply(allowed.msg || (gameKey === 'pickyoursin' ? 'PICK YOUR SIN is day-locked.' : 'Hot Seat is day-locked.'));
+        }
+        if (sub === 'sin') {
+            if (session && ['pending', 'active'].includes(session.status)) return reply('Another Hot Seat or PICK YOUR SIN selection/session is already active.');
+            session = {
+                status: 'pending', gameType: 'pick_your_sin', players: [], startedBy: senderId,
+                createdAt: Date.now(), adjustmentEndsAt: Date.now() + ADJUSTMENT_MS, manualSelection: true
+            };
+            await saveSession(chatId, session);
+            await sock.sendMessage(chatId, {
+                text: `🎭 *PICK YOUR SIN — SELECTION OPEN*\\n\\nAdmin: select exactly five participants using *.hotseat add @user1 @user2 @user3 @user4 @user5*.\\n\\nYou have 10 minutes to add, replace or rearrange participants.\\n*.hotseat list* · *.hotseat change @current @replacement* · *.hotseat arrange @user1 @user2 @user3 @user4 @user5* · *.hotseat start*`,
+                mentions: []
+            });
+            setTimeout(async () => {
+                const latest = await getSession(chatId);
+                if (latest?.status === 'pending' && latest.gameType === 'pick_your_sin' && latest.createdAt === session.createdAt) {
+                    if ((latest.players || []).length === PICK_SIN_PLAYERS) await beginGame(sock, chatId, latest);
+                    else {
+                        await clearSession(chatId);
+                        await sock.sendMessage(chatId, { text: '⌛ PICK YOUR SIN selection expired because exactly five participants were not selected.' });
+                    }
+                }
+            }, ADJUSTMENT_MS);
+            return;
+        }
         if (sub === 'resume') {
             if (!session || session.status !== 'active') return reply('No active Hot Seat session to resume.');
             const resumed = await resumeHotSeatSession(sock, chatId);
@@ -415,7 +457,7 @@ export default {
             return sendList(sock, chatId, session);
         }
         if (sub === 'add') {
-            if (!session || session.status !== 'pending') return reply('Open a Hot Seat selection first with *.hotseat*. Participants can only be added during the 10-minute selection window.');
+            if (!session || session.status !== 'pending') return reply('Open a Hot Seat selection first with *.hotseat* or *.hotseat sin*. Participants can only be added during the 10-minute selection window.');
             if (Date.now() >= session.adjustmentEndsAt) {
                 await beginGame(sock, chatId, session);
                 return reply('The adjustment window has closed. Hot Seat is starting.');
@@ -426,7 +468,7 @@ export default {
             const basePlayers = await Promise.all((session.players || []).map(id => normalizeHotSeatJid(sock, id)));
             const additions = tagged.filter(id => !basePlayers.includes(id));
             if (basePlayers.length + additions.length < MIN_PLAYERS) return reply(`Select at least ${MIN_PLAYERS} players. Tag two or more people in your first add command.`);
-            if (basePlayers.length + additions.length > MAX_PLAYERS) return reply(`Hot Seat supports a maximum of ${MAX_PLAYERS} participants. Current list:\n${formatPlayers(basePlayers)}`);
+            if (basePlayers.length + additions.length > limits.max) return reply(session.gameType === 'pick_your_sin' ? 'PICK YOUR SIN accepts exactly five participants.' : `Hot Seat supports a maximum of ${MAX_PLAYERS} participants. Current list:\n${formatPlayers(basePlayers)}`);
             if (!additions.length) return reply('Those people are already on the Hot Seat list.');
             session.players = [...basePlayers, ...additions];
             session.manualSelection = true;
@@ -467,7 +509,8 @@ export default {
         }
         if (sub === 'start') {
             if (!session || session.status !== 'pending') return reply('No selection window to start.');
-            if (session.players.length < MIN_PLAYERS) return reply(`Need at least ${MIN_PLAYERS} participants.`);
+            const limits = playerLimits(session);
+            if (session.players.length < limits.min || (session.gameType === 'pick_your_sin' && session.players.length !== limits.max)) return reply(session.gameType === 'pick_your_sin' ? 'PICK YOUR SIN requires exactly five participants.' : `Need at least ${MIN_PLAYERS} participants.`);
             await beginGame(sock, chatId, session);
             return;
         }
