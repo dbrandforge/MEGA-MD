@@ -52,7 +52,7 @@ export default {
             }, { quoted: message });
         }
         const replyMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-        const tagText = args.join(' ');
+        const tagText = args.slice(gender ? 1 : 0).join(' ');
         if (replyMessage) {
             let messageContent = {};
             if (replyMessage.imageMessage) {
