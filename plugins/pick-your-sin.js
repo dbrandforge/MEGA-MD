@@ -224,8 +224,10 @@ async function startSelection(sock, chatId, senderId) {
     return sock.sendMessage(chatId, { text: 'A PICK YOUR SIN session is already active.' });
   }
   const existing = await getSelection(chatId);
-  if (existing?.status === 'pending') {
-    return sock.sendMessage(chatId, { text: 'PICK YOUR SIN selection is already open. Use *.picksin list*.' });
+  if (existing && ['pending', 'ready'].includes(existing.status)) {
+    return sock.sendMessage(chatId, { text: existing.status === 'ready'
+      ? 'Five participants are already locked in. Use *.picksin open* when you are ready.'
+      : 'PICK YOUR SIN selection is already open. Use *.picksin list*.' });
   }
   const selection = {
     status: 'pending', players: [], startedBy: senderId,
@@ -261,7 +263,7 @@ async function sendSelectionList(sock, chatId, selection) {
     ? selection.players.map((id, i) => `${i + 1}. ${mention(id)}`).join('\n')
     : 'No participants selected yet.';
   return sock.sendMessage(chatId, {
-    text: `🎭 *PICK YOUR SIN SELECTION*\n\n${players}\n\nSelected: *${selection.players.length}/5*\nTime remaining: *${remaining} minute(s)*\n\n*.picksin add @users* · *.picksin change @current @replacement* · *.picksin arrange @all-five* · *.picksin start*`,
+    text: `🎭 *PICK YOUR SIN SELECTION*\n\n${players}\n\nSelected: *${selection.players.length}/5*\nTime remaining: *${remaining} minute(s)*\n\n*.picksin add @users* · *.picksin change @current @replacement* · *.picksin arrange @all-five* · *.picksin open* (after all five are selected)`,
     mentions: selection.players
   });
 }
@@ -576,7 +578,7 @@ export default {
       return sock.sendMessage(chatId, { text: '🛑 Admin ended PICK YOUR SIN.' }, { quoted: message });
     }
     if (sub === 'start' || sub === 'add' || sub === 'list' || sub === 'change' || sub === 'arrange' || sub === 'order' || sub === 'open' || sub === 'cancel' || sub === 'endselection') return handleSelectionCommand(sock, message, args, context, chatId);
-    if (sub === 'status' && !session) { const pending = await getSelection(chatId); if (pending?.status === 'pending') return sendSelectionList(sock, chatId, pending); }
+    if (sub === 'status' && !session) { const pending = await getSelection(chatId); if (pending && ['pending', 'ready'].includes(pending.status)) return sendSelectionList(sock, chatId, pending); }
     if (!session) return sock.sendMessage(chatId, { text: 'No active PICK YOUR SIN session. Open selection with *.picksin start*.' }, { quoted: message });
     const lines = session.players.map(id => {
       const state = session.playerStates[id];
