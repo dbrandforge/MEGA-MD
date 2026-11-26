@@ -297,7 +297,9 @@ function scheduleReconnect(delayMs, { reason = '' } = {}) {
     const exponentialDelay = Math.min(5 * 60 * 1000, baseDelay * (2 ** Math.min(reconnectAttempts, 6)));
     const effectiveDelay = Math.round(exponentialDelay * (0.8 + Math.random() * 0.4));
     reconnectAttempts = Math.min(reconnectAttempts + 1, 7);
-    printLog('connection', `Reconnecting in ${Math.round(effectiveDelay / 1000)} seconds (attempt ${reconnectAttempts}; exponential backoff with jitter)...${reason ? ` (${reason})` : ''}`);    reconnectTimer = setTimeout(async () => {        reconnectTimer = null;
+    printLog('connection', `Reconnecting in ${Math.round(effectiveDelay / 1000)} seconds (attempt ${reconnectAttempts}; exponential backoff with jitter)...${reason ? ` (${reason})` : ''}`);
+    reconnectTimer = setTimeout(async () => {
+        reconnectTimer = null;
         await safeStartQasimDev();
     }, effectiveDelay);
 }
@@ -596,7 +598,9 @@ async function startQasimDev() {
                 signalKeyCache.set(key, { value, expiresAt: Date.now() + SIGNAL_KEY_CACHE_TTL_MS });
                 while (signalKeyCache.size > SIGNAL_KEY_CACHE_MAX_ENTRIES) {
                     signalKeyCache.delete(signalKeyCache.keys().next().value);
-                }            },            async flushAll() {
+                }
+            },
+            async flushAll() {
                 signalKeyCache.clear();
             },
         };
@@ -894,8 +898,10 @@ async function startQasimDev() {
                     if (!(v.name || v.subject))
                         v = QasimDev.groupMetadata(id) || {};
                     resolve(v.name || v.subject || PhoneNumber(`+${ id.replace('@s.whatsapp.net', '')}`).number?.international);
-                });            else
-                v = id === '0@s.whatsapp.net' ? {                    id,
+                });
+            else
+                v = id === '0@s.whatsapp.net' ? {
+                    id,
                     name: 'WhatsApp'
                 } : id === QasimDev.decodeJid(QasimDev.user.id) ?
                     QasimDev.user :
