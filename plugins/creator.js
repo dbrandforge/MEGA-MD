@@ -18,7 +18,8 @@ export default {
     strictOwnerOnly: true,
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
-        if (!isRootCreator(context.senderId)) {
+        const rootActor = await canonicalWhatsAppUserId(sock, context.senderId) || context.senderId;
+        if (!isRootCreator(rootActor)) {
             return sock.sendMessage(chatId, {
                 text: '⛔ Only the two original Forge creator accounts can add or remove creators. Added creators cannot manage this registry.'
             }, { quoted: message });
@@ -50,8 +51,8 @@ export default {
         }
         const target = await canonicalWhatsAppUserId(sock, mentions[0]) || mentions[0];
         const result = action === 'add'
-            ? await addCreatorAccount(context.senderId, target)
-            : await removeCreatorAccount(context.senderId, target);
+            ? await addCreatorAccount(rootActor, target)
+            : await removeCreatorAccount(rootActor, target);
 
         let text;
         if (result.reason === 'protected-root') {
