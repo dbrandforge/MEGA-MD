@@ -21,7 +21,7 @@ import { evaluateArithmetic, evaluateArithmeticFollowup, formatArithmeticAnswer 
 import { detectMessageLanguage, getLocalizedAnswerPrefix, getLocalizedSourceSummaryFailure } from '../lib/chatbotLanguage.js';
 import { isTimeSensitiveQuestion, searchLiveKnowledge, buildLiveKnowledgeContext, formatLiveKnowledgeSources, formatLiveKnowledgeEvidenceSummary, formatLiveKnowledgeUnavailable, resolveContextualBusinessFollowup } from '../lib/liveKnowledge.js';
 import { isForgeGuardReplicationRequest, FORGE_GUARD_REPLICATION_REPLY } from '../lib/botProtection.js';
-import { isMessageTooOld } from '../lib/messageEventPolicy.js';
+import { isMessageTooOld, isMessageRevoked } from '../lib/messageEventPolicy.js';
 
 const CHATBOT_AI_ENABLED = process.env.CHATBOT_AI_ENABLED === 'true';
 
@@ -263,7 +263,7 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
 
 // Live replies are selected locally from the curated personality bank.
 async function handleChatbotResponseForConversation(sock, chatId, message, userMessage, senderId, memoryKey, messageId) {
-    if (!isLatestChatbotTurn(memoryKey, messageId) || isMessageTooOld(message)) {
+    if (!isLatestChatbotTurn(memoryKey, messageId) || isMessageTooOld(message) || isMessageRevoked(message)) {
         printLog('info', '[Chatbot] Skipped superseded or expired queued turn before context generation.');
         return;
     }
@@ -386,7 +386,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         // Keep ownership/build inquiries about this specific bot out of the AI
         // context in both DMs and addressed group conversations.
         if (isForgeGuardReplicationRequest(chatbotQuery)) {
-            if (!isLatestChatbotTurn(memoryKey, messageId) || isMessageTooOld(message)) {
+            if (!isLatestChatbotTurn(memoryKey, messageId) || isMessageTooOld(message) || isMessageRevoked(message)) {
                 printLog('warning', '[Chatbot] Suppressed expired reply before send.');
                 return;
             }
@@ -539,7 +539,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         // AI/search/database work can outlive the inbound-message window. Recheck
         // the original WhatsApp timestamp immediately before sending, not just
         // when the message entered the queue.
-        if (!isLatestChatbotTurn(memoryKey, messageId) || isMessageTooOld(message)) {
+        if (!isLatestChatbotTurn(memoryKey, messageId) || isMessageTooOld(message) || isMessageRevoked(message)) {
             printLog('warning', '[Chatbot] Suppressed superseded or expired reply after response generation.');
             return;
         }
