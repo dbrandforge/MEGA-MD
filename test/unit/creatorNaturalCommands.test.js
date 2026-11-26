@@ -22,6 +22,7 @@ describe('creator natural-language command routing', () => {
     it.each([
         ['send me the activities of the day', 'activity', []],
         ['show me all activities', 'activities', []],
+        ['show me the full list of all activities', 'activities', []],
         ['send the full activity schedule', 'activities', []],
         ['list all group activities', 'activities', []],
         ['remove @user', 'kick', []],
