@@ -4,7 +4,7 @@ import { buildPickYourSinBank, normalizePickYourSinPrompt } from '../data/pickYo
 import { isGameAllowed } from './daylock.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { sameWhatsAppUser, canonicalWhatsAppUserId } from '../lib/whatsappIdentity.js';
-import { getPickYourSinMediaKind, getPickYourSinMessageContext, validatePickYourSinTruthAnswer } from '../lib/pickYourSinResponse.js';
+import { getPickYourSinMediaKind, getPickYourSinMessageContext, isPickYourSinViewOnceMessage, validatePickYourSinTruthAnswer } from '../lib/pickYourSinResponse.js';
 
 const KEY = 'pickYourSinSessions';
 const DAILY_KEY = 'pickYourSinDailyCompletions';
@@ -266,6 +266,14 @@ function buildDecks() {
   return buildPickYourSinBank();
 }
 
+function promptUsageKey(card, type) {
+  const text = typeof card === 'string' ? card : card?.text;
+  if (type !== 'dare') return normalizePickYourSinPrompt(text);
+  if (card?.reuseKey) return card.reuseKey;
+  const match = String(card?.id || '').match(/^dare-(?:guy|lady)-(?:red|yellow|orange|ash)-(\\d+)$/);
+  return match ? `dare-${Number(match[1])}` : `dare-${normalizePickYourSinPrompt(text)}`;
+}
+
 async function findPlayerKey(sock, players, userId) {
   for (const player of players || []) {
     if (player === userId || await sameWhatsAppUser(sock, player, userId)) return player;
@@ -306,7 +314,15 @@ async function sendPrompt(sock, chatId, session, playerId) {
   if (!Array.isArray(session.usedPromptKeys)) session.usedPromptKeys = [];
   if (!Array.isArray(session.usedPromptIds)) session.usedPromptIds = [];
   const usedKeys = new Set(session.usedPromptKeys);
-  const card = cards.find(item => !usedKeys.has(normalizePickYourSinPrompt(typeof item === 'string' ? item : item.text)));
+  if (type === 'dare') {
+    // Older active sessions stored colour-specific IDs. Convert those IDs to the
+    // shared action index so a dare already issued before this fix is not repeated.
+    for (const id of session.usedPromptIds) {
+      const match = String(id || '').match(/^dare-(?:guy|lady)-(?:red|yellow|orange|ash)-(\\d+)$/);
+      if (match) usedKeys.add(`dare-${Number(match[1])}`);
+    }
+  }
+  const card = cards.find(item => !usedKeys.has(promptUsageKey(item, type)));
   if (!card) {
     state.status = 'out';
     state.waiting = false;
@@ -318,7 +334,7 @@ async function sendPrompt(sock, chatId, session, playerId) {
   }
   const cardText = typeof card === 'string' ? card : card.text;
   const cardId = typeof card === 'string' ? normalizePickYourSinPrompt(cardText) : card.id;
-  session.usedPromptKeys.push(normalizePickYourSinPrompt(cardText));
+  session.usedPromptKeys.push(promptUsageKey(card, type));
   if (cardId) session.usedPromptIds.push(cardId);
   state.currentType = type;
   state.awaitingColor = false;
@@ -602,15 +618,14 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
     await saveSessions(chatId, sessions);
   }
 
-  const access = await isGameAllowed(chatId, 'pickyoursin');
-  if (!access.ok) {
-    await sock.sendMessage(chatId, { text: access.msg }, { quoted: message });
-    return true;
-  }
-
   if (!state.color) {
     const color = colorFromText(text);
     if (!color) return false;
+    const access = await isGameAllowed(chatId, 'pickyoursin');
+    if (!access.ok) {
+      await sock.sendMessage(chatId, { text: access.msg }, { quoted: message });
+      return true;
+    }
     if (state.cooldownUntil && Date.now() < state.cooldownUntil) {
       const remaining = Math.ceil((state.cooldownUntil - Date.now()) / 1000);
       await sock.sendMessage(chatId, { text: `⏳ Your next colour choice unlocks in *${remaining} seconds*.` }, { quoted: message });
@@ -632,7 +647,18 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
   const botId = String(sock.user?.id || '').split(':')[0].split('@')[0];
   const mentioned = (context.mentionedJid || []).some(id => String(id).split(':')[0].split('@')[0] === botId);
   const replied = Boolean(state.questionMessageId && context.stanzaId === state.questionMessageId);
-  if (!replied && !mentioned) return false;
+  const mediaKind = getPickYourSinMediaKind(message);
+  // A selected player may submit proof directly while their active dare is waiting;
+  // this also supports WhatsApp view-once media, whose clients may omit reply context.
+  const isDareMedia = state.currentType === 'dare' && state.waiting
+    && ['voice', 'image', 'video'].includes(mediaKind);
+  if (!replied && !mentioned && !isDareMedia) return false;
+
+  const access = await isGameAllowed(chatId, 'pickyoursin');
+  if (!access.ok) {
+    await sock.sendMessage(chatId, { text: access.msg }, { quoted: message });
+    return true;
+  }
 
   if (state.cooldownUntil && Date.now() < state.cooldownUntil) {
     const remaining = Math.ceil((state.cooldownUntil - Date.now()) / 1000);
@@ -655,7 +681,6 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
     return true;
   }
 
-  const mediaKind = getPickYourSinMediaKind(message);
   if (state.currentType === 'dare') {
     if (!['voice', 'image', 'video'].includes(mediaKind)) {
       await sock.sendMessage(chatId, {
@@ -682,6 +707,15 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
     for (const timer of inactivityTimers.get(state.inactivityToken) || []) clearTimeout(timer);
     inactivityTimers.delete(state.inactivityToken);
   }
+  if (!Array.isArray(state.responses)) state.responses = [];
+  state.responses.push({
+    step: state.step,
+    type: state.currentType,
+    mediaKind: isPass ? 'pass' : mediaKind,
+    messageId: message?.key?.id || null,
+    receivedAt: Date.now(),
+    viewOnce: isPickYourSinViewOnceMessage(message)
+  });
   if (isPass) state.passUsed = true;
   else state.step += 1;
   state.inactivityToken = null;
