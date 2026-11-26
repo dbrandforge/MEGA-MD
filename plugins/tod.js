@@ -103,7 +103,7 @@ async function startRound(sock, chatId, session) {
     text += `${mention(answerer)}, your ${type}:\n\n${content}\n\n`;
     text += `✅ When done, type *.done*\n🛑 *.endtod* to stop`;
 
-    const sent = await sock.sendMessage(chatId, { text, mentions: session.players });
+    const sent = await sock.sendMessage(chatId, { text, mentions: [answerer] });
     session.questionMessageId = sent?.key?.id || null;
     const latestSessions = await getSessions(chatId);
     const latest = latestSessions[session.id];
