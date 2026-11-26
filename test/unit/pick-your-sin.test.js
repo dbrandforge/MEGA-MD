@@ -66,4 +66,48 @@ describe('Pick Your Sin sessions', () => {
     session = Object.values(state.pickYourSinSessions)[0];
     expect(session.playerStates[players[0]].step).toBe(1);
   });
+
+  it('rejects non-selected participants', async () => {
+    const sock = { sendMessage: vi.fn(async () => ({ key: { id: 'announcement' } })) };
+    await beginPickYourSinSession(sock, chatId, players, 'admin@s.whatsapp.net');
+    const handled = await handlePickYourSinMessage(
+      sock,
+      chatId,
+      { key: { fromMe: false }, message: { conversation: 'red' } },
+      'red',
+      '234811111111@s.whatsapp.net'
+    );
+    expect(handled).toBe(false);
+    expect(sock.sendMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows one pass per session without advancing the truth count', async () => {
+    let sent = 0;
+    const sock = { user: { id: '234899999999:1@s.whatsapp.net' }, sendMessage: vi.fn(async () => ({ key: { id: `bot-${++sent}` } })) };
+    await beginPickYourSinSession(sock, chatId, players, 'admin@s.whatsapp.net');
+    await handlePickYourSinMessage(sock, chatId, { key: { fromMe: false }, message: { conversation: 'red' } }, 'red', players[0]);
+    let session = Object.values(state.pickYourSinSessions)[0];
+    const promptId = session.playerStates[players[0]].questionMessageId;
+    const passMessage = { key: { fromMe: false }, message: { extendedTextMessage: { contextInfo: { stanzaId: promptId } } } };
+
+    await handlePickYourSinMessage(sock, chatId, passMessage, 'pass', players[0]);
+    session = Object.values(state.pickYourSinSessions)[0];
+    expect(session.playerStates[players[0]].passUsed).toBe(true);
+    expect(session.playerStates[players[0]].step).toBe(0);
+
+    await vi.advanceTimersByTimeAsync(30_000);
+    session = Object.values(state.pickYourSinSessions)[0];
+    const replacementId = session.playerStates[players[0]].questionMessageId;
+    await handlePickYourSinMessage(
+      sock,
+      chatId,
+      { key: { fromMe: false }, message: { extendedTextMessage: { contextInfo: { stanzaId: replacementId } } } },
+      'pass',
+      players[0]
+    );
+    session = Object.values(state.pickYourSinSessions)[0];
+    expect(session.playerStates[players[0]].step).toBe(0);
+    expect(session.playerStates[players[0]].passUsed).toBe(true);
+  });
+
 });
