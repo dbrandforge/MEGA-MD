@@ -73,7 +73,7 @@ function shuffle(items) {
   return copy;
 }
 function colorFromText(value) {
-  const text = String(value || '').trim().toLowerCase();
+  const text = String(value || '').replace(/@[\d.-]+/g, '').trim().toLowerCase();
   const aliases = {
     red: 'red', '❤️': 'red', '❤': 'red', '🔴': 'red',
     green: 'green', '💚': 'green', '🟢': 'green',
@@ -241,9 +241,10 @@ async function startSelection(sock, chatId, senderId) {
         const latest = await getSelection(chatId);
         if (latest?.status !== 'pending' || latest.createdAt !== selection.createdAt) return;
         if (latest.players.length === 5) {
-          await saveSelection(chatId, { ...latest, status: 'starting' });
-          await beginPickYourSinSessionLocked(sock, chatId, latest.players, latest.startedBy);
-          await saveSelection(chatId, { ...latest, status: 'started' });
+          await saveSelection(chatId, { ...latest, status: 'ready' });
+          await sock.sendMessage(chatId, {
+            text: '⏳ *PICK YOUR SIN — PARTICIPANTS LOCKED*\n\nAll five participants are selected. The game has NOT started yet. When you are ready, send *.picksin open* to officially open the game.'
+          });
         } else {
           await saveSelection(chatId, { ...latest, status: 'expired' });
           await sock.sendMessage(chatId, { text: '⌛ PICK YOUR SIN selection expired: exactly five participants were not selected.' });
@@ -272,27 +273,51 @@ async function handleSelectionCommand(sock, message, args, context, chatId) {
     return startSelection(sock, chatId, senderId);
   }
   let selection = await getSelection(chatId);
+  if (sub === 'open') {
+    if (!selection || !['pending', 'ready'].includes(selection.status)) {
+      return sock.sendMessage(chatId, { text: 'There is no completed PICK YOUR SIN selection to open. Start with *.picksin start*.' }, { quoted: message });
+    }
+    if (selection.players.length !== 5) {
+      return sock.sendMessage(chatId, { text: `Select exactly five participants first. Current selection: *${selection.players.length}/5*.` }, { quoted: message });
+    }
+    if (Date.now() >= selection.adjustmentEndsAt && selection.status === 'pending') {
+      selection.status = 'ready';
+      await saveSelection(chatId, selection);
+    }
+    selection.status = 'starting';
+    await saveSelection(chatId, selection);
+    const started = await beginPickYourSinSession(sock, chatId, selection.players, selection.startedBy);
+    if (started === false) {
+      selection.status = 'ready';
+      await saveSelection(chatId, selection);
+      return;
+    }
+    selection.status = 'started';
+    selection.openedAt = Date.now();
+    await saveSelection(chatId, selection);
+    return;
+  }
   if (sub === 'endselection' || sub === 'cancel') {
     if (!selection || selection.status !== 'pending') return sock.sendMessage(chatId, { text: 'No open PICK YOUR SIN selection.' }, { quoted: message });
     selection.status = 'cancelled';
     await saveSelection(chatId, selection);
     return sock.sendMessage(chatId, { text: '🛑 PICK YOUR SIN selection cancelled.' }, { quoted: message });
   }
-  if (!selection || selection.status !== 'pending') {
+  if (!selection || !['pending', 'ready'].includes(selection.status)) {
     return sock.sendMessage(chatId, { text: 'No open selection. Start one with *.picksin start*.' }, { quoted: message });
   }
-  if (Date.now() >= selection.adjustmentEndsAt) {
-    if (selection.players.length === 5) {
-      selection.status = 'starting';
-      await saveSelection(chatId, selection);
-      await beginPickYourSinSession(sock, chatId, selection.players, selection.startedBy);
-      selection.status = 'started';
-      await saveSelection(chatId, selection);
-    } else {
-      selection.status = 'expired';
-      await saveSelection(chatId, selection);
+  if (Date.now() >= selection.adjustmentEndsAt && selection.status === 'pending') {
+    selection.status = selection.players.length === 5 ? 'ready' : 'expired';
+    await saveSelection(chatId, selection);
+    if (selection.status === 'expired') {
+      return sock.sendMessage(chatId, { text: 'The 10-minute selection window has closed before five participants were selected.' }, { quoted: message });
     }
-    return sock.sendMessage(chatId, { text: 'The 10-minute selection window has closed.' }, { quoted: message });
+    if (sub !== 'list') {
+      return sock.sendMessage(chatId, { text: 'The selection window has closed. All five participants are locked in; use *.picksin open* when ready.' }, { quoted: message });
+    }
+  }
+  if (selection.status === 'ready' && !['list'].includes(sub)) {
+    return sock.sendMessage(chatId, { text: 'Participants are locked. Use *.picksin open* to officially open the game.' }, { quoted: message });
   }
   if (sub === 'list') return sendSelectionList(sock, chatId, selection);
   const tagged = await Promise.all(getMentions(message).map(async id => (await canonicalWhatsAppUserId(sock, id)) || id));
@@ -324,16 +349,7 @@ async function handleSelectionCommand(sock, message, args, context, chatId) {
     await saveSelection(chatId, selection);
     return sendSelectionList(sock, chatId, selection);
   }
-  if (sub === 'startnow' || sub === 'begin') {
-    if (selection.players.length !== 5) return sock.sendMessage(chatId, { text: 'Exactly five participants must be selected before starting.' }, { quoted: message });
-    selection.status = 'starting';
-    await saveSelection(chatId, selection);
-    await beginPickYourSinSession(sock, chatId, selection.players, selection.startedBy);
-    selection.status = 'started';
-    await saveSelection(chatId, selection);
-    return;
-  }
-  return sock.sendMessage(chatId, { text: 'PICK YOUR SIN commands: *.picksin start*, *.picksin add*, *.picksin list*, *.picksin change*, *.picksin arrange*, *.picksin startnow*, *.picksin status*, *.picksin end*.' }, { quoted: message });
+  return sock.sendMessage(chatId, { text: 'PICK YOUR SIN commands: *.picksin start*, *.picksin add*, *.picksin list*, *.picksin change*, *.picksin arrange*, *.picksin open*, *.picksin status*, *.picksin end*.' }, { quoted: message });
 }
 
 
@@ -391,7 +407,7 @@ async function beginPickYourSinSessionLocked(sock, chatId, players, startedBy) {
   sessions[session.id] = session;
   await saveSessions(chatId, sessions);
   await sock.sendMessage(chatId, {
-    text: `🔥 *PICK YOUR SIN — SELECTION COMPLETE*\n\nFive participants are in. Each player is playing independently and simultaneously.\n\nChoose one colour by typing its name or sending its emoji:\n❤️ RED · 💚 GREEN · 💛 YELLOW · 🧡 ORANGE\n\nEach player gets two rounds: five truths and one action dare per round. One pass per session. 30-second cooldown between prompts.`,
+    text: `🔥 *PICK YOUR SIN — GAME OPEN*\n\nFive participants are locked in. The game is now open.\n\nTo begin, each selected player must tag/mention the bot with their intended colour:\n❤️ RED · 💚 GREEN · 💛 YELLOW · 🧡 ORANGE\n\nExample: *@Forge Guard RED* or *@Forge Guard ❤️*\n\nEach player gets two rounds: five truths and one action dare per round. One pass per session (TRUTH only). 30-second cooldown between prompts.`,
     mentions: session.players
   });
   for (const [playerId, state] of Object.entries(states)) {
@@ -442,6 +458,16 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
   if (!state.color) {
     const color = colorFromText(text);
     if (!color) return false;
+    const colorContext = message?.message?.extendedTextMessage?.contextInfo
+      || message?.message?.imageMessage?.contextInfo
+      || message?.message?.videoMessage?.contextInfo
+      || {};
+    const botId = String(sock.user?.id || '').split(':')[0].split('@')[0];
+    const botMentioned = (colorContext.mentionedJid || []).some(id => String(id).split(':')[0].split('@')[0] === botId);
+    if (!botMentioned) {
+      await sock.sendMessage(chatId, { text: 'To begin your turn, tag/mention the bot together with your chosen colour (for example: *@Forge Guard RED* or *@Forge Guard ❤️*).' }, { quoted: message });
+      return true;
+    }
     if (state.cooldownUntil && Date.now() < state.cooldownUntil) {
       const remaining = Math.ceil((state.cooldownUntil - Date.now()) / 1000);
       await sock.sendMessage(chatId, { text: `⏳ Your next colour choice unlocks in *${remaining} seconds*.` }, { quoted: message });
@@ -549,7 +575,7 @@ export default {
       await saveSessions(chatId, sessions);
       return sock.sendMessage(chatId, { text: '🛑 Admin ended PICK YOUR SIN.' }, { quoted: message });
     }
-    if (sub === 'start' || sub === 'add' || sub === 'list' || sub === 'change' || sub === 'arrange' || sub === 'order' || sub === 'startnow' || sub === 'begin' || sub === 'cancel' || sub === 'endselection') return handleSelectionCommand(sock, message, args, context, chatId);
+    if (sub === 'start' || sub === 'add' || sub === 'list' || sub === 'change' || sub === 'arrange' || sub === 'order' || sub === 'open' || sub === 'cancel' || sub === 'endselection') return handleSelectionCommand(sock, message, args, context, chatId);
     if (sub === 'status' && !session) { const pending = await getSelection(chatId); if (pending?.status === 'pending') return sendSelectionList(sock, chatId, pending); }
     if (!session) return sock.sendMessage(chatId, { text: 'No active PICK YOUR SIN session. Open selection with *.picksin start*.' }, { quoted: message });
     const lines = session.players.map(id => {
