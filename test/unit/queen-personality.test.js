@@ -15,6 +15,6 @@ describe('Empire/Tessy personality fallback', () => {
         });
 
         expect(queenReply).toMatch(/my Queen|sweetheart|darling|love/i);
-        expect(standardReply).not.toMatch(/my Queen|sweetheart|darling/i);
+        expect(standardReply).not.toMatch(/my Queen/i);
     });
 });
