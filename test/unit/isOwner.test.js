@@ -45,7 +45,7 @@ describe('isOwnerOrSudo', () => {
         vi.resetModules();
         const mod = await import('../../lib/isOwner.js');
         expect(await mod.default('2348000000001@s.whatsapp.net')).toBe(false);
-        expect(await mod.default('2349034451454@s.whatsapp.net')).toBe(false);
+        expect(await mod.default('923001234567@s.whatsapp.net')).toBe(false);
         expect(mod.isOwnerOnly('2348000000002@s.whatsapp.net')).toBe(false);
     });
 
