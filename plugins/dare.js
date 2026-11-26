@@ -35,7 +35,7 @@ export default {
         await startSoloSession(chatId, senderId, 'dare', gender, sock);
 
         const sent = await sock.sendMessage(chatId, {
-            text: `🔥 *DARE* (${gender}) 🔥\n\n${dareMessage}\n\n_Reply to this message or tag me to get another one. Type *stop* to end._`
+            text: `🔥 *DARE* (${gender}) 🔥\n\n@${senderId.split('@')[0]}, your action:\n\n${dareMessage}\n\n_Reply to this message or tag me to get another one. Type *stop* to end._`
         }, { quoted: message });
         await setSoloQuestionMessage(chatId, senderId, sent?.key?.id, sock);
     }
