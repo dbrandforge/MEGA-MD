@@ -57,6 +57,24 @@ describe('Pick Your Sin sessions', () => {
     expect(session.playerStates[players[0]].currentCard).not.toBe(session.playerStates[players[1]].currentCard);
     expect(session.usedPromptKeys).toHaveLength(2);
   });
+  it('does not give the same underlying action dare to players in different colours', async () => {
+    let sent = 0;
+    const sock = { user: { id: '234899999999:1@s.whatsapp.net' }, sendMessage: vi.fn(async () => ({ key: { id: `bot-${++sent}` } })) };
+    await beginPickYourSinSession(sock, chatId, players, 'admin@s.whatsapp.net');
+    const session = Object.values(state.pickYourSinSessions)[0];
+    session.playerStates[players[0]].step = 5;
+    session.playerStates[players[1]].step = 5;
+
+    await handlePickYourSinMessage(sock, chatId, colorMessage('red'), 'red', players[0]);
+    await handlePickYourSinMessage(sock, chatId, colorMessage('yellow'), 'yellow', players[1]);
+
+    const updated = Object.values(state.pickYourSinSessions)[0];
+    expect(updated.playerStates[players[0]].currentType).toBe('dare');
+    expect(updated.playerStates[players[1]].currentType).toBe('dare');
+    expect(updated.playerStates[players[0]].currentCard).not.toBe(updated.playerStates[players[1]].currentCard);
+    expect(updated.usedPromptKeys.slice(-2)).toEqual(['dare-001', 'dare-002']);
+  });
+
   it('does not send a schedule-bypass reply to ordinary messages from an active player', async () => {
     const sock = { user: { id: '234899999999:1@s.whatsapp.net' }, sendMessage: vi.fn(async () => ({ key: { id: 'prompt' } })) };
     await beginPickYourSinSession(sock, chatId, players, 'admin@s.whatsapp.net');
