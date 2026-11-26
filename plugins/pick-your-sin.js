@@ -1,6 +1,6 @@
 import store from '../lib/lightweight_store.js';
 import { getUserGender } from './gender.js';
-import { getTruths } from '../data/todLists.js';
+import { buildPickYourSinBank, normalizePickYourSinPrompt } from '../data/pickYourSinBank.js';
 import { isGameAllowed } from './daylock.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { sameWhatsAppUser, canonicalWhatsAppUserId } from '../lib/whatsappIdentity.js';
@@ -116,32 +116,7 @@ async function saveSessions(chatId, sessions) {
     throw new Error('Pick Your Sin session state could not be persisted.');
   }
 }
-function buildDecks() {
-  const decks = {};
-  for (const gender of ['guy', 'lady']) {
-    const truths = shuffle([...new Set(getTruths(gender).filter(Boolean).map(String))]);
-    const dares = shuffle(ACTION_DARES);
-    const truthFallback = [
-      'What intimate desire have you kept private because you fear being judged?',
-      'What is one adult fantasy you have seriously considered but never discussed?',
-      'What is the most personal truth about your attraction patterns that you rarely admit?',
-      'What boundary or desire took you the longest to understand about yourself?'
-    ];
-    for (const [colorIndex, color] of Object.keys(COLORS).entries()) {
-      const truthCards = [];
-      const dareCards = [];
-      for (let i = 0; i < 42; i++) {
-        const sourceIndex = colorIndex * 42 + i;
-        truthCards.push(truths[sourceIndex % Math.max(1, truths.length)] || truthFallback[i % truthFallback.length]);
-      }
-      for (let i = 0; i < 8; i++) dareCards.push(dares[(colorIndex * 8 + i) % dares.length]);
-      decks[`${gender}:${color}`] = { truths: truthCards, dares: dareCards };
-    }
-  }
-  return decks;
-}
-
-async function findPlayerKey(sock, players, userId) {
+function buildDecks() {\n  return buildPickYourSinBank();\n}\n\nasync function findPlayerKey(sock, players, userId) {
   for (const player of players || []) {
     if (player === userId || await sameWhatsAppUser(sock, player, userId)) return player;
   }
@@ -174,25 +149,7 @@ async function sendPrompt(sock, chatId, session, playerId) {
     }
     return true;
   }
-  const type = questionType(state.step);
-  const deck = session.decks[`${state.gender}:${state.color}`];
-  const indexKey = type === 'truth' ? 'truthIndex' : 'dareIndex';
-  const cards = type === 'truth' ? deck.truths : deck.dares;
-  const card = cards[state[indexKey] % cards.length];
-  state[indexKey] += 1;
-  state.currentType = type;
-  state.awaitingColor = false;
-  state.currentCard = card;
-  state.waiting = true;
-  state.cooldownUntil = null;
-  const label = type === 'truth' ? '🔥 *TRUTH*' : '💀 *DARE — ACTION REQUIRED*';
-  const progress = type === 'truth'
-    ? `Truth ${state.step < 5 ? state.step + 1 : state.step - 5}/5`
-    : `Dare ${state.step === 5 ? 1 : 2}/2`;
-  const sent = await sock.sendMessage(chatId, {
-    text: `🎭 *PICK YOUR SIN* — ${COLORS[state.color].emoji} ${COLORS[state.color].label}\n${label} · ${progress}\n\n${card}\n\n_Reply to this prompt or tag the bot when you've completed it. You may use your one session pass on a TRUTH only. You have 30 seconds between prompts._`,
-    mentions: [playerId]
-  });
+  const type = questionType(state.step);\n  const deck = session.decks[`${state.gender}:${state.color}`];\n  const cards = type === 'truth' ? deck.truths : deck.dares;\n  if (!Array.isArray(session.usedPromptKeys)) session.usedPromptKeys = [];\n  if (!Array.isArray(session.usedPromptIds)) session.usedPromptIds = [];\n  const usedKeys = new Set(session.usedPromptKeys);\n  const card = cards.find(item => !usedKeys.has(normalizePickYourSinPrompt(typeof item === 'string' ? item : item.text)));\n  if (!card) {\n    state.status = 'out';\n    state.waiting = false;\n    const latest = await getSessions(chatId);\n    latest[session.id] = session;\n    await saveSessions(chatId, latest);\n    await sock.sendMessage(chatId, { text: `⚠️ ${mention(playerId)} has no unused ${type} cards left in this colour. The rest of the players can continue.`, mentions: [playerId] });\n    return false;\n  }\n  const cardText = typeof card === 'string' ? card : card.text;\n  const cardId = typeof card === 'string' ? normalizePickYourSinPrompt(cardText) : card.id;\n  session.usedPromptKeys.push(normalizePickYourSinPrompt(cardText));\n  if (cardId) session.usedPromptIds.push(cardId);\n  state.currentType = type;\n  state.awaitingColor = false;\n  state.currentCard = cardText;\n  state.waiting = true;\n  state.cooldownUntil = null;\n  const label = type === 'truth' ? '🔥 *TRUTH*' : '💀 *DARE — ACTION REQUIRED*';\n  const progress = type === 'truth'\n    ? `Truth ${state.step < 5 ? state.step + 1 : state.step - 5}/5`\n    : `Dare ${state.step === 5 ? 1 : 2}/2`;\n  const sent = await sock.sendMessage(chatId, {\n    text: `🎭 *PICK YOUR SIN* — ${COLORS[state.color].emoji} ${COLORS[state.color].label}\n${label} · ${progress}\n\n${cardText}\n\n_Reply to this prompt or tag the bot when you've completed it. You may use your one session pass on a TRUTH only. You have 30 seconds between prompts._`,\n    mentions: [playerId]\n  });
   state.questionMessageId = sent?.key?.id || null;
   const latestSessions = await getSessions(chatId);
   latestSessions[session.id] = session;
@@ -382,7 +339,7 @@ async function beginPickYourSinSessionLocked(sock, chatId, players, startedBy) {
     startedBy,
     players: Object.keys(states),
     playerStates: states,
-    decks: buildDecks()
+    decks: buildDecks(),\n    usedPromptKeys: [],\n    usedPromptIds: []
   };
   const sessions = await getSessions(chatId);
   if (Object.values(sessions).some(item => item.status === 'active')) {
