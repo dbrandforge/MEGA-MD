@@ -85,15 +85,15 @@ function buildGenderColorBank(gender, legacy, themes) {
       }))
     );
     const truths = [...legacyCards, ...generated].slice(0, 150);
-    const intensityInstruction = {
-      red: 'RED FOLDER — MAXIMUM HEAT: do this in one confident take, with no rehearsing and no hiding behind a one-word answer.',
-      yellow: 'YELLOW FOLDER — BOLD MODE: make the performance personal, specific and confidently delivered.',
-      orange: 'ORANGE FOLDER — TURN UP THE TEMPO: complete the challenge with energy and a clear, memorable finish.',
-      ash: 'ASH FOLDER — WILD CARD: complete the challenge in your own style, with a surprising or funny twist.'
+    const challengeDirection = {
+      red: 'Do this in one confident take, without rehearsing; add one bold, unscripted detail.',
+      yellow: 'Make this personal: include one specific detail and deliver it with confidence.',
+      orange: 'Keep the energy up and finish with a clear, memorable flourish.',
+      ash: 'Put your own spin on it by adding an unexpected or funny twist.'
     }[color];
     const dares = actionDares.map((text, index) => ({
       id: `dare-${gender}-${color}-${String(index + 1).padStart(3, '0')}`,
-      text: `${intensityInstruction} ${text}`
+      text: `${challengeDirection} ${text}`
     }));
     if (truths.length !== 150 || dares.length !== 30) {
       throw new Error(`Invalid PICK YOUR SIN bank size for ${gender}/${color}: ${truths.length} truths, ${dares.length} dares.`);
