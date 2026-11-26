@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('../../config.js', () => ({
-    default: { ownerNumber: '923001234567@s.whatsapp.net', creatorNumber: '2349034451454@s.whatsapp.net' }
+    default: { ownerNumber: '2349034451454@s.whatsapp.net', creatorNumber: '2349034451454@s.whatsapp.net' }
 }));
 
 vi.mock('../../lib/index.js', () => ({
@@ -23,28 +23,29 @@ describe('isOwnerOrSudo', () => {
     afterEach(() => vi.unstubAllEnvs());
 
     it('owner JID matches', async () => {
-        expect(await isOwnerOrSudo('923001234567@s.whatsapp.net')).toBe(true);
+        expect(await isOwnerOrSudo('2349034451454@s.whatsapp.net')).toBe(true);
     });
 
     it('owner with device suffix matches', async () => {
-        expect(await isOwnerOrSudo('923001234567:10@s.whatsapp.net')).toBe(true);
+        expect(await isOwnerOrSudo('2349034451454:10@s.whatsapp.net')).toBe(true);
     });
 
-    it('configured Creator number is accepted as owner', async () => {
+    it('main Forge account is accepted as root creator', async () => {
         expect(await isOwnerOrSudo('2349034451454@s.whatsapp.net')).toBe(true);
         expect(isOwnerOnly('2349034451454:12@s.whatsapp.net')).toBe(true);
     });
 
-    it('the second protected Forge account is accepted as creator', async () => {
+    it('the second protected Forge account is accepted as root creator', async () => {
         expect(await isOwnerOrSudo('2348124542393@s.whatsapp.net')).toBe(true);
         expect(isOwnerOnly('2348124542393:4@s.whatsapp.net')).toBe(true);
     });
 
-    it('unregistered numbers in legacy CREATOR_NUMBERS are not granted creator access', async () => {
+    it('unregistered legacy owner and CREATOR_NUMBERS values are not granted creator access', async () => {
         vi.stubEnv('CREATOR_NUMBERS', '2348000000001,2348000000002');
         vi.resetModules();
         const mod = await import('../../lib/isOwner.js');
         expect(await mod.default('2348000000001@s.whatsapp.net')).toBe(false);
+        expect(await mod.default('923001234567@s.whatsapp.net')).toBe(false);
         expect(mod.isOwnerOnly('2348000000002@s.whatsapp.net')).toBe(false);
     });
 
