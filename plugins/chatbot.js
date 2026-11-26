@@ -515,7 +515,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                         console.warn(`[Chatbot AI] outcome=unavailable latency_ms=${Date.now() - aiStartedAt} reason=${reason}`);
                     }
                 } else {
-                    response = getChatbotFailureFallback(chatbotQuery, { language: responseLanguage, intent, chatId, previousReply: previousBotTurn?.text, gender: registeredGender });
+                    response = getChatbotFailureFallback(chatbotQuery, { language: responseLanguage, intent, chatId, previousReply: previousBotTurn?.text, gender: registeredGender, identityRole: identity?.role });
                 }
             }
 
