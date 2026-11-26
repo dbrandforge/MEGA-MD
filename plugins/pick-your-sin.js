@@ -30,7 +30,23 @@ const ACTION_DARES = [
   'Share a voice note explaining one fantasy you are curious about and the consent conversation it would require.',
   'Write a short, confident personal ad describing the kind of chemistry you want with another consenting adult.',
   'Post a voice note giving your best flirtatious compliment without targeting or embarrassing a group member.',
-  'Create and post a six-line fictional scene built around tension, anticipation and mutual consent.'
+  'Create and post a six-line fictional scene built around tension, anticipation and mutual consent.',
+  'Record a voice note acting out the opening line of a private, consensual fantasy you would like to explore.',
+  'Post a three-step plan for asking a partner to try something new while making consent explicit.',
+  'Deliver a 20-second voice-note confession about the boldest thought you have had about someone you were attracted to.',
+  'Write and post a daring but respectful invitation to a private date, with a clear opt-in.',
+  'Record a voice note describing the kind of teasing conversation that would genuinely affect you.',
+  'Post a short monologue admitting one intimate curiosity you have never voiced to a partner.',
+  'Create a five-line fictional flirt exchange and perform both voices in a voice note.',
+  'Post three specific questions you would ask a consenting partner before exploring a new fantasy.',
+  'Record a confident voice note describing your ideal build-up to an intimate evening.',
+  'Write a direct confession about a past romantic risk you took and post it to the group.',
+  'Act out a 15-second dramatic confession of attraction in a voice note.',
+  'Post a short, specific description of the most daring consensual date you would actually agree to.',
+  'Record a voice note explaining one desire you would only explore with trust and clear boundaries.',
+  'Write a bold invitation to a fictional adult crush and read it aloud in a voice note.',
+  'Post a five-line scene in which two adults negotiate a daring fantasy with mutual consent.',
+  'Give a 30-second voice-note pitch for the most adventurous date you would plan with a willing partner.'
 ];
 
 function shuffle(items) {
@@ -111,7 +127,9 @@ async function sendPrompt(sock, chatId, session, playerId) {
     if (session.players.every(id => session.playerStates[id]?.status === 'complete')) {
       session.status = 'complete';
       session.completedAt = Date.now();
-      await saveSessions(chatId, { [session.id]: session });
+      const completedSessions = await getSessions(chatId);
+      completedSessions[session.id] = session;
+      await saveSessions(chatId, completedSessions);
       await sock.sendMessage(chatId, { text: '🔥 *PICK YOUR SIN is complete.* All five selected players have finished.' });
     }
     return true;
