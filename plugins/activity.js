@@ -1,5 +1,5 @@
 import { dailyActivities } from '../data/dailyActivities.js';
-import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
+import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';\nimport { sendGroupAll } from '../lib/groupMentions.js';
 
 /**
  * Lets anyone (admin or not) check today's scheduled activity on demand,
