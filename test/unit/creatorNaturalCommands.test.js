@@ -42,6 +42,18 @@ describe('creator natural-language command routing', () => {
         expect(parseCreatorNaturalCommand(phrase, { addressedToBot: true })).toMatchObject({ command, args });
     });
 
+    it.each([
+        ['I need you to remove @user', 'kick', []],
+        ['I want you to start trivia', 'trivia', []],
+        ['Could you lock this group for 2 hours?', 'grouplock', ['quicklock', 'now', '120m']],
+        ['Do me a favour and tag everyone', 'tagall', []],
+        ["Let's start hot seat", 'hotseat', []],
+        ['When you get a chance, send me the activities of the day', 'activity', []],
+        ['Also, unlock games', 'gamelock', ['off']]
+    ])('understands conversational instruction "%s"', (phrase, command, args) => {
+        expect(parseCreatorNaturalCommand(phrase, { addressedToBot: true })).toMatchObject({ command, args });
+    });
+
     it('routes creator-only plain group instructions when the caller authenticates creator identity', () => {
         expect(parseCreatorNaturalCommand('Lock the group', { addressedToBot: true })).toMatchObject({
             command: 'grouplock', args: ['lock']
