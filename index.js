@@ -810,17 +810,17 @@ async function startQasimDev() {
                     if (!mek?.message || !mek?.key)
                         continue;
 
-                    // Record revocations synchronously at event ingress, before queued
-                    // messages can reach command/chatbot execution.
-                    if (mek.message?.protocolMessage?.type === 0) {
-                        const revokedKey = mek.message.protocolMessage.key;
-                        markMessageRevoked(mek.key.remoteJid, revokedKey?.id);
-                    }
-
                     let messageType = Object.keys(mek.message)[0] || 'empty';
                     if (messageType === 'ephemeralMessage') {
                         mek.message = mek.message.ephemeralMessage?.message || mek.message;
                         messageType = Object.keys(mek.message || {})[0] || 'empty';
+                    }
+
+                    // Record revocations synchronously at event ingress, after
+                    // unwrapping ephemeral envelopes but before queueing any work.
+                    if (mek.message?.protocolMessage?.type === 0) {
+                        const revokedKey = mek.message.protocolMessage.key;
+                        markMessageRevoked(mek.key.remoteJid, revokedKey?.id);
                     }
 
                     // Reject stale history-sync append records and WhatsApp transport
