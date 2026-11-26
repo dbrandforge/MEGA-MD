@@ -42,6 +42,25 @@ describe('creator natural-language command routing', () => {
         expect(parseCreatorNaturalCommand(phrase, { addressedToBot: true })).toMatchObject({ command, args });
     });
 
+    it('converts a Lagos clock deadline into a one-off lock duration', () => {
+        const now = new Date('2026-11-26T06:00:00.000Z'); // 07:00 in Lagos
+        expect(parseCreatorNaturalCommand('lock the group till 8am', { addressedToBot: true, now })).toMatchObject({
+            command: 'grouplock',
+            args: ['quicklock', 'now', '60m'],
+            action: 'timed-lock',
+            durationMinutes: 60,
+            untilClock: true
+        });
+    });
+
+    it('understands the spoken maths-game phrasing', () => {
+        expect(parseCreatorNaturalCommand('start trivia game maths', { addressedToBot: true })).toMatchObject({
+            command: 'math',
+            args: [],
+            action: 'start-game'
+        });
+    });
+
     it('routes per-game locks and message scheduling', () => {
         expect(parseCreatorNaturalCommand('lock trivia game', { addressedToBot: true })).toMatchObject({
             command: 'gamelock', args: ['trivia', 'on']
