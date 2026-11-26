@@ -3,7 +3,7 @@ import {
   getPickYourSinMediaKind,
   getPickYourSinMessageContext,
   validatePickYourSinTruthAnswer
-} from '../../plugins/pick-your-sin-response.js';
+} from '../../lib/pickYourSinResponse.js';
 
 describe('PICK YOUR SIN response validation', () => {
   it('rejects empty, one-word, yes/no and low-detail truth answers', () => {
