@@ -6,6 +6,7 @@ import { isFeatureGroup } from '../lib/featureGroups.js';
 import { sameWhatsAppUser, canonicalWhatsAppUserId } from '../lib/whatsappIdentity.js';
 
 const KEY = 'pickYourSinSessions';
+const DAILY_KEY = 'pickYourSinDailyCompletions';
 const COOLDOWN_MS = 30_000;
 const chatQueues = new Map();
 async function withChatLock(chatId, task) {
@@ -85,6 +86,27 @@ function questionType(step) {
   return step === 5 || step === 11 ? 'dare' : 'truth';
 }
 function mention(jid) { return '@' + String(jid || '').split('@')[0]; }
+function lagosDateKey() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Lagos', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(new Date());
+}
+async function sendColorPrompt(sock, chatId, session, playerId) {
+  const state = session.playerStates[playerId];
+  if (!state || state.status !== 'active') return false;
+  state.waiting = false;
+  state.awaitingColor = true;
+  state.questionMessageId = null;
+  const previous = state.lastColor ? ` Your previous colour was ${COLORS[state.lastColor].label}; choose a different one.` : '';
+  await sock.sendMessage(chatId, {
+    text: `🎨 @${playerId.split('@')[0]}, choose your next colour: ❤️ RED · 💚 GREEN · 💛 YELLOW · 🧡 ORANGE.${previous}`,
+    mentions: [playerId]
+  });
+  const latest = await getSessions(chatId);
+  latest[session.id] = session;
+  await saveSessions(chatId, latest);
+  return true;
+}
 
 async function getSessions(chatId) {
   return (await store.getSetting(chatId, KEY)) || {};
@@ -131,6 +153,10 @@ async function sendPrompt(sock, chatId, session, playerId) {
   if (state.step >= 12) {
     state.status = 'complete';
     state.completedAt = Date.now();
+    const daily = (await store.getSetting(chatId, DAILY_KEY)) || {};
+    const dayKey = lagosDateKey();
+    daily[dayKey] = [...new Set([...(daily[dayKey] || []), playerId])];
+    await store.saveSettingVerified(chatId, DAILY_KEY, daily);
     const latestSessions = await getSessions(chatId);
     latestSessions[session.id] = session;
     await saveSessions(chatId, latestSessions);
@@ -155,6 +181,7 @@ async function sendPrompt(sock, chatId, session, playerId) {
   const card = cards[state[indexKey] % cards.length];
   state[indexKey] += 1;
   state.currentType = type;
+  state.awaitingColor = false;
   state.currentCard = card;
   state.waiting = true;
   state.cooldownUntil = null;
@@ -163,7 +190,7 @@ async function sendPrompt(sock, chatId, session, playerId) {
     ? `Truth ${state.step < 5 ? state.step + 1 : state.step - 5}/5`
     : `Dare ${state.step === 5 ? 1 : 2}/2`;
   const sent = await sock.sendMessage(chatId, {
-    text: `🎭 *PICK YOUR SIN* — ${COLORS[state.color].emoji} ${COLORS[state.color].label}\n${label} · ${progress}\n\n${card}\n\n_Reply to this prompt or tag the bot when you've completed it. Type *pass* to use your one session pass. You have 30 seconds between prompts._`,
+    text: `🎭 *PICK YOUR SIN* — ${COLORS[state.color].emoji} ${COLORS[state.color].label}\n${label} · ${progress}\n\n${card}\n\n_Reply to this prompt or tag the bot when you've completed it. You may use your one session pass on a TRUTH only. You have 30 seconds between prompts._`,
     mentions: [playerId]
   });
   state.questionMessageId = sent?.key?.id || null;
@@ -183,15 +210,22 @@ async function beginPickYourSinSessionLocked(sock, chatId, players, startedBy) {
   if (!Array.isArray(players) || players.length !== 5) {
     throw new Error('PICK YOUR SIN requires exactly five selected participants.');
   }
+  const dayKey = lagosDateKey();
+  const daily = (await store.getSetting(chatId, DAILY_KEY)) || {};
+  const completedToday = new Set(daily[dayKey] || []);
+  const alreadyPlayed = [];
   const states = {};
   for (const rawId of players) {
     const playerId = (await canonicalWhatsAppUserId(sock, rawId)) || rawId;
+    if (completedToday.has(playerId)) alreadyPlayed.push(playerId);
     const gender = await getUserGender(playerId, sock);
     states[playerId] = {
       status: 'active',
       gender: gender || null,
       waitingForGender: !gender,
       color: null,
+      lastColor: null,
+      awaitingColor: true,
       step: 0,
       truthIndex: 0,
       dareIndex: 0,
@@ -200,6 +234,9 @@ async function beginPickYourSinSessionLocked(sock, chatId, players, startedBy) {
       questionMessageId: null,
       cooldownUntil: null
     };
+  }
+  if (alreadyPlayed.length) {
+    throw new Error(`These selected participants have already completed PICK YOUR SIN today and cannot play again: ${alreadyPlayed.map(mention).join(', ')}.`);
   }
   const session = {
     id: `pys_${Date.now()}`,
@@ -268,7 +305,18 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
   if (!state.color) {
     const color = colorFromText(text);
     if (!color) return false;
+    if (state.cooldownUntil && Date.now() < state.cooldownUntil) {
+      const remaining = Math.ceil((state.cooldownUntil - Date.now()) / 1000);
+      await sock.sendMessage(chatId, { text: `⏳ Your next colour choice unlocks in *${remaining} seconds*.` }, { quoted: message });
+      return true;
+    }
+    if (color === state.lastColor) {
+      await sock.sendMessage(chatId, { text: `🚫 You just used ${COLORS[color].label}. Choose a different colour for this turn.` }, { quoted: message });
+      return true;
+    }
     state.color = color;
+    state.lastColor = color;
+    state.awaitingColor = false;
     await saveSessions(chatId, sessions);
     await sendPrompt(sock, chatId, session, playerId);
     return true;
@@ -295,6 +343,10 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
   if (!state.waiting) return true;
 
   const isPass = /^(pass|skip|use pass)$/i.test(String(text || '').trim());
+  if (isPass && state.currentType !== 'truth') {
+    await sock.sendMessage(chatId, { text: '🚫 Your pass can only be used on a TRUTH. Complete the dare to continue.' }, { quoted: message });
+    return true;
+  }
   if (isPass && state.passUsed) {
     await sock.sendMessage(chatId, { text: 'Your one pass for this session has already been used.' }, { quoted: message });
     return true;
@@ -303,6 +355,8 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
   else state.step += 1;
 
   state.waiting = false;
+  state.color = null;
+  state.awaitingColor = true;
   state.cooldownUntil = Date.now() + COOLDOWN_MS;
   state.nextPromptToken = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const token = state.nextPromptToken;
@@ -321,7 +375,8 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
         const current = latest[session.id];
         const currentState = current?.playerStates?.[playerId];
         if (!current || current.status !== 'active' || !currentState || currentState.nextPromptToken !== token) return;
-        await sendPrompt(sock, chatId, current, playerId);
+        if (currentState.step >= 12) await sendPrompt(sock, chatId, current, playerId);
+        else await sendColorPrompt(sock, chatId, current, playerId);
       });
     } catch (error) {
       console.error('[PICK YOUR SIN] Could not deliver next prompt:', error);
@@ -356,7 +411,7 @@ export default {
     if (!session) return sock.sendMessage(chatId, { text: 'No active PICK YOUR SIN session. Start selection with *.hotseat sin*.' }, { quoted: message });
     const lines = session.players.map(id => {
       const state = session.playerStates[id];
-      return `${mention(id)} — ${state.color || 'choosing colour'} — ${state.step}/12 — ${state.passUsed ? 'pass used' : 'pass available'}`;
+      return `${mention(id)} — ${state.status === 'complete' ? 'DONE TODAY' : (state.color || 'choosing colour')} — ${state.step}/12 — ${state.passUsed ? 'pass used' : 'pass available'}`;
     });
     return sock.sendMessage(chatId, { text: `🎭 *PICK YOUR SIN STATUS*\n\n${lines.join('\n')}`, mentions: session.players }, { quoted: message });
   }
