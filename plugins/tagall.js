@@ -10,6 +10,6 @@ export default {
     adminOnly: true,
     async handler(sock, message, args, context) {
         const { chatId, channelInfo } = context;
-        return sendGroupAll(sock, chatId, '🔊 *Hello everyone:* Please check the latest group announcement.', channelInfo, { quoted: message });
+        return sendGroupAll(sock, chatId, '🔊 *Hello Everyone!*', channelInfo, { quoted: message });
     }
 };
