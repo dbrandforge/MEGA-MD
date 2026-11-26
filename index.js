@@ -28,7 +28,7 @@ import { printLog } from './lib/print.js';
 import { writeErrorLog } from './lib/logger.js';
 import { handleMessages, handleGroupParticipantUpdate, handleStatus, handleCall } from './lib/messageHandler.js';
 import commandHandler from './lib/commandHandler.js';
-import { shouldProcessMessageUpsert, isMessageTooOld, setMessageProcessingCutoff } from './lib/messageEventPolicy.js';
+import { shouldProcessMessageUpsert, isMessageTooOld, setMessageProcessingCutoff, markMessageRevoked, isMessageRevoked } from './lib/messageEventPolicy.js';
 import { startSchedulerEngine, trackGroup } from './plugins/schedule.js';
 import { FEATURE_GROUPS } from './lib/featureGroups.js';
 import { resumeHotSeatSession } from './plugins/hotseat.js';
@@ -61,6 +61,10 @@ const incomingMessageQueue = createPerChatMessageQueue({
         try {
             // Recheck at execution time: a valid message may become stale while
             // waiting behind other work in the per-chat queue.
+            if (isMessageRevoked(mek)) {
+                printLog('debug', 'Skipped a message revoked before queued execution.');
+                return;
+            }
             if (!shouldProcessMessageUpsert(update?.type, mek)) {
                 if (isMessageTooOld(mek)) recordStaleMessageDrop();
                 return;
@@ -810,6 +814,13 @@ async function startQasimDev() {
                     if (messageType === 'ephemeralMessage') {
                         mek.message = mek.message.ephemeralMessage?.message || mek.message;
                         messageType = Object.keys(mek.message || {})[0] || 'empty';
+                    }
+
+                    // Record revocations synchronously at event ingress, after
+                    // unwrapping ephemeral envelopes but before queueing any work.
+                    if (mek.message?.protocolMessage?.type === 0) {
+                        const revokedKey = mek.message.protocolMessage.key;
+                        markMessageRevoked(mek.key.remoteJid, revokedKey?.id);
                     }
 
                     // Reject stale history-sync append records and WhatsApp transport

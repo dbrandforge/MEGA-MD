@@ -86,7 +86,10 @@ describe('.mute timed group persistence', () => {
             key: { remoteJid: GROUP },
             message: { extendedTextMessage: { contextInfo: { mentionedJid: [user] } } }
         };
-        const sock = { sendMessage: vi.fn(async () => {}) };
+        const sock = {
+            sendMessage: vi.fn(async () => {}),
+            groupMetadata: vi.fn(async () => ({ participants: [{ id: user, admin: null }] }))
+        };
 
         await mute.handler(sock, taggedMessage, [`@${user.split('@')[0]}`, '15m'], { chatId: GROUP, channelInfo: {} });
 

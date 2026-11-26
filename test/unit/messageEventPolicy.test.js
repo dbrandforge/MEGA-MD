@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { shouldProcessMessageUpsert, isMessageTooOld, setMessageProcessingCutoff, getMessageAgeMs } from '../../lib/messageEventPolicy.js';
+import { shouldProcessMessageUpsert, isMessageTooOld, setMessageProcessingCutoff, getMessageAgeMs, markMessageRevoked, isMessageRevoked } from '../../lib/messageEventPolicy.js';
 
 const now = 1_800_000_000_000;
 const message = (overrides = {}) => ({
@@ -11,12 +11,12 @@ const message = (overrides = {}) => ({
 const secondsAgo = seconds => Math.floor((now - seconds * 1000) / 1000);
 
 describe('WhatsApp upsert processing policy', () => {
-  it('accepts live notify messages within the 180-second window', () => {
-    expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(179) }), { now })).toBe(true);
+  it('accepts live notify messages within the 30-second window', () => {
+    expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(29) }), { now })).toBe(true);
   });
 
-  it('rejects notify messages older than 180 seconds', () => {
-    const stale = message({ messageTimestamp: secondsAgo(181) });
+  it('rejects notify messages older than 30 seconds', () => {
+    const stale = message({ messageTimestamp: secondsAgo(31) });
     expect(shouldProcessMessageUpsert('notify', stale, { now })).toBe(false);
     expect(isMessageTooOld(stale, now)).toBe(true);
   });
@@ -27,12 +27,12 @@ describe('WhatsApp upsert processing policy', () => {
     expect(shouldProcessMessageUpsert('append', message({ messageTimestamp: secondsAgo(181) }), { now })).toBe(false);
   });
 
-  it('accepts messages up to 60 seconds in the future but rejects larger clock skew', () => {
+  it('accepts messages up to 10 seconds in the future but rejects larger clock skew', () => {
     expect(shouldProcessMessageUpsert('notify', message({
-      messageTimestamp: Math.floor((now + 60 * 1000) / 1000)
+      messageTimestamp: Math.floor((now + 10 * 1000) / 1000)
     }), { now })).toBe(true);
     expect(shouldProcessMessageUpsert('notify', message({
-      messageTimestamp: Math.floor((now + 61 * 1000) / 1000)
+      messageTimestamp: Math.floor((now + 11 * 1000) / 1000)
     }), { now })).toBe(false);
   });
 
@@ -75,10 +75,24 @@ describe('WhatsApp upsert processing policy', () => {
   });
 });
 
+describe('message revocation guard', () => {
+  it('marks a deleted message so a queued copy cannot execute', () => {
+    const original = message();
+    expect(markMessageRevoked(original.key.remoteJid, original.key.id, now)).toBe(true);
+    expect(isMessageRevoked(original, now + 1000)).toBe(true);
+  });
+
+  it('expires revocation markers after ten minutes', () => {
+    const original = message({ key: { remoteJid: '120363000000000000@g.us', id: 'EXPIRED', fromMe: false } });
+    markMessageRevoked(original.key.remoteJid, original.key.id, now);
+    expect(isMessageRevoked(original, now + 10 * 60 * 1000 + 1)).toBe(false);
+  });
+});
+
 describe('replays of messages sent before this process started', () => {
   it('ignores messages sent before boot but keeps ones sent after', () => {
     const startedAtMs = now - 60 * 1000;
-    expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(50) }), { now, startedAtMs: now - 10 * 1000 })).toBe(false);
+    expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(15) }), { now, startedAtMs: now - 10 * 1000 })).toBe(false);
     expect(shouldProcessMessageUpsert('notify', message({ messageTimestamp: secondsAgo(5) }), { now, startedAtMs: now - 10 * 1000 })).toBe(true);
   });
 });

@@ -48,7 +48,7 @@ describe('handleMessages', () => {
         handleMessages = mod.handleMessages;
     });
 
-    beforeEach(() => { sock = createMockSock(); vi.clearAllMocks(); vi.stubEnv('CHATBOT_ENABLED', 'true'); setMessageProcessingCutoff(Date.now() - 2000); });
+    beforeEach(() => { sock = createMockSock(); vi.clearAllMocks(); vi.stubEnv('CHATBOT_ENABLED', 'true'); setMessageProcessingCutoff(Date.now() - 30_000); });
 
     it('ignores non-notify events', async () => {
         await handleMessages(sock, { messages: [], type: 'append' });
@@ -63,6 +63,13 @@ describe('handleMessages', () => {
     it('ignores messages without message field', async () => {
         const msg = createMockMessage({ text: 'hello' });
         delete (msg).message;
+        await handleMessages(sock, { messages: [msg], type: 'notify' });
+        expect(sock.sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('rejects delayed messages older than the live processing window', async () => {
+        const msg = createMockMessage({ text: '.ping', isGroup: false });
+        msg.messageTimestamp = Math.floor((Date.now() - 31_000) / 1000);
         await handleMessages(sock, { messages: [msg], type: 'notify' });
         expect(sock.sendMessage).not.toHaveBeenCalled();
     });
