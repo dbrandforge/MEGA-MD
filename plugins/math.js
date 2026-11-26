@@ -1,3 +1,4 @@
+import { sendGroupAll } from '../lib/groupMentions.js';
 import store from '../lib/lightweight_store.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
@@ -121,14 +122,9 @@ async function closeQuestion(sock, chatId, roundToken) {
     const answerLines = correctAnswers.map((entry, index) =>
       `${index + 1}. ${mention(entry.senderId)} — +${entry.points} pts (${entry.speedBonus} speed bonus)`
     );
-    await sock.sendMessage(chatId, {
-      text: `⏱️ *Round ${game.round}/${game.totalRounds} closed.*\n${winnerText}\nCorrect submissions: ${correctAnswers.length}${answerLines.length ? `\n\n${answerLines.join('\n')}` : ''}\n\nCorrect answer: *${game.answer}*`,
-      mentions: correctAnswers.map(entry => entry.senderId)
-    });
+    await sendGroupAll(sock, chatId, `⏱️ *Round ${game.round}/${game.totalRounds} closed.*\n${winnerText}\nCorrect submissions: ${correctAnswers.length}${answerLines.length ? `\n\n${answerLines.join('\n')}` : ''}\n\nCorrect answer: *${game.answer}*`, { mentions: correctAnswers.map(entry => entry.senderId) });
     if (noParticipation) {
-      await sock.sendMessage(chatId, {
-        text: '⏸️ *MATHS ARENA ON HOLD*\n\nNobody submitted an answer for this question. The match is paused for *5 minutes*. No new question will be generated during this period.\n\nThe match will end automatically when the five-minute hold expires.'
-      });
+      await sendGroupAll(sock, chatId, '⏸️ *MATHS ARENA ON HOLD*\n\nNobody submitted an answer for this question. The match is paused for *5 minutes*. No new question will be generated during this period.\n\nThe match will end automatically when the five-minute hold expires.');
       armTimer(sock, chatId, game);
       return true;
     }
@@ -175,9 +171,7 @@ async function postNextQuestion(sock, chatId, game) {
   game.questionTime = question.time;
   game.expiresAt = Date.now() + question.time;
   game.roundToken = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-  const sent = await sock.sendMessage(chatId, {
-    text: `🧮 *FORGE GUARD — MATHS ARENA*\n\n*Question ${game.round}/${game.totalRounds}* · ${game.mode.toUpperCase()}\n\nHow much is:\n\n*${game.expression} = ?*\n\n⏱️ ${Math.round(question.time / 1000)} seconds\n\nReply directly to this question with your answer. Everyone who answers correctly earns points; the fastest correct answer gets the biggest speed bonus. One attempt per player.\n🏆 ${formatScores(game.scores, 3).join(' | ') || 'No scores yet'}`
-  });
+  const sent = await sendGroupAll(sock, chatId, `🧮 *FORGE GUARD — MATHS ARENA*\n\n*Question ${game.round}/${game.totalRounds}* · ${game.mode.toUpperCase()}\n\nHow much is:\n\n*${game.expression} = ?*\n\n⏱️ ${Math.round(question.time / 1000)} seconds\n\nReply directly to this question with your answer. Everyone who answers correctly earns points; the fastest correct answer gets the biggest speed bonus. One attempt per player.\n🏆 ${formatScores(game.scores, 3).join(' | ') || 'No scores yet'}`);
   game.questionMessageId = sent?.key?.id || null;
   await saveGame(chatId, game);
   armTimer(sock, chatId, game);
@@ -325,7 +319,7 @@ export default {
       startedAt: Date.now(), matchExpiresAt: Date.now() + MATCH_EXPIRY_MS
     };
     await saveGame(chatId, game);
-    await sock.sendMessage(chatId, { text: `🎮 *MATHS ARENA MATCH STARTED*\n\nDifficulty: *${mode.toUpperCase()}*\nQuestions: *${totalRounds}*\nPlayers: everyone in this group can join.\n\nEvery correct player scores; the fastest correct answer earns the highest speed bonus. Reply directly to each question.\n🏆 ${config.prefix}math score · ${config.prefix}math status · ${config.prefix}math stop`, ...channelInfo }, { quoted: message });
+    await sendGroupAll(sock, chatId, `🎮 *MATHS ARENA MATCH STARTED*\n\nDifficulty: *${mode.toUpperCase()}*\nQuestions: *${totalRounds}*\nPlayers: everyone in this group can join.\n\nEvery correct player scores; the fastest correct answer earns the highest speed bonus. Reply directly to each question.\n🏆 ${config.prefix}math score · ${config.prefix}math status · ${config.prefix}math stop`, channelInfo, { quoted: message });
     await postNextQuestion(sock, chatId, game);
   }
 };
