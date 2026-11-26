@@ -247,7 +247,13 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
 
   if (!state.gender) {
     const gender = await getUserGender(playerId, sock);
-    if (!gender) return false;
+    if (!gender) {
+      if (colorFromText(text)) {
+        await sock.sendMessage(chatId, { text: 'Register your gender first with *.gender guy* or *.gender lady*, then choose your colour.' }, { quoted: message });
+        return true;
+      }
+      return false;
+    }
     state.gender = gender;
     state.waitingForGender = false;
     await saveSessions(chatId, sessions);
