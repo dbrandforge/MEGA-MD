@@ -217,9 +217,7 @@ async function lockGroup(sock, chatId) {
         if (sentRecord.date !== dateKey) {
             const previousIndex = (await store.getSetting(chatId, GOODNIGHT_INDEX_KEY)) ?? -1;
             const selected = pickRotatingMessage(goodnightMessages, previousIndex);
-            await sock.sendMessage(chatId, {
-                text: `🔒 *Group locked for the night.*\n\n${selected.text}`
-            });
+            await sendGroupAll(sock, chatId, `🔒 *Group locked for the night.*\n\n${selected.text}`);
             await saveGroupSetting(chatId, GOODNIGHT_INDEX_KEY, selected.index);
             await saveGroupSetting(chatId, GOODNIGHT_SENT_KEY, { date: dateKey, sentAt: Date.now() });
         }
@@ -288,9 +286,7 @@ async function sendDailyActivityOnceUnlocked(sock, chatId, day) {
 
     let sent;
     try {
-        sent = await sock.sendMessage(chatId, {
-            text: `🔓 *Group unlocked.*\n\n${greeting ? `${greeting}\n\n` : ''}${activityText}`
-        });
+        sent = await sendGroupAll(sock, chatId, `🔓 *Group unlocked.*\n\n${greeting ? `${greeting}\n\n` : ''}${activityText}`);
     } catch (sendError) {
         // A rejected send can still have an ambiguous delivery outcome (for
         // example, a transport timeout after WhatsApp accepted the message).
