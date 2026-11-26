@@ -662,3 +662,11 @@ The previous bank contained one accidental empty array slot caused by a doubled 
 - New records carry stable IDs, four answer options, answer indexes, review dates and reference metadata.
 - The staged release gate now requires Geography alongside Forge, Music, Football, Movies and Lifestyle.
 - Full CI, bank audit, regression and candidate-quality checks must pass on the latest PR head before merge. No Render environment, WhatsApp session, pairing code or non-Trivia gameplay behavior is to be changed.
+
+
+## 2026-11-06 History expansion integration
+
+- History Easy: 50/50 approved playable questions (`he001`–`he050`).
+- History Normal: 50/50 approved playable questions (`hn001`–`hn050`).
+- History Hard: 35/50 approved playable questions, including the retained legacy records and the new `hh` batch.
+- Next History task: complete the remaining 15 Hard questions, then continue the staged expansion.
