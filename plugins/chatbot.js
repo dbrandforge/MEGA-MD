@@ -8,7 +8,7 @@ import { pickDualReply } from '../data/chatDual/dualBankSelector.js';
 import { getUserGender } from './gender.js';
 import { printLog } from '../lib/print.js';
 import { PRIMARY_FEATURE_GROUP } from '../lib/featureGroups.js';
-import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
+import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement, getIdentityConversationContext } from '../lib/identity.js';
 import { getIdentityClaimReply, buildGenderInteractionContext, buildTaggedPeopleContext } from '../lib/chatbotConversationEnhancements.js';
 import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
 import { isExplicitlyAddressedInGroup, hasActiveGroupFollowup, jidMatchesAnyBotIdentity, isBotNameTrigger, stripBotNameTrigger } from '../lib/chatbotAccess.js';
@@ -407,7 +407,8 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
         try { registeredGender = await getUserGender(senderId); } catch {}
         const genderInteractionContext = buildGenderInteractionContext(registeredGender);
         const taggedPeopleContext = buildTaggedPeopleContext(mentioned, sock.store?.contacts, senderId, botJids);
-        const combinedProfileContext = [userProfileContext, groupContinuityContext, conversationModeContext, forgeKnowledgeContext, genderInteractionContext, taggedPeopleContext].filter(Boolean).join(String.fromCharCode(10, 10));
+        const identityConversationContext = getIdentityConversationContext(identity);
+        const combinedProfileContext = [userProfileContext, groupContinuityContext, conversationModeContext, forgeKnowledgeContext, genderInteractionContext, taggedPeopleContext, identityConversationContext].filter(Boolean).join(String.fromCharCode(10, 10));
         if (!message.key.fromMe) {
             history.push({
                 name: message.pushName || 'You',
@@ -492,6 +493,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                 chatId: memoryKey,
                 previousReply: previousBotReply,
                 gender: registeredGender,
+                identityRole: identity?.role,
                 history
             }));
 
@@ -508,12 +510,12 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                         }), chatbotQuery);
                         console.info(`[Chatbot AI] outcome=success latency_ms=${Date.now() - aiStartedAt}`);
                     } catch (error) {
-                        response = getChatbotFailureFallback(chatbotQuery, { language: responseLanguage, intent, chatId, previousReply: previousBotTurn?.text, gender: registeredGender });
+                        response = getChatbotFailureFallback(chatbotQuery, { language: responseLanguage, intent, chatId, previousReply: previousBotTurn?.text, gender: registeredGender, identityRole: identity?.role });
                         const reason = String(error?.code || error?.message || 'unknown').slice(0, 100).replaceAll(String.fromCharCode(10), ' ').replaceAll(String.fromCharCode(13), ' ');
                         console.warn(`[Chatbot AI] outcome=unavailable latency_ms=${Date.now() - aiStartedAt} reason=${reason}`);
                     }
                 } else {
-                    response = getChatbotFailureFallback(chatbotQuery, { language: responseLanguage, intent, chatId, previousReply: previousBotTurn?.text, gender: registeredGender });
+                    response = getChatbotFailureFallback(chatbotQuery, { language: responseLanguage, intent, chatId, previousReply: previousBotTurn?.text, gender: registeredGender, identityRole: identity?.role });
                 }
             }
 

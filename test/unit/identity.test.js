@@ -3,7 +3,8 @@ import {
     normalizeIdentityNumber,
     resolveIdentity,
     getIdentityReply,
-    getIdentityGreeting
+    getIdentityGreeting,
+    getIdentityConversationContext
 } from '../../lib/identity.js';
 
 const identities = {
@@ -140,4 +141,18 @@ describe('Forge Guard identity recognition and privacy', () => {
         expect(getIdentityGreeting('Forge', creator)).toMatch(/Creator|Forge|architect|Chief/);
         expect(getIdentityGreeting('Bot who am I?', resolveIdentity('2348126885208', identities))).toBeNull();
     });
+
+    it('provides a warm, bounded conversation profile only to the verified Queen identity', () => {
+        const queen = resolveIdentity('2348126885208@s.whatsapp.net', identities);
+        const creator = resolveIdentity('2348000000001@s.whatsapp.net', identities);
+        const profile = getIdentityConversationContext(queen);
+        expect(profile).toContain('Tessy');
+        expect(profile).toContain('Empire');
+        expect(profile).toContain('warmth, affection');
+        expect(profile).toContain('Keep playful banter');
+        expect(profile).toContain('grants no command, ownership or moderation privileges');
+        expect(getIdentityConversationContext(creator)).toBe('');
+        expect(getIdentityConversationContext(null)).toBe('');
+    });
+
 });

@@ -209,20 +209,33 @@ function getActivityText(day) {
         : `*Today is ${day.charAt(0).toUpperCase() + day.slice(1)}*\n\nEnjoy the group!`;
 }
 
-async function lockGroup(sock, chatId) {
+async function lockGroup(sock, chatId, { manual = false } = {}) {
     try {
         await sock.groupSettingUpdate(chatId, 'announcement');
+        const lockedAt = Date.now();
         const dateKey = getCurrentDateKey();
         const sentRecord = (await store.getSetting(chatId, GOODNIGHT_SENT_KEY)) || {};
-        if (sentRecord.date !== dateKey) {
-            const previousIndex = (await store.getSetting(chatId, GOODNIGHT_INDEX_KEY)) ?? -1;
-            const selected = pickRotatingMessage(goodnightMessages, previousIndex);
-            await sendGroupAll(sock, chatId, `🔒 *Group locked for the night.*\n\n${selected.text}`);
-            await saveGroupSetting(chatId, GOODNIGHT_INDEX_KEY, selected.index);
-            await saveGroupSetting(chatId, GOODNIGHT_SENT_KEY, { date: dateKey, sentAt: Date.now() });
-        }
-        await saveGroupSetting(chatId, LOCK_STATE_KEY, { locked: true, at: Date.now() });
+
+        // Persist the successful WhatsApp state change before attempting the
+        // announcement. A failed @all send must never make a successful lock
+        // look like a failed lock or leave its durable state stale.
+        await saveGroupSetting(chatId, LOCK_STATE_KEY, { locked: true, at: lockedAt, source: manual ? 'manual' : 'schedule' });
         await saveGroupSetting(chatId, LAST_ACTION_KEY, { action: 'lock', time: getCurrentTimeString(), day: getCurrentDay() });
+
+        try {
+            if (manual) {
+                await sendGroupAll(sock, chatId, '🔒 *The group has been locked by an admin.*\n\nOnly admins can send messages until the group is unlocked.');
+            } else if (sentRecord.date !== dateKey) {
+                const previousIndex = (await store.getSetting(chatId, GOODNIGHT_INDEX_KEY)) ?? -1;
+                const selected = pickRotatingMessage(goodnightMessages, previousIndex);
+                await sendGroupAll(sock, chatId, `🔒 *Group locked for the night.*\n\n${selected.text}`);
+                await saveGroupSetting(chatId, GOODNIGHT_INDEX_KEY, selected.index);
+                await saveGroupSetting(chatId, GOODNIGHT_SENT_KEY, { date: dateKey, sentAt: Date.now() });
+            }
+        } catch (announcementError) {
+            console.error(`[GroupLock] Lock succeeded but native @all announcement failed for ${chatId}:`, announcementError?.message || announcementError);
+        }
+
         console.log(`[GroupLock] Locked ${chatId}`);
         return true;
     } catch (e) {
@@ -457,7 +470,19 @@ async function runGroupLockSchedule(sock, chatId) {
                 await saveGroupSetting(chatId, LOCK_STATE_KEY, { locked: true, at: lockedAt, source: 'quicklock' });
                 state.locked = true;
                 await saveGroupSetting(chatId, LAST_ACTION_KEY, { action: 'lock', time: getCurrentTimeString(), day: getCurrentDay(), source: 'quicklock' });
-                await sendGroupAll(sock, chatId, '🔒 *One-off scheduled group lock is now active.*');
+                const totalMinutes = Math.max(1, Math.round(Number(quickLock.durationMs) / 60000));
+                const days = Math.floor(totalMinutes / 1440);
+                const hours = Math.floor((totalMinutes % 1440) / 60);
+                const minutes = totalMinutes % 60;
+                const durationLabel = [
+                    days ? days + ' day' + (days === 1 ? '' : 's') : '',
+                    hours ? hours + ' hour' + (hours === 1 ? '' : 's') : '',
+                    minutes ? minutes + ' minute' + (minutes === 1 ? '' : 's') : ''
+                ].filter(Boolean).join(' and ');
+                const unlockTime = new Date(quickLock.endAt).toLocaleTimeString('en-NG', {
+                    timeZone: 'Africa/Lagos', hour: 'numeric', minute: '2-digit'
+                });
+                await sendGroupAll(sock, chatId, '🔒 *Group locked for ' + durationLabel + '.*\n\nAutomatic unlock is scheduled for *' + unlockTime + '* (Lagos time).');
             } catch (error) { console.error('[GroupLock] One-off quick lock failed for ' + chatId + ':', error.message); }
         }
 
@@ -625,7 +650,7 @@ export default {
                 if (action === 'lock') {
                     const day = getCurrentDay();
                     await saveGroupSetting(chatId, MANUAL_OVERRIDE_KEY, { day, action: 'lock' });
-                    return lockGroup(sock, chatId);
+                    return lockGroup(sock, chatId, { manual: true });
                 }
                 return unlockGroup(sock, chatId, { manual: true });
             });

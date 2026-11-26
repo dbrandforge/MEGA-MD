@@ -414,16 +414,47 @@ export function classifyPersonalityCategory(text, options = {}) {
   return category;
 }
 
+function applyQueenConversationTone(reply, category, input) {
+  if (!reply || /\b(?:my queen|sweetheart|darling|love)\b/i.test(reply)) return reply;
+  const prefixes = {
+    wellbeing: ['Aww, my Queen ❤️ ', 'How are you holding up, sweetheart? '],
+    empathy: ['Aww, sweetheart ❤️ ', 'My Queen, I’m listening. '],
+    serious: ['My Queen, let’s take this one step at a time. ❤️ '],
+    relationship: ['My Queen, let’s talk it through. ❤️ '],
+    thanks: ['Anything for you, my Queen. ❤️ '],
+    apology: ['It’s alright, sweetheart. ❤️ '],
+    teasing: ['See this woman 😂❤️ ', 'My Queen, you’re trouble. 😂 '],
+    savage: ['My Queen, I’ll let you have that one. 😂❤️ '],
+    banter: ['Don’t start with me, my Queen. 😂❤️ ', 'See who’s disturbing my peace again. 😂 '],
+    flirty: ['Aww, my Queen. You know how to get attention. 😌❤️ '],
+    wellbeingAcknowledgement: ['Good to hear, my Queen. ❤️ '],
+    affirmativeFollowup: ['I’m right here, my Queen. ❤️ '],
+    decline: ['Alright, sweetheart. No pressure. ❤️ '],
+    departure: ['Take care of yourself, my Queen. ❤️ '],
+    financialNeed: ['My Queen, let’s think through this together. ❤️ '],
+    fallback: ['My Queen ❤️ ', 'Sweetheart, ']
+  };
+  const pool = prefixes[category] || prefixes.fallback;
+  const probability = ['wellbeing', 'empathy', 'serious', 'relationship', 'thanks', 'apology', 'decline'].includes(category)
+    ? 0.85
+    : ['teasing', 'savage', 'banter', 'flirty'].includes(category) ? 0.65 : 0.5;
+  if (Math.random() >= probability) return reply;
+  const prefix = pool[Math.floor(Math.random() * pool.length)] || 'My Queen ❤️ ';
+  return ensureResponseEmoji(prefix + reply, input);
+}
+
 export function pickPersonalityReply(text, options = {}) {
   const input = String(text || '').trim();
-  const { chatId = 'global', previousReply = '', gender = null } = options;
+  const { chatId = 'global', previousReply = '', gender = null, identityRole = null } = options;
   const intent = classifyIntent(input) || 'fallback';
   const category = classifyPersonalityCategory(input, options);
 
   if (['definition', 'slangDefinition', 'activityInfo', 'error'].includes(intent)) {
     try {
       const exact = pickLibraryReply(input, previousReply);
-      if (exact) return exact;
+      if (exact) return identityRole === 'queen'
+        ? applyQueenConversationTone(exact, category, input)
+        : exact;
     } catch {}
   }
 
@@ -436,7 +467,8 @@ export function pickPersonalityReply(text, options = {}) {
     selectedPool = personalityBank.genderLady?.length ? personalityBank.genderLady : pool;
   }
 
-  return ensureResponseEmoji(choose(chatId, category, selectedPool, previousReply), input);
+  const reply = ensureResponseEmoji(choose(chatId, category, selectedPool, previousReply), input);
+  return identityRole === 'queen' ? applyQueenConversationTone(reply, category, input) : reply;
 }
 
 export function getPersonalityBankStats() {

@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { getUserGender } from './gender.js';
 import { filterParticipantsByGender } from '../lib/genderTagging.js';
+import { sendGroupAll } from '../lib/groupMentions.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 async function downloadMediaMessage(message, mediaType) {
@@ -28,20 +29,32 @@ export default {
     adminOnly: true,
     async handler(sock, message, args, context) {
         const { chatId, channelInfo } = context;
-        const groupMetadata = await sock.groupMetadata(chatId);
-        const participants = groupMetadata.participants || [];
         const requestedGender = (args[0] || '').toLowerCase();
         const genderAliases = {
             ladies: 'lady', lady: 'lady', girls: 'lady', women: 'lady', female: 'lady', females: 'lady',
             guys: 'guy', guy: 'guy', men: 'guy', male: 'guy', males: 'guy'
         };
         const gender = genderAliases[requestedGender] || null;
+        const nativeAllRequested = !requestedGender || ['all', 'everyone', 'everybody', '@all'].includes(requestedGender);
+        if (nativeAllRequested) {
+            const replyMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+            const quotedText = replyMessage?.conversation
+                || replyMessage?.extendedTextMessage?.text
+                || replyMessage?.imageMessage?.caption
+                || replyMessage?.videoMessage?.caption
+                || '';
+            const announcementArgs = ['all', 'everyone', 'everybody', '@all'].includes(requestedGender) ? args.slice(1) : args;
+            const announcementText = announcementArgs.join(' ').trim() || quotedText || '🔊 *Hello Everyone!*';
+            return sendGroupAll(sock, chatId, announcementText, channelInfo, { quoted: message });
+        }
         if (requestedGender && !gender) {
             return sock.sendMessage(chatId, {
                 text: 'Use *.tag ladies* or *.tag guys*. Members without a saved gender are not included.',
                 ...channelInfo
             }, { quoted: message });
         }
+        const groupMetadata = await sock.groupMetadata(chatId);
+        const participants = groupMetadata.participants || [];
         const mentionedJidList = gender
             ? await filterParticipantsByGender(participants, gender, userId => getUserGender(userId, sock))
             : participants.map(participant => participant.id || participant.phoneNumber || participant.lid).filter(Boolean);
