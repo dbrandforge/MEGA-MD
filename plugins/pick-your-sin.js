@@ -655,7 +655,7 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
     }, { quoted: message });
     return true;
   } else {
-    const validation = validatePickYourSinTruthAnswer(text, state.currentCard);
+    const validation = validatePickYourSinTruthAnswer(text);
     if (!validation.accepted) {
       await sock.sendMessage(chatId, {
         text: '🚫 That is not a complete truth answer. One-word replies, yes/no, “done”, “I have”, “I have not” and similar shortcuts will not count. Answer the actual prompt in at least 12 words and include real details. Your turn is still active.',
