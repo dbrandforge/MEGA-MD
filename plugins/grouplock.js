@@ -473,14 +473,18 @@ async function runGroupLockSchedule(sock, chatId) {
                 const totalMinutes = Math.max(1, Math.round(Number(quickLock.durationMs) / 60000));
                 const hours = Math.floor(totalMinutes / 60);
                 const minutes = totalMinutes % 60;
+                const days = Math.floor(totalMinutes / 1440);
+                const hours = Math.floor((totalMinutes % 1440) / 60);
+                const minutes = totalMinutes % 60;
                 const durationLabel = [
-                    hours ? \`\${hours} hour\${hours === 1 ? '' : 's'}\` : '',
-                    minutes ? \`\${minutes} minute\${minutes === 1 ? '' : 's'}\` : ''
+                    days ? days + ' day' + (days === 1 ? '' : 's') : '',
+                    hours ? hours + ' hour' + (hours === 1 ? '' : 's') : '',
+                    minutes ? minutes + ' minute' + (minutes === 1 ? '' : 's') : ''
                 ].filter(Boolean).join(' and ');
                 const unlockTime = new Date(quickLock.endAt).toLocaleTimeString('en-NG', {
                     timeZone: 'Africa/Lagos', hour: 'numeric', minute: '2-digit'
                 });
-                await sendGroupAll(sock, chatId, \`🔒 *Group locked for \${durationLabel}.*\n\nAutomatic unlock is scheduled for *\${unlockTime}* (Lagos time).\`);
+                await sendGroupAll(sock, chatId, '🔒 *Group locked for ' + durationLabel + '.*\n\nAutomatic unlock is scheduled for *' + unlockTime + '* (Lagos time).');
             } catch (error) { console.error('[GroupLock] One-off quick lock failed for ' + chatId + ':', error.message); }
         }
 
