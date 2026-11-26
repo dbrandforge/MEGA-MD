@@ -7,6 +7,7 @@ import { pickPersonalityReply } from '../data/forgeBotPersonalityBank.js';
 import { pickDualReply } from '../data/chatDual/dualBankSelector.js';
 import { getUserGender } from './gender.js';
 import { printLog } from '../lib/print.js';
+import { PRIMARY_FEATURE_GROUP } from '../lib/featureGroups.js';
 import { resolveIdentity, getIdentityReply, getIdentityGreeting, getIdentityAcknowledgement } from '../lib/identity.js';
 import { getIdentityClaimReply, buildGenderInteractionContext, buildTaggedPeopleContext } from '../lib/chatbotConversationEnhancements.js';
 import { getDMChatbotPermission, migrateDMChatbotDefault } from '../lib/dmAccess.js';
@@ -153,7 +154,7 @@ export async function isChatbotEnabledForMessage(chatId, senderId) {
     const data = await loadUserGroupData();
     if (!data.chatbot || typeof data.chatbot !== 'object') data.chatbot = {};
     if (String(chatId || '').endsWith('@g.us')) {
-        const TARGET = '120363405434471171@g.us';
+        const TARGET = PRIMARY_FEATURE_GROUP;
         if (chatId === TARGET && data.chatbot[chatId] === undefined) {
             data.chatbot[chatId] = true;
             await saveUserGroupData(data);
@@ -262,8 +263,8 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
 
 // Live replies are selected locally from the curated personality bank.
 async function handleChatbotResponseForConversation(sock, chatId, message, userMessage, senderId, memoryKey, messageId) {
-    if (!isLatestChatbotTurn(memoryKey, messageId)) {
-        printLog('info', '[Chatbot] Skipped superseded queued turn before context generation.');
+    if (!isLatestChatbotTurn(memoryKey, messageId) || isMessageTooOld(message)) {
+        printLog('info', '[Chatbot] Skipped superseded or expired queued turn before context generation.');
         return;
     }
     const data = await loadUserGroupData();
@@ -543,6 +544,10 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
             return;
         }
         printLog('info', `[Chatbot DM] Attempting reply via destinationType=${chatId.endsWith('@lid') ? 'LID' : 'PN_or_group'}`);
+        const responseChars = Array.from(response).length;
+        const replacementChars = (response.match(/\uFFFD/g) || []).length;
+        const controlChars = Array.from(response).filter(char => /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/u.test(char)).length;
+        console.info(`[Chatbot Output Integrity] chars=${responseChars} replacement_chars=${replacementChars} control_chars=${controlChars} destination=group_or_dm`);
         const sendStartedAt = Date.now();
         const sentMessage = await sock.sendMessage(chatId, { text: response }, { quoted: message });
         const sendLatencyMs = Date.now() - sendStartedAt;

@@ -88,7 +88,7 @@ export default {
         return sock.sendMessage(chatId, { text: 'Usage: .groupforge off [all|matured|general]' }, { quoted: message });
       }
       if (chatId === PRIMARY_FEATURE_GROUP) {
-        return sock.sendMessage(chatId, { text: 'Matured Minded is the protected source group. Its core group profile cannot be disabled through .groupforge.' }, { quoted: message });
+        return sock.sendMessage(chatId, { text: 'Matured Minded Room is the protected source group. Its core group profile cannot be disabled through .groupforge.' }, { quoted: message });
       }
       try {
         const [userData, existingProfile, antispam] = await Promise.all([
@@ -150,7 +150,7 @@ export default {
     }
 
     if (chatId === PRIMARY_FEATURE_GROUP) {
-      return sock.sendMessage(chatId, { text: 'Matured Minded is the source group. Its feature packages are already configured here.' }, { quoted: message });
+      return sock.sendMessage(chatId, { text: 'Matured Minded Room is the source group. Its feature packages are already configured here.' }, { quoted: message });
     }
 
     const applyMatured = requestedSet === 'all' || requestedSet === 'matured';

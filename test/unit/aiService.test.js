@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import axios from 'axios';
-import { isUsefulAutomaticAnswer, buildConversationPrompt, buildFallbackPrompt, shouldUseLiveSearchForMessage, askFastAI } from '../../lib/aiService.js';
+import { isUsefulAutomaticAnswer, buildConversationPrompt, buildFallbackPrompt, shouldUseLiveSearchForMessage, askFastAI, interpretCreatorCommand } from '../../lib/aiService.js';
 
 vi.mock('axios', () => ({ default: { post: vi.fn(), get: vi.fn() } }));
 
@@ -70,6 +70,51 @@ describe('bounded automatic AI provider failover', () => {
     expect(prompt.length).toBeLessThanOrEqual(2600);
   });
 
+
+describe('creator command interpretation against the live registry', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.GEMINI_API_KEY = 'test-gemini-key';
+  });
+
+  it('only returns a command that exists in the supplied registry', async () => {
+    axios.post.mockResolvedValueOnce({
+      data: { candidates: [{ content: { parts: [{ text: JSON.stringify({
+        command: 'grouplock', args: ['quicklock', 'now', '60m'],
+        confidence: 0.97, clarification: '', scope: 'current-chat'
+      }) }] } }] }
+    });
+    const result = await interpretCreatorCommand('lock the group for an hour', [{
+      command: 'grouplock', aliases: [], description: 'Lock or unlock the group',
+      usage: '.grouplock lock|unlock', groupOnly: true
+    }]);
+    expect(result).toMatchObject({
+      command: 'grouplock', args: ['quicklock', 'now', '60m'], confidence: 0.97
+    });
+    expect(axios.post.mock.calls[0][1].generationConfig.responseMimeType).toBe('application/json');
+  });
+
+  it('rejects invented commands and low-confidence interpretations', async () => {
+    axios.post.mockResolvedValueOnce({
+      data: { candidates: [{ content: { parts: [{ text: JSON.stringify({
+        command: 'invented-command', args: [], confidence: 0.99
+      }) }] } }] }
+    });
+    await expect(interpretCreatorCommand('do something unsupported', [{
+      command: 'grouplock', aliases: [], description: 'Group lock'
+    }])).resolves.toBeNull();
+
+    axios.post.mockResolvedValueOnce({
+      data: { candidates: [{ content: { parts: [{ text: JSON.stringify({
+        command: 'grouplock', args: [], confidence: 0.4
+      }) }] } }] }
+    });
+    await expect(interpretCreatorCommand('maybe lock it', [{
+      command: 'grouplock', aliases: [], description: 'Group lock'
+    }])).resolves.toBeNull();
+  });
+});
+
 describe('Forge Guard conversation style instructions', () => {
   it('does not steer casual conversations toward business by default', () => {
     const prompt = buildConversationPrompt('I came to check if you are alive');
@@ -81,7 +126,7 @@ describe('Forge Guard conversation style instructions', () => {
     const prompt = buildConversationPrompt('How far?', [], 'GROUP CONVERSATION MODE: MATURED MINDED.');
     expect(prompt).toContain('Adapt to the individual using confirmed profile preferences');
     expect(prompt).toContain('Do not infer personality, sexual interests or comfort from gender or stereotypes');
-    expect(prompt).toContain('Matured Minded is adult-oriented');
+    expect(prompt).toContain('Matured Minded Room is adult-oriented');
   });
 });
 
