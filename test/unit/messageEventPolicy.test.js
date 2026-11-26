@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { shouldProcessMessageUpsert, isMessageTooOld, setMessageProcessingCutoff, getMessageAgeMs } from '../../lib/messageEventPolicy.js';
+import { shouldProcessMessageUpsert, isMessageTooOld, setMessageProcessingCutoff, getMessageAgeMs, markMessageRevoked, isMessageRevoked } from '../../lib/messageEventPolicy.js';
 
 const now = 1_800_000_000_000;
 const message = (overrides = {}) => ({
@@ -72,6 +72,20 @@ describe('WhatsApp upsert processing policy', () => {
   it('parses numeric timestamp strings as Unix seconds', () => {
     const timestamp = String(secondsAgo(10));
     expect(getMessageAgeMs(message({ messageTimestamp: timestamp }), now)).toBe(10_000);
+  });
+});
+
+describe('message revocation guard', () => {
+  it('marks a deleted message so a queued copy cannot execute', () => {
+    const original = message();
+    expect(markMessageRevoked(original.key.remoteJid, original.key.id, now)).toBe(true);
+    expect(isMessageRevoked(original, now + 1000)).toBe(true);
+  });
+
+  it('expires revocation markers after ten minutes', () => {
+    const original = message({ key: { remoteJid: '120363000000000000@g.us', id: 'EXPIRED', fromMe: false } });
+    markMessageRevoked(original.key.remoteJid, original.key.id, now);
+    expect(isMessageRevoked(original, now + 10 * 60 * 1000 + 1)).toBe(false);
   });
 });
 
