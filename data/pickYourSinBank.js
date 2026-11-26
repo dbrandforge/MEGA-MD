@@ -63,7 +63,7 @@ const actionDares = [
 ];
 
 function normalizePrompt(value) {
-  return String(value || '').normalize('NFKC').toLowerCase().replace(/[^\\p{L}\\p{N}]+/gu, ' ').trim();
+  return String(value || '').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 }
 
 function convertLegacyTruth(prompt, gender, index) {
