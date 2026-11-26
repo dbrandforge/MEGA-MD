@@ -19,6 +19,7 @@ vi.mock('../../lib/whatsappIdentity.js', () => ({
 import { beginPickYourSinSession, handlePickYourSinMessage } from '../../plugins/pick-your-sin.js';
 
 const chatId = '120363000000000000@g.us';
+const goodTruthAnswer = 'I remember that moment clearly because it happened after our first date and changed how I felt.';
 const players = Array.from({ length: 5 }, (_, i) => `23480000000${i}@s.whatsapp.net`);
 const colorMessage = text => ({
   key: { fromMe: false },
@@ -68,7 +69,7 @@ describe('Pick Your Sin sessions', () => {
     await handlePickYourSinMessage(sock, chatId, {
       key: { fromMe: false },
       message: { extendedTextMessage: { contextInfo: { stanzaId: firstPromptId } } }
-    }, 'My answer', players[0]);
+    }, goodTruthAnswer, players[0]);
     const afterAnswer = sock.sendMessage.mock.calls.length;
 
     await vi.advanceTimersByTimeAsync(29_999);
@@ -80,6 +81,71 @@ describe('Pick Your Sin sessions', () => {
     session = Object.values(state.pickYourSinSessions)[0];
     expect(session.playerStates[players[0]].step).toBe(1);
     expect(session.playerStates[players[0]].color).toBe('yellow');
+  });
+
+  it('rejects one-word and yes/no truth replies without advancing the player', async () => {
+    const sock = { user: { id: '234899999999:1@s.whatsapp.net' }, sendMessage: vi.fn(async () => ({ key: { id: 'prompt' } })) };
+    await beginPickYourSinSession(sock, chatId, players, 'admin@s.whatsapp.net');
+    await handlePickYourSinMessage(sock, chatId, colorMessage('red'), 'red', players[0]);
+    const session = Object.values(state.pickYourSinSessions)[0];
+    const promptId = session.playerStates[players[0]].questionMessageId;
+    const reply = answer => ({
+      key: { fromMe: false },
+      message: { extendedTextMessage: { text: answer, contextInfo: { stanzaId: promptId } } }
+    });
+
+    await handlePickYourSinMessage(sock, chatId, reply('No'), 'No', players[0]);
+    let player = Object.values(state.pickYourSinSessions)[0].playerStates[players[0]];
+    expect(player.step).toBe(0);
+    expect(player.waiting).toBe(true);
+
+    await handlePickYourSinMessage(sock, chatId, reply('I have not'), 'I have not', players[0]);
+    player = Object.values(state.pickYourSinSessions)[0].playerStates[players[0]];
+    expect(player.step).toBe(0);
+    expect(player.waiting).toBe(true);
+
+    await handlePickYourSinMessage(sock, chatId, reply(goodTruthAnswer), goodTruthAnswer, players[0]);
+    player = Object.values(state.pickYourSinSessions)[0].playerStates[players[0]];
+    expect(player.step).toBe(1);
+    expect(player.waiting).toBe(false);
+  });
+
+  it('requires dare proof as voice note, image or video and rejects text-only replies', async () => {
+    let sent = 0;
+    const sock = { user: { id: '234899999999:1@s.whatsapp.net' }, sendMessage: vi.fn(async () => ({ key: { id: `bot-${++sent}` } })) };
+    await beginPickYourSinSession(sock, chatId, players, 'admin@s.whatsapp.net');
+    await handlePickYourSinMessage(sock, chatId, colorMessage('red'), 'red', players[0]);
+
+    const colors = ['ash', 'red', 'ash', 'red', 'ash'];
+    for (const color of colors) {
+      let session = Object.values(state.pickYourSinSessions)[0];
+      const promptId = session.playerStates[players[0]].questionMessageId;
+      await handlePickYourSinMessage(sock, chatId, {
+        key: { fromMe: false },
+        message: { extendedTextMessage: { text: goodTruthAnswer, contextInfo: { stanzaId: promptId } } }
+      }, goodTruthAnswer, players[0]);
+      await vi.advanceTimersByTimeAsync(30_000);
+      await handlePickYourSinMessage(sock, chatId, colorMessage(color), color, players[0]);
+    }
+
+    let session = Object.values(state.pickYourSinSessions)[0];
+    expect(session.playerStates[players[0]].currentType).toBe('dare');
+    const dareId = session.playerStates[players[0]].questionMessageId;
+    await handlePickYourSinMessage(sock, chatId, {
+      key: { fromMe: false },
+      message: { extendedTextMessage: { text: 'Done', contextInfo: { stanzaId: dareId } } }
+    }, 'Done', players[0]);
+    session = Object.values(state.pickYourSinSessions)[0];
+    expect(session.playerStates[players[0]].step).toBe(5);
+    expect(session.playerStates[players[0]].waiting).toBe(true);
+
+    await handlePickYourSinMessage(sock, chatId, {
+      key: { fromMe: false },
+      message: { imageMessage: { caption: 'Completed', contextInfo: { stanzaId: dareId } } }
+    }, 'Completed', players[0]);
+    session = Object.values(state.pickYourSinSessions)[0];
+    expect(session.playerStates[players[0]].step).toBe(6);
+    expect(session.playerStates[players[0]].waiting).toBe(false);
   });
 
   it('rejects non-selected participants', async () => {
@@ -117,7 +183,7 @@ describe('Pick Your Sin sessions', () => {
     await handlePickYourSinMessage(sock, chatId, {
       key: { fromMe: false },
       message: { extendedTextMessage: { contextInfo: { stanzaId: promptId } } }
-    }, 'answer', players[0]);
+    }, goodTruthAnswer, players[0]);
 
     const colors = ['yellow', 'orange', 'red', 'green'];
     for (const color of colors) {
@@ -128,7 +194,7 @@ describe('Pick Your Sin sessions', () => {
       await handlePickYourSinMessage(sock, chatId, {
         key: { fromMe: false },
         message: { extendedTextMessage: { contextInfo: { stanzaId: promptId } } }
-      }, 'answer', players[0]);
+      }, goodTruthAnswer, players[0]);
     }
     await vi.advanceTimersByTimeAsync(30_000);
     await handlePickYourSinMessage(sock, chatId, colorMessage('yellow'), 'yellow', players[0]);
@@ -159,7 +225,7 @@ describe('Pick Your Sin sessions', () => {
       await handlePickYourSinMessage(sock, chatId, {
         key: { fromMe: false },
         message: { extendedTextMessage: { contextInfo: { stanzaId: promptId } } }
-      }, 'answer', players[0]);
+      }, goodTruthAnswer, players[0]);
       await vi.advanceTimersByTimeAsync(30_000);
       await handlePickYourSinMessage(sock, chatId, colorMessage(color), color, players[0]);
     }
