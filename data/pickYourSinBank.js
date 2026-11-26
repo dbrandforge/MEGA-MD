@@ -1,17 +1,17 @@
 import { baseGuyTruths, baseLadyTruths } from './todBase.js';
 
-const COLORS = ['red', 'green', 'yellow', 'orange'];
+const COLORS = ['red', 'yellow', 'orange', 'ash'];
 
 const guyThemes = {
   red: ['a risky attraction you never admitted', 'the moment desire changed your judgement', 'a secret you protected in a relationship', 'the boldest move you made to get someone’s attention', 'a time jealousy revealed something about you', 'an unexpected romantic encounter', 'a boundary you had to learn to respect', 'a private fantasy and what it represents', 'a relationship decision you would make differently', 'the difference between confidence and pressure'],
-  green: ['earning trust after a difficult experience', 'a connection that grew from friendship', 'how you handle emotional vulnerability', 'a time you had to apologise sincerely', 'what loyalty means when things get complicated', 'a boundary that improved a relationship', 'how you recognise genuine interest', 'a time patience changed the outcome', 'what makes you feel emotionally secure', 'how you rebuild a connection after disappointment'],
+  ash: ['earning trust after a difficult experience', 'a connection that grew from friendship', 'how you handle emotional vulnerability', 'a time you had to apologise sincerely', 'what loyalty means when things get complicated', 'a boundary that improved a relationship', 'how you recognise genuine interest', 'a time patience changed the outcome', 'what makes you feel emotionally secure', 'how you rebuild a connection after disappointment'],
   yellow: ['an awkward but unforgettable romantic moment', 'a message you rewrote many times before sending', 'a date that surprised you', 'a compliment you still remember', 'a misunderstanding that became a funny story', 'a time you misread someone’s signals', 'a bold confession that took courage', 'a moment when humour created chemistry', 'a harmless secret you find difficult to admit', 'a first impression that turned out to be wrong'],
   orange: ['a fantasy you would discuss only with someone you trust', 'how you communicate desire respectfully', 'a time you surprised yourself with confidence', 'what makes chemistry feel mutual', 'a romantic risk you considered but declined', 'how you balance excitement with personal boundaries', 'a private preference you learned to express', 'what makes an intimate moment meaningful', 'how you would plan an adventurous consensual date', 'a lesson you learned about attraction and self-control']
 };
 
 const ladyThemes = {
   red: ['a bold attraction you kept to yourself', 'the moment desire challenged your judgement', 'a secret you protected in a relationship', 'the most daring way you expressed interest', 'a time jealousy taught you something', 'an unexpected romantic encounter', 'a boundary you learned to defend', 'a private fantasy and what it means to you', 'a relationship choice you would reconsider', 'the difference between confidence and pressure'],
-  green: ['earning trust after a difficult experience', 'a connection that grew from friendship', 'how you handle emotional vulnerability', 'a time you had to apologise sincerely', 'what loyalty means when things get complicated', 'a boundary that improved a relationship', 'how you recognise genuine interest', 'a time patience changed the outcome', 'what makes you feel emotionally secure', 'how you rebuild a connection after disappointment'],
+  ash: ['earning trust after a difficult experience', 'a connection that grew from friendship', 'how you handle emotional vulnerability', 'a time you had to apologise sincerely', 'what loyalty means when things get complicated', 'a boundary that improved a relationship', 'how you recognise genuine interest', 'a time patience changed the outcome', 'what makes you feel emotionally secure', 'how you rebuild a connection after disappointment'],
   yellow: ['an awkward but unforgettable romantic moment', 'a message you rewrote many times before sending', 'a date that surprised you', 'a compliment you still remember', 'a misunderstanding that became a funny story', 'a time you misread someone’s signals', 'a bold confession that took courage', 'a moment when humour created chemistry', 'a harmless secret you find difficult to admit', 'a first impression that turned out to be wrong'],
   orange: ['a fantasy you would discuss only with someone you trust', 'how you communicate desire respectfully', 'a time you surprised yourself with confidence', 'what makes chemistry feel mutual', 'a romantic risk you considered but declined', 'how you balance excitement with personal boundaries', 'a private preference you learned to express', 'what makes an intimate moment meaningful', 'how you would plan an adventurous consensual date', 'a lesson you learned about attraction and self-respect']
 };
@@ -85,9 +85,15 @@ function buildGenderColorBank(gender, legacy, themes) {
       }))
     );
     const truths = [...legacyCards, ...generated].slice(0, 150);
+    const intensityInstruction = {
+      red: 'RED FOLDER — MAXIMUM HEAT: do this in one confident take, with no rehearsing and no hiding behind a one-word answer.',
+      yellow: 'YELLOW FOLDER — BOLD MODE: make the performance personal, specific and confidently delivered.',
+      orange: 'ORANGE FOLDER — TURN UP THE TEMPO: complete the challenge with energy and a clear, memorable finish.',
+      ash: 'ASH FOLDER — WILD CARD: complete the challenge in your own style, with a surprising or funny twist.'
+    }[color];
     const dares = actionDares.map((text, index) => ({
       id: `dare-${gender}-${color}-${String(index + 1).padStart(3, '0')}`,
-      text
+      text: `${intensityInstruction} ${text}`
     }));
     if (truths.length !== 150 || dares.length !== 30) {
       throw new Error(`Invalid PICK YOUR SIN bank size for ${gender}/${color}: ${truths.length} truths, ${dares.length} dares.`);

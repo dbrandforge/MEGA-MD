@@ -39,7 +39,7 @@ describe('Pick Your Sin sessions', () => {
     const session = Object.values(state.pickYourSinSessions)[0];
     expect(session.players).toHaveLength(5);
     expect(Object.keys(session.playerStates)).toHaveLength(5);
-    for (const color of ['red', 'green', 'yellow', 'orange']) {
+    for (const color of ['red', 'yellow', 'orange', 'ash']) {
       const deck = session.decks[`guy:${color}`];
       expect(deck.truths).toHaveLength(150);
       expect(deck.dares).toHaveLength(30);
