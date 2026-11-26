@@ -42,6 +42,24 @@ describe('creator natural-language command routing', () => {
         expect(parseCreatorNaturalCommand(phrase, { addressedToBot: true })).toMatchObject({ command, args });
     });
 
+    it('routes creator-only plain group instructions when the caller authenticates creator identity', () => {
+        expect(parseCreatorNaturalCommand('Lock the group', { addressedToBot: true })).toMatchObject({
+            command: 'grouplock', args: ['lock']
+        });
+        expect(parseCreatorNaturalCommand('Bot lock the group')).toMatchObject({
+            command: 'grouplock', args: ['lock']
+        });
+    });
+
+    it('maps voice-mode natural language to the setting command', () => {
+        expect(parseCreatorNaturalCommand('Enable voicemode', { addressedToBot: true })).toMatchObject({
+            command: 'voicemode', args: ['on'], action: 'voice-mode-on'
+        });
+        expect(parseCreatorNaturalCommand('Disable voice mode', { addressedToBot: true })).toMatchObject({
+            command: 'voicemode', args: ['off'], action: 'voice-mode-off'
+        });
+    });
+
     it('converts a Lagos clock deadline into a one-off lock duration', () => {
         const now = new Date('2026-11-26T06:00:00.000Z'); // 07:00 in Lagos
         expect(parseCreatorNaturalCommand('lock the group till 8am', { addressedToBot: true, now })).toMatchObject({
