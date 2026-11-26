@@ -59,7 +59,7 @@ async function sendQuestion(sock, chatId, senderId, quoted, gender) {
   const rawOptions = await chooseFreshOptions(chatId);
   const options = personalizeWyrOptions(rawOptions, gender);
   const sent = await sock.sendMessage(chatId, {
-    text: `😈 *WOULD YOU RATHER? — MATURE MINDED*\n\n🅰️ ${options[0]}\n\n🅱️ ${options[1]}\n\n_Choose A or B. Reply to this question or tag me with your choice for the next dilemma. Session limit: 20 questions._`
+    text: `😈 *WOULD YOU RATHER? — MATURE MINDED*\n\n@${senderId.split('@')[0]}, this dilemma is for you.\n\n🅰️ ${options[0]}\n\n🅱️ ${options[1]}\n\n_Choose A or B. Reply to this question or tag me with your choice for the next dilemma. Session limit: 20 questions._`
   }, quoted ? { quoted } : undefined);
   const sessions = await getSessions(chatId);
   const previous = sessions[senderId] || {};
