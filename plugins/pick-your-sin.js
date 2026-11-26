@@ -4,7 +4,7 @@ import { buildPickYourSinBank, normalizePickYourSinPrompt } from '../data/pickYo
 import { isGameAllowed } from './daylock.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { sameWhatsAppUser, canonicalWhatsAppUserId } from '../lib/whatsappIdentity.js';
-import { getPickYourSinMediaKind, getPickYourSinMessageContext, validatePickYourSinTruthAnswer } from './pick-your-sin-response.js';
+import { getPickYourSinMediaKind, getPickYourSinMessageContext, validatePickYourSinTruthAnswer } from '../lib/pickYourSinResponse.js';
 
 const KEY = 'pickYourSinSessions';
 const DAILY_KEY = 'pickYourSinDailyCompletions';
@@ -649,12 +649,12 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
       }, { quoted: message });
       return true;
     }
-  } else if (mediaKind !== 'text') {
+  } else if (!isPass && mediaKind !== 'text') {
     await sock.sendMessage(chatId, {
       text: '✍️ A truth must be answered in writing. Send a proper written answer with the actual story or details; media alone will not count.',
     }, { quoted: message });
     return true;
-  } else {
+  } else if (!isPass) {
     const validation = validatePickYourSinTruthAnswer(text);
     if (!validation.accepted) {
       await sock.sendMessage(chatId, {
