@@ -282,6 +282,10 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
     await sock.sendMessage(chatId, { text: `⏳ Your next prompt unlocks in *${remaining} seconds*.` }, { quoted: message });
     return true;
   }
+  if (!state.waiting && state.cooldownUntil && Date.now() >= state.cooldownUntil) {
+    await sendPrompt(sock, chatId, session, playerId);
+    return true;
+  }
   if (!state.waiting) return true;
 
   const isPass = /^(pass|skip|use pass)$/i.test(String(text || '').trim());
