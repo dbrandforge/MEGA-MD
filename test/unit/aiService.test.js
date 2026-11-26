@@ -92,6 +92,25 @@ describe('creator command interpretation against the live registry', () => {
       command: 'grouplock', args: ['quicklock', 'now', '60m'], confidence: 0.97
     });
     expect(axios.post.mock.calls[0][1].generationConfig.responseMimeType).toBe('application/json');
+    expect(axios.post.mock.calls[0][2].timeout).toBe(5000);
+    expect(axios.post.mock.calls[0][1].contents[0].parts[0].text).toContain('ongoing ordinary conversation');
+    expect(axios.post.mock.calls[0][1].contents[0].parts[0].text).toContain('adminOnly');
+  });
+
+  it('returns a clarification instead of silently dropping an ambiguous creator instruction', async () => {
+    axios.post.mockResolvedValueOnce({
+      data: { candidates: [{ content: { parts: [{ text: JSON.stringify({
+        command: '', args: [], confidence: 0.2,
+        clarification: 'Which game should I start?', scope: 'current-chat'
+      }) }] } }] }
+    });
+    await expect(interpretCreatorCommand('start the game', [{
+      command: 'trivia', aliases: [], description: 'Start trivia',
+      usage: '.trivia', groupOnly: true
+    }])).resolves.toMatchObject({
+      action: 'clarify',
+      clarification: 'Which game should I start?'
+    });
   });
 
   it('rejects invented commands and low-confidence interpretations', async () => {

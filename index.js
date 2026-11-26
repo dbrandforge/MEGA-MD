@@ -37,6 +37,7 @@ import { getCachedGroupMetadata } from './lib/isOwner.js';
 import { installSignalDiagnosticGuard } from './lib/signalDiagnostics.js';
 import { parseGroupSenderKeyRecoveryTargets, resetGroupSenderKeyMemoryBeforeSend } from './lib/groupSenderKeyRecovery.js';
 import { createPerChatMessageQueue } from './lib/perChatMessageQueue.js';
+import { runWithMessageScope } from './lib/messageScopedSocket.js';
 
 // Keep libsignal diagnostics useful without allowing serialized ratchets or key material into logs.
 installSignalDiagnosticGuard();
@@ -71,13 +72,13 @@ const incomingMessageQueue = createPerChatMessageQueue({
             }
             const handlerStartedAt = process.hrtime.bigint();
             const queueWaitMs = Math.max(0, Date.now() - (Number.isFinite(queuedAt) ? queuedAt : Date.now()));
-            await handleMessages(sock, update);
+            await runWithMessageScope(sock, mek, () => handleMessages(sock, update));
             const handlerLatencyMs = Number(process.hrtime.bigint() - handlerStartedAt) / 1e6;
             printLog('info', `Message processed: jid=${mek?.key?.remoteJid || 'unknown'} id=${mek?.key?.id || 'unknown'} queue_wait_ms=${queueWaitMs} handler_ms=${handlerLatencyMs.toFixed(1)}`);
         } catch (err) {
             printLog('error', `Error in handleMessages (jid=${mek?.key?.remoteJid || 'unknown'}): ${String(err?.message || 'Unknown message handler error').slice(0, 300)}`);
             const chatId = mek?.key?.remoteJid;
-            if (chatId && !isMessageTooOld(mek)) {
+            if (chatId && !isMessageRevoked(mek) && !isMessageTooOld(mek)) {
                 await sock.sendMessage(chatId, {
                     text: '❌ An error occurred while processing your message.',
                     contextInfo: {
@@ -97,7 +98,7 @@ const incomingMessageQueue = createPerChatMessageQueue({
         printLog('error', `Queued message worker failed: ${String(error?.message || 'Unknown queue error').slice(0, 250)}`);
         const failedMessage = item?.update?.messages?.[0];
         const chatId = failedMessage?.key?.remoteJid;
-        if (chatId && item?.sock && !isMessageTooOld(failedMessage)) {
+        if (chatId && item?.sock && !isMessageRevoked(failedMessage) && !isMessageTooOld(failedMessage)) {
             item.sock.sendMessage(chatId, {
                 text: '❌ An unexpected processing error occurred. Please retry your message.'
             }).catch(() => {});

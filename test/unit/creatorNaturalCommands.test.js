@@ -42,6 +42,21 @@ describe('creator natural-language command routing', () => {
         expect(parseCreatorNaturalCommand(phrase, { addressedToBot: true })).toMatchObject({ command, args });
     });
 
+    it.each([
+        ['I need you to remove @user', 'kick', []],
+        ['I want you to start trivia', 'trivia', []],
+        ['Could you lock this group for 2 hours?', 'grouplock', ['quicklock', 'now', '120m']],
+        ['Do me a favour and tag everyone', 'tagall', []],
+        ["Let's start hot seat", 'hotseat', []],
+        ['When you get a chance, send me the activities of the day', 'activity', []],
+        ['Also, unlock games', 'gamelock', ['off']],
+        ['Can we start trivia?', 'trivia', []],
+        ['Please, start hangman', 'hangman', []],
+        ['I was hoping you could lock the group', 'grouplock', ['lock']]
+    ])('understands conversational instruction "%s"', (phrase, command, args) => {
+        expect(parseCreatorNaturalCommand(phrase, { addressedToBot: true })).toMatchObject({ command, args });
+    });
+
     it('routes creator-only plain group instructions when the caller authenticates creator identity', () => {
         expect(parseCreatorNaturalCommand('Lock the group', { addressedToBot: true })).toMatchObject({
             command: 'grouplock', args: ['lock']
@@ -49,6 +64,14 @@ describe('creator natural-language command routing', () => {
         expect(parseCreatorNaturalCommand('Bot lock the group')).toMatchObject({
             command: 'grouplock', args: ['lock']
         });
+    });
+
+    it('routes the overloaded .remove alias to member removal only when a member is targeted', () => {
+        expect(parseCreatorNaturalCommand('.remove @user', { addressedToBot: true })).toMatchObject({
+            command: 'kick', action: 'remove-member'
+        });
+        expect(parseCreatorNaturalCommand('.remove 5', { addressedToBot: true })).toBeNull();
+        expect(parseCreatorNaturalCommand('.remove 5 messages', { addressedToBot: true })).toBeNull();
     });
 
     it('maps voice-mode natural language to the setting command', () => {
