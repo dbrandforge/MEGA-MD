@@ -97,7 +97,7 @@ async function saveSessions(chatId, sessions) {
 function buildDecks() {
   const decks = {};
   for (const gender of ['guy', 'lady']) {
-    const truths = shuffle(getTruths(gender).filter(Boolean).map(String));
+    const truths = shuffle([...new Set(getTruths(gender).filter(Boolean).map(String))]);
     const dares = shuffle(ACTION_DARES);
     const truthFallback = [
       'What intimate desire have you kept private because you fear being judged?',
@@ -160,7 +160,7 @@ async function sendPrompt(sock, chatId, session, playerId) {
   state.cooldownUntil = null;
   const label = type === 'truth' ? '🔥 *TRUTH*' : '💀 *DARE — ACTION REQUIRED*';
   const progress = type === 'truth'
-    ? `Truth ${state.step < 5 ? state.step + 1 : state.step - 4}/5`
+    ? `Truth ${state.step < 5 ? state.step + 1 : state.step - 5}/5`
     : `Dare ${state.step === 5 ? 1 : 2}/2`;
   const sent = await sock.sendMessage(chatId, {
     text: `🎭 *PICK YOUR SIN* — ${COLORS[state.color].emoji} ${COLORS[state.color].label}\n${label} · ${progress}\n\n${card}\n\n_Reply to this prompt or tag the bot when you've completed it. Type *pass* to use your one session pass. You have 30 seconds between prompts._`,
