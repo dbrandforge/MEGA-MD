@@ -28,7 +28,7 @@ describe('Pick Your Sin sessions', () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  it('creates five independent players with 50 cards per colour and gender', async () => {
+  it('creates five independent players with 150 truths and 30 dares per colour and gender', async () => {
     const sock = { sendMessage: vi.fn(async () => ({ key: { id: 'announcement' } })) };
     await beginPickYourSinSession(sock, chatId, players, '234899999999@s.whatsapp.net');
 
@@ -37,8 +37,8 @@ describe('Pick Your Sin sessions', () => {
     expect(Object.keys(session.playerStates)).toHaveLength(5);
     for (const color of ['red', 'green', 'yellow', 'orange']) {
       const deck = session.decks[`guy:${color}`];
-      expect(deck.truths).toHaveLength(42);
-      expect(deck.dares).toHaveLength(8);
+      expect(deck.truths).toHaveLength(150);
+      expect(deck.dares).toHaveLength(30);
     }
   });
 
