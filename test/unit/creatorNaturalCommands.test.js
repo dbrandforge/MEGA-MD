@@ -29,6 +29,7 @@ describe('creator natural-language command routing', () => {
         ['tag all ladies', 'tag', ['ladies']],
         ['tag guys', 'tag', ['guys']],
         ['tag all guys', 'tag', ['guys']],
+        ['mute', 'mute', []],
         ['mute 10m', 'mute', ['10m']],
         ['mute @user 10m', 'mute', ['10m']],
         ['mute 10 minutes', 'mute', ['10m']],
