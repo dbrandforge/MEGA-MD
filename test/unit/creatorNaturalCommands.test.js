@@ -21,6 +21,9 @@ describe('creator natural-language command routing', () => {
 
     it.each([
         ['send me the activities of the day', 'activity', []],
+        ['show me all activities', 'activities', []],
+        ['send the full activity schedule', 'activities', []],
+        ['list all group activities', 'activities', []],
         ['remove @user', 'kick', []],
         ['kick @user', 'kick', []],
         ['tag @all', 'tagall', []],
@@ -49,6 +52,7 @@ describe('creator natural-language command routing', () => {
         ['Do me a favour and tag everyone', 'tagall', []],
         ["Let's start hot seat", 'hotseat', []],
         ['When you get a chance, send me the activities of the day', 'activity', []],
+        ['Please show me all activities', 'activities', []],
         ['Also, unlock games', 'gamelock', ['off']],
         ['Can we start trivia?', 'trivia', ['mixed']],
         ['Please, start hangman', 'hangman', []],
