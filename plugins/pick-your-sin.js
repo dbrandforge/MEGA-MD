@@ -314,7 +314,7 @@ async function sendPrompt(sock, chatId, session, playerId) {
   const label = type === 'truth' ? '🔥 *TRUTH*' : '💀 *DARE — ACTION REQUIRED*';
   const progress = type === 'truth' ? `Truth ${state.step < 5 ? state.step + 1 : state.step - 5}/5` : `Dare ${state.step === 5 ? 1 : 2}/2`;
   const sent = await sock.sendMessage(chatId, {
-    text: `🎭 *PICK YOUR SIN* — ${COLORS[state.color].emoji} ${COLORS[state.color].label}\n${mention(playerId)}, this prompt is for you.\n${label} · ${progress}\n\n${cardText}\n\n${type === 'truth' ? 'A TRUTH requires a proper written answer with real details (at least 12 words). One-word replies, yes/no, “done” and similar shortcuts will not count.' : 'A DARE is completed only by sending a voice note, photo or video. Text replies will not count.'} You may use your one session pass on a TRUTH only. You have 30 seconds between prompts.`,
+    text: `🎭 *PICK YOUR SIN* — ${COLORS[state.color].emoji} ${COLORS[state.color].label}\n${mention(playerId)}, this prompt is for you.\n${label} · ${progress}\n\n${cardText}\n\n_Reply to this prompt or tag the bot when you've completed it._ ${type === 'truth' ? 'A TRUTH requires a proper written answer with real details (at least 12 words). One-word replies, yes/no, “done” and similar shortcuts will not count.' : 'A DARE is completed only by sending a voice note, photo or video. Text replies will not count.'} You may use your one session pass on a TRUTH only. You have 30 seconds between prompts.`,
     mentions: [playerId]
   });
   state.questionMessageId = sent?.key?.id || null;
