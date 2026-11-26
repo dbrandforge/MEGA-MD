@@ -3,7 +3,7 @@ import store from '../lib/lightweight_store.js';
 import config from '../config.js';
 import { goodnightMessages, goodmorningMessages, pickRotatingMessage } from '../data/groupLifecycleMessages.js';
 import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
-import { PRIMARY_FEATURE_GROUP } from '../lib/featureGroups.js';
+import { PRIMARY_FEATURE_GROUP } from '../lib/featureGroups.js';\nimport { sendGroupAll } from '../lib/groupMentions.js';
 
 /**
  * Group Lock / Unlock + Daily Activity Announcer
@@ -148,7 +148,7 @@ async function sendDayUnlockGreetingOnce(sock, chatId) {
     const greeting = buildDayUnlockGreeting();
     if (!greeting) return false;
 
-    await sock.sendMessage(chatId, { text: greeting });
+    await sendGroupAll(sock, chatId, greeting);
     await saveGroupSetting(chatId, DAY_UNLOCK_GREETING_KEY, dateKey);
     console.log(`[GroupLock] Occasion greeting sent to ${chatId} for ${dateKey}`);
     return true;
@@ -404,7 +404,7 @@ export async function handleGroupSettingUpdate(sock, updates) {
                 store.saveSettingVerified(chatId, LAST_ACTION_KEY, { action: 'unlock', time: getCurrentTimeString(), day, source: 'admin-early-unlock' })
             ]);
             if (writes.some(saved => !saved)) throw new Error('Could not persist early manual-unlock state.');
-            await sock.sendMessage(chatId, { text: '🔓 *THE GROUP HAS BEEN UNLOCKED EARLY*\\n\\nAn admin has opened the group ahead of the scheduled unlock time. Today’s activities are now being posted.' });
+            await sendGroupAll(sock, chatId, '🔓 *THE GROUP HAS BEEN UNLOCKED EARLY*\\n\\nAn admin has opened the group ahead of the scheduled unlock time. Today’s activities are now being posted.');
             await sendDailyActivityOnce(sock, chatId, day);
             console.log(`[GroupLock] Detected admin early-unlock for ${chatId} - ${day}`);
         } catch (error) {
@@ -460,7 +460,7 @@ async function runGroupLockSchedule(sock, chatId) {
                 await saveGroupSetting(chatId, LOCK_STATE_KEY, { locked: true, at: lockedAt, source: 'quicklock' });
                 state.locked = true;
                 await saveGroupSetting(chatId, LAST_ACTION_KEY, { action: 'lock', time: getCurrentTimeString(), day: getCurrentDay(), source: 'quicklock' });
-                await sock.sendMessage(chatId, { text: '🔒 *One-off scheduled group lock is now active.*' });
+                await sendGroupAll(sock, chatId, '🔒 *One-off scheduled group lock is now active.*');
             } catch (error) { console.error('[GroupLock] One-off quick lock failed for ' + chatId + ':', error.message); }
         }
 
@@ -483,7 +483,7 @@ async function runGroupLockSchedule(sock, chatId) {
                     await saveGroupSetting(chatId, LAST_ACTION_KEY, { action: 'unlock', time: getCurrentTimeString(), day: getCurrentDay(), source: 'quicklock-expiry' });
                 }
                 state.locked = preserveDailyLock;
-                await sock.sendMessage(chatId, { text: preserveDailyLock ? '🔒 *The one-off lock period has ended. The regular group lock remains active.*' : '🔓 *The one-off scheduled group lock has ended. The group is open again.*' });
+                await sendGroupAll(sock, chatId, preserveDailyLock ? '🔒 *The one-off lock period has ended. The regular group lock remains active.*' : '🔓 *The one-off scheduled group lock has ended. The group is open again.*');
             } catch (error) { console.error('[GroupLock] One-off quick-lock expiry failed for ' + chatId + ':', error.message); }
         }
 
