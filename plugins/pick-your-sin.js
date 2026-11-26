@@ -7,6 +7,20 @@ import { sameWhatsAppUser, canonicalWhatsAppUserId } from '../lib/whatsappIdenti
 
 const KEY = 'pickYourSinSessions';
 const COOLDOWN_MS = 30_000;
+const chatQueues = new Map();
+async function withChatLock(chatId, task) {
+  const previous = chatQueues.get(chatId) || Promise.resolve();
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const queued = previous.then(() => gate);
+  chatQueues.set(chatId, queued);
+  await previous;
+  try { return await task(); }
+  finally {
+    release();
+    if (chatQueues.get(chatId) === queued) chatQueues.delete(chatId);
+  }
+}
 const COLORS = {
   red: { emoji: '❤️', label: 'RED' },
   green: { emoji: '💚', label: 'GREEN' },
@@ -159,7 +173,7 @@ async function sendPrompt(sock, chatId, session, playerId) {
   return true;
 }
 
-export async function beginPickYourSinSession(sock, chatId, players, startedBy) {
+async function beginPickYourSinSessionLocked(sock, chatId, players, startedBy) {
   if (!isFeatureGroup(chatId)) throw new Error('PICK YOUR SIN is enabled only in authorized feature groups.');
   const access = await isGameAllowed(chatId, 'pickyoursin');
   if (!access.ok) {
@@ -217,7 +231,11 @@ export async function beginPickYourSinSession(sock, chatId, players, startedBy) 
   return true;
 }
 
-export async function handlePickYourSinMessage(sock, chatId, message, text, senderId) {
+export async function beginPickYourSinSession(sock, chatId, players, startedBy) {
+  return withChatLock(chatId, () => beginPickYourSinSessionLocked(sock, chatId, players, startedBy));
+}
+
+async function handlePickYourSinMessageLocked(sock, chatId, message, text, senderId) {
   if (!chatId?.endsWith('@g.us') || message?.key?.fromMe || !senderId) return false;
   const sessions = await getSessions(chatId);
   const session = Object.values(sessions).find(item => item.status === 'active');
@@ -288,16 +306,22 @@ export async function handlePickYourSinMessage(sock, chatId, message, text, send
 
   setTimeout(async () => {
     try {
-      const latest = await getSessions(chatId);
-      const current = latest[session.id];
-      const currentState = current?.playerStates?.[playerId];
-      if (!current || current.status !== 'active' || !currentState || currentState.nextPromptToken !== token) return;
-      await sendPrompt(sock, chatId, current, playerId);
+      await withChatLock(chatId, async () => {
+        const latest = await getSessions(chatId);
+        const current = latest[session.id];
+        const currentState = current?.playerStates?.[playerId];
+        if (!current || current.status !== 'active' || !currentState || currentState.nextPromptToken !== token) return;
+        await sendPrompt(sock, chatId, current, playerId);
+      });
     } catch (error) {
       console.error('[PICK YOUR SIN] Could not deliver next prompt:', error);
     }
   }, COOLDOWN_MS);
   return true;
+}
+
+export async function handlePickYourSinMessage(sock, chatId, message, text, senderId) {
+  return withChatLock(chatId, () => handlePickYourSinMessageLocked(sock, chatId, message, text, senderId));
 }
 
 export default {
