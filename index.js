@@ -38,10 +38,13 @@ import { getCachedGroupMetadata } from './lib/isOwner.js';
 import { installSignalDiagnosticGuard } from './lib/signalDiagnostics.js';
 import { parseGroupSenderKeyRecoveryTargets, resetGroupSenderKeyMemoryBeforeSend } from './lib/groupSenderKeyRecovery.js';
 import { createPerChatMessageQueue } from './lib/perChatMessageQueue.js';
+import { installNetworkDiagnostics } from './lib/networkDiagnostics.js';
 import { runWithMessageScope } from './lib/messageScopedSocket.js';
 
 // Keep libsignal diagnostics useful without allowing serialized ratchets or key material into logs.
 installSignalDiagnosticGuard();
+// Attribute outbound TCP/TLS payload bytes by destination without logging payloads or URLs.
+installNetworkDiagnostics();
 global.__forgeWhatsAppConnected = false;
 
 let staleMessageDropCount = 0;
