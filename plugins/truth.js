@@ -47,7 +47,8 @@ export default {
         await startSoloSession(chatId, senderId, 'truth', gender, sock);
 
         const sent = await sock.sendMessage(chatId, {
-            text: `🔥 *TRUTH* (${gender}) 🔥\n\n@${senderId.split('@')[0]}, your question:\n\n${truthMessage}\n\n_Reply to this message or tag me to get another one. Type *stop* to end._`
+            text: `🔥 *TRUTH* (${gender}) 🔥\n\n@${senderId.split('@')[0]}, your question:\n\n${truthMessage}\n\n_Reply to this message or tag me to get another one. Type *stop* to end._`,
+            mentions: [senderId]
         }, { quoted: message });
         await setSoloQuestionMessage(chatId, senderId, sent?.key?.id, sock);
     }
