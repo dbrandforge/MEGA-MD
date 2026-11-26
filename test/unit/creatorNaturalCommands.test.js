@@ -61,6 +61,13 @@ describe('creator natural-language command routing', () => {
         });
     });
 
+    it('asks which game to end when the creator says only “end game”', () => {
+        expect(parseCreatorNaturalCommand('end game', { addressedToBot: true })).toMatchObject({
+            action: 'clarify',
+            clarification: expect.stringContaining('Which game should I end')
+        });
+    });
+
     it('routes per-game locks and message scheduling', () => {
         expect(parseCreatorNaturalCommand('lock trivia game', { addressedToBot: true })).toMatchObject({
             command: 'gamelock', args: ['trivia', 'on']
