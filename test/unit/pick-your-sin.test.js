@@ -164,6 +164,26 @@ describe('Pick Your Sin sessions', () => {
     expect(sock.sendMessage.mock.calls.at(-1)[1].text).toContain('only be used on a TRUTH');
   });
 
+  it('reminds at five minutes and removes only the inactive player at ten minutes', async () => {
+    let sent = 0;
+    const sock = { user: { id: '234899999999:1@s.whatsapp.net' }, sendMessage: vi.fn(async () => ({ key: { id: `bot-${++sent}` } })) };
+    await beginPickYourSinSession(sock, chatId, players, 'admin@s.whatsapp.net');
+    await handlePickYourSinMessage(sock, chatId, { key: { fromMe: false }, message: { conversation: 'red' } }, 'red', players[0]);
+
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+    expect(sock.sendMessage.mock.calls.some(([, content]) => content.text?.includes('five more minutes') && content.mentions?.includes(players[0]))).toBe(true);
+
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+    let session = Object.values(state.pickYourSinSessions)[0];
+    expect(session.playerStates[players[0]].status).toBe('out');
+    expect(session.playerStates[players[0]].waitingForReplacement).toBe(true);
+    expect(session.playerStates[players[1]].status).toBe('active');
+
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+    session = Object.values(state.pickYourSinSessions)[0];
+    expect(session.playerStates[players[0]].replacementExpired).toBe(true);
+    expect(session.playerStates[players[1]].status).toBe('active');
+  });
   it('blocks a participant who has already completed today', async () => {
     const day = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Africa/Lagos', year: 'numeric', month: '2-digit', day: '2-digit'
