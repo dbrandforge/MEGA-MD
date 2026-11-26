@@ -1,3 +1,5 @@
+import { isConfiguredOwner } from '../lib/isOwner.js';
+
 export default {
     command: 'kick',
     aliases: ['remove', 'fire'],
@@ -35,8 +37,37 @@ export default {
         const botIdFormatted = `${botPhoneNumber }@s.whatsapp.net`;
         const botLidNumeric = botLid.includes(':') ? botLid.split(':')[0] : (botLid.includes('@') ? botLid.split('@')[0] : botLid);
         const botLidWithoutSuffix = botLid.includes('@') ? botLid.split('@')[0] : botLid;
-        const metadata = await sock.groupMetadata(chatId);
+        let metadata;
+        try { metadata = await sock.groupMetadata(chatId); }
+        catch {
+            await sock.sendMessage(chatId, { text: '❌ I could not verify the target members’ roles. No one was removed.' }, { quoted: message });
+            return;
+        }
         const participants = metadata.participants || [];
+        const actorIsCreator = Boolean(context.isCreatorOrBot || isConfiguredOwner(context.senderId));
+        const cleanIdentity = value => String(value || '').split(':')[0].split('@')[0];
+        const matchedTargets = usersToKick.map(userId => {
+            const target = participants.find(p => [p.id, p.lid, p.phoneNumber].some(value =>
+                value && (value === userId || cleanIdentity(value) === cleanIdentity(userId))
+            ));
+            const identities = [userId, target?.id, target?.lid, target?.phoneNumber].filter(Boolean);
+            return { userId, target, isCreator: identities.some(isConfiguredOwner), isAdmin: target?.admin === 'admin' || target?.admin === 'superadmin' };
+        });
+        if (matchedTargets.some(item => item.isCreator)) {
+            await sock.sendMessage(chatId, { text: actorIsCreator
+                ? '🛡️ My Creator is not a removal target. Even creator privileges have limits when it comes to protecting the Creator. 😂'
+                : '🚨 You lack respect! You want to remove my Creator? I’m sorry, I cannot remove the person who created me. Who are you to instigate me against my Creator? 😂🛡️'
+            }, { quoted: message });
+            return;
+        }
+        if (matchedTargets.some(item => !item.target)) {
+            await sock.sendMessage(chatId, { text: '❌ One or more targets could not be confirmed as current group members. No one was removed.' }, { quoted: message });
+            return;
+        }
+        if (!actorIsCreator && matchedTargets.some(item => item.isAdmin)) {
+            await sock.sendMessage(chatId, { text: '⛔ Admins cannot remove fellow admins. My Creator alone can override that boundary.' }, { quoted: message });
+            return;
+        }
         const isTryingToKickBot = usersToKick.some((userId) => {
             const userPhoneNumber = userId.includes(':') ? userId.split(':')[0] : (userId.includes('@') ? userId.split('@')[0] : userId);
             const userLidNumeric = userId.includes('@lid') ? userId.split('@')[0].split(':')[0] : '';
