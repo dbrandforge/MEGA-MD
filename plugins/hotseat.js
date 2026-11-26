@@ -464,10 +464,11 @@ export default {
             }
             const tagged = await getNormalizedMentions(sock, message);
             if (!tagged.length) return reply('Tag 1 to 4 people in the same message: *.hotseat add @user1 @user2 @user3 @user4*');
-            if (tagged.length > MAX_PLAYERS || !unique(tagged)) return reply(`Tag no more than ${MAX_PLAYERS} different people per command.`);
+            const limits = playerLimits(session);
+            if (tagged.length > limits.max || !unique(tagged)) return reply(`Tag no more than ${limits.max} different people per command.`);
             const basePlayers = await Promise.all((session.players || []).map(id => normalizeHotSeatJid(sock, id)));
             const additions = tagged.filter(id => !basePlayers.includes(id));
-            if (basePlayers.length + additions.length < MIN_PLAYERS) return reply(`Select at least ${MIN_PLAYERS} players. Tag two or more people in your first add command.`);
+            if (session.gameType !== 'pick_your_sin' && basePlayers.length + additions.length < MIN_PLAYERS) return reply(`Select at least ${MIN_PLAYERS} players. Tag two or more people in your first add command.`);
             if (basePlayers.length + additions.length > limits.max) return reply(session.gameType === 'pick_your_sin' ? 'PICK YOUR SIN accepts exactly five participants.' : `Hot Seat supports a maximum of ${MAX_PLAYERS} participants. Current list:\n${formatPlayers(basePlayers)}`);
             if (!additions.length) return reply('Those people are already on the Hot Seat list.');
             session.players = [...basePlayers, ...additions];
