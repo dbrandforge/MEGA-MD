@@ -3,7 +3,8 @@ import store from '../lib/lightweight_store.js';
 import config from '../config.js';
 import { goodnightMessages, goodmorningMessages, pickRotatingMessage } from '../data/groupLifecycleMessages.js';
 import { hasMaturedMindedFeatures } from '../lib/groupFeatureAccess.js';
-import { PRIMARY_FEATURE_GROUP } from '../lib/featureGroups.js';\nimport { sendGroupAll } from '../lib/groupMentions.js';
+import { PRIMARY_FEATURE_GROUP } from '../lib/featureGroups.js';
+import { sendGroupAll } from '../lib/groupMentions.js';
 
 /**
  * Group Lock / Unlock + Daily Activity Announcer
@@ -404,7 +405,7 @@ export async function handleGroupSettingUpdate(sock, updates) {
                 store.saveSettingVerified(chatId, LAST_ACTION_KEY, { action: 'unlock', time: getCurrentTimeString(), day, source: 'admin-early-unlock' })
             ]);
             if (writes.some(saved => !saved)) throw new Error('Could not persist early manual-unlock state.');
-            await sendGroupAll(sock, chatId, '🔓 *THE GROUP HAS BEEN UNLOCKED EARLY*\\n\\nAn admin has opened the group ahead of the scheduled unlock time. Today’s activities are now being posted.');
+            await sendGroupAll(sock, chatId, '🔓 *THE GROUP HAS BEEN UNLOCKED EARLY*\n\nAn admin has opened the group ahead of the scheduled unlock time. Today’s activities are now being posted.');
             await sendDailyActivityOnce(sock, chatId, day);
             console.log(`[GroupLock] Detected admin early-unlock for ${chatId} - ${day}`);
         } catch (error) {
