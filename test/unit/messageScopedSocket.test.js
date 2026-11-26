@@ -13,38 +13,40 @@ function makeMessage({ ageMs = 0, id = 'source-1' } = {}) {
 describe('message-scoped outbound protection', () => {
     afterEach(() => vi.restoreAllMocks());
 
-    it('sends while the source message is fresh and preserves socket identity', async () => {
+    it('sends a quoted reply while the source message is fresh and preserves socket identity', async () => {
         const sendMessage = vi.fn().mockResolvedValue({ key: { id: 'reply-1' } });
         const sock = { sendMessage, user: { id: 'bot@s.whatsapp.net' } };
+        const source = makeMessage();
 
-        await runWithMessageScope(sock, makeMessage(), () =>
-            sock.sendMessage('12345@s.whatsapp.net', { text: 'reply' })
+        await runWithMessageScope(sock, source, () =>
+            sock.sendMessage(source.key.remoteJid, { text: 'reply' }, { quoted: source })
         );
 
         expect(sendMessage).toHaveBeenCalledOnce();
         expect(sock.user).toEqual({ id: 'bot@s.whatsapp.net' });
     });
 
-    it('suppresses a reply when the source message has expired', async () => {
+    it('suppresses a quoted reply when the source message has expired', async () => {
         const sendMessage = vi.fn();
         const sock = { sendMessage };
+        const source = makeMessage({ ageMs: 31000 });
 
-        const result = await runWithMessageScope(sock, makeMessage({ ageMs: 31000 }), () =>
-            sock.sendMessage('12345@s.whatsapp.net', { text: 'late reply' })
+        const result = await runWithMessageScope(sock, source, () =>
+            sock.sendMessage(source.key.remoteJid, { text: 'late reply' }, { quoted: source })
         );
 
         expect(result).toBeUndefined();
         expect(sendMessage).not.toHaveBeenCalled();
     });
 
-    it('suppresses a reply when the source message is revoked during processing', async () => {
+    it('suppresses a quoted reply when the source message is revoked during processing', async () => {
         const sendMessage = vi.fn();
-        const message = makeMessage({ id: 'revoked-source' });
+        const source = makeMessage({ id: 'revoked-source' });
         const sock = { sendMessage };
 
-        const result = await runWithMessageScope(sock, message, async () => {
-            markMessageRevoked(message.key.remoteJid, message.key.id);
-            return sock.sendMessage('12345@s.whatsapp.net', { text: 'deleted reply' });
+        const result = await runWithMessageScope(sock, source, async () => {
+            markMessageRevoked(source.key.remoteJid, source.key.id);
+            return sock.sendMessage(source.key.remoteJid, { text: 'deleted reply' }, { quoted: source });
         });
 
         expect(result).toBeUndefined();
@@ -58,8 +60,12 @@ describe('message-scoped outbound protection', () => {
         const fresh = makeMessage({ id: 'fresh' });
 
         const results = await Promise.all([
-            runWithMessageScope(sock, stale, () => sock.sendMessage('chat', { text: 'stale' })),
-            runWithMessageScope(sock, fresh, () => sock.sendMessage('chat', { text: 'fresh' }))
+            runWithMessageScope(sock, stale, () =>
+                sock.sendMessage(stale.key.remoteJid, { text: 'stale' }, { quoted: stale })
+            ),
+            runWithMessageScope(sock, fresh, () =>
+                sock.sendMessage(fresh.key.remoteJid, { text: 'fresh' }, { quoted: fresh })
+            )
         ]);
 
         expect(results[0]).toBeUndefined();
@@ -67,12 +73,14 @@ describe('message-scoped outbound protection', () => {
         expect(sendMessage.mock.calls[0][1].text).toBe('fresh');
     });
 
-    it('does not bind background sends outside a message scope to the last message', async () => {
+    it('allows unquoted background sends after the source message expires', async () => {
         const sendMessage = vi.fn();
         const sock = { sendMessage };
+        const stale = makeMessage({ ageMs: 31000 });
 
-        await runWithMessageScope(sock, makeMessage({ ageMs: 31000 }), async () => undefined);
-        await sock.sendMessage('chat', { text: 'background task' });
+        await runWithMessageScope(sock, stale, () =>
+            sock.sendMessage(stale.key.remoteJid, { text: 'independent background task' })
+        );
 
         expect(sendMessage).toHaveBeenCalledOnce();
     });
