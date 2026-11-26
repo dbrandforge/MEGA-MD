@@ -102,7 +102,16 @@ describe('creator natural-language command routing', () => {
         });
     });
 
-    it('routes trivia defaults, maths grades and PICK YOUR SIN conversational starts', () => {\n        expect(parseCreatorNaturalCommand('Start trivia game', { addressedToBot: true })).toMatchObject({ command: 'trivia', args: ['mixed'] });\n        expect(parseCreatorNaturalCommand('Start trivia maths game easy', { addressedToBot: true })).toMatchObject({ command: 'math', args: ['easy'] });\n        expect(parseCreatorNaturalCommand('Starts trivia maths easy', { addressedToBot: true })).toMatchObject({ command: 'math', args: ['easy'] });\n        expect(parseCreatorNaturalCommand('Start picksin', { addressedToBot: true })).toMatchObject({ command: 'picksin', args: ['start'] });\n        expect(parseCreatorNaturalCommand('Start Pick Your Sin', { addressedToBot: true })).toMatchObject({ command: 'picksin', args: ['start'] });\n    });\n\n    it('asks which game to end when the creator says only “end game”', () => {
+    it('routes trivia defaults, maths grades and PICK YOUR SIN conversational starts', () => {\n        expect(parseCreatorNaturalCommand('Start trivia game', { addressedToBot: true })).toMatchObject({ command: 'trivia', args: ['mixed'] });\n        expect(parseCreatorNaturalCommand('Start trivia maths game easy', { addressedToBot: true })).toMatchObject({ command: 'math', args: ['easy'] });\n        expect(parseCreatorNaturalCommand('Starts trivia maths easy', { addressedToBot: true })).toMatchObject({ command: 'math', args: ['easy'] });\n        expect(parseCreatorNaturalCommand('Start picksin', { addressedToBot: true })).toMatchObject({ command: 'picksin', args: ['start'] });\n        expect(parseCreatorNaturalCommand('Start Pick Your Sin', { addressedToBot: true })).toMatchObject({ command: 'picksin', args: ['start'] });\n    });\n\n    it('routes an explicit PICK YOUR SIN open command', () => {
+        expect(parseCreatorNaturalCommand('open picksin', { addressedToBot: true })).toMatchObject({
+            command: 'picksin', args: ['open'], action: 'open-game'
+        });
+        expect(parseCreatorNaturalCommand('open Pick Your Sin game', { addressedToBot: true })).toMatchObject({
+            command: 'picksin', args: ['open'], action: 'open-game'
+        });
+    });
+
+    it('asks which game to end when the creator says only “end game”', () => {
         expect(parseCreatorNaturalCommand('end game', { addressedToBot: true })).toMatchObject({
             action: 'clarify',
             clarification: expect.stringContaining('Which game should I end')
