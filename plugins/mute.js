@@ -2,6 +2,7 @@ import { softMuteUser, parseMuteDuration, formatMuteDuration } from './softmute.
 import config from '../config.js';
 import store from '../lib/lightweight_store.js';
 import { trackGroup } from './schedule.js';
+import { isConfiguredOwner } from '../lib/isOwner.js';
 
 export default {
     command: 'mute',
@@ -19,6 +20,33 @@ export default {
 
         // A target means individual soft mute; no target means group-wide mute.
         if (userToMute) {
+            const actorIsCreator = Boolean(context.isCreatorOrBot || isConfiguredOwner(context.senderId));
+            let targetParticipant;
+            try {
+                const metadata = await sock.groupMetadata(chatId);
+                const clean = value => String(value || '').split(':')[0].split('@')[0];
+                targetParticipant = (metadata.participants || []).find(participant =>
+                    [participant.id, participant.lid, participant.phoneNumber].some(value =>
+                        value && (value === userToMute || clean(value) === clean(userToMute))
+                    )
+                );
+            } catch {
+                return sock.sendMessage(chatId, { text: '❌ I could not verify that member’s group role, so the soft mute was not applied.', ...channelInfo }, { quoted: message });
+            }
+            const targetIdentities = [userToMute, targetParticipant?.id, targetParticipant?.lid, targetParticipant?.phoneNumber].filter(Boolean);
+            const targetIsCreator = targetIdentities.some(isConfiguredOwner);
+            const targetIsAdmin = targetParticipant?.admin === 'admin' || targetParticipant?.admin === 'superadmin';
+            if (targetIsCreator) {
+                return sock.sendMessage(chatId, { text: actorIsCreator
+                    ? '🛡️ My Creator is protected from soft-mute commands. Even I know better than that. 😂'
+                    : '🚨 You lack respect! You want to mute my Creator? I’m sorry, I cannot turn against the person who created me. Who are you to instigate me against my Creator? 😂🛡️', ...channelInfo }, { quoted: message });
+            }
+            if (!targetParticipant) {
+                return sock.sendMessage(chatId, { text: '❌ I could not confirm that the mentioned account is a current group member.', ...channelInfo }, { quoted: message });
+            }
+            if (targetIsAdmin && !actorIsCreator) {
+                return sock.sendMessage(chatId, { text: '⛔ Admins cannot soft-mute fellow admins. That authority is reserved for my Creator.', ...channelInfo }, { quoted: message });
+            }
             const botId = `${sock.user?.id?.split(':')[0] || ''}@s.whatsapp.net`;
             if (userToMute === botId || userToMute.endsWith('@g.us')) {
                 return sock.sendMessage(chatId, { text: '❌ That account cannot be muted with this command.', ...channelInfo }, { quoted: message });
