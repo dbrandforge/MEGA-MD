@@ -41,7 +41,7 @@ async function endSession(sock, chatId, session, reason = 'ended') {
     let text = `🛑 *Truth or Dare session ended*\n\n${session.players.map(mention).join(' & ')}`;
     if (reason === 'timeout') text += `\n\nEnded due to 10 minutes inactivity.`;
     else if (reason === 'manual') text += `\n\nEnded by a player.`;
-    const sent = await sock.sendMessage(chatId, { text, mentions: session.players });
+    const sent = await sock.sendMessage(chatId, { text, mentions: [answerer] });
     session.questionMessageId = sent?.key?.id || null;
     const latestSessions = await getSessions(chatId);
     const latest = latestSessions[session.id];
