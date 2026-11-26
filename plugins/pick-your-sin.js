@@ -4,6 +4,7 @@ import { buildPickYourSinBank, normalizePickYourSinPrompt } from '../data/pickYo
 import { isGameAllowed } from './daylock.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { sameWhatsAppUser, canonicalWhatsAppUserId } from '../lib/whatsappIdentity.js';
+import { getPickYourSinMediaKind, getPickYourSinMessageContext, validatePickYourSinTruthAnswer } from './pick-your-sin-response.js';
 
 const KEY = 'pickYourSinSessions';
 const DAILY_KEY = 'pickYourSinDailyCompletions';
@@ -313,7 +314,7 @@ async function sendPrompt(sock, chatId, session, playerId) {
   const label = type === 'truth' ? '🔥 *TRUTH*' : '💀 *DARE — ACTION REQUIRED*';
   const progress = type === 'truth' ? `Truth ${state.step < 5 ? state.step + 1 : state.step - 5}/5` : `Dare ${state.step === 5 ? 1 : 2}/2`;
   const sent = await sock.sendMessage(chatId, {
-    text: `🎭 *PICK YOUR SIN* — ${COLORS[state.color].emoji} ${COLORS[state.color].label}\n${mention(playerId)}, this prompt is for you.\n${label} · ${progress}\n\n${cardText}\n\n_Reply to this prompt or tag the bot when you've completed it. You may use your one session pass on a TRUTH only. You have 30 seconds between prompts._`,
+    text: `🎭 *PICK YOUR SIN* — ${COLORS[state.color].emoji} ${COLORS[state.color].label}\n${mention(playerId)}, this prompt is for you.\n${label} · ${progress}\n\n${cardText}\n\n${type === 'truth' ? 'A TRUTH requires a proper written answer with real details (at least 12 words). One-word replies, yes/no, “done” and similar shortcuts will not count.' : 'A DARE is completed only by sending a voice note, photo or video. Text replies will not count.'} You may use your one session pass on a TRUTH only. You have 30 seconds between prompts.`,
     mentions: [playerId]
   });
   state.questionMessageId = sent?.key?.id || null;
@@ -613,10 +614,7 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
     return true;
   }
 
-  const context = message?.message?.extendedTextMessage?.contextInfo
-    || message?.message?.imageMessage?.contextInfo
-    || message?.message?.videoMessage?.contextInfo
-    || {};
+  const context = getPickYourSinMessageContext(message);
   const botId = String(sock.user?.id || '').split(':')[0].split('@')[0];
   const mentioned = (context.mentionedJid || []).some(id => String(id).split(':')[0].split('@')[0] === botId);
   const replied = Boolean(state.questionMessageId && context.stanzaId === state.questionMessageId);
@@ -642,6 +640,30 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
     await sock.sendMessage(chatId, { text: 'Your one pass for this session has already been used.' }, { quoted: message });
     return true;
   }
+
+  const mediaKind = getPickYourSinMediaKind(message);
+  if (state.currentType === 'dare') {
+    if (!['voice', 'image', 'video'].includes(mediaKind)) {
+      await sock.sendMessage(chatId, {
+        text: '🚫 A dare response must be a voice note, image or video. Text messages and ordinary audio files do not count. Your dare is still waiting.',
+      }, { quoted: message });
+      return true;
+    }
+  } else if (mediaKind !== 'text') {
+    await sock.sendMessage(chatId, {
+      text: '✍️ A truth must be answered in writing. Send a proper written answer with the actual story or details; media alone will not count.',
+    }, { quoted: message });
+    return true;
+  } else {
+    const validation = validatePickYourSinTruthAnswer(text, state.currentCard);
+    if (!validation.accepted) {
+      await sock.sendMessage(chatId, {
+        text: '🚫 That is not a complete truth answer. One-word replies, yes/no, “done”, “I have”, “I have not” and similar shortcuts will not count. Answer the actual prompt in at least 12 words and include real details. Your turn is still active.',
+      }, { quoted: message });
+      return true;
+    }
+  }
+
   if (state.inactivityToken) {
     for (const timer of inactivityTimers.get(state.inactivityToken) || []) clearTimeout(timer);
     inactivityTimers.delete(state.inactivityToken);
