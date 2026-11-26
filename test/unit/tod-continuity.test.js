@@ -70,6 +70,34 @@ describe('Truth or Dare reply continuity', () => {
     expect(sock.sendMessage).toHaveBeenCalledTimes(1);
   });
 
+
+  it('enforces a 30-second cooldown before the next TOD prompt', async () => {
+    const sock = {
+      user: { id: '234899999999:1@s.whatsapp.net' },
+      sendMessage: vi.fn().mockResolvedValue({ key: { id: 'next-message' } })
+    };
+    const message = {
+      key: { fromMe: false },
+      message: { extendedTextMessage: { contextInfo: { stanzaId: 'prompt-message-1' } } }
+    };
+
+    await handleTodReply(sock, chatId, senderId, 'Done', message);
+
+    expect(store.saveSettingVerified).toHaveBeenCalledWith(
+      chatId,
+      'todSessions',
+      expect.objectContaining({
+        tod_1: expect.objectContaining({
+          advancing: true,
+          nextQuestionAt: expect.any(Number)
+        })
+      })
+    );
+    const saved = store.saveSettingVerified.mock.calls.find(call => call[1] === 'todSessions')?.[2]?.tod_1;
+    expect(saved.nextQuestionAt - Date.now()).toBe(30_000);
+    expect(sock.sendMessage).toHaveBeenCalledTimes(1);
+  });
+
   it('does not advance for an unrelated message from the active player', async () => {
     const sock = { user: { id: '234899999999:1@s.whatsapp.net' }, sendMessage: vi.fn() };
     const message = {
