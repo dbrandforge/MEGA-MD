@@ -266,7 +266,7 @@ async function sendPrompt(sock, chatId, session, playerId) {
   const label = type === 'truth' ? '🔥 *TRUTH*' : '💀 *DARE — ACTION REQUIRED*';
   const progress = type === 'truth' ? `Truth ${state.step < 5 ? state.step + 1 : state.step - 5}/5` : `Dare ${state.step === 5 ? 1 : 2}/2`;
   const sent = await sock.sendMessage(chatId, {
-    text: `🎭 *PICK YOUR SIN* — ${COLORS[state.color].emoji} ${COLORS[state.color].label}\n${label} · ${progress}\n\n${cardText}\n\n_Reply to this prompt or tag the bot when you've completed it. You may use your one session pass on a TRUTH only. You have 30 seconds between prompts._`,
+    text: `🎭 *PICK YOUR SIN* — ${COLORS[state.color].emoji} ${COLORS[state.color].label}\n${mention(playerId)}, this prompt is for you.\n${label} · ${progress}\n\n${cardText}\n\n_Reply to this prompt or tag the bot when you've completed it. You may use your one session pass on a TRUTH only. You have 30 seconds between prompts._`,
     mentions: [playerId]
   });
   state.questionMessageId = sent?.key?.id || null;
@@ -474,7 +474,7 @@ async function beginPickYourSinSessionLocked(sock, chatId, players, startedBy) {
   sessions[session.id] = session;
   await saveSessions(chatId, sessions);
   await sock.sendMessage(chatId, {
-    text: `🔥 *PICK YOUR SIN — SELECTION COMPLETE*\n\nFive participants are in. Each player is playing independently and simultaneously.\n\nChoose one colour by typing its name or sending its emoji:\n❤️ RED · 💚 GREEN · 💛 YELLOW · 🧡 ORANGE\n\nEach player gets two rounds: five truths and one action dare per round. One pass per session. 30-second cooldown between prompts.`,
+    text: `🔥 *PICK YOUR SIN — SELECTION COMPLETE*\n\nFive participants are in: ${session.players.map(mention).join(' ')}\nEach player is playing independently and simultaneously.\n\nChoose one colour by typing its name or sending its emoji:\n❤️ RED · 💚 GREEN · 💛 YELLOW · 🧡 ORANGE\n\nEach player gets two rounds: five truths and one action dare per round. One pass per session. 30-second cooldown between prompts.`,
     mentions: session.players
   });
   for (const [playerId, state] of Object.entries(states)) {
