@@ -45,7 +45,7 @@ describe('isOwnerOrSudo', () => {
         vi.resetModules();
         const mod = await import('../../lib/isOwner.js');
         expect(await mod.default('2348000000001@s.whatsapp.net')).toBe(false);
-        expect(await mod.default('923001234567@s.whatsapp.net')).toBe(false);
+        expect(await mod.default('2349034451454@s.whatsapp.net')).toBe(false);
         expect(mod.isOwnerOnly('2348000000002@s.whatsapp.net')).toBe(false);
     });
 
@@ -63,11 +63,11 @@ describe('isOwnerOrSudo', () => {
     });
 
     it('cleanJid strips device suffix', () => {
-        expect(cleanJid('923001234567:10@s.whatsapp.net')).toBe('923001234567');
+        expect(cleanJid('2349034451454:10@s.whatsapp.net')).toBe('2349034451454');
     });
 
     it('cleanJid strips @s.whatsapp.net', () => {
-        expect(cleanJid('923001234567@s.whatsapp.net')).toBe('923001234567');
+        expect(cleanJid('2349034451454@s.whatsapp.net')).toBe('2349034451454');
     });
 
     it('cleanJid handles empty string', () => {
@@ -77,7 +77,7 @@ describe('isOwnerOrSudo', () => {
     it('reuses group metadata for repeated unresolved LID checks in the same group', async () => {
         const sock = {
             groupMetadata: vi.fn(async () => ({
-                participants: [{ lid: 'owner-lid@lid', id: '923001234567@s.whatsapp.net' }]
+                participants: [{ lid: 'owner-lid@lid', id: '2349034451454@s.whatsapp.net' }]
             }))
         };
         expect(await isOwnerOrSudo('owner-lid@lid', sock, 'group-1@g.us')).toBe(true);
@@ -97,7 +97,7 @@ describe('isOwnerOrSudo', () => {
     it('invalidates cached group metadata after participant changes', async () => {
         const sock = {
             groupMetadata: vi.fn(async () => ({
-                participants: [{ lid: 'owner-lid@lid', id: '923001234567@s.whatsapp.net' }]
+                participants: [{ lid: 'owner-lid@lid', id: '2349034451454@s.whatsapp.net' }]
             }))
         };
         await isOwnerOrSudo('owner-lid@lid', sock, 'group-2@g.us');
