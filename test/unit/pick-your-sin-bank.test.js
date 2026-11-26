@@ -27,10 +27,10 @@ describe('PICK YOUR SIN expanded banks', () => {
 
   it('keeps folder intensity labels hidden while building four distinct dare tiers', () => {
     const expected = {
-      red: 'without rehearsing',
-      yellow: 'Make this personal',
-      orange: 'Keep the energy up',
-      ash: 'Put your own spin on it'
+      red: 'full commitment',
+      yellow: 'Make it personal and nasty',
+      orange: 'Keep the energy high',
+      ash: 'Put your own dirty spin on it'
     };
     for (const [color, marker] of Object.entries(expected)) {
       expect(bank[`guy:${color}`].dares.every(item => item.text.includes(marker))).toBe(true);
@@ -46,7 +46,7 @@ describe('PICK YOUR SIN expanded banks', () => {
   it('uses explanation-led truth prompts rather than yes/no-only prompts', () => {
     for (const deck of Object.values(bank)) {
       for (const prompt of deck.truths) {
-        expect(prompt.text).toMatch(/^(Explain|Tell|Walk|What|Describe|How|Compare|If)\b/i);
+        expect(prompt.text).toMatch(/^(Explain|Tell|Walk|What|Describe|How|Compare|If|Spill)\b/i);
         expect(prompt.text.length).toBeGreaterThan(45);
       }
     }
