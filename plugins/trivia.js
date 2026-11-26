@@ -3,7 +3,7 @@ import { isFeatureGroup } from '../lib/featureGroups.js';
 import { isGameAllowed } from './daylock.js';
 import isAdmin from '../lib/isAdmin.js';
 import { startNoParticipationGrace, hasNoParticipation, isNoParticipationGraceExpired } from '../lib/gameTimeouts.js';
-import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES } from '../data/nigeriaTrivia.js';
+import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES } from '../data/nigeriaTrivia.js';\nimport { sendGroupAll } from '../lib/groupMentions.js';
 
 const STATE_KEY = 'triviaArenaV2';
 const LEGACY_STATE_KEY = 'triviaGame';
@@ -318,7 +318,7 @@ async function postNextQuestion(sock, chatId, game) {
   Object.assign(game, getQuestion(game));
   game.closesAt = game.roundStartedAt + (game.answerSeconds * 1000);
   game.roundToken = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-  const sent = await sock.sendMessage(chatId, { text: renderQuestion(game) });
+  const sent = await sendGroupAll(sock, chatId, renderQuestion(game));
   game.questionMessageId = sent?.key?.id || null;
   await saveGame(chatId, game);
   armTimer(sock, chatId, game);
