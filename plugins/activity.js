@@ -24,12 +24,14 @@ export default {
     usage: '.activity',
     async handler(sock, message, args, context) {
         const { chatId, channelInfo } = context;
+        const replyChatId = context.replyChatId || chatId;
+        const replyMessage = context.replyMessage || message;
 
         if (!await hasMaturedMindedFeatures(chatId)) {
-            return sock.sendMessage(chatId, {
+            return sock.sendMessage(replyChatId, {
                 text: 'Today’s scheduled group activity is part of the Matured Minded package and is not enabled in this group.',
                 ...channelInfo
-            }, { quoted: message });
+            }, { quoted: replyMessage });
         }
 
         const day = getCurrentDay();
@@ -38,7 +40,7 @@ export default {
             ? activity.full
             : `*Today is ${day.charAt(0).toUpperCase() + day.slice(1)}*\n\nEnjoy the group!`;
 
-        await sock.sendMessage(chatId, {
+        await sock.sendMessage(replyChatId, {
             text: `📅 *Today's Activity*\n\n${activityText}`,
             ...channelInfo
         }, { quoted: message });
