@@ -420,7 +420,7 @@ async function handleSelectionCommand(sock, message, args, context, chatId) {
   }
   return sock.sendMessage(chatId, { text: 'Commands: *.picksin start*, *.picksin add*, *.picksin list*, *.picksin change*, *.picksin arrange*, *.picksin startnow*, *.picksin status*, *.picksin end*.' }, { quoted: message });
 }
-\nasync function beginPickYourSinSessionLocked(sock, chatId, players, startedBy) {
+async function beginPickYourSinSessionLocked(sock, chatId, players, startedBy) {
   if (!isFeatureGroup(chatId)) throw new Error('PICK YOUR SIN is enabled only in authorized feature groups.');
   const access = await isGameAllowed(chatId, 'pickyoursin');
   if (!access.ok) {
