@@ -7,7 +7,10 @@ import { sameWhatsAppUser, canonicalWhatsAppUserId } from '../lib/whatsappIdenti
 
 const KEY = 'pickYourSinSessions';
 const DAILY_KEY = 'pickYourSinDailyCompletions';
-const COOLDOWN_MS = 30_000;\nconst NO_ANSWER_REMINDER_MS = 5 * 60 * 1000;\nconst PLAYER_INACTIVITY_MS = 10 * 60 * 1000;\nconst REPLACEMENT_WINDOW_MS = 5 * 60 * 1000;
+const COOLDOWN_MS = 30_000;
+const NO_ANSWER_REMINDER_MS = 5 * 60 * 1000;
+const PLAYER_INACTIVITY_MS = 10 * 60 * 1000;
+const REPLACEMENT_WINDOW_MS = 5 * 60 * 1000;
 const chatQueues = new Map();
 async function withChatLock(chatId, task) {
   const previous = chatQueues.get(chatId) || Promise.resolve();
@@ -116,7 +119,93 @@ async function saveSessions(chatId, sessions) {
     throw new Error('Pick Your Sin session state could not be persisted.');
   }
 }
-async function schedulePlayerInactivity(sock, chatId, sessionId, playerId, token, waitingSince) {\n  const reminderDelay = Math.max(0, waitingSince + NO_ANSWER_REMINDER_MS - Date.now());\n  const removalDelay = Math.max(0, waitingSince + PLAYER_INACTIVITY_MS - Date.now());\n  setTimeout(async () => {\n    try {\n      await withChatLock(chatId, async () => {\n        const sessions = await getSessions(chatId);\n        const session = sessions[sessionId];\n        const state = session?.playerStates?.[playerId];\n        if (!session || session.status !== 'active' || !state || state.status !== 'active' || !state.waiting || state.inactivityToken !== token) return;\n        await sock.sendMessage(chatId, {\n          text: `⏰ ${mention(playerId)}, your PICK YOUR SIN prompt is still unanswered. You have five more minutes before you are removed from this session.`,\n          mentions: [playerId]\n        });\n      });\n    } catch (error) { console.error('[PICK YOUR SIN] Reminder failed:', error); }\n  }, reminderDelay);\n  setTimeout(async () => {\n    try {\n      await withChatLock(chatId, async () => {\n        const sessions = await getSessions(chatId);\n        const session = sessions[sessionId];\n        const state = session?.playerStates?.[playerId];\n        if (!session || session.status !== 'active' || !state || state.status !== 'active' || !state.waiting || state.inactivityToken !== token) return;\n        state.status = 'out';\n        state.waiting = false;\n        state.inactivityToken = null;\n        state.removedAt = Date.now();\n        state.waitingForReplacement = true;\n        state.replacementDeadlineAt = Date.now() + REPLACEMENT_WINDOW_MS;\n        sessions[sessionId] = session;\n        await saveSessions(chatId, sessions);\n        await sock.sendMessage(chatId, {\n          text: `⌛ ${mention(playerId)} has been removed from PICK YOUR SIN after 10 minutes without an answer. An admin has five minutes to replace them with *.picksin replace @${playerId.split('@')[0]} @replacement*. Other players continue normally.`,\n          mentions: [playerId]\n        });\n        const deadline = state.replacementDeadlineAt;\n        setTimeout(async () => {\n          try {\n            await withChatLock(chatId, async () => {\n              const latest = await getSessions(chatId);\n              const current = latest[sessionId];\n              const currentState = current?.playerStates?.[playerId];\n              if (!current || current.status !== 'active' || !currentState || currentState.status !== 'out' || !currentState.waitingForReplacement || currentState.replacementDeadlineAt !== deadline) return;\n              currentState.waitingForReplacement = false;\n              currentState.replacementExpired = true;\n              latest[sessionId] = current;\n              await saveSessions(chatId, latest);\n              await sock.sendMessage(chatId, { text: `⌛ The replacement window for ${mention(playerId)} has expired. PICK YOUR SIN continues with the remaining players.` });\n            });\n          } catch (error) { console.error('[PICK YOUR SIN] Replacement-window expiry failed:', error); }\n        }, REPLACEMENT_WINDOW_MS);\n      });\n    } catch (error) { console.error('[PICK YOUR SIN] Inactivity removal failed:', error); }\n  }, removalDelay);\n}\n\nasync function replaceInactivePlayer(sock, chatId, message, session) {\n  const tagged = await Promise.all(getMentions(message).map(async id => (await canonicalWhatsAppUserId(sock, id)) || id));\n  const uniqueTags = [...new Set(tagged)];\n  if (uniqueTags.length !== 2 || uniqueTags.length !== tagged.length) {\n    return sock.sendMessage(chatId, { text: 'Tag the removed participant first and the replacement second: *.picksin replace @removed @replacement*.', quoted: message });\n  }\n  const [removedId, replacementId] = uniqueTags;\n  const removedState = session.playerStates?.[removedId];\n  if (!session.players.includes(removedId) || !removedState || removedState.status !== 'out' || !removedState.waitingForReplacement || Date.now() > Number(removedState.replacementDeadlineAt || 0)) {\n    return sock.sendMessage(chatId, { text: 'That participant is not within an active five-minute replacement window.', quoted: message });\n  }\n  if (session.players.some(id => id === replacementId || id === removedId || id === replacementId)) {\n    return sock.sendMessage(chatId, { text: 'The replacement is already in this PICK YOUR SIN session.', quoted: message });\n  }\n  const daily = (await store.getSetting(chatId, DAILY_KEY)) || {};\n  if ((daily[lagosDateKey()] || []).includes(replacementId)) {\n    return sock.sendMessage(chatId, { text: 'That replacement has already completed PICK YOUR SIN today and cannot take another daily slot.', quoted: message });\n  }\n  const gender = await getUserGender(replacementId, sock);\n  const nextState = {\n    ...removedState, status: 'active', gender: gender || null, waitingForGender: !gender,\n    color: null, lastColor: null, awaitingColor: true, waiting: false,\n    questionMessageId: null, currentCard: null, currentType: null,\n    waitingSince: null, inactivityToken: null, waitingForReplacement: false,\n    replacementDeadlineAt: null, replacementExpired: false, removedAt: null,\n    cooldownUntil: null, nextPromptToken: null, replacedPlayer: removedId\n  };\n  session.players = session.players.map(id => id === removedId ? replacementId : id);\n  delete session.playerStates[removedId];\n  session.playerStates[replacementId] = nextState;\n  const sessions = await getSessions(chatId);\n  sessions[session.id] = session;\n  await saveSessions(chatId, sessions);\n  await sock.sendMessage(chatId, {\n    text: `🔁 ${mention(replacementId)} has replaced ${mention(removedId)} and will continue from the same game progress.`,\n    mentions: [replacementId, removedId]\n  });\n  if (nextState.waitingForGender) {\n    await sock.sendMessage(chatId, { text: `${mention(replacementId)}, register your gender with *.gender guy* or *.gender lady*, then choose a colour.`, mentions: [replacementId] });\n  } else {\n    await sendColorPrompt(sock, chatId, session, replacementId);\n  }\n  return true;\n}\nfunction buildDecks() {\n  return buildPickYourSinBank();\n}\n\nasync function findPlayerKey(sock, players, userId) {
+async function schedulePlayerInactivity(sock, chatId, sessionId, playerId, token, waitingSince) {
+  const reminderDelay = Math.max(0, waitingSince + NO_ANSWER_REMINDER_MS - Date.now());
+  const removalDelay = Math.max(0, waitingSince + PLAYER_INACTIVITY_MS - Date.now());
+  setTimeout(async () => {
+    try {
+      await withChatLock(chatId, async () => {
+        const sessions = await getSessions(chatId);
+        const session = sessions[sessionId];
+        const state = session?.playerStates?.[playerId];
+        if (!session || session.status !== 'active' || !state || state.status !== 'active' || !state.waiting || state.inactivityToken !== token) return;
+        await sock.sendMessage(chatId, { text: `⏰ ${mention(playerId)}, your PICK YOUR SIN prompt is still unanswered. You have five more minutes before you are removed from this session.`, mentions: [playerId] });
+      });
+    } catch (error) { console.error('[PICK YOUR SIN] Reminder failed:', error); }
+  }, reminderDelay);
+  setTimeout(async () => {
+    try {
+      await withChatLock(chatId, async () => {
+        const sessions = await getSessions(chatId);
+        const session = sessions[sessionId];
+        const state = session?.playerStates?.[playerId];
+        if (!session || session.status !== 'active' || !state || state.status !== 'active' || !state.waiting || state.inactivityToken !== token) return;
+        state.status = 'out';
+        state.waiting = false;
+        state.inactivityToken = null;
+        state.waitingSince = null;
+        state.removedAt = Date.now();
+        state.waitingForReplacement = true;
+        state.replacementDeadlineAt = Date.now() + REPLACEMENT_WINDOW_MS;
+        sessions[sessionId] = session;
+        await saveSessions(chatId, sessions);
+        await sock.sendMessage(chatId, { text: `⌛ ${mention(playerId)} has been removed after 10 minutes without an answer. An admin has five minutes to replace them with *.picksin replace @${playerId.split('@')[0]} @replacement*. Other players continue normally.`, mentions: [playerId] });
+        const deadline = state.replacementDeadlineAt;
+        setTimeout(async () => {
+          try {
+            await withChatLock(chatId, async () => {
+              const latest = await getSessions(chatId);
+              const current = latest[sessionId];
+              const currentState = current?.playerStates?.[playerId];
+              if (!current || current.status !== 'active' || !currentState || currentState.status !== 'out' || !currentState.waitingForReplacement || currentState.replacementDeadlineAt !== deadline) return;
+              currentState.waitingForReplacement = false;
+              currentState.replacementExpired = true;
+              latest[sessionId] = current;
+              await saveSessions(chatId, latest);
+              await sock.sendMessage(chatId, { text: `⌛ The replacement window for ${mention(playerId)} has expired. PICK YOUR SIN continues with the remaining players.` });
+              if (current.players.every(id => ['complete', 'out'].includes(current.playerStates?.[id]?.status))) {
+                current.status = 'complete';
+                current.completedAt = Date.now();
+                latest[sessionId] = current;
+                await saveSessions(chatId, latest);
+                await sock.sendMessage(chatId, { text: '🔥 *PICK YOUR SIN is complete.* All remaining players have finished or been removed.' });
+              }
+            });
+          } catch (error) { console.error('[PICK YOUR SIN] Replacement-window expiry failed:', error); }
+        }, REPLACEMENT_WINDOW_MS);
+      });
+    } catch (error) { console.error('[PICK YOUR SIN] Inactivity removal failed:', error); }
+  }, removalDelay);
+}
+
+async function replaceInactivePlayer(sock, chatId, message, session) {
+  const tagged = await Promise.all(getMentions(message).map(async id => (await canonicalWhatsAppUserId(sock, id)) || id));
+  const uniqueTags = [...new Set(tagged)];
+  if (uniqueTags.length !== 2 || uniqueTags.length !== tagged.length) return sock.sendMessage(chatId, { text: 'Tag the removed participant first and the replacement second: *.picksin replace @removed @replacement*.', quoted: message });
+  const [removedId, replacementId] = uniqueTags;
+  const removedState = session.playerStates?.[removedId];
+  if (!session.players.includes(removedId) || !removedState || removedState.status !== 'out' || !removedState.waitingForReplacement || Date.now() > Number(removedState.replacementDeadlineAt || 0)) return sock.sendMessage(chatId, { text: 'That participant is not within an active five-minute replacement window.', quoted: message });
+  if (session.players.includes(replacementId)) return sock.sendMessage(chatId, { text: 'The replacement is already in this PICK YOUR SIN session.', quoted: message });
+  const daily = (await store.getSetting(chatId, DAILY_KEY)) || {};
+  if ((daily[lagosDateKey()] || []).includes(replacementId)) return sock.sendMessage(chatId, { text: 'That replacement has already completed PICK YOUR SIN today and cannot take another daily slot.', quoted: message });
+  const gender = await getUserGender(replacementId, sock);
+  const nextState = { ...removedState, status: 'active', gender: gender || null, waitingForGender: !gender, color: null, lastColor: null, awaitingColor: true, waiting: false, questionMessageId: null, currentCard: null, currentType: null, waitingSince: null, inactivityToken: null, waitingForReplacement: false, replacementDeadlineAt: null, replacementExpired: false, removedAt: null, cooldownUntil: null, nextPromptToken: null, replacedPlayer: removedId };
+  session.players = session.players.map(id => id === removedId ? replacementId : id);
+  delete session.playerStates[removedId];
+  session.playerStates[replacementId] = nextState;
+  const sessions = await getSessions(chatId);
+  sessions[session.id] = session;
+  await saveSessions(chatId, sessions);
+  await sock.sendMessage(chatId, { text: `🔁 ${mention(replacementId)} has replaced ${mention(removedId)} and will continue from the same game progress.`, mentions: [replacementId, removedId] });
+  if (nextState.waitingForGender) await sock.sendMessage(chatId, { text: `${mention(replacementId)}, register your gender with *.gender guy* or *.gender lady*, then choose a colour.`, mentions: [replacementId] });
+  else await sendColorPrompt(sock, chatId, session, replacementId);
+  return true;
+}
+function buildDecks() {
+  return buildPickYourSinBank();
+}
+
+async function findPlayerKey(sock, players, userId) {
   for (const player of players || []) {
     if (player === userId || await sameWhatsAppUser(sock, player, userId)) return player;
   }
@@ -145,15 +234,50 @@ async function sendPrompt(sock, chatId, session, playerId) {
       const completedSessions = await getSessions(chatId);
       completedSessions[session.id] = session;
       await saveSessions(chatId, completedSessions);
-      await sock.sendMessage(chatId, { text: '🔥 *PICK YOUR SIN is complete.* All five selected players have finished.' });
+      await sock.sendMessage(chatId, { text: '🔥 *PICK YOUR SIN is complete.* All remaining players have finished or been removed.' });
     }
     return true;
   }
-  const type = questionType(state.step);\n  const deck = session.decks[`${state.gender}:${state.color}`];\n  const cards = type === 'truth' ? deck.truths : deck.dares;\n  if (!Array.isArray(session.usedPromptKeys)) session.usedPromptKeys = [];\n  if (!Array.isArray(session.usedPromptIds)) session.usedPromptIds = [];\n  const usedKeys = new Set(session.usedPromptKeys);\n  const card = cards.find(item => !usedKeys.has(normalizePickYourSinPrompt(typeof item === 'string' ? item : item.text)));\n  if (!card) {\n    state.status = 'out';\n    state.waiting = false;\n    const latest = await getSessions(chatId);\n    latest[session.id] = session;\n    await saveSessions(chatId, latest);\n    await sock.sendMessage(chatId, { text: `⚠️ ${mention(playerId)} has no unused ${type} cards left in this colour. The rest of the players can continue.`, mentions: [playerId] });\n    return false;\n  }\n  const cardText = typeof card === 'string' ? card : card.text;\n  const cardId = typeof card === 'string' ? normalizePickYourSinPrompt(cardText) : card.id;\n  session.usedPromptKeys.push(normalizePickYourSinPrompt(cardText));\n  if (cardId) session.usedPromptIds.push(cardId);\n  state.currentType = type;\n  state.awaitingColor = false;\n  state.currentCard = cardText;\n  state.waiting = true;\n  state.cooldownUntil = null;\n  const label = type === 'truth' ? '🔥 *TRUTH*' : '💀 *DARE — ACTION REQUIRED*';\n  const progress = type === 'truth'\n    ? `Truth ${state.step < 5 ? state.step + 1 : state.step - 5}/5`\n    : `Dare ${state.step === 5 ? 1 : 2}/2`;\n  const sent = await sock.sendMessage(chatId, {\n    text: `🎭 *PICK YOUR SIN* — ${COLORS[state.color].emoji} ${COLORS[state.color].label}\n${label} · ${progress}\n\n${cardText}\n\n_Reply to this prompt or tag the bot when you've completed it. You may use your one session pass on a TRUTH only. You have 30 seconds between prompts._`,\n    mentions: [playerId]\n  });
+  const type = questionType(state.step);
+  const deck = session.decks[`${state.gender}:${state.color}`];
+  const cards = type === 'truth' ? deck.truths : deck.dares;
+  if (!Array.isArray(session.usedPromptKeys)) session.usedPromptKeys = [];
+  if (!Array.isArray(session.usedPromptIds)) session.usedPromptIds = [];
+  const usedKeys = new Set(session.usedPromptKeys);
+  const card = cards.find(item => !usedKeys.has(normalizePickYourSinPrompt(typeof item === 'string' ? item : item.text)));
+  if (!card) {
+    state.status = 'out';
+    state.waiting = false;
+    const latest = await getSessions(chatId);
+    latest[session.id] = session;
+    await saveSessions(chatId, latest);
+    await sock.sendMessage(chatId, { text: `⚠️ ${mention(playerId)} has no unused ${type} cards left in this colour. The rest of the players can continue.`, mentions: [playerId] });
+    return false;
+  }
+  const cardText = typeof card === 'string' ? card : card.text;
+  const cardId = typeof card === 'string' ? normalizePickYourSinPrompt(cardText) : card.id;
+  session.usedPromptKeys.push(normalizePickYourSinPrompt(cardText));
+  if (cardId) session.usedPromptIds.push(cardId);
+  state.currentType = type;
+  state.awaitingColor = false;
+  state.currentCard = cardText;
+  state.waiting = true;
+  state.cooldownUntil = null;
+  const label = type === 'truth' ? '🔥 *TRUTH*' : '💀 *DARE — ACTION REQUIRED*';
+  const progress = type === 'truth' ? `Truth ${state.step < 5 ? state.step + 1 : state.step - 5}/5` : `Dare ${state.step === 5 ? 1 : 2}/2`;
+  const sent = await sock.sendMessage(chatId, {
+    text: `🎭 *PICK YOUR SIN* — ${COLORS[state.color].emoji} ${COLORS[state.color].label}\n${label} · ${progress}\n\n${cardText}\n\n_Reply to this prompt or tag the bot when you've completed it. You may use your one session pass on a TRUTH only. You have 30 seconds between prompts._`,
+    mentions: [playerId]
+  });
   state.questionMessageId = sent?.key?.id || null;
   const latestSessions = await getSessions(chatId);
   latestSessions[session.id] = session;
-  await saveSessions(chatId, latestSessions);\n  state.waitingSince = Date.now();\n  state.inactivityToken = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;\n  latestSessions[session.id] = session;\n  await saveSessions(chatId, latestSessions);\n  await schedulePlayerInactivity(sock, chatId, session.id, playerId, state.inactivityToken, state.waitingSince);
+  await saveSessions(chatId, latestSessions);
+  state.waitingSince = Date.now();
+  state.inactivityToken = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  latestSessions[session.id] = session;
+  await saveSessions(chatId, latestSessions);
+  await schedulePlayerInactivity(sock, chatId, session.id, playerId, state.inactivityToken, state.waitingSince);
   return true;
 }
 
@@ -339,7 +463,9 @@ async function beginPickYourSinSessionLocked(sock, chatId, players, startedBy) {
     startedBy,
     players: Object.keys(states),
     playerStates: states,
-    decks: buildDecks(),\n    usedPromptKeys: [],\n    usedPromptIds: []
+    decks: buildDecks(),
+    usedPromptKeys: [],
+    usedPromptIds: []
   };
   const sessions = await getSessions(chatId);
   if (Object.values(sessions).some(item => item.status === 'active')) {
@@ -447,6 +573,8 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
   }
   if (isPass) state.passUsed = true;
   else state.step += 1;
+  state.inactivityToken = null;
+  state.waitingSince = null;
 
   state.waiting = false;
   state.color = null;
@@ -495,7 +623,8 @@ export default {
     const sub = String(args?.[0] || '').toLowerCase();
     const sessions = await getSessions(chatId);
     const session = Object.values(sessions).find(item => item.status === 'active');
-    if (sub === 'replace' && session) return replaceInactivePlayer(sock, chatId, message, session);\n    if (sub === 'end' || sub === 'stop') {
+    if (sub === 'replace' && session) return replaceInactivePlayer(sock, chatId, message, session);
+    if (sub === 'end' || sub === 'stop') {
       if (!session) {
         const pending = await getSelection(chatId);
         if (pending?.status === 'pending') { pending.status = 'cancelled'; await saveSelection(chatId, pending); return sock.sendMessage(chatId, { text: '🛑 PICK YOUR SIN selection cancelled.' }, { quoted: message }); }
