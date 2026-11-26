@@ -12,6 +12,8 @@ const NO_ANSWER_REMINDER_MS = 5 * 60 * 1000;
 const PLAYER_INACTIVITY_MS = 10 * 60 * 1000;
 const REPLACEMENT_WINDOW_MS = 5 * 60 * 1000;
 const chatQueues = new Map();
+const inactivityTimers = new Map();
+const replacementTimers = new Map();
 async function withChatLock(chatId, task) {
   const previous = chatQueues.get(chatId) || Promise.resolve();
   let release;
@@ -119,10 +121,40 @@ async function saveSessions(chatId, sessions) {
     throw new Error('Pick Your Sin session state could not be persisted.');
   }
 }
+function scheduleReplacementExpiry(sock, chatId, sessionId, playerId, deadline) {
+  const key = `${sessionId}:${playerId}:${deadline}`;
+  if (replacementTimers.has(key)) return;
+  const timer = setTimeout(async () => {
+    replacementTimers.delete(key);
+    try {
+      await withChatLock(chatId, async () => {
+        const latest = await getSessions(chatId);
+        const current = latest[sessionId];
+        const currentState = current?.playerStates?.[playerId];
+        if (!current || current.status !== 'active' || !currentState || currentState.status !== 'out' || !currentState.waitingForReplacement || currentState.replacementDeadlineAt !== deadline) return;
+        currentState.waitingForReplacement = false;
+        currentState.replacementExpired = true;
+        latest[sessionId] = current;
+        await saveSessions(chatId, latest);
+        await sock.sendMessage(chatId, { text: `⌛ The replacement window for ${mention(playerId)} has expired. PICK YOUR SIN continues with the remaining players.` });
+        if (current.players.every(id => ['complete', 'out'].includes(current.playerStates?.[id]?.status))) {
+          current.status = 'complete';
+          current.completedAt = Date.now();
+          latest[sessionId] = current;
+          await saveSessions(chatId, latest);
+          await sock.sendMessage(chatId, { text: '🔥 *PICK YOUR SIN is complete.* All remaining players have finished or been removed.' });
+        }
+      });
+    } catch (error) { console.error('[PICK YOUR SIN] Replacement-window expiry failed:', error); }
+  }, Math.max(0, deadline - Date.now()));
+  replacementTimers.set(key, timer);
+}
+
 async function schedulePlayerInactivity(sock, chatId, sessionId, playerId, token, waitingSince) {
+  if (!token || inactivityTimers.has(token)) return;
   const reminderDelay = Math.max(0, waitingSince + NO_ANSWER_REMINDER_MS - Date.now());
   const removalDelay = Math.max(0, waitingSince + PLAYER_INACTIVITY_MS - Date.now());
-  setTimeout(async () => {
+  const reminderTimer = setTimeout(async () => {
     try {
       await withChatLock(chatId, async () => {
         const sessions = await getSessions(chatId);
@@ -133,7 +165,8 @@ async function schedulePlayerInactivity(sock, chatId, sessionId, playerId, token
       });
     } catch (error) { console.error('[PICK YOUR SIN] Reminder failed:', error); }
   }, reminderDelay);
-  setTimeout(async () => {
+  const removalTimer = setTimeout(async () => {
+    inactivityTimers.delete(token);
     try {
       await withChatLock(chatId, async () => {
         const sessions = await getSessions(chatId);
@@ -150,34 +183,39 @@ async function schedulePlayerInactivity(sock, chatId, sessionId, playerId, token
         sessions[sessionId] = session;
         await saveSessions(chatId, sessions);
         await sock.sendMessage(chatId, { text: `⌛ ${mention(playerId)} has been removed after 10 minutes without an answer. An admin has five minutes to replace them with *.picksin replace @${playerId.split('@')[0]} @replacement*. Other players continue normally.`, mentions: [playerId] });
-        const deadline = state.replacementDeadlineAt;
-        setTimeout(async () => {
-          try {
-            await withChatLock(chatId, async () => {
-              const latest = await getSessions(chatId);
-              const current = latest[sessionId];
-              const currentState = current?.playerStates?.[playerId];
-              if (!current || current.status !== 'active' || !currentState || currentState.status !== 'out' || !currentState.waitingForReplacement || currentState.replacementDeadlineAt !== deadline) return;
-              currentState.waitingForReplacement = false;
-              currentState.replacementExpired = true;
-              latest[sessionId] = current;
-              await saveSessions(chatId, latest);
-              await sock.sendMessage(chatId, { text: `⌛ The replacement window for ${mention(playerId)} has expired. PICK YOUR SIN continues with the remaining players.` });
-              if (current.players.every(id => ['complete', 'out'].includes(current.playerStates?.[id]?.status))) {
-                current.status = 'complete';
-                current.completedAt = Date.now();
-                latest[sessionId] = current;
-                await saveSessions(chatId, latest);
-                await sock.sendMessage(chatId, { text: '🔥 *PICK YOUR SIN is complete.* All remaining players have finished or been removed.' });
-              }
-            });
-          } catch (error) { console.error('[PICK YOUR SIN] Replacement-window expiry failed:', error); }
-        }, REPLACEMENT_WINDOW_MS);
+        scheduleReplacementExpiry(sock, chatId, sessionId, playerId, state.replacementDeadlineAt);
       });
     } catch (error) { console.error('[PICK YOUR SIN] Inactivity removal failed:', error); }
   }, removalDelay);
+  inactivityTimers.set(token, [reminderTimer, removalTimer]);
 }
 
+export async function resumePickYourSinSessions(sock, chatId) {
+  const sessions = await getSessions(chatId);
+  const pendingInactivity = [];
+  const pendingReplacement = [];
+  let changed = false;
+  for (const session of Object.values(sessions)) {
+    if (session.status !== 'active') continue;
+    for (const [playerId, state] of Object.entries(session.playerStates || {})) {
+      if (state.status === 'active' && state.waiting) {
+        if (!state.inactivityToken) {
+          state.waitingSince = Number(state.waitingSince || Date.now());
+          state.inactivityToken = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+          changed = true;
+        }
+        pendingInactivity.push({ sessionId: session.id, playerId, token: state.inactivityToken, waitingSince: state.waitingSince });
+      }
+      if (state.status === 'out' && state.waitingForReplacement && state.replacementDeadlineAt) {
+        pendingReplacement.push({ sessionId: session.id, playerId, deadline: state.replacementDeadlineAt });
+      }
+    }
+  }
+  if (changed) await saveSessions(chatId, sessions);
+  for (const item of pendingInactivity) await schedulePlayerInactivity(sock, chatId, item.sessionId, item.playerId, item.token, item.waitingSince);
+  for (const item of pendingReplacement) scheduleReplacementExpiry(sock, chatId, item.sessionId, item.playerId, item.deadline);
+  return pendingInactivity.length + pendingReplacement.length;
+}
 async function replaceInactivePlayer(sock, chatId, message, session) {
   const tagged = await Promise.all(getMentions(message).map(async id => (await canonicalWhatsAppUserId(sock, id)) || id));
   const uniqueTags = [...new Set(tagged)];
@@ -188,6 +226,10 @@ async function replaceInactivePlayer(sock, chatId, message, session) {
   if (session.players.includes(replacementId)) return sock.sendMessage(chatId, { text: 'The replacement is already in this PICK YOUR SIN session.', quoted: message });
   const daily = (await store.getSetting(chatId, DAILY_KEY)) || {};
   if ((daily[lagosDateKey()] || []).includes(replacementId)) return sock.sendMessage(chatId, { text: 'That replacement has already completed PICK YOUR SIN today and cannot take another daily slot.', quoted: message });
+  const replacementTimerKey = `${session.id}:${removedId}:${removedState.replacementDeadlineAt}`;
+  const replacementTimer = replacementTimers.get(replacementTimerKey);
+  if (replacementTimer) clearTimeout(replacementTimer);
+  replacementTimers.delete(replacementTimerKey);
   const gender = await getUserGender(replacementId, sock);
   const nextState = { ...removedState, status: 'active', gender: gender || null, waitingForGender: !gender, color: null, lastColor: null, awaitingColor: true, waiting: false, questionMessageId: null, currentCard: null, currentType: null, waitingSince: null, inactivityToken: null, waitingForReplacement: false, replacementDeadlineAt: null, replacementExpired: false, removedAt: null, cooldownUntil: null, nextPromptToken: null, replacedPlayer: removedId };
   session.players = session.players.map(id => id === removedId ? replacementId : id);
@@ -570,6 +612,10 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
   if (isPass && state.passUsed) {
     await sock.sendMessage(chatId, { text: 'Your one pass for this session has already been used.' }, { quoted: message });
     return true;
+  }
+  if (state.inactivityToken) {
+    for (const timer of inactivityTimers.get(state.inactivityToken) || []) clearTimeout(timer);
+    inactivityTimers.delete(state.inactivityToken);
   }
   if (isPass) state.passUsed = true;
   else state.step += 1;
