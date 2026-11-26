@@ -182,6 +182,9 @@ function buildGenderColorBank(gender, legacy, themes) {
     }[color];
     const dares = actionDares.map((text, index) => ({
       id: `dare-${gender}-${color}-${String(index + 1).padStart(3, '0')}`,
+      // The same underlying action must be unique across every colour and gender.
+      // Colour changes the delivery direction, not the action's identity.
+      reuseKey: `dare-${String(index + 1).padStart(3, '0')}`,
       text: `${challengeDirection} ${text}`
     }));
     if (truths.length !== 150 || dares.length !== 30) {
