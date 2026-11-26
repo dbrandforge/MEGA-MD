@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseCreatorNaturalCommand } from '../../lib/creatorNaturalCommands.js';
+import { parseCreatorNaturalCommand, parseHumanDuration } from '../../lib/creatorNaturalCommands.js';
 
 describe('creator natural-language command routing', () => {
     it('requires a bot prefix, mention, or reply context', () => {
@@ -145,4 +145,37 @@ describe('creator natural-language command routing', () => {
         expect(parseCreatorNaturalCommand('Bot bypass TOD for 200 hours')).toBeNull();
         expect(parseCreatorNaturalCommand('Bot lock group for 200 hours')).toBeNull();
     });
+
+    it.each([
+        ['Lock the group for 1 hour and 50 minutes', 110],
+        ['Could you lock this group for 1h 50m?', 110],
+        ['Please lock the group for one hour and fifty minutes', 110],
+        ['Schedule the group lock for 2 days and 3 hours', 3060]
+    ])('parses compound lock duration in "%s"', (phrase, minutes) => {
+        expect(parseCreatorNaturalCommand(phrase, { addressedToBot: true })).toMatchObject({
+            command: 'grouplock',
+            args: ['quicklock', 'now', minutes + 'm'],
+            action: 'timed-lock',
+            durationMinutes: minutes
+        });
+    });
+
+    it.each([
+        'How do I lock the group for two hours?',
+        'Can you tell me how to lock the group?',
+        'What happens if I lock the group?',
+        'What do you think about locking the group?',
+        'Should we lock the group?'
+    ])('keeps informational question "%s" in the chatbot lane', phrase => {
+        expect(parseCreatorNaturalCommand(phrase, { addressedToBot: true })).toBeNull();
+    });
+
+    it('parses compound durations directly and rejects unsupported trailing text', () => {
+        expect(parseHumanDuration('1 hour and 50 minutes')).toBe(110);
+        expect(parseHumanDuration('one hour fifty minutes')).toBe(110);
+        expect(parseHumanDuration('1d 2h 15m')).toBe(1575);
+        expect(parseHumanDuration('1 hour and then maybe later')).toBeNull();
+        expect(parseHumanDuration('200 hours')).toBeNull();
+    });
+
 });
