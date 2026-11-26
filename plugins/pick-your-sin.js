@@ -233,7 +233,7 @@ async function startSelection(sock, chatId, senderId) {
   };
   await saveSelection(chatId, selection);
   await sock.sendMessage(chatId, {
-    text: '🎭 *PICK YOUR SIN — SELECTION OPEN*\\n\\nSelect exactly five participants using *.picksin add @user1 @user2 @user3 @user4 @user5*.\\n\\nYou have 10 minutes to add, replace or rearrange participants.\\n*.picksin list* · *.picksin change @current @replacement* · *.picksin arrange @user1 @user2 @user3 @user4 @user5* · *.picksin start*'
+    text: '🎭 *PICK YOUR SIN — SELECTION OPEN*\n\nSelect exactly five participants using *.picksin add @user1 @user2 @user3 @user4 @user5*.\n\nYou have 10 minutes to add, replace or rearrange participants.\n*.picksin list* · *.picksin change @current @replacement* · *.picksin arrange @user1 @user2 @user3 @user4 @user5* · *.picksin start*'
   });
   setTimeout(async () => {
     try {
@@ -257,10 +257,10 @@ async function startSelection(sock, chatId, senderId) {
 async function sendSelectionList(sock, chatId, selection) {
   const remaining = Math.max(0, Math.ceil((selection.adjustmentEndsAt - Date.now()) / 60000));
   const players = selection.players.length
-    ? selection.players.map((id, i) => `${i + 1}. ${mention(id)}`).join('\\n')
+    ? selection.players.map((id, i) => `${i + 1}. ${mention(id)}`).join('\n')
     : 'No participants selected yet.';
   return sock.sendMessage(chatId, {
-    text: `🎭 *PICK YOUR SIN SELECTION*\\n\\n${players}\\n\\nSelected: *${selection.players.length}/5*\\nTime remaining: *${remaining} minute(s)*\\n\\n*.picksin add @users* · *.picksin change @current @replacement* · *.picksin arrange @all-five* · *.picksin start*`,
+    text: `🎭 *PICK YOUR SIN SELECTION*\n\n${players}\n\nSelected: *${selection.players.length}/5*\nTime remaining: *${remaining} minute(s)*\n\n*.picksin add @users* · *.picksin change @current @replacement* · *.picksin arrange @all-five* · *.picksin start*`,
     mentions: selection.players
   });
 }
