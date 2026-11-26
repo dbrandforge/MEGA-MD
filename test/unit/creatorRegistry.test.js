@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const state = { value: [] };
+const state = vi.hoisted(() => ({ value: [] }));
 vi.mock('../../lib/lightweight_store.js', () => ({
     default: {
         getSetting: vi.fn(async () => state.value),
