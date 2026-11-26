@@ -263,8 +263,8 @@ export async function handleChatbotResponse(sock, chatId, message, userMessage, 
 
 // Live replies are selected locally from the curated personality bank.
 async function handleChatbotResponseForConversation(sock, chatId, message, userMessage, senderId, memoryKey, messageId) {
-    if (!isLatestChatbotTurn(memoryKey, messageId)) {
-        printLog('info', '[Chatbot] Skipped superseded queued turn before context generation.');
+    if (!isLatestChatbotTurn(memoryKey, messageId) || isMessageTooOld(message)) {
+        printLog('info', '[Chatbot] Skipped superseded or expired queued turn before context generation.');
         return;
     }
     const data = await loadUserGroupData();
