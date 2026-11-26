@@ -8,11 +8,11 @@ export function buildAllActivitiesMessage() {
     const sections = DAY_ORDER.map(day => {
         const activity = dailyActivities[day];
         if (!activity) return null;
-        const details = String(activity.full || '').replace(/^\\*Today is [^*]+\\*\\s*/i, '').trim();
+        const details = String(activity.full || '').replace(/^\*Today is [^*]+\*\s*/i, '').trim();
         const heading = day.toUpperCase() + ' — ' + (activity.title || 'Group Activities');
-        return `*📌 ${heading}*\\n\\n${details}`;
+        return `*📌 ${heading}*\n\n${details}`;
     }).filter(Boolean);
-    return `🗓️ *FULL WEEKLY GROUP ACTIVITIES*\\n\\n${sections.join('\\n\\n━━━━━━━━━━━━━━━━━━\\n\\n')}`;
+    return `🗓️ *FULL WEEKLY GROUP ACTIVITIES*\n\n${sections.join('\n\n━━━━━━━━━━━━━━━━━━\n\n')}`;
 }
 
 export default {
