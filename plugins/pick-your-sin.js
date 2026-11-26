@@ -622,13 +622,18 @@ export default {
     const sessions = await getSessions(chatId);
     const session = Object.values(sessions).find(item => item.status === 'active');
     if (sub === 'end' || sub === 'stop') {
-      if (!session) return sock.sendMessage(chatId, { text: 'There is no active PICK YOUR SIN session.' }, { quoted: message });
+      if (!session) {
+        const pending = await getSelection(chatId);
+        if (pending?.status === 'pending') { pending.status = 'cancelled'; await saveSelection(chatId, pending); return sock.sendMessage(chatId, { text: '🛑 PICK YOUR SIN selection cancelled.' }, { quoted: message }); }
+        return sock.sendMessage(chatId, { text: 'There is no active PICK YOUR SIN session or open selection.' }, { quoted: message });
+      }
       session.status = 'ended';
       session.endedAt = Date.now();
       await saveSessions(chatId, sessions);
       return sock.sendMessage(chatId, { text: '🛑 Admin ended PICK YOUR SIN.' }, { quoted: message });
     }
     if (sub === 'start' || sub === 'add' || sub === 'list' || sub === 'change' || sub === 'arrange' || sub === 'order' || sub === 'startnow' || sub === 'begin' || sub === 'cancel' || sub === 'endselection') return handleSelectionCommand(sock, message, args, context, chatId);
+    if (sub === 'status' && !session) { const pending = await getSelection(chatId); if (pending?.status === 'pending') return sendSelectionList(sock, chatId, pending); }
     if (!session) return sock.sendMessage(chatId, { text: 'No active PICK YOUR SIN session. Open selection with *.picksin start*.' }, { quoted: message });
     const lines = session.players.map(id => {
       const state = session.playerStates[id];
