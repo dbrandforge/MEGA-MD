@@ -50,8 +50,8 @@ export default {
         }
         const target = await canonicalWhatsAppUserId(sock, mentions[0]) || mentions[0];
         const result = action === 'add'
-            ? await addCreatorAccount(target)
-            : await removeCreatorAccount(target);
+            ? await addCreatorAccount(context.senderId, target)
+            : await removeCreatorAccount(context.senderId, target);
 
         let text;
         if (result.reason === 'protected-root') {
