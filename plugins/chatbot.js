@@ -493,6 +493,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                 chatId: memoryKey,
                 previousReply: previousBotReply,
                 gender: registeredGender,
+                identityRole: identity?.role,
                 history
             }));
 
@@ -509,7 +510,7 @@ async function handleChatbotResponseForConversation(sock, chatId, message, userM
                         }), chatbotQuery);
                         console.info(`[Chatbot AI] outcome=success latency_ms=${Date.now() - aiStartedAt}`);
                     } catch (error) {
-                        response = getChatbotFailureFallback(chatbotQuery, { language: responseLanguage, intent, chatId, previousReply: previousBotTurn?.text, gender: registeredGender });
+                        response = getChatbotFailureFallback(chatbotQuery, { language: responseLanguage, intent, chatId, previousReply: previousBotTurn?.text, gender: registeredGender, identityRole: identity?.role });
                         const reason = String(error?.code || error?.message || 'unknown').slice(0, 100).replaceAll(String.fromCharCode(10), ' ').replaceAll(String.fromCharCode(13), ' ');
                         console.warn(`[Chatbot AI] outcome=unavailable latency_ms=${Date.now() - aiStartedAt} reason=${reason}`);
                     }
