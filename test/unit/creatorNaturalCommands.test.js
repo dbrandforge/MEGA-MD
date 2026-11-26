@@ -2,48 +2,67 @@ import { describe, expect, it } from 'vitest';
 import { parseCreatorNaturalCommand } from '../../lib/creatorNaturalCommands.js';
 
 describe('creator natural-language command routing', () => {
-    it('parses prefixed group lock and unlock instructions', () => {
-        expect(parseCreatorNaturalCommand('Bot, lock the group')).toMatchObject({
-            command: 'grouplock', args: ['lock'], action: 'lock'
-        });
-        expect(parseCreatorNaturalCommand('Forge Guard unlock the group')).toMatchObject({
-            command: 'grouplock', args: ['unlock'], action: 'unlock'
-        });
+    it('requires a bot prefix, mention, or reply context', () => {
+        expect(parseCreatorNaturalCommand('lock the group')).toBeNull();
+        expect(parseCreatorNaturalCommand('hello everyone', { addressedToBot: true })).toBeNull();
+        expect(parseCreatorNaturalCommand('Bot, what is the weather?')).toBeNull();
     });
 
-    it('parses timed group locks as immediate one-off locks', () => {
-        expect(parseCreatorNaturalCommand('Bot, mute the group for 30 minutes')).toMatchObject({
+    it('routes group controls and timed locks without changing their timing semantics', () => {
+        expect(parseCreatorNaturalCommand('Bot, lock the group')).toMatchObject({ command: 'grouplock', args: ['lock'] });
+        expect(parseCreatorNaturalCommand('Forge Guard unlock the group')).toMatchObject({ command: 'grouplock', args: ['unlock'] });
+        expect(parseCreatorNaturalCommand('Bot mute the group for 30 minutes')).toMatchObject({
             command: 'grouplock', args: ['quicklock', 'now', '30m'], action: 'timed-lock', durationMinutes: 30
         });
-        expect(parseCreatorNaturalCommand('lock the group for 2 hours')).toBeNull();
-        expect(parseCreatorNaturalCommand('Bot lock the group for 2 hours')).toMatchObject({
+        expect(parseCreatorNaturalCommand('lock this group for 2 hours', { addressedToBot: true })).toMatchObject({
             args: ['quicklock', 'now', '120m'], durationMinutes: 120
         });
     });
 
-    it('accepts unprefixed instructions only when the message is addressed to the bot', () => {
-        expect(parseCreatorNaturalCommand('lock the group')).toBeNull();
-        expect(parseCreatorNaturalCommand('lock the group', { addressedToBot: true })).toMatchObject({
-            command: 'grouplock', args: ['lock']
-        });
-        expect(parseCreatorNaturalCommand('mute the group for 30 minutes', { addressedToBot: true })).toMatchObject({
-            args: ['quicklock', 'now', '30m']
-        });
-        expect(parseCreatorNaturalCommand('@2348012345678 mute the group for 30 minutes', { addressedToBot: true })).toMatchObject({
-            args: ['quicklock', 'now', '30m']
-        });
-        expect(parseCreatorNaturalCommand('@Forge Guard mute this group for 30 minutes', { addressedToBot: true })).toMatchObject({
-            args: ['quicklock', 'now', '30m'], action: 'timed-lock'
-        });
-        expect(parseCreatorNaturalCommand('mute this group for 30 minutes', { addressedToBot: true })).toMatchObject({
-            args: ['quicklock', 'now', '30m'], action: 'timed-lock'
-        });
-        expect(parseCreatorNaturalCommand('Bot, lock this group')).toMatchObject({ args: ['lock'], action: 'lock' });
-        expect(parseCreatorNaturalCommand('Bot, unlock this group')).toMatchObject({ args: ['unlock'], action: 'unlock' });
+    it.each([
+        ['send me the activities of the day', 'activity', []],
+        ['remove @user', 'kick', []],
+        ['kick @user', 'kick', []],
+        ['tag @all', 'tagall', []],
+        ['mute @user', 'mute', []],
+        ['unmute @user', 'unmute', []],
+        ['lock games', 'gamelock', ['on']],
+        ['unlock games', 'gamelock', ['off']],
+        ['bypass TOD for an hour', 'bypass', ['tod', '60m']],
+        ['schedule the group lock for an hour', 'grouplock', ['quicklock', 'now', '60m']],
+        ['start trivia game', 'trivia', []],
+        ['start maths game', 'math', []],
+        ['start truth or dare', 'tod', []],
+        ['start hot seat', 'hotseat', []],
+        ['start hangman', 'hangman', []],
+        ['end truth or dare', 'endtod', []],
+        ['end basket game', 'endbasket', []],
+        ['end hot seat', 'endhotseat', []],
+    ])('maps "%s" to the registered command and arguments', (phrase, command, args) => {
+        expect(parseCreatorNaturalCommand(phrase, { addressedToBot: true })).toMatchObject({ command, args });
     });
 
-    it('does not turn unrelated conversation into commands', () => {
-        expect(parseCreatorNaturalCommand('Bot, what is the weather?')).toBeNull();
-        expect(parseCreatorNaturalCommand('hello everyone', { addressedToBot: true })).toBeNull();
+    it('routes per-game locks and message scheduling', () => {
+        expect(parseCreatorNaturalCommand('lock trivia game', { addressedToBot: true })).toMatchObject({
+            command: 'gamelock', args: ['trivia', 'on']
+        });
+        expect(parseCreatorNaturalCommand('schedule in 30 minutes send group meeting starts now', { addressedToBot: true })).toMatchObject({
+            command: 'schedule', args: ['30m', 'group meeting starts now']
+        });
+    });
+
+    it('accepts WhatsApp bot mentions and bot-message replies', () => {
+        expect(parseCreatorNaturalCommand('@2348012345678 mute the group for 30 minutes', { addressedToBot: true })).toMatchObject({
+            args: ['quicklock', 'now', '30m'], action: 'timed-lock'
+        });
+        expect(parseCreatorNaturalCommand('tag everyone', { addressedToBot: true })).toMatchObject({
+            command: 'tagall'
+        });
+    });
+
+    it('rejects invalid or excessive durations rather than guessing', () => {
+        expect(parseCreatorNaturalCommand('Bot bypass TOD for 0 hours')).toBeNull();
+        expect(parseCreatorNaturalCommand('Bot bypass TOD for 200 hours')).toBeNull();
+        expect(parseCreatorNaturalCommand('Bot lock group for 200 hours')).toBeNull();
     });
 });
