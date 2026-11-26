@@ -32,6 +32,7 @@ import { shouldProcessMessageUpsert, isMessageTooOld, setMessageProcessingCutoff
 import { startSchedulerEngine, trackGroup } from './plugins/schedule.js';
 import { FEATURE_GROUPS } from './lib/featureGroups.js';
 import { resumeHotSeatSession } from './plugins/hotseat.js';
+import { resumePickYourSinSessions } from './plugins/pick-your-sin.js';
 import { getCachedGroupMetadata } from './lib/isOwner.js';
 
 import { installSignalDiagnosticGuard } from './lib/signalDiagnostics.js';
@@ -1008,6 +1009,11 @@ async function startQasimDev() {
                         await resumeHotSeatSession(QasimDev, groupId);
                     } catch (error) {
                         printLog('warning', `Hot Seat continuity restore failed for a configured group: ${error.message}`);
+                    }
+                    try {
+                        await resumePickYourSinSessions(QasimDev, groupId);
+                    } catch (error) {
+                        printLog('warning', `PICK YOUR SIN continuity restore failed for a configured group: ${error.message}`);
                     }
                 }
                 try {
