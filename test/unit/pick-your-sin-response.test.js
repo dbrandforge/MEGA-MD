@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getPickYourSinMediaKind,
   getPickYourSinMessageContext,
+  isPickYourSinViewOnceMessage,
   validatePickYourSinTruthAnswer
 } from '../../lib/pickYourSinResponse.js';
 
@@ -24,6 +25,16 @@ describe('PICK YOUR SIN response validation', () => {
     expect(getPickYourSinMediaKind({ message: { imageMessage: {} } })).toBe('image');
     expect(getPickYourSinMediaKind({ message: { videoMessage: {} } })).toBe('video');
     expect(getPickYourSinMediaKind({ message: { conversation: 'done' } })).toBe('text');
+  });
+
+  it('recognizes view-once image and video wrappers without retaining their media', () => {
+    const image = { message: { viewOnceMessageV2: { message: { imageMessage: {} } } } };
+    const video = { message: { ephemeralMessage: { message: { viewOnceMessage: { message: { videoMessage: {} } } } } } };
+    expect(getPickYourSinMediaKind(image)).toBe('image');
+    expect(getPickYourSinMediaKind(video)).toBe('video');
+    expect(isPickYourSinViewOnceMessage(image)).toBe(true);
+    expect(isPickYourSinViewOnceMessage(video)).toBe(true);
+    expect(isPickYourSinViewOnceMessage({ message: { videoMessage: {} } })).toBe(false);
   });
 
   it('unwraps WhatsApp ephemeral media and reads its reply context', () => {
