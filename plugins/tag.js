@@ -2,6 +2,8 @@ import { downloadContentFromMessage } from '@whiskeysockets/baileys';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { getUserGender } from './gender.js';
+import { filterParticipantsByGender } from '../lib/genderTagging.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 async function downloadMediaMessage(message, mediaType) {
@@ -20,17 +22,37 @@ export default {
     command: 'tag',
     aliases: [],
     category: 'admin',
-    description: 'Tag all group members',
-    usage: '.tag [message] or reply to a message',
+    description: 'Tag all members, or only members saved as ladies/guys',
+    usage: '.tag [ladies|guys] [message] or reply to a message',
     groupOnly: true,
     adminOnly: true,
     async handler(sock, message, args, context) {
         const { chatId, channelInfo } = context;
         const groupMetadata = await sock.groupMetadata(chatId);
-        const participants = groupMetadata.participants;
-        const mentionedJidList = participants.map((p) => p.id);
+        const participants = groupMetadata.participants || [];
+        const requestedGender = (args[0] || '').toLowerCase();
+        const genderAliases = {
+            ladies: 'lady', lady: 'lady', girls: 'lady', women: 'lady', female: 'lady', females: 'lady',
+            guys: 'guy', guy: 'guy', men: 'guy', male: 'guy', males: 'guy'
+        };
+        const gender = genderAliases[requestedGender] || null;
+        if (requestedGender && !gender) {
+            return sock.sendMessage(chatId, {
+                text: 'Use *.tag ladies* or *.tag guys*. Members without a saved gender are not included.',
+                ...channelInfo
+            }, { quoted: message });
+        }
+        const mentionedJidList = gender
+            ? await filterParticipantsByGender(participants, gender, userId => getUserGender(userId, sock))
+            : participants.map(participant => participant.id || participant.phoneNumber || participant.lid).filter(Boolean);
+        if (gender && !mentionedJidList.length) {
+            return sock.sendMessage(chatId, {
+                text: `No members with a saved gender of *${gender}* were found in this group.`,
+                ...channelInfo
+            }, { quoted: message });
+        }
         const replyMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-        const tagText = args.join(' ');
+        const tagText = args.slice(gender ? 1 : 0).join(' ');
         if (replyMessage) {
             let messageContent = {};
             if (replyMessage.imageMessage) {
