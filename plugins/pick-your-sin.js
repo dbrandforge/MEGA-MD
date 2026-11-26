@@ -80,7 +80,8 @@ function shuffle(items) {
   return copy;
 }
 function colorFromText(value) {
-  const text = String(value || '').replace(/@[\d.-]+/g, '').trim().toLowerCase();
+  const raw = String(value || '').normalize('NFKC').trim().toLowerCase();
+  const text = raw.split(/\s+/).pop()?.replace(/[.,!?;:()[\]{}*_~`]/g, '') || '';
   const aliases = {
     red: 'red', '❤️': 'red', '❤': 'red', '🔴': 'red',
     yellow: 'yellow', '💛': 'yellow', '🟡': 'yellow',
@@ -353,7 +354,7 @@ async function startSelection(sock, chatId, senderId) {
   const existing = await getSelection(chatId);
   if (existing && ['pending', 'ready'].includes(existing.status)) {
     return sock.sendMessage(chatId, { text: existing.status === 'ready'
-      ? 'Five participants are already locked in. Use *.picksin open* when you are ready.'
+      ? 'Participants are already locked in. Use *.picksin open* when you are ready.'
       : 'PICK YOUR SIN selection is already open. Use *.picksin list*.' });
   }
   const selection = {
@@ -362,21 +363,21 @@ async function startSelection(sock, chatId, senderId) {
   };
   await saveSelection(chatId, selection);
   await sock.sendMessage(chatId, {
-    text: '🎭 *PICK YOUR SIN — SELECTION OPEN*\n\nSelect exactly five participants using *.picksin add @user1 @user2 @user3 @user4 @user5*.\n\nYou have 10 minutes to add, replace or rearrange participants.\n*.picksin list* · *.picksin change @current @replacement* · *.picksin arrange @user1 @user2 @user3 @user4 @user5* · *.picksin start*'
+    text: '🎭 *PICK YOUR SIN — SELECTION OPEN*\n\nSelect 2–5 participants using *.picksin add @user1 @user2 @user3 @user4 @user5* (minimum 2, maximum 5).\n\nYou have 10 minutes to add, replace or rearrange participants.\n*.picksin list* · *.picksin change @current @replacement* · *.picksin arrange @user1 @user2 @user3 @user4 @user5* · *.picksin start*'
   });
   setTimeout(async () => {
     try {
       await withChatLock(chatId, async () => {
         const latest = await getSelection(chatId);
         if (latest?.status !== 'pending' || latest.createdAt !== selection.createdAt) return;
-        if (latest.players.length === 5) {
+        if (latest.players.length >= 2 && latest.players.length <= 5) {
           await saveSelection(chatId, { ...latest, status: 'ready' });
           await sock.sendMessage(chatId, {
-            text: '⏳ *PICK YOUR SIN — PARTICIPANTS LOCKED*\n\nAll five participants are selected. The game has NOT started yet. When you are ready, send *.picksin open* to officially open the game.'
+            text: '⏳ *PICK YOUR SIN — PARTICIPANTS LOCKED*\n\nThe selected participants are locked in. The game has NOT started yet. When you are ready, send *.picksin open* to officially open the game.'
           });
         } else {
           await saveSelection(chatId, { ...latest, status: 'expired' });
-          await sock.sendMessage(chatId, { text: '⌛ PICK YOUR SIN selection expired: exactly five participants were not selected.' });
+          await sock.sendMessage(chatId, { text: '⌛ PICK YOUR SIN selection expired: at least two participants were not selected.' });
         }
       });
     } catch (error) {
@@ -390,7 +391,7 @@ async function sendSelectionList(sock, chatId, selection) {
     ? selection.players.map((id, i) => `${i + 1}. ${mention(id)}`).join('\n')
     : 'No participants selected yet.';
   return sock.sendMessage(chatId, {
-    text: `🎭 *PICK YOUR SIN SELECTION*\n\n${players}\n\nSelected: *${selection.players.length}/5*\nTime remaining: *${remaining} minute(s)*\n\n*.picksin add @users* · *.picksin change @current @replacement* · *.picksin arrange @all-five* · *.picksin open* (after all five are selected)`,
+    text: `🎭 *PICK YOUR SIN SELECTION*\n\n${players}\n\nSelected: *${selection.players.length}/5* (minimum 2)\nTime remaining: *${remaining} minute(s)*\n\n*.picksin add @users* · *.picksin change @current @replacement* · *.picksin arrange @all-selected* · *.picksin open* (after 2–5 are selected)`,
     mentions: selection.players
   });
 }
@@ -406,8 +407,8 @@ async function handleSelectionCommand(sock, message, args, context, chatId) {
     if (!selection || !['pending', 'ready'].includes(selection.status)) {
       return sock.sendMessage(chatId, { text: 'There is no completed PICK YOUR SIN selection to open. Start with *.picksin start*.' }, { quoted: message });
     }
-    if (selection.players.length !== 5) {
-      return sock.sendMessage(chatId, { text: `Select exactly five participants first. Current selection: *${selection.players.length}/5*.` }, { quoted: message });
+    if (selection.players.length < 2 || selection.players.length > 5) {
+      return sock.sendMessage(chatId, { text: `Select 2–5 participants first. Current selection: *${selection.players.length}/5*.` }, { quoted: message });
     }
     if (Date.now() >= selection.adjustmentEndsAt && selection.status === 'pending') {
       selection.status = 'ready';
@@ -445,7 +446,7 @@ async function handleSelectionCommand(sock, message, args, context, chatId) {
     selection.status = selection.players.length === 5 ? 'ready' : 'expired';
     await saveSelection(chatId, selection);
     if (selection.status === 'expired') {
-      return sock.sendMessage(chatId, { text: 'The 10-minute selection window has closed before five participants were selected.' }, { quoted: message });
+      return sock.sendMessage(chatId, { text: 'The 10-minute selection window has closed before the minimum of two participants was selected.' }, { quoted: message });
     }
     if (sub !== 'list') {
       return sock.sendMessage(chatId, { text: 'The selection window has closed. All five participants are locked in; use *.picksin open* when ready.' }, { quoted: message });
@@ -461,7 +462,7 @@ async function handleSelectionCommand(sock, message, args, context, chatId) {
     if (!uniqueTags.length) return sock.sendMessage(chatId, { text: 'Tag up to five participants: *.picksin add @user1 @user2 @user3 @user4 @user5*.' }, { quoted: message });
     if (uniqueTags.length !== tagged.length || uniqueTags.length > 5) return sock.sendMessage(chatId, { text: 'Tag no more than five different participants per command.' }, { quoted: message });
     const additions = uniqueTags.filter(id => !selection.players.includes(id));
-    if (selection.players.length + additions.length > 5) return sock.sendMessage(chatId, { text: 'PICK YOUR SIN requires exactly five participants. Use *.picksin list* to check the current selection.' }, { quoted: message });
+    if (selection.players.length + additions.length > 5) return sock.sendMessage(chatId, { text: 'PICK YOUR SIN allows 2–5 participants. Use *.picksin list* to check the current selection.' }, { quoted: message });
     selection.players.push(...additions);
     await saveSelection(chatId, selection);
     return sendSelectionList(sock, chatId, selection);
@@ -477,8 +478,8 @@ async function handleSelectionCommand(sock, message, args, context, chatId) {
     return sendSelectionList(sock, chatId, selection);
   }
   if (sub === 'arrange' || sub === 'order') {
-    if (uniqueTags.length !== 5 || new Set(selection.players).size !== 5 || !selection.players.every(id => uniqueTags.includes(id))) {
-      return sock.sendMessage(chatId, { text: 'Tag all five selected participants exactly once, in the intended order.' }, { quoted: message });
+    if (uniqueTags.length !== selection.players.length || selection.players.length < 2 || selection.players.length > 5 || new Set(selection.players).size !== selection.players.length || !selection.players.every(id => uniqueTags.includes(id))) {
+      return sock.sendMessage(chatId, { text: 'Tag every selected participant exactly once, in the intended order.' }, { quoted: message });
     }
     selection.players = uniqueTags;
     await saveSelection(chatId, selection);
@@ -495,8 +496,8 @@ async function beginPickYourSinSessionLocked(sock, chatId, players, startedBy) {
     await sock.sendMessage(chatId, { text: access.msg });
     return false;
   }
-  if (!Array.isArray(players) || players.length !== 5) {
-    throw new Error('PICK YOUR SIN requires exactly five selected participants.');
+  if (!Array.isArray(players) || players.length < 2 || players.length > 5) {
+    throw new Error('PICK YOUR SIN requires between two and five selected participants.');
   }
   const dayKey = lagosDateKey();
   const daily = (await store.getSetting(chatId, DAILY_KEY)) || {};
@@ -544,7 +545,7 @@ async function beginPickYourSinSessionLocked(sock, chatId, players, startedBy) {
   sessions[session.id] = session;
   await saveSessions(chatId, sessions);
   await sock.sendMessage(chatId, {
-    text: `🔥 *PICK YOUR SIN — THE FOUR FOLDERS ARE OPEN*\n\nFive participants are in: ${session.players.map(mention).join(' ')}\nEach player plays independently. The four folders contain different hidden intensity levels — the colour never reveals the level.\n\nChoose one folder by typing its name or sending its emoji:\n❤️ RED · 💛 YELLOW · 🧡 ORANGE · 🩶 ASH\n\nYour gender selects the question bank; your folder selects the hidden intensity. Each player gets two rounds: five truths and one action dare per round. One pass per session. 30-second cooldown between prompts.`,
+    text: `🔥 *PICK YOUR SIN — THE FOUR FOLDERS ARE OPEN*\n\n${session.players.length} participants are in: ${session.players.map(mention).join(' ')}\nEach player plays independently. The four folders contain different hidden intensity levels — the colour never reveals the level.\n\nChoose one folder by typing its name or sending its emoji:\n❤️ RED · 💛 YELLOW · 🧡 ORANGE · 🩶 ASH\n\nYour gender selects the question bank; your folder selects the hidden intensity. Each player gets two rounds: five truths and one action dare per round. One pass per session. 30-second cooldown between prompts.`,
     mentions: session.players
   });
   for (const [playerId, state] of Object.entries(states)) {
@@ -595,16 +596,6 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
   if (!state.color) {
     const color = colorFromText(text);
     if (!color) return false;
-    const colorContext = message?.message?.extendedTextMessage?.contextInfo
-      || message?.message?.imageMessage?.contextInfo
-      || message?.message?.videoMessage?.contextInfo
-      || {};
-    const botId = String(sock.user?.id || '').split(':')[0].split('@')[0];
-    const botMentioned = (colorContext.mentionedJid || []).some(id => String(id).split(':')[0].split('@')[0] === botId);
-    if (!botMentioned) {
-      await sock.sendMessage(chatId, { text: 'To begin your turn, tag/mention the bot together with your chosen colour (for example: *@Forge Guard RED* or *@Forge Guard ❤️*).' }, { quoted: message });
-      return true;
-    }
     if (state.cooldownUntil && Date.now() < state.cooldownUntil) {
       const remaining = Math.ceil((state.cooldownUntil - Date.now()) / 1000);
       await sock.sendMessage(chatId, { text: `⏳ Your next colour choice unlocks in *${remaining} seconds*.` }, { quoted: message });
