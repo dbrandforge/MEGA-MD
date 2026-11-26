@@ -53,11 +53,16 @@ export default {
     command: 'myprofile',
     aliases: ['myinfo', 'mybotprofile'],
     category: 'general',
-    description: 'View and manage the information Forge Guard remembers about you.',
-    usage: '.myprofile | .myprofile update <facts> | .myprofile remove <field> [value] | .myprofile privacy private|groups | .myprofile clear',
+    description: 'Privately view and manage the information Forge Guard remembers about you (DM only).',
+    usage: 'DM only: .myprofile | .myprofile update <facts> | .myprofile remove <field> [value] | .myprofile privacy private|groups | .myprofile clear',
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
-        const isGroup = context.isGroup ?? chatId.endsWith('@g.us');
+        const isGroup = context.isGroup === true || chatId.endsWith('@g.us');
+        if (isGroup) {
+            return sock.sendMessage(chatId, {
+                text: '🔒 Profile commands are private. Message me directly and use .myprofile there.'
+            }, { quoted: message });
+        }
         const senderId = context.senderId || message.key.participant || chatId;
         const scopeChatId = isGroup ? chatId : null;
         const action = String(args?.[0] || 'view').toLowerCase();
