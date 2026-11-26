@@ -42,6 +42,16 @@ describe('Pick Your Sin sessions', () => {
     }
   });
 
+  it('never repeats a truth between different players in the same session', async () => {
+    let sent = 0;
+    const sock = { user: { id: '234899999999:1@s.whatsapp.net' }, sendMessage: vi.fn(async () => ({ key: { id: `bot-${++sent}` } })) };
+    await beginPickYourSinSession(sock, chatId, players, 'admin@s.whatsapp.net');
+    await handlePickYourSinMessage(sock, chatId, { key: { fromMe: false }, message: { conversation: 'red' } }, 'red', players[0]);
+    await handlePickYourSinMessage(sock, chatId, { key: { fromMe: false }, message: { conversation: 'red' } }, 'red', players[1]);
+    const session = Object.values(state.pickYourSinSessions)[0];
+    expect(session.playerStates[players[0]].currentCard).not.toBe(session.playerStates[players[1]].currentCard);
+    expect(session.usedPromptKeys).toHaveLength(2);
+  });
   it('requires a different colour on consecutive turns and enforces the cooldown', async () => {
     let sent = 0;
     const sock = { user: { id: '234899999999:1@s.whatsapp.net' }, sendMessage: vi.fn(async () => ({ key: { id: `bot-${++sent}` } })) };
