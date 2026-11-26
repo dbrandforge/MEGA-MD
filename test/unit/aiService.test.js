@@ -92,6 +92,9 @@ describe('creator command interpretation against the live registry', () => {
       command: 'grouplock', args: ['quicklock', 'now', '60m'], confidence: 0.97
     });
     expect(axios.post.mock.calls[0][1].generationConfig.responseMimeType).toBe('application/json');
+    expect(axios.post.mock.calls[0][2].timeout).toBe(5000);
+    expect(axios.post.mock.calls[0][1].contents[0].parts[0].text).toContain('ongoing ordinary conversation');
+    expect(axios.post.mock.calls[0][1].contents[0].parts[0].text).toContain('adminOnly');
   });
 
   it('returns a clarification instead of silently dropping an ambiguous creator instruction', async () => {
