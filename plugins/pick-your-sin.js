@@ -500,7 +500,7 @@ async function handleSelectionCommand(sock, message, args, context, chatId) {
     await saveSelection(chatId, selection);
     return sendSelectionList(sock, chatId, selection);
   }
-  return sock.sendMessage(chatId, { text: 'PICK YOUR SIN commands: *.picksin start*, *.picksin add*, *.picksin list*, *.picksin change*, *.picksin arrange*, *.picksin open*, *.picksin status*, *.picksin end*.' }, { quoted: message });
+  return sock.sendMessage(chatId, { text: 'PICK YOUR SIN commands: *.picksin start*, *.picksin add*, *.picksin list*, *.picksin change*, *.picksin arrange*, *.picksin open*, *.picksin status*, *.picksin resetday @user*, *.picksin end*.' }, { quoted: message });
 }
 
 
