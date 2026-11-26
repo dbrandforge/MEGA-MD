@@ -56,6 +56,8 @@ export default {
     description: 'Privately view and manage the information Forge Guard remembers about you (DM only).',
     usage: 'DM only: .myprofile | .myprofile update <facts> | .myprofile remove <field> [value] | .myprofile privacy private|groups | .myprofile clear',
     async handler(sock, message, args, context) {
+        // TEMPORARY SAFETY KILL SWITCH: disable all profile output while repeated-send incident is investigated.
+        return;
         const chatId = context.chatId || message.key.remoteJid;
         const isGroup = context.isGroup === true || chatId.endsWith('@g.us');
         if (isGroup) {
