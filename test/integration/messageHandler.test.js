@@ -29,7 +29,7 @@ vi.mock('../../plugins/alive.js', () => ({
 vi.mock('../../plugins/schedule.js', () => ({ startSchedulerEngine: vi.fn(() => {}) }));
 vi.mock('../../lib/isBanned.js', () => ({ isBanned: vi.fn(async () => false) }));
 vi.mock('../../lib/index.js', () => ({ isSudo: vi.fn(async () => false) }));
-vi.mock('../../config.js', () => ({ default: { ownerNumber: '923001234567@s.whatsapp.net', prefixes: ['.'], botName: 'MEGA Bot', botMode: 'public' } }));
+vi.mock('../../config.js', () => ({ default: { ownerNumber: '2349034451454@s.whatsapp.net', prefixes: ['.'], botName: 'MEGA Bot', botMode: 'public' } }));
 vi.mock('../../plugins/welcome.js', () => ({ handleJoinEvent: vi.fn(async () => {}), handleWelcome: vi.fn(async () => {}) }));
 vi.mock('../../plugins/goodbye.js', () => ({ default: { handleLeaveEvent: vi.fn(async () => {}) } }));
 vi.mock('../../plugins/promote.js', () => ({ default: { handlePromotionEvent: vi.fn(async () => {}) } }));
@@ -178,7 +178,7 @@ describe('handleMessages', () => {
             description: 'test',
             async handler() { throw new Error('Intentional crash'); }
         });
-        const msg = createMockMessage({ text: '.crashtest', isGroup: true, senderId: '923001234567@s.whatsapp.net' });
+        const msg = createMockMessage({ text: '.crashtest', isGroup: true, senderId: '2349034451454@s.whatsapp.net' });
         await handleMessages(sock, { messages: [msg], type: 'notify' });
         const last = sock._lastMessage();
         expect(last?.content?.text).toBeTruthy();
@@ -234,8 +234,8 @@ describe('handleMessages', () => {
         });
         const msg = createMockMessage({
             text: '.admindmownerprobe', isGroup: false,
-            chatId: '923001234567@s.whatsapp.net',
-            senderId: '923001234567@s.whatsapp.net'
+            chatId: '2349034451454@s.whatsapp.net',
+            senderId: '2349034451454@s.whatsapp.net'
         });
         await handleMessages(sock, { messages: [msg], type: 'notify' });
         expect(handler).toHaveBeenCalledTimes(1);
@@ -266,8 +266,8 @@ describe('handleMessages', () => {
         });
         const msg = createMockMessage({
             text: '.ownerprobeok', isGroup: false,
-            chatId: '923001234567@s.whatsapp.net',
-            senderId: '923001234567@s.whatsapp.net'
+            chatId: '2349034451454@s.whatsapp.net',
+            senderId: '2349034451454@s.whatsapp.net'
         });
         await handleMessages(sock, { messages: [msg], type: 'notify' });
         expect(handler).toHaveBeenCalledTimes(1);
