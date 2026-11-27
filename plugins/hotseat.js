@@ -455,6 +455,7 @@ export async function resumeHotSeatSession(sock, chatId) {
                 state.genderDeadlineToken = null;
                 changed = true;
             }
+            if (changed) { await saveSession(chatId, session); changed = false; }
             if (await scheduleGenderDeadline(sock, chatId, player)) resumed++;
             continue;
         }
@@ -471,6 +472,7 @@ export async function resumeHotSeatSession(sock, chatId) {
                 state.questionMessageId = sent?.key?.id || null;
                 changed = true;
             }
+            if (changed) { await saveSession(chatId, session); changed = false; }
             if (await scheduleHotSeatTimeout(sock, chatId, player, state.questionId)) resumed++;
             continue;
         }
@@ -481,6 +483,8 @@ export async function resumeHotSeatSession(sock, chatId) {
         if (state.nextQuestionAt && Number(state.nextQuestionAt) <= now) {
             state.nextQuestionAt = null;
             changed = true;
+            await saveSession(chatId, session);
+            changed = false;
         }
         if (await sendPlayerQuestion(sock, chatId, player)) resumed++;
     }
