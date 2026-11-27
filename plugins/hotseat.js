@@ -405,51 +405,90 @@ export async function resumeHotSeatSession(sock, chatId) {
     if (!isFeatureGroup(chatId)) return 0;
     const session = await getSession(chatId);
     if (!session) return 0;
+    const now = Date.now();
     if (session.status === 'pending') {
-        const remaining = Math.max(0, Number(session.adjustmentEndsAt || Date.now()) - Date.now());
+        if (Number(session.adjustmentEndsAt || 0) <= now) {
+            await clearSession(chatId);
+            return 0;
+        }
+        const remaining = Number(session.adjustmentEndsAt) - now;
         setTimeout(async () => {
             const latest = await getSession(chatId);
             if (latest?.status === 'pending' && latest.createdAt === session.createdAt) {
                 if ((latest.players || []).length >= MIN_PLAYERS) await beginGame(sock, chatId, latest);
-                else {
-                    await clearSession(chatId);
-                    await sock.sendMessage(chatId, { text: '⌛ Hot Seat selection expired because fewer than two players were selected.' });
-                }
+                else await clearSession(chatId);
             }
         }, remaining);
         return 1;
     }
     if (session.status !== 'active') return 0;
     const access = await isGameAllowed(chatId, 'hotseat');
-    if (!access.ok) {
-        await sock.sendMessage(chatId, { text: access.msg });
-        return 0;
-    }
+    if (!access.ok) return 0;
     let resumed = 0;
+    let changed = false;
     for (const [archivedPlayer, archive] of Object.entries(session.recoveryArchives || {})) {
-        if (archive.recoveryDeadlineAt) await scheduleHotSeatRecoveryExpiry(sock, chatId, archivedPlayer, archive.recoveryDeadlineAt);
+        if (!archive.recoveryDeadlineAt) continue;
+        if (Number(archive.recoveryDeadlineAt) <= now) {
+            archive.recoveryExpired = true;
+            archive.recoveryDeadlineAt = null;
+            changed = true;
+        } else {
+            await scheduleHotSeatRecoveryExpiry(sock, chatId, archivedPlayer, archive.recoveryDeadlineAt);
+        }
     }
     for (const player of session.players || []) {
         const state = session.playerStates?.[player];
         if (state?.status === 'out' && state.recoveryDeadlineAt) {
-            await scheduleHotSeatRecoveryExpiry(sock, chatId, player, state.recoveryDeadlineAt);
+            if (Number(state.recoveryDeadlineAt) <= now) {
+                state.recoveryExpired = true;
+                state.recoveryDeadlineAt = null;
+                changed = true;
+            } else {
+                await scheduleHotSeatRecoveryExpiry(sock, chatId, player, state.recoveryDeadlineAt);
+            }
             continue;
         }
         if (!state || state.status !== 'active') continue;
         if (state.waitingForGender) {
+            if (Number(state.genderDeadlineAt || 0) <= now) {
+                state.genderDeadlineAt = now + 2 * 60 * 1000;
+                state.genderDeadlineToken = null;
+                changed = true;
+            }
+            if (changed) { await saveSession(chatId, session); changed = false; }
             if (await scheduleGenderDeadline(sock, chatId, player)) resumed++;
             continue;
         }
         if (state.waiting && state.questionId) {
+            // Explicit admin resume grants a fresh answer window; an overdue
+            // offline timer is never replayed as an immediate timeout/removal.
+            if (Number(state.questionAskedAt || 0) + ANSWER_TIMEOUT_MS <= now) {
+                state.questionAskedAt = now;
+                state.timeoutToken = null;
+                const sent = await sock.sendMessage(chatId, {
+                    text: `▶️ *HOT SEAT RESUMED*\n\n${mention(player)}, continue with your saved question:\n\n*${state.currentQuestion}*\n\nReply directly to this fresh prompt or tag the bot. Your progress is unchanged. You have *5 minutes* to answer.`,
+                    mentions: [player]
+                });
+                state.questionMessageId = sent?.key?.id || null;
+                changed = true;
+            }
+            if (changed) { await saveSession(chatId, session); changed = false; }
             if (await scheduleHotSeatTimeout(sock, chatId, player, state.questionId)) resumed++;
             continue;
         }
-        if (state.nextQuestionAt) {
+        if (state.nextQuestionAt && Number(state.nextQuestionAt) > now) {
             if (await scheduleNextQuestion(sock, chatId, player, state.lastAnsweredAt)) resumed++;
             continue;
         }
+        if (state.nextQuestionAt && Number(state.nextQuestionAt) <= now) {
+            state.nextQuestionAt = null;
+            changed = true;
+            await saveSession(chatId, session);
+            changed = false;
+        }
         if (await sendPlayerQuestion(sock, chatId, player)) resumed++;
     }
+    if (changed) await saveSession(chatId, session);
     return resumed;
 }
 
