@@ -29,7 +29,7 @@ describe('message-scoped outbound protection', () => {
     it('suppresses a quoted reply when the source message has expired', async () => {
         const sendMessage = vi.fn();
         const sock = { sendMessage };
-        const source = makeMessage({ ageMs: 31000 });
+        const source = makeMessage({ ageMs: 181000 });
 
         const result = await runWithMessageScope(sock, source, () =>
             sock.sendMessage(source.key.remoteJid, { text: 'late reply' }, { quoted: source })
@@ -56,7 +56,7 @@ describe('message-scoped outbound protection', () => {
     it('keeps concurrent message scopes isolated', async () => {
         const sendMessage = vi.fn();
         const sock = { sendMessage };
-        const stale = makeMessage({ ageMs: 31000, id: 'stale' });
+        const stale = makeMessage({ ageMs: 181000, id: 'stale' });
         const fresh = makeMessage({ id: 'fresh' });
 
         const results = await Promise.all([
@@ -76,7 +76,7 @@ describe('message-scoped outbound protection', () => {
     it('allows unquoted background sends after the source message expires', async () => {
         const sendMessage = vi.fn();
         const sock = { sendMessage };
-        const stale = makeMessage({ ageMs: 31000 });
+        const stale = makeMessage({ ageMs: 181000 });
 
         await runWithMessageScope(sock, stale, () =>
             sock.sendMessage(stale.key.remoteJid, { text: 'independent background task' })
