@@ -1005,20 +1005,12 @@ async function startQasimDev() {
                 // Group automation must not depend on someone running .schedule manually.
                 for (const groupId of FEATURE_GROUPS) trackGroup(groupId);
                 startSchedulerEngine(QasimDev);
-                // Restore only the persisted Hot Seat session for each configured
-                // feature group; each session contains at most four named players.
-                for (const groupId of FEATURE_GROUPS) {
-                    try {
-                        await resumeHotSeatSession(QasimDev, groupId);
-                    } catch (error) {
-                        printLog('warning', `Hot Seat continuity restore failed for a configured group: ${error.message}`);
-                    }
-                    try {
-                        await resumePickYourSinSessions(QasimDev, groupId);
-                    } catch (error) {
-                        printLog('warning', `PICK YOUR SIN continuity restore failed for a configured group: ${error.message}`);
-                    }
-                }
+                // Safety rule: never replay persisted game timers/prompts after a
+                // process restart or WhatsApp reconnect. A timer that expired while
+                // offline must not emit yesterday's game messages into a live group.
+                // Persisted progress is intentionally left untouched; admins/players
+                // can resume through the normal game controls, which create fresh prompts.
+                printLog('warning', '[game-recovery] Automatic game-session replay is disabled on reconnect; persisted progress is preserved without replaying overdue actions.');
                 try {
                     const welcomeModule = await import('./plugins/sincity-welcome.js');
                     if (typeof welcomeModule.restoreWelcomeJobs === 'function') await welcomeModule.restoreWelcomeJobs(QasimDev);
