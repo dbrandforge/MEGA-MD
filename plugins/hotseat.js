@@ -299,17 +299,14 @@ export async function recoverHotSeatPlayer(sock, chatId, player) {
     let playerKey = await resolveSessionPlayerKey(sock, session, player);
     let state = session.playerStates?.[playerKey];
     if (!state) playerKey = await normalizeHotSeatJid(sock, player);
+    let archived = null;
+    let archiveSlotIndex = null;
     if (!state && session.recoveryArchives?.[playerKey]) {
-        const archive = session.recoveryArchives[playerKey];
-        if (!archive.recoveryDeadlineAt || Date.now() >= Number(archive.recoveryDeadlineAt)) return false;
-        const slotIndex = Number(archive.slotIndex);
-        const currentSlotPlayer = session.players?.[slotIndex];
-        if (!Number.isInteger(slotIndex) || !currentSlotPlayer) return false;
-        delete session.playerStates[currentSlotPlayer];
-        session.players[slotIndex] = playerKey;
-        state = archive.state;
-        session.playerStates[playerKey] = state;
-        delete session.recoveryArchives[playerKey];
+        archived = session.recoveryArchives[playerKey];
+        if (!archived.recoveryDeadlineAt || Date.now() >= Number(archived.recoveryDeadlineAt)) return false;
+        archiveSlotIndex = Number(archived.slotIndex);
+        if (!Number.isInteger(archiveSlotIndex) || !session.players?.[archiveSlotIndex]) return false;
+        state = archived.state;
     }
     if (!state || state.status !== 'out' || !state.recoveryDeadlineAt || Date.now() >= Number(state.recoveryDeadlineAt)) return false;
 
@@ -317,6 +314,13 @@ export async function recoverHotSeatPlayer(sock, chatId, player) {
     if (reason === 'answer-timeout') {
         const { softUnmuteUser } = await import('./softmute.js');
         await softUnmuteUser(chatId, playerKey, sock);
+    }
+    if (archived) {
+        const currentSlotPlayer = session.players[archiveSlotIndex];
+        delete session.playerStates[currentSlotPlayer];
+        session.players[archiveSlotIndex] = playerKey;
+        session.playerStates[playerKey] = state;
+        delete session.recoveryArchives[playerKey];
     }
     state.status = 'active';
     state.removedAt = null;
