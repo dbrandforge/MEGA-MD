@@ -16,7 +16,7 @@ vi.mock('../../lib/whatsappIdentity.js', () => ({
   sameWhatsAppUser: vi.fn(async (_sock, a, b) => a === b)
 }));
 
-import pickYourSinPlugin, { beginPickYourSinSession, handlePickYourSinMessage, resetPickYourSinDailyCount } from '../../plugins/pick-your-sin.js';
+import pickYourSinPlugin, { beginPickYourSinSession, handlePickYourSinMessage, resetPickYourSinDailyCount, recoverPickYourSinPlayer, replacePickYourSinPlayer } from '../../plugins/pick-your-sin.js';
 
 const chatId = '120363000000000000@g.us';
 const goodTruthAnswer = 'I remember that moment clearly because it happened after our first date and changed how I felt.';
@@ -327,8 +327,10 @@ describe('Pick Your Sin sessions', () => {
     expect(session.playerStates[players[0]].status).toBe('out');
     expect(session.playerStates[players[0]].waitingForReplacement).toBe(true);
     expect(session.playerStates[players[1]].status).toBe('active');
+    expect(session.playerStates[players[0]].replacementDeadlineAt)
+      .toBe(session.playerStates[players[0]].removedAt + 15 * 60 * 1000);
 
-    await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+    await vi.advanceTimersByTimeAsync(15 * 60 * 1000);
     session = Object.values(state.pickYourSinSessions)[0];
     expect(session.playerStates[players[0]].replacementExpired).toBe(true);
     expect(session.playerStates[players[1]].status).toBe('active');
@@ -372,6 +374,65 @@ describe('Pick Your Sin sessions', () => {
     const sock = { sendMessage: vi.fn(async () => ({ key: { id: 'announcement' } })) };
     await expect(beginPickYourSinSession(sock, chatId, players, 'admin@s.whatsapp.net'))
       .rejects.toThrow('already completed PICK YOUR SIN today');
+  });
+
+  it('restores the original player with the same card, colour and step inside the 15-minute window', async () => {
+    let sent = 0;
+    const sock = { user: { id: '234899999999:1@s.whatsapp.net' }, sendMessage: vi.fn(async () => ({ key: { id: `bot-${++sent}` } })) };
+    await beginPickYourSinSession(sock, chatId, players.slice(0, 2), 'admin@s.whatsapp.net');
+    await handlePickYourSinMessage(sock, chatId, colorMessage('red'), 'red', players[0]);
+    const session = Object.values(state.pickYourSinSessions)[0];
+    const original = session.playerStates[players[0]];
+    const savedCard = original.currentCard;
+    original.step = 4;
+    original.passUsed = true;
+
+    await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
+    expect(original.status).toBe('out');
+    expect(original.waitingForReplacement).toBe(true);
+    expect(await recoverPickYourSinPlayer(sock, chatId, players[0])).toBe(true);
+
+    const restored = Object.values(state.pickYourSinSessions)[0].playerStates[players[0]];
+    expect(restored).toMatchObject({
+      status: 'active', step: 4, color: 'red', passUsed: true,
+      currentCard: savedCard, waiting: true, waitingForReplacement: false
+    });
+    expect(restored.questionMessageId).toBe(`bot-${sent}`);
+  });
+
+  it('gives a substitute a completely fresh PICK YOUR SIN state', async () => {
+    let sent = 0;
+    const sock = { user: { id: '234899999999:1@s.whatsapp.net' }, sendMessage: vi.fn(async () => ({ key: { id: `bot-${++sent}` } })) };
+    await beginPickYourSinSession(sock, chatId, players.slice(0, 2), 'admin@s.whatsapp.net');
+    await handlePickYourSinMessage(sock, chatId, colorMessage('red'), 'red', players[0]);
+    const session = Object.values(state.pickYourSinSessions)[0];
+    const original = session.playerStates[players[0]];
+    original.step = 8;
+    original.passUsed = true;
+    original.currentCard = 'The removed player’s saved card';
+    original.currentType = 'dare';
+
+    await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
+    expect(await replacePickYourSinPlayer(sock, chatId, players[0], players[2])).toBe(true);
+
+    const updated = Object.values(state.pickYourSinSessions)[0];
+    expect(updated.players).toContain(players[2]);
+    expect(updated.players).not.toContain(players[0]);
+    expect(updated.playerStates[players[2]]).toMatchObject({
+      status: 'active', step: 0, color: null, lastColor: null,
+      awaitingColor: true, passUsed: false, currentCard: null,
+      currentType: null, waiting: false
+    });
+
+    expect(await recoverPickYourSinPlayer(sock, chatId, players[0])).toBe(true);
+    const restored = Object.values(state.pickYourSinSessions)[0];
+    expect(restored.players).toContain(players[0]);
+    expect(restored.players).not.toContain(players[2]);
+    expect(restored.playerStates[players[0]]).toMatchObject({
+      status: 'active', step: 8, color: 'red', passUsed: true,
+      currentCard: 'The removed player’s saved card', currentType: 'dare'
+    });
+    expect(restored.playerStates[players[2]]).toBeUndefined();
   });
 
 });

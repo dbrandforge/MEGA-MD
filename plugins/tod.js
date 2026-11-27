@@ -9,6 +9,7 @@ const SESSIONS_KEY = 'todSessions';
 const TIMEOUT_MS = 10 * 60 * 1000;
 const WARNING_MS = 7 * 60 * 1000;
 const NEXT_QUESTION_COOLDOWN_MS = 30 * 1000;
+const RECOVERY_WINDOW_MS = 15 * 60 * 1000;
 
 async function getSessions(chatId) {
     return (await store.getSetting(chatId, SESSIONS_KEY)) || {};
@@ -20,8 +21,12 @@ async function saveSessions(chatId, sessions) {
 export async function hasActiveTodSession(chatId, userId, sock = global.__forgeSock) {
     const sessions = await getSessions(chatId);
     for (const session of Object.values(sessions)) {
-        if (!['active', 'choosing_mode'].includes(session.status)) continue;
+        if (session.status === 'paused' && Date.now() >= Number(session.recoveryDeadlineAt || 0)) continue;
+        if (!['active', 'choosing_mode', 'paused'].includes(session.status)) continue;
         for (const player of session.players || []) if (await sameWhatsAppUser(sock, player, userId)) return true;
+        for (const [archivedPlayer, archive] of Object.entries(session.recoveryArchives || {})) {
+            if (Number(archive.recoveryDeadlineAt) > Date.now() && await sameWhatsAppUser(sock, archivedPlayer, userId)) return true;
+        }
     }
     return false;
 }
@@ -34,23 +39,26 @@ function getPatternType(round) {
 
 async function endSession(sock, chatId, session, reason = 'ended') {
     const sessions = await getSessions(chatId);
-    if (sessions[session.id]) {
-        sessions[session.id].status = 'ended';
+    const stored = sessions[session.id];
+    if (stored) {
+        if (reason === 'timeout') {
+            stored.status = 'paused';
+            stored.pauseReason = 'inactivity';
+            stored.removedPlayer = stored.waitingFor || stored.currentAnswerer || null;
+            stored.removedAt = Date.now();
+            stored.recoveryDeadlineAt = stored.removedAt + RECOVERY_WINDOW_MS;
+            stored.warningSent = false;
+        } else {
+            stored.status = 'ended';
+            stored.endedAt = Date.now();
+        }
         await saveSessions(chatId, sessions);
     }
-    let text = `🛑 *Truth or Dare session ended*\n\n${session.players.map(mention).join(' & ')}`;
-    if (reason === 'timeout') text += `\n\nEnded due to 10 minutes inactivity.`;
-    else if (reason === 'manual') text += `\n\nEnded by a player.`;
-    const sent = await sock.sendMessage(chatId, { text, mentions: [answerer] });
-    session.questionMessageId = sent?.key?.id || null;
-    const latestSessions = await getSessions(chatId);
-    const latest = latestSessions[session.id];
-    if (latest?.status === 'active' && latest.round === session.round) {
-        latest.questionMessageId = session.questionMessageId;
-        latest.advancing = false;
-        latestSessions[session.id] = latest;
-        await saveSessions(chatId, latestSessions);
-    }
+    let text = reason === 'timeout'
+        ? `⌛ *Truth or Dare paused*\n\n${session.players.map(mention).join(' & ')}\n\nThe active player did not respond for 10 minutes. An admin has 15 minutes to resume that player or replace them.`
+        : `🛑 *Truth or Dare session ended*\n\n${session.players.map(mention).join(' & ')}`;
+    if (reason === 'manual') text += `\n\nEnded by a player.`;
+    await sock.sendMessage(chatId, { text, mentions: session.players });
 }
 
 async function startRound(sock, chatId, session) {
@@ -89,6 +97,7 @@ async function startRound(sock, chatId, session) {
     const list = type === 'truth' ? getTruths(gender) : getDares(gender);
     const content = randomFrom(list);
 
+    session.currentPrompt = content;
     session.currentAnswerer = answerer;
     session.waitingFor = answerer;
     session.currentType = type;
@@ -212,7 +221,7 @@ export async function completeTodTurn(sock, chatId, senderId, options = {}) {
     sessions[session.id] = session;
     await saveSessions(chatId, sessions);
     await sock.sendMessage(chatId, {
-        text: `✅ ${mention(senderId)} is done!\\n\\n⏳ Next question in *30 seconds*.`,
+        text: `✅ ${mention(senderId)} is done!\n\n⏳ Next question in *30 seconds*.`,
         mentions: session.players
     }, options.message ? { quoted: options.message } : undefined);
 
@@ -336,6 +345,132 @@ export default {
         }, { quoted: message });
     }
 };
+
+export async function recoverTodPlayer(sock, chatId, playerId) {
+    const sessions = await getSessions(chatId);
+    const session = Object.values(sessions).find(item =>
+        (item.status === 'paused' && item.removedPlayer === playerId)
+        || item.recoveryArchives?.[playerId]
+    );
+    if (!session) return false;
+    const archive = session.recoveryArchives?.[playerId];
+    const deadline = Number(archive?.recoveryDeadlineAt || session.recoveryDeadlineAt || 0);
+    if (!deadline || Date.now() >= deadline) return false;
+
+    if (archive) {
+        if (session.status === 'paused' && session.removedPlayer && session.removedPlayer !== playerId) {
+            const pausedId = session.removedPlayer;
+            session.recoveryArchives = session.recoveryArchives || {};
+            session.recoveryArchives[pausedId] = {
+                slotIndex: session.players.indexOf(pausedId),
+                recoveryDeadlineAt: session.recoveryDeadlineAt,
+                round: session.round,
+                currentPrompt: session.currentPrompt,
+                currentType: session.currentType,
+                currentGender: session.currentGender,
+                starterGender: session.starterGender,
+                partnerGender: session.partnerGender,
+                questionsCompleted: Number(session.questionsCompleted?.[pausedId] || 0)
+            };
+        }
+        const slotIndex = Number(archive.slotIndex);
+        const displacedPlayer = session.players?.[slotIndex];
+        if (!Number.isInteger(slotIndex) || !displacedPlayer) return false;
+        session.players[slotIndex] = playerId;
+        session.questionsCompleted = session.questionsCompleted || {};
+        delete session.questionsCompleted[displacedPlayer];
+        session.questionsCompleted[playerId] = Number(archive.questionsCompleted || 0);
+        session.round = archive.round;
+        session.currentAnswerer = playerId;
+        session.waitingFor = playerId;
+        session.currentType = archive.currentType;
+        session.currentGender = archive.currentGender;
+        session.currentPrompt = archive.currentPrompt;
+        session.starterGender = archive.starterGender;
+        session.partnerGender = archive.partnerGender;
+        delete session.recoveryArchives[playerId];
+    } else if (!session.currentPrompt || !session.waitingFor) {
+        return false;
+    }
+
+    session.status = 'active';
+    session.pauseReason = null;
+    session.removedPlayer = null;
+    session.removedAt = null;
+    session.recoveryDeadlineAt = null;
+    session.lastActivity = Date.now();
+    session.warningSent = false;
+    session.advancing = false;
+    const typeLabel = session.currentType === 'truth' ? '🔥 *TRUTH*' : '💀 *DARE*';
+    const sent = await sock.sendMessage(chatId, {
+        text: `▶️ *TRUTH OR DARE — RESUMED*\n\n${typeLabel} · Round ${session.round}\n\n${mention(playerId)}, continue with your saved prompt:\n\n${session.currentPrompt}\n\nUse *.done* when finished. Your round and progress are unchanged.`,
+        mentions: [playerId]
+    });
+    session.questionMessageId = sent?.key?.id || null;
+    sessions[session.id] = session;
+    await saveSessions(chatId, sessions);
+    return true;
+}
+
+export async function replaceTodPlayer(sock, chatId, removedId, replacementId) {
+    const sessions = await getSessions(chatId);
+    const session = Object.values(sessions).find(item =>
+        item.status === 'paused' && item.removedPlayer === removedId
+    );
+    if (!session || !session.recoveryDeadlineAt || Date.now() >= Number(session.recoveryDeadlineAt)) return false;
+    if (!session.players.includes(removedId) || session.players.includes(replacementId)) return false;
+    const gender = await getUserGender(replacementId, sock);
+    if (!['guy', 'lady'].includes(gender)) return false;
+
+    const index = session.players.indexOf(removedId);
+    session.recoveryArchives = session.recoveryArchives || {};
+    session.recoveryArchives[removedId] = {
+        slotIndex: index,
+        recoveryDeadlineAt: session.recoveryDeadlineAt,
+        round: session.round,
+        currentPrompt: session.currentPrompt,
+        currentType: session.currentType,
+        currentGender: session.currentGender,
+        starterGender: session.starterGender,
+        partnerGender: session.partnerGender,
+        questionsCompleted: Number(session.questionsCompleted?.[removedId] || 0)
+    };
+    session.players[index] = replacementId;
+    if (index === 0) session.starterGender = gender;
+    else if (index === 1) session.partnerGender = gender;
+    session.questionsCompleted = session.questionsCompleted || {};
+    delete session.questionsCompleted[removedId];
+    session.questionsCompleted[replacementId] = 0;
+    if (session.mode === 'solo') session.round = 1;
+    const round = session.round;
+    const type = session.mode === 'solo'
+        ? (Math.random() > 0.5 ? 'truth' : 'dare')
+        : getPatternType(round);
+    const list = type === 'truth' ? getTruths(gender) : getDares(gender);
+    session.currentAnswerer = replacementId;
+    session.waitingFor = replacementId;
+    session.currentType = type;
+    session.currentGender = gender;
+    session.currentPrompt = randomFrom(list);
+    session.status = 'active';
+    session.pauseReason = null;
+    session.removedPlayer = null;
+    session.removedAt = null;
+    session.recoveryDeadlineAt = null;
+    session.lastActivity = Date.now();
+    session.warningSent = false;
+    session.advancing = false;
+
+    const typeLabel = type === 'truth' ? '🔥 *TRUTH*' : '💀 *DARE*';
+    const sent = await sock.sendMessage(chatId, {
+        text: `🔁 *TRUTH OR DARE — SUBSTITUTE TURN*\n\n${mention(replacementId)}, you are replacing ${mention(removedId)}. Your progress starts fresh.\n${typeLabel} · Round ${session.round}\n\n${session.currentPrompt}\n\nUse *.done* when finished.`,
+        mentions: [replacementId, removedId]
+    });
+    session.questionMessageId = sent?.key?.id || null;
+    sessions[session.id] = session;
+    await saveSessions(chatId, sessions);
+    return true;
+}
 
 export async function checkTodTimeouts(sock, chatId) {
     const sessions = await getSessions(chatId);

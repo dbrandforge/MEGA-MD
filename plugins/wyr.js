@@ -66,7 +66,9 @@ async function sendQuestion(sock, chatId, senderId, quoted, gender) {
   const previous = sessions[senderId] || {};
   sessions[senderId] = {
     ...previous,
+    status: 'active',
     gender,
+    currentOptions: options,
     questionMessageId: sent?.key?.id || null,
     questionsAsked: (previous.questionsAsked || 0) + 1,
     questionsAttempted: previous.questionsAttempted || 0,
@@ -89,8 +91,10 @@ export async function handleWyrContinuity(sock, chatId, message, senderId) {
   const session = sessions[senderId];
   if (!session) return false;
 
-  if (session.expiresAt && session.expiresAt < Date.now()) {
-    delete sessions[senderId];
+  if (session.expiresAt && session.expiresAt <= Date.now()) {
+    session.status = 'expired';
+    session.expiredAt = Number(session.expiresAt);
+    session.recoveryDeadlineAt = Number(session.expiresAt) + 15 * 60 * 1000;
     await saveSessions(chatId, sessions);
     return false;
   }
@@ -143,6 +147,63 @@ export async function handleWyrContinuity(sock, chatId, message, senderId) {
     return true;
   }
   await sendQuestion(sock, chatId, senderId, message, gender);
+  return true;
+}
+
+export async function recoverWyrPlayer(sock, chatId, playerId) {
+  if (!isFeatureGroup(chatId)) return false;
+  const sessions = await getSessions(chatId);
+  const session = sessions[playerId];
+  if (!session) return false;
+  if (!['expired', 'replaced'].includes(session.status) && Number(session.expiresAt || 0) <= Date.now()) {
+    session.status = 'expired';
+    session.expiredAt = Number(session.expiresAt);
+    session.recoveryDeadlineAt = Number(session.expiresAt) + 15 * 60 * 1000;
+    await saveSessions(chatId, sessions);
+  }
+  if (!['expired', 'replaced'].includes(session.status) || !session.recoveryDeadlineAt || Date.now() >= Number(session.recoveryDeadlineAt)) return false;
+  if (!Array.isArray(session.currentOptions) || session.currentOptions.length !== 2) return false;
+
+  const sent = await sock.sendMessage(chatId, {
+    text: `▶️ *WYR SESSION RESUMED*\n\n@${playerId.split('@')[0]}, your previous dilemma is restored:\n\n🅰️ ${session.currentOptions[0]}\n\n🅱️ ${session.currentOptions[1]}\n\nChoose A or B. Your previous answers and question count are preserved.`,
+    mentions: [playerId]
+  });
+  session.status = 'active';
+  session.expiredAt = null;
+  session.recoveryDeadlineAt = null;
+  session.updatedAt = Date.now();
+  session.expiresAt = Date.now() + EXPIRY_MS;
+  session.questionMessageId = sent?.key?.id || null;
+  sessions[playerId] = session;
+  await saveSessions(chatId, sessions);
+  return true;
+}
+
+export async function replaceWyrPlayer(sock, chatId, removedId, replacementId) {
+  if (!isFeatureGroup(chatId)) return false;
+  const sessions = await getSessions(chatId);
+  const removed = sessions[removedId];
+  if (!removed) return false;
+  if (removed.status !== 'replaced' && removed.status !== 'expired' && Number(removed.expiresAt || 0) <= Date.now()) {
+    removed.status = 'expired';
+    removed.expiredAt = Number(removed.expiresAt);
+    removed.recoveryDeadlineAt = Number(removed.expiresAt) + 15 * 60 * 1000;
+    await saveSessions(chatId, sessions);
+  }
+  if (!['expired', 'replaced'].includes(removed.status) || !removed.recoveryDeadlineAt || Date.now() >= Number(removed.recoveryDeadlineAt)) return false;
+  const existingReplacement = sessions[replacementId];
+  if (existingReplacement && (
+    Number(existingReplacement.expiresAt || 0) > Date.now()
+    || (['expired', 'replaced'].includes(existingReplacement.status) && Number(existingReplacement.recoveryDeadlineAt || 0) > Date.now())
+  )) return false;
+  const gender = await getUserGender(replacementId, sock);
+  if (!gender) return false;
+
+  removed.status = 'replaced';
+  removed.replacedBy = replacementId;
+  if (existingReplacement) delete sessions[replacementId];
+  await saveSessions(chatId, sessions);
+  await sendQuestion(sock, chatId, replacementId, null, gender);
   return true;
 }
 
@@ -210,6 +271,8 @@ export default {
     }
 
     if (sessions[senderId]) {
+      // Starting a new WYR session is an explicit reset and forfeits recovery
+      // of the previous expired session.
       delete sessions[senderId];
       await saveSessions(chatId, sessions);
     }

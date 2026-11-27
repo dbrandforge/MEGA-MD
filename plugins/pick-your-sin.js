@@ -11,7 +11,7 @@ const DAILY_KEY = 'pickYourSinDailyCompletions';
 const COOLDOWN_MS = 30_000;
 const NO_ANSWER_REMINDER_MS = 5 * 60 * 1000;
 const PLAYER_INACTIVITY_MS = 10 * 60 * 1000;
-const REPLACEMENT_WINDOW_MS = 5 * 60 * 1000;
+const REPLACEMENT_WINDOW_MS = 15 * 60 * 1000;
 const chatQueues = new Map();
 const inactivityTimers = new Map();
 const replacementTimers = new Map();
@@ -150,13 +150,25 @@ function scheduleReplacementExpiry(sock, chatId, sessionId, playerId, deadline) 
         const latest = await getSessions(chatId);
         const current = latest[sessionId];
         const currentState = current?.playerStates?.[playerId];
-        if (!current || current.status !== 'active' || !currentState || currentState.status !== 'out' || !currentState.waitingForReplacement || currentState.replacementDeadlineAt !== deadline) return;
-        currentState.waitingForReplacement = false;
-        currentState.replacementExpired = true;
+        const archive = current?.recoveryArchives?.[playerId];
+        const targetState = currentState || archive?.state;
+        const targetDeadline = currentState?.replacementDeadlineAt || archive?.replacementDeadlineAt;
+        if (!current || current.status !== 'active' || !targetState || targetState.status !== 'out' || !targetState.waitingForReplacement || Number(targetDeadline) !== Number(deadline)) return;
+        targetState.waitingForReplacement = false;
+        targetState.replacementExpired = true;
+        if (archive) {
+          archive.recoveryExpired = true;
+          archive.replacementDeadlineAt = null;
+        }
+        const allPlayersFinished = current.players.every(id => {
+          const state = current.playerStates?.[id];
+          return state?.status === 'complete' || (state?.status === 'out' && !state.waitingForReplacement);
+        });
+        const allArchivesExpired = Object.values(current.recoveryArchives || {}).every(item => item.recoveryExpired || !item.replacementDeadlineAt);
         latest[sessionId] = current;
         await saveSessions(chatId, latest);
         await sock.sendMessage(chatId, { text: `⌛ The replacement window for ${mention(playerId)} has expired. PICK YOUR SIN continues with the remaining players.` });
-        if (current.players.every(id => ['complete', 'out'].includes(current.playerStates?.[id]?.status))) {
+        if (allPlayersFinished && allArchivesExpired) {
           current.status = 'complete';
           current.completedAt = Date.now();
           latest[sessionId] = current;
@@ -198,10 +210,10 @@ async function schedulePlayerInactivity(sock, chatId, sessionId, playerId, token
         state.waitingSince = null;
         state.removedAt = Date.now();
         state.waitingForReplacement = true;
-        state.replacementDeadlineAt = Date.now() + REPLACEMENT_WINDOW_MS;
+        state.replacementDeadlineAt = state.removedAt + REPLACEMENT_WINDOW_MS;
         sessions[sessionId] = session;
         await saveSessions(chatId, sessions);
-        await sock.sendMessage(chatId, { text: `⌛ ${mention(playerId)} has been removed after 10 minutes without an answer. An admin has five minutes to replace them with *.picksin replace @${playerId.split('@')[0]} @replacement*. Other players continue normally.`, mentions: [playerId] });
+        await sock.sendMessage(chatId, { text: `⌛ ${mention(playerId)} has been removed after 10 minutes without an answer. An admin has 15 minutes to resume them or replace them with *.picksin replace @${playerId.split('@')[0]} @replacement*. Other players continue normally.`, mentions: [playerId] });
         scheduleReplacementExpiry(sock, chatId, sessionId, playerId, state.replacementDeadlineAt);
       });
     } catch (error) { console.error('[PICK YOUR SIN] Inactivity removal failed:', error); }
@@ -216,6 +228,9 @@ export async function resumePickYourSinSessions(sock, chatId) {
   let changed = false;
   for (const session of Object.values(sessions)) {
     if (session.status !== 'active') continue;
+    for (const [archivedPlayer, archive] of Object.entries(session.recoveryArchives || {})) {
+      if (archive.replacementDeadlineAt) pendingReplacement.push({ sessionId: session.id, playerId: archivedPlayer, deadline: archive.replacementDeadlineAt });
+    }
     for (const [playerId, state] of Object.entries(session.playerStates || {})) {
       if (state.status === 'active' && state.waiting) {
         if (!state.inactivityToken) {
@@ -236,32 +251,130 @@ export async function resumePickYourSinSessions(sock, chatId) {
   return pendingInactivity.length + pendingReplacement.length;
 }
 async function replaceInactivePlayer(sock, chatId, message, session) {
+  const fail = async text => {
+    await sock.sendMessage(chatId, { text, quoted: message });
+    return false;
+  };
   const tagged = await Promise.all(getMentions(message).map(async id => (await canonicalWhatsAppUserId(sock, id)) || id));
   const uniqueTags = [...new Set(tagged)];
-  if (uniqueTags.length !== 2 || uniqueTags.length !== tagged.length) return sock.sendMessage(chatId, { text: 'Tag the removed participant first and the replacement second: *.picksin replace @removed @replacement*.', quoted: message });
+  if (uniqueTags.length !== 2 || uniqueTags.length !== tagged.length) return fail('Tag the removed participant first and the replacement second: *.picksin replace @removed @replacement*.');
   const [removedId, replacementId] = uniqueTags;
   const removedState = session.playerStates?.[removedId];
-  if (!session.players.includes(removedId) || !removedState || removedState.status !== 'out' || !removedState.waitingForReplacement || Date.now() > Number(removedState.replacementDeadlineAt || 0)) return sock.sendMessage(chatId, { text: 'That participant is not within an active five-minute replacement window.', quoted: message });
-  if (session.players.includes(replacementId)) return sock.sendMessage(chatId, { text: 'The replacement is already in this PICK YOUR SIN session.', quoted: message });
+  if (!session.players.includes(removedId) || !removedState || removedState.status !== 'out' || !removedState.waitingForReplacement || Date.now() >= Number(removedState.replacementDeadlineAt || 0)) return fail('That participant is not within an active 15-minute recovery window.');
+  if (session.players.includes(replacementId)) return fail('The replacement is already in this PICK YOUR SIN session.');
   const daily = (await store.getSetting(chatId, DAILY_KEY)) || {};
-  if ((daily[lagosDateKey()] || []).includes(replacementId)) return sock.sendMessage(chatId, { text: 'That replacement has already completed PICK YOUR SIN today and cannot take another daily slot.', quoted: message });
+  if ((daily[lagosDateKey()] || []).includes(replacementId)) return fail('That replacement has already completed PICK YOUR SIN today and cannot take another daily slot.');
   const replacementTimerKey = `${session.id}:${removedId}:${removedState.replacementDeadlineAt}`;
   const replacementTimer = replacementTimers.get(replacementTimerKey);
   if (replacementTimer) clearTimeout(replacementTimer);
   replacementTimers.delete(replacementTimerKey);
   const gender = await getUserGender(replacementId, sock);
-  const nextState = { ...removedState, status: 'active', gender: gender || null, waitingForGender: !gender, color: null, lastColor: null, awaitingColor: true, waiting: false, questionMessageId: null, currentCard: null, currentType: null, waitingSince: null, inactivityToken: null, waitingForReplacement: false, replacementDeadlineAt: null, replacementExpired: false, removedAt: null, cooldownUntil: null, nextPromptToken: null, replacedPlayer: removedId };
+  session.recoveryArchives = session.recoveryArchives || {};
+  session.recoveryArchives[removedId] = {
+    state: { ...removedState },
+    slotIndex: session.players.indexOf(removedId),
+    replacementDeadlineAt: removedState.replacementDeadlineAt,
+    replacedBy: replacementId
+  };
+  // A substitute is a new participant: never copy the removed player's step,
+  // colour, pass, card, timers, or response history.
+  const nextState = {
+    status: 'active', gender: gender || null, waitingForGender: !gender,
+    color: null, lastColor: null, awaitingColor: true,
+    step: 0, truthIndex: 0, dareIndex: 0, passUsed: false,
+    waiting: false, questionMessageId: null, currentCard: null,
+    currentType: null, waitingSince: null, inactivityToken: null,
+    waitingForReplacement: false, replacementDeadlineAt: null,
+    replacementExpired: false, removedAt: null, cooldownUntil: null,
+    nextPromptToken: null, replacedPlayer: removedId
+  };
   session.players = session.players.map(id => id === removedId ? replacementId : id);
   delete session.playerStates[removedId];
   session.playerStates[replacementId] = nextState;
   const sessions = await getSessions(chatId);
   sessions[session.id] = session;
   await saveSessions(chatId, sessions);
-  await sock.sendMessage(chatId, { text: `🔁 ${mention(replacementId)} has replaced ${mention(removedId)} and will continue from the same game progress.`, mentions: [replacementId, removedId] });
+  scheduleReplacementExpiry(sock, chatId, session.id, removedId, removedState.replacementDeadlineAt);
+  await sock.sendMessage(chatId, { text: `🔁 ${mention(replacementId)} has replaced ${mention(removedId)} and will start PICK YOUR SIN from the beginning.`, mentions: [replacementId, removedId] });
   if (nextState.waitingForGender) await sock.sendMessage(chatId, { text: `${mention(replacementId)}, register your gender with *.gender guy* or *.gender lady*, then choose a colour.`, mentions: [replacementId] });
   else await sendColorPrompt(sock, chatId, session, replacementId);
   return true;
 }
+export async function recoverPickYourSinPlayer(sock, chatId, playerId) {
+  if (!isFeatureGroup(chatId)) return false;
+  return withChatLock(chatId, async () => {
+    const sessions = await getSessions(chatId);
+    const session = Object.values(sessions).find(item =>
+      item.status === 'active' && (item.players.includes(playerId) || item.recoveryArchives?.[playerId])
+    );
+    if (!session) return false;
+    let state = session.playerStates?.[playerId];
+    const archive = !state ? session.recoveryArchives?.[playerId] : null;
+    const deadline = Number(state?.replacementDeadlineAt || archive?.replacementDeadlineAt || 0);
+    if (archive) {
+      if (!archive.replacementDeadlineAt || Date.now() >= deadline) return false;
+      const slotIndex = Number(archive.slotIndex);
+      const currentSlotPlayer = session.players?.[slotIndex];
+      if (!Number.isInteger(slotIndex) || !currentSlotPlayer) return false;
+      const displacedState = session.playerStates?.[currentSlotPlayer];
+      if (displacedState?.inactivityToken) {
+        const timers = inactivityTimers.get(displacedState.inactivityToken) || [];
+        for (const timer of timers) clearTimeout(timer);
+        inactivityTimers.delete(displacedState.inactivityToken);
+      }
+      delete session.playerStates[currentSlotPlayer];
+      session.players[slotIndex] = playerId;
+      state = archive.state;
+      session.playerStates[playerId] = state;
+      delete session.recoveryArchives[playerId];
+    }
+    if (!state || state.status !== 'out' || !state.waitingForReplacement || !deadline || Date.now() >= deadline) return false;
+
+    const timerKey = `${session.id}:${playerId}:${deadline}`;
+    const timer = replacementTimers.get(timerKey);
+    if (timer) clearTimeout(timer);
+    replacementTimers.delete(timerKey);
+
+    state.status = 'active';
+    state.waitingForReplacement = false;
+    state.replacementDeadlineAt = null;
+    state.replacementExpired = false;
+    state.removedAt = null;
+    state.waiting = true;
+    state.waitingSince = Date.now();
+    state.inactivityToken = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const type = state.currentType || questionType(state.step);
+    const label = type === 'truth' ? '🔥 *TRUTH*' : '💀 *DARE — ACTION REQUIRED*';
+    const progress = type === 'truth' ? `Truth ${state.step < 5 ? state.step + 1 : state.step - 5}/5` : `Dare ${state.step === 5 ? 1 : 2}/2`;
+    const requirement = type === 'truth'
+      ? 'A TRUTH requires a proper written answer with real details (at least 12 words). One-word replies, yes/no, “done” and similar shortcuts will not count.'
+      : 'A DARE is completed only by sending a voice note, photo or video. Text replies will not count.';
+    const sent = await sock.sendMessage(chatId, {
+      text: `▶️ *PICK YOUR SIN — PLAYER RESUMED*\n${mention(playerId)}, continue with your saved prompt.\n${label} · ${progress}\n\n${state.currentCard || 'Your saved prompt is being restored.'}\n\n_Reply to this prompt or tag the bot when you've completed it._ ${requirement} Your colour, step and pass progress are unchanged.`,
+      mentions: [playerId]
+    });
+    state.questionMessageId = sent?.key?.id || null;
+    sessions[session.id] = session;
+    await saveSessions(chatId, sessions);
+    await schedulePlayerInactivity(sock, chatId, session.id, playerId, state.inactivityToken, state.waitingSince);
+    return true;
+  });
+}
+
+export async function replacePickYourSinPlayer(sock, chatId, removedId, replacementId) {
+  if (!isFeatureGroup(chatId)) return false;
+  return withChatLock(chatId, async () => {
+    const sessions = await getSessions(chatId);
+    const session = Object.values(sessions).find(item => item.status === 'active');
+    if (!session) return false;
+    const message = {
+      key: { remoteJid: chatId, id: 'gamerescue-replace', fromMe: false },
+      message: { extendedTextMessage: { contextInfo: { mentionedJid: [removedId, replacementId] } } }
+    };
+    return replaceInactivePlayer(sock, chatId, message, session);
+  });
+}
+
 function buildDecks() {
   return buildPickYourSinBank();
 }
@@ -297,7 +410,12 @@ async function sendPrompt(sock, chatId, session, playerId) {
       text: `🏁 ${mention(playerId)} has completed PICK YOUR SIN — 10 truths and 2 dares.`,
       mentions: [playerId]
     });
-    if (session.players.every(id => ['complete', 'out'].includes(session.playerStates[id]?.status))) {
+    const allPlayersFinished = session.players.every(id => {
+      const playerState = session.playerStates[id];
+      return playerState?.status === 'complete' || (playerState?.status === 'out' && !playerState.waitingForReplacement);
+    });
+    const allArchivesExpired = Object.values(session.recoveryArchives || {}).every(item => item.recoveryExpired || !item.replacementDeadlineAt);
+    if (allPlayersFinished && allArchivesExpired) {
       session.status = 'complete';
       session.completedAt = Date.now();
       const completedSessions = await getSessions(chatId);

@@ -10,7 +10,9 @@ const HOTSEAT_KEY = 'hotseatSession';
 const ADJUSTMENT_MS = Number(config.hotseatAdjustmentMinutes || 10) * 60 * 1000;
 const SESSION_MS = Number(config.hotseatSessionHours || 2) * 60 * 60 * 1000;
 const ANSWER_TIMEOUT_MS = Number(config.hotseatAnswerMinutes || 5) * 60 * 1000;
-const NEXT_QUESTION_MS = Number(config.hotseatNextQuestionSeconds || 60) * 1000;
+const NEXT_QUESTION_MS = Number(config.hotseatNextQuestionSeconds || 30) * 1000;
+const MAX_QUESTIONS_PER_PLAYER = 15;
+const RECOVERY_WINDOW_MS = 15 * 60 * 1000;
 const MIN_PLAYERS = 2;
 const MAX_PLAYERS = 4;
 function playerLimits() { return { min: MIN_PLAYERS, max: MAX_PLAYERS }; }
@@ -93,7 +95,11 @@ async function scheduleHotSeatTimeout(sock, chatId, player, questionId) {
         currentState.status = 'out';
         currentState.waiting = false;
         currentState.timeoutToken = null;
+        currentState.removedAt = Date.now();
+        currentState.recoveryDeadlineAt = currentState.removedAt + RECOVERY_WINDOW_MS;
+        currentState.removalReason = 'answer-timeout';
         await saveSession(chatId, current);
+        await scheduleHotSeatRecoveryExpiry(sock, chatId, player, currentState.recoveryDeadlineAt);
         await muteUser(sock, chatId, player);
         await sock.sendMessage(chatId, {
             text: `⏰ ${mention(player)} did not answer in time → 10-hour mute. Out of Hot Seat.`,
@@ -101,11 +107,41 @@ async function scheduleHotSeatTimeout(sock, chatId, player, questionId) {
         });
         const remaining = current.players.filter(id => current.playerStates?.[id]?.status === 'active');
         if (!remaining.length) {
-            await clearSession(chatId);
-            await sock.sendMessage(chatId, { text: '🛑 *Hot Seat ended* — no active players left.' });
+            await sock.sendMessage(chatId, { text: '⌛ No active Hot Seat players remain. Admin recovery is available for 15 minutes after each removal.' });
         }
     }, remainingMs);
     return true;
+}
+
+async function scheduleHotSeatRecoveryExpiry(sock, chatId, player, deadline) {
+    setTimeout(async () => {
+        const current = await getSession(chatId);
+        const state = current?.playerStates?.[player];
+        const archive = current?.recoveryArchives?.[player];
+        const pendingState = state?.status === 'out' && Number(state.recoveryDeadlineAt) === Number(deadline);
+        const pendingArchive = archive && Number(archive.recoveryDeadlineAt) === Number(deadline);
+        if (!current || (!pendingState && !pendingArchive) || Date.now() < Number(deadline)) return;
+        if (pendingState) {
+            state.recoveryExpired = true;
+            state.recoveryDeadlineAt = null;
+        }
+        if (pendingArchive) {
+            archive.recoveryExpired = true;
+            archive.recoveryDeadlineAt = null;
+        }
+        const allPlayersFinished = (current.players || []).every(id => {
+            const playerState = current.playerStates?.[id];
+            return playerState?.status === 'complete' || (playerState?.status === 'out' && playerState.recoveryExpired);
+        });
+        const allArchivesExpired = Object.values(current.recoveryArchives || {}).every(item => item.recoveryExpired || !item.recoveryDeadlineAt); 
+        const allFinished = allPlayersFinished && allArchivesExpired;
+        if (allFinished) {
+            current.status = 'complete';
+            current.completedAt = Date.now();
+        }
+        await saveSession(chatId, current);
+        await sock.sendMessage(chatId, { text: allFinished ? '🏁 Hot Seat is complete. All player sessions are finished and recovery windows have closed.' : `⌛ ${mention(player)}’s 15-minute Hot Seat recovery window has expired.` , mentions: [player] });
+    }, Math.max(0, Number(deadline) - Date.now()));
 }
 
 async function scheduleGenderDeadline(sock, chatId, player) {
@@ -133,14 +169,17 @@ async function scheduleGenderDeadline(sock, chatId, player) {
         currentState.status = 'out';
         currentState.waitingForGender = false;
         currentState.genderDeadlineToken = null;
+        currentState.removedAt = Date.now();
+        currentState.recoveryDeadlineAt = currentState.removedAt + RECOVERY_WINDOW_MS;
+        currentState.removalReason = 'gender-timeout';
         await saveSession(chatId, current);
+        await scheduleHotSeatRecoveryExpiry(sock, chatId, player, currentState.recoveryDeadlineAt);
         await sock.sendMessage(chatId, {
             text: `⌛ ${mention(player)} did not register a gender within 2 minutes and has been removed from Hot Seat.`,
             mentions: [player]
         });
         if (!current.players.some(id => current.playerStates?.[id]?.status === 'active')) {
-            await clearSession(chatId);
-            await sock.sendMessage(chatId, { text: '🛑 *Hot Seat ended* — no active players left.' });
+            await sock.sendMessage(chatId, { text: '⌛ No active Hot Seat players remain. Admin recovery is available for 15 minutes after each removal.' });
         }
     }, remainingMs);
     return true;
@@ -179,6 +218,12 @@ async function sendPlayerQuestion(sock, chatId, player) {
     }
     const state = session.playerStates?.[player];
     if (!state || state.status !== 'active' || state.waiting) return;
+    if ((state.questionsAnswered || 0) >= MAX_QUESTIONS_PER_PLAYER) {
+        state.status = 'complete';
+        state.completedAt = state.completedAt || Date.now();
+        await saveSession(chatId, session);
+        return false;
+    }
 
     let gender = null;
     try { gender = await getUserGender(await normalizeHotSeatJid(sock, player)); } catch {}
@@ -221,7 +266,7 @@ async function sendPlayerQuestion(sock, chatId, player) {
     await saveSession(chatId, session);
 
     const sentQuestion = await sock.sendMessage(chatId, {
-        text: `🔥 *HOT SEAT — YOUR QUESTION*\n\n${mention(player)}, your question is:\n\n*${question}*\n\n✅ *Reply directly to this question* (swipe/reply), or tag the bot.\nOnly your answer to this active question counts.\n⏰ 5 minutes or 10-hour mute.\n⏳ After answer, next question in *60 seconds*.`,
+        text: `🔥 *HOT SEAT — YOUR QUESTION*\n\n${mention(player)}, your question is:\n\n*${question}*\n\n✅ *Reply directly to this question* (swipe/reply), or tag the bot.\nOnly your answer to this active question counts.\n⏰ 5 minutes or 10-hour mute.\n⏳ After answer, next question in *30 seconds*.`,
         mentions: [player]
     });
     state.questionMessageId = sentQuestion?.key?.id || null;
@@ -244,6 +289,111 @@ export async function resumeHotSeatPlayer(sock, chatId, player) {
         await saveSession(chatId, session);
     }
     await sendPlayerQuestion(sock, chatId, playerKey);
+    return true;
+}
+
+export async function recoverHotSeatPlayer(sock, chatId, player) {
+    if (!isFeatureGroup(chatId) || !player) return false;
+    const session = await getSession(chatId);
+    if (!session || session.status !== 'active') return false;
+    let playerKey = await resolveSessionPlayerKey(sock, session, player);
+    let state = session.playerStates?.[playerKey];
+    if (!state) playerKey = await normalizeHotSeatJid(sock, player);
+    if (!state && session.recoveryArchives?.[playerKey]) {
+        const archive = session.recoveryArchives[playerKey];
+        if (!archive.recoveryDeadlineAt || Date.now() >= Number(archive.recoveryDeadlineAt)) return false;
+        const slotIndex = Number(archive.slotIndex);
+        const currentSlotPlayer = session.players?.[slotIndex];
+        if (!Number.isInteger(slotIndex) || !currentSlotPlayer) return false;
+        delete session.playerStates[currentSlotPlayer];
+        session.players[slotIndex] = playerKey;
+        state = archive.state;
+        session.playerStates[playerKey] = state;
+        delete session.recoveryArchives[playerKey];
+    }
+    if (!state || state.status !== 'out' || !state.recoveryDeadlineAt || Date.now() >= Number(state.recoveryDeadlineAt)) return false;
+
+    const reason = state.removalReason;
+    if (reason === 'answer-timeout') {
+        const { softUnmuteUser } = await import('./softmute.js');
+        await softUnmuteUser(chatId, playerKey, sock);
+    }
+    state.status = 'active';
+    state.removedAt = null;
+    state.recoveryDeadlineAt = null;
+    state.removalReason = null;
+
+    if (reason === 'gender-timeout') {
+        state.waiting = false;
+        state.waitingForGender = true;
+        state.genderDeadlineAt = Date.now() + 2 * 60 * 1000;
+        state.genderDeadlineToken = null;
+        await saveSession(chatId, session);
+        await sock.sendMessage(chatId, {
+            text: `${mention(playerKey)} has been restored to Hot Seat. Register your gender within *2 minutes* using *.gender guy* or *.gender lady*.`,
+            mentions: [playerKey]
+        });
+        await scheduleGenderDeadline(sock, chatId, playerKey);
+        return true;
+    }
+
+    if (reason !== 'answer-timeout' || !state.currentQuestion) {
+        state.status = 'out';
+        state.recoveryDeadlineAt = Date.now();
+        await saveSession(chatId, session);
+        return false;
+    }
+
+    state.waiting = true;
+    state.waitingForGender = false;
+    state.questionId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    state.questionAskedAt = Date.now();
+    state.questionMessageId = null;
+    state.timeoutToken = null;
+    await saveSession(chatId, session);
+    const sent = await sock.sendMessage(chatId, {
+        text: `▶️ *HOT SEAT RESUMED*\n\n${mention(playerKey)}, continue with your saved question:\n\n*${state.currentQuestion}*\n\nReply directly to this question or tag the bot. Your progress is unchanged. You have *5 minutes* to answer.`,
+        mentions: [playerKey]
+    });
+    state.questionMessageId = sent?.key?.id || null;
+    await saveSession(chatId, session);
+    await scheduleHotSeatTimeout(sock, chatId, playerKey, state.questionId);
+    return true;
+}
+
+export async function replaceHotSeatPlayer(sock, chatId, removedPlayer, replacementPlayer) {
+    if (!isFeatureGroup(chatId) || !removedPlayer || !replacementPlayer) return false;
+    const session = await getSession(chatId);
+    if (!session || session.status !== 'active') return false;
+    const removedKey = await resolveSessionPlayerKey(sock, session, removedPlayer);
+    const replacementKey = await normalizeHotSeatJid(sock, replacementPlayer);
+    const removedState = session.playerStates?.[removedKey];
+    if (!removedState || removedState.status !== 'out' || !removedState.recoveryDeadlineAt || Date.now() >= Number(removedState.recoveryDeadlineAt)) return false;
+    if (session.players.some(id => id !== removedKey && (id === replacementKey))) return false;
+
+    const gender = await getUserGender(replacementKey);
+    const slotIndex = session.players.indexOf(removedKey);
+    session.recoveryArchives = session.recoveryArchives || {};
+    session.recoveryArchives[removedKey] = {
+        state: { ...removedState },
+        slotIndex,
+        recoveryDeadlineAt: removedState.recoveryDeadlineAt,
+        replacedBy: replacementKey
+    };
+    session.players = session.players.map(id => id === removedKey ? replacementKey : id);
+    delete session.playerStates[removedKey];
+    session.playerStates[replacementKey] = {
+        status: 'active', waiting: false, waitingForGender: !gender,
+        questionsAnswered: 0, lastAnsweredAt: null, nextQuestionAt: null,
+        genderDeadlineAt: null, questionId: null, questionMessageId: null,
+        currentQuestion: null, gender: gender || null
+    };
+    await saveSession(chatId, session);
+    await sock.sendMessage(chatId, {
+        text: `🔁 ${mention(replacementKey)} has replaced ${mention(removedKey)} in Hot Seat and will start from question *1 of ${MAX_QUESTIONS_PER_PLAYER}*.`,
+        mentions: [replacementKey, removedKey]
+    });
+    await sendPlayerQuestion(sock, chatId, replacementKey);
     return true;
 }
 
@@ -272,8 +422,15 @@ export async function resumeHotSeatSession(sock, chatId) {
         return 0;
     }
     let resumed = 0;
+    for (const [archivedPlayer, archive] of Object.entries(session.recoveryArchives || {})) {
+        if (archive.recoveryDeadlineAt) await scheduleHotSeatRecoveryExpiry(sock, chatId, archivedPlayer, archive.recoveryDeadlineAt);
+    }
     for (const player of session.players || []) {
         const state = session.playerStates?.[player];
+        if (state?.status === 'out' && state.recoveryDeadlineAt) {
+            await scheduleHotSeatRecoveryExpiry(sock, chatId, player, state.recoveryDeadlineAt);
+            continue;
+        }
         if (!state || state.status !== 'active') continue;
         if (state.waitingForGender) {
             if (await scheduleGenderDeadline(sock, chatId, player)) resumed++;
@@ -333,15 +490,35 @@ export async function handleHotSeatAnswer(sock, chatId, message, senderId) {
     state.lastAnsweredAt = Date.now();
     state.nextQuestionAt = Date.now() + NEXT_QUESTION_MS;
     state.questionsAnswered = (state.questionsAnswered || 0) + 1;
+    const completed = state.questionsAnswered >= MAX_QUESTIONS_PER_PLAYER;
+    if (completed) {
+        state.status = 'complete';
+        state.completedAt = Date.now();
+        state.nextQuestionAt = null;
+        const allPlayersFinished = (session.players || []).every(id => {
+            const playerState = session.playerStates?.[id];
+            return playerState?.status === 'complete' || (playerState?.status === 'out' && playerState.recoveryExpired);
+        });
+        const allArchivesExpired = Object.values(session.recoveryArchives || {}).every(item => item.recoveryExpired || !item.recoveryDeadlineAt);
+        const allFinished = allPlayersFinished && allArchivesExpired;
+        if (allFinished) {
+            session.status = 'complete';
+            session.completedAt = Date.now();
+        }
+    }
     await saveSession(chatId, session);
 
     await sock.sendMessage(chatId, {
-        text: `✅ ${mention(senderId)} has answered.\n⏳ Next question in *60 seconds*.`,
+        text: completed
+            ? `🏁 ${mention(senderId)} has completed all *${MAX_QUESTIONS_PER_PLAYER} Hot Seat questions*. Their session is complete.`
+            : `✅ ${mention(senderId)} has answered.\n⏳ Next question in *30 seconds*.`,
         mentions: [senderId]
     });
 
-    const answeredAt = state.lastAnsweredAt;
-    await scheduleNextQuestion(sock, chatId, playerKey, answeredAt);
+    if (!completed) {
+        const answeredAt = state.lastAnsweredAt;
+        await scheduleNextQuestion(sock, chatId, playerKey, answeredAt);
+    }
     return true;
 }
 
@@ -366,7 +543,7 @@ async function beginGame(sock, chatId, session) {
     }]));
     await saveSession(chatId, session);
     await sock.sendMessage(chatId, {
-        text: `🔥 *HOT SEAT STARTED*\n\nPlayers:\n${formatPlayers(session.players)}\n\nGender-based questions (300 each).\nAnswer by *tagging the bot*.\nNext question: *60 seconds* after answer.\n2-hour session max. 5 min timeout = 10h mute.`,
+        text: `🔥 *HOT SEAT STARTED*\n\nPlayers:\n${formatPlayers(session.players)}\n\nEach player gets *${MAX_QUESTIONS_PER_PLAYER} questions*.\nAnswer by *tagging the bot* or replying to the active question.\nNext question: *30 seconds* after each answer.\n2-hour session max. 5 min answer timeout = 10h mute.`,
         mentions: session.players
     });
     for (const player of session.players) {
