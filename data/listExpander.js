@@ -42,7 +42,6 @@ export function expandList(seeds, target, kind = 'truth') {
     ' Right now.',
     ' In this group context.',
     ' Compared to your last time.',
-    ' As if nobody will screenshot it.',
     ' With zero shame.',
     ' Like you\'re confessing at 2am.',
     ' As detailed as a voice note.'
