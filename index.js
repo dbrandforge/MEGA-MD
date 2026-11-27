@@ -327,13 +327,24 @@ function startWatchdog() {
     watchdogTimer = setInterval(async () => {
         if (!currentSocket || isConnecting || reconnectTimer)
             return; // nothing to probe, or a (re)connect is already underway
+        let probeTimer = null;
         try {
+            // sendPresenceUpdate() only confirms a local socket write; it does not
+            // prove WhatsApp answered. A forced privacy IQ waits for a server reply,
+            // detecting half-open sockets that silently stop delivering inbound events.
+            if (typeof currentSocket.fetchPrivacySettings !== 'function') {
+                throw new Error('WhatsApp IQ health probe is unavailable');
+            }
             await Promise.race([
-                currentSocket.sendPresenceUpdate('available'),
-                new Promise((_resolve, reject) => setTimeout(() => reject(new Error('watchdog probe timed out')), WATCHDOG_PROBE_TIMEOUT_MS)),
+                currentSocket.fetchPrivacySettings(true),
+                new Promise((_resolve, reject) => {
+                    probeTimer = setTimeout(() => reject(new Error('WhatsApp IQ probe timed out')), WATCHDOG_PROBE_TIMEOUT_MS);
+                    probeTimer.unref?.();
+                }),
             ]);
         }
         catch (err) {
+            if (probeTimer) clearTimeout(probeTimer);
             printLog('warning', `Watchdog: connection looks dead (${err.message}) - forcing reconnect.`);
             const dead = currentSocket;
             currentSocket = null;
@@ -346,6 +357,8 @@ function startWatchdog() {
                 if (activeSocket === dead) activeSocket = null;
                 scheduleReconnect(5000, { reason: 'watchdog forced reconnect' });
             }
+        } finally {
+            if (probeTimer) clearTimeout(probeTimer);
         }
     }, WATCHDOG_INTERVAL_MS);
 }

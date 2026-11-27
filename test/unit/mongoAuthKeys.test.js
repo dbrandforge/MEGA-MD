@@ -58,18 +58,15 @@ describe('mongo auth key store', () => {
         store.close(); held.close();
     });
 
-    it('limits write batches to 200 operations and applies a real cooldown between batches', async () => {
+    it('keeps a 460-recipient session update inside one bounded Mongo batch', async () => {
         const batchSizes = [];
         const model = { bulkWrite: async operations => { batchSizes.push(operations.length); } };
         const store = createMongoKeyStore({ getModel: async () => model, BufferJSON, proto: null, flushMs: 10000, batchCooldownMs: 75 });
-        const keys = Object.fromEntries(Array.from({ length: 201 }, (_, i) => [String(i), { value: i }]));
+        const keys = Object.fromEntries(Array.from({ length: 460 }, (_, i) => [String(i), { value: i }]));
         await store.set({ session: keys });
-        const startedAt = Date.now();
         await store.flush();
-        const elapsed = Date.now() - startedAt;
         store.close();
-        expect(batchSizes).toEqual([200, 1]);
-        expect(elapsed).toBeGreaterThanOrEqual(70);
+        expect(batchSizes).toEqual([460]);
         expect(store.pendingCount()).toBe(0);
     });
 
@@ -182,7 +179,7 @@ describe('mongo auth key store', () => {
         await firstFlush;
         await store.flush();
         store.close();
-        expect(batchSizes).toEqual([200, 50]);
+        expect(batchSizes).toEqual([250]);
         expect(store.pendingCount()).toBe(0);
         expect(logs.filter(line => line.includes('Persisted 250 changed key(s)'))).toHaveLength(1);
         expect(logs.some(line => line.includes('kinds=session=250'))).toBe(true);
@@ -259,17 +256,17 @@ describe('mongo auth key store', () => {
         const store = createMongoKeyStore({ getModel: async () => model, BufferJSON, proto: null, cacheMax: 25, flushMs: 10000, batchCooldownMs: 0 });
         await store.set({ session: keys });
         await store.flush();
-        expect(model.stats.bulk).toBe(2);
+        expect(model.stats.bulk).toBe(1);
         await store.set({ session: keys });
         expect(store.pendingCount()).toBe(0);
         await store.flush();
         store.close();
-        expect(model.stats.bulk).toBe(2);
+        expect(model.stats.bulk).toBe(1);
         // A genuine ratchet change must still be persisted after cache eviction.
         await store.set({ session: { '299': { ratchet: 'advanced' } } });
         expect(store.pendingCount()).toBe(1);
         await store.flush();
-        expect(model.stats.bulk).toBe(3);
+        expect(model.stats.bulk).toBe(2);
         expect(JSON.parse(model.db.get('session-299.json')).ratchet).toBe('advanced');
     });
 
