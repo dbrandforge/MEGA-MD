@@ -73,15 +73,23 @@ describe('message-scoped outbound protection', () => {
         expect(sendMessage.mock.calls[0][1].text).toBe('fresh');
     });
 
-    it('allows unquoted background sends after the source message expires', async () => {
+    it('suppresses unquoted sends from a handler after the source message expires', async () => {
         const sendMessage = vi.fn();
         const sock = { sendMessage };
         const stale = makeMessage({ ageMs: 181000 });
 
-        await runWithMessageScope(sock, stale, () =>
-            sock.sendMessage(stale.key.remoteJid, { text: 'independent background task' })
+        const result = await runWithMessageScope(sock, stale, () =>
+            sock.sendMessage(stale.key.remoteJid, { text: 'late unquoted handler reply' })
         );
 
+        expect(result).toBeUndefined();
+        expect(sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('still allows independent scheduled sends outside a message scope', async () => {
+        const sendMessage = vi.fn();
+        const sock = { sendMessage };
+        await sock.sendMessage('12345@s.whatsapp.net', { text: 'scheduled post' });
         expect(sendMessage).toHaveBeenCalledOnce();
     });
 });
