@@ -113,6 +113,18 @@ describe('connection-time message cutoff', () => {
     })).toBe(false);
   });
 
+  it('applies the connection cutoff to self-originated notify echoes too', () => {
+    const cutoff = now - 10_000;
+    expect(shouldProcessMessageUpsert('notify', message({
+      key: { remoteJid: '120363000000000000@g.us', id: 'OLD-SELF', fromMe: true },
+      messageTimestamp: secondsAgo(11)
+    }), { now, startedAtMs: cutoff })).toBe(false);
+    expect(shouldProcessMessageUpsert('notify', message({
+      key: { remoteJid: '120363000000000000@g.us', id: 'NEW-SELF', fromMe: true },
+      messageTimestamp: secondsAgo(5)
+    }), { now, startedAtMs: cutoff })).toBe(true);
+  });
+
   it('rounds the cutoff up to WhatsApp timestamp precision', () => {
     expect(setMessageProcessingCutoff(now + 1)).toBe(Math.ceil((now + 1) / 1000) * 1000);
   });
