@@ -31,8 +31,6 @@ import commandHandler from './lib/commandHandler.js';
 import { shouldProcessMessageUpsert, isMessageTooOld, setMessageProcessingCutoff, markMessageRevoked, isMessageRevoked } from './lib/messageEventPolicy.js';
 import { startSchedulerEngine, trackGroup } from './plugins/schedule.js';
 import { FEATURE_GROUPS } from './lib/featureGroups.js';
-import { resumeHotSeatSession } from './plugins/hotseat.js';
-import { resumePickYourSinSessions } from './plugins/pick-your-sin.js';
 import { getCachedGroupMetadata } from './lib/isOwner.js';
 
 import { installSignalDiagnosticGuard } from './lib/signalDiagnostics.js';
