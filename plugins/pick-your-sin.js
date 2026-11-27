@@ -225,27 +225,62 @@ export async function resumePickYourSinSessions(sock, chatId) {
   const sessions = await getSessions(chatId);
   const pendingInactivity = [];
   const pendingReplacement = [];
+  const resumedPrompts = [];
   let changed = false;
+  const now = Date.now();
   for (const session of Object.values(sessions)) {
     if (session.status !== 'active') continue;
     for (const [archivedPlayer, archive] of Object.entries(session.recoveryArchives || {})) {
-      if (archive.replacementDeadlineAt) pendingReplacement.push({ sessionId: session.id, playerId: archivedPlayer, deadline: archive.replacementDeadlineAt });
+      const deadline = Number(archive.replacementDeadlineAt || 0);
+      if (!deadline) continue;
+      if (deadline <= now) {
+        archive.recoveryExpired = true;
+        archive.replacementDeadlineAt = null;
+        changed = true;
+      } else {
+        pendingReplacement.push({ sessionId: session.id, playerId: archivedPlayer, deadline });
+      }
     }
     for (const [playerId, state] of Object.entries(session.playerStates || {})) {
       if (state.status === 'active' && state.waiting) {
-        if (!state.inactivityToken) {
-          state.waitingSince = Number(state.waitingSince || Date.now());
-          state.inactivityToken = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-          changed = true;
-        }
+        // Manual resume starts a fresh inactivity window. Never execute a timer
+        // that expired while the bot was offline.
+        state.waitingSince = now;
+        state.inactivityToken = `${now}-${Math.random().toString(36).slice(2, 8)}`;
+        state.questionMessageId = null;
         pendingInactivity.push({ sessionId: session.id, playerId, token: state.inactivityToken, waitingSince: state.waitingSince });
+        resumedPrompts.push({ session, playerId, state });
+        changed = true;
       }
       if (state.status === 'out' && state.waitingForReplacement && state.replacementDeadlineAt) {
-        pendingReplacement.push({ sessionId: session.id, playerId, deadline: state.replacementDeadlineAt });
+        const deadline = Number(state.replacementDeadlineAt);
+        if (deadline <= now) {
+          state.waitingForReplacement = false;
+          state.replacementExpired = true;
+          state.replacementDeadlineAt = null;
+          changed = true;
+        } else {
+          pendingReplacement.push({ sessionId: session.id, playerId, deadline });
+        }
       }
     }
   }
   if (changed) await saveSessions(chatId, sessions);
+  for (const item of resumedPrompts) {
+    const { session, playerId, state } = item;
+    const type = state.currentType || questionType(state.step);
+    const label = type === 'truth' ? '🔥 *TRUTH*' : '💀 *DARE — ACTION REQUIRED*';
+    const progress = type === 'truth' ? `Truth ${state.step < 5 ? state.step + 1 : state.step - 5}/5` : `Dare ${state.step === 5 ? 1 : 2}/2`;
+    const requirement = type === 'truth'
+      ? 'A TRUTH requires a proper written answer with real details (at least 12 words).'
+      : 'A DARE is completed only by sending a voice note, photo or video.';
+    const sent = await sock.sendMessage(chatId, {
+      text: `▶️ *PICK YOUR SIN — SESSION RESUMED*\n${mention(playerId)}, continue with your saved prompt.\n${label} · ${progress}\n\n${state.currentCard || 'Your saved prompt is being restored.'}\n\nReply to this fresh prompt. ${requirement} Your colour, step and pass progress are unchanged.`,
+      mentions: [playerId]
+    });
+    state.questionMessageId = sent?.key?.id || null;
+    await saveSessions(chatId, sessions);
+  }
   for (const item of pendingInactivity) await schedulePlayerInactivity(sock, chatId, item.sessionId, item.playerId, item.token, item.waitingSince);
   for (const item of pendingReplacement) scheduleReplacementExpiry(sock, chatId, item.sessionId, item.playerId, item.deadline);
   return pendingInactivity.length + pendingReplacement.length;
