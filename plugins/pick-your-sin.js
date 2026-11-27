@@ -669,7 +669,7 @@ async function handleSelectionCommand(sock, message, args, context, chatId) {
     await saveSelection(chatId, selection);
     return sendSelectionList(sock, chatId, selection);
   }
-  return sock.sendMessage(chatId, { text: 'PICK YOUR SIN commands: *.picksin start*, *.picksin add*, *.picksin list*, *.picksin change*, *.picksin arrange*, *.picksin open*, *.picksin status*, *.picksin resetday @user*, *.picksin end*.' }, { quoted: message });
+  return sock.sendMessage(chatId, { text: 'PICK YOUR SIN commands: *.picksin start*, *.picksin add*, *.picksin list*, *.picksin change*, *.picksin arrange*, *.picksin open*, *.picksin status*, *.picksin resetday @user*, *.picksin resume*, *.picksin end*.' }, { quoted: message });
 }
 
 
@@ -935,6 +935,14 @@ export default {
     }
     const sessions = await getSessions(chatId);
     const session = Object.values(sessions).find(item => item.status === 'active');
+    if (sub === 'resume') {
+      if (!session) return sock.sendMessage(chatId, { text: 'No active PICK YOUR SIN session to resume.', quoted: message });
+      const resumed = await resumePickYourSinSessions(sock, chatId);
+      return sock.sendMessage(chatId, {
+        text: resumed ? `▶️ Resumed ${resumed} PICK YOUR SIN player timer(s). Saved progress is unchanged; fresh prompts were issued.` : 'No waiting PICK YOUR SIN players need resuming.',
+        quoted: message
+      });
+    }
     if (sub === 'replace' && session) return replaceInactivePlayer(sock, chatId, message, session);
     if (sub === 'end' || sub === 'stop') {
       if (!session) {
