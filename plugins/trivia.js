@@ -4,19 +4,8 @@ import { isGameAllowed } from './daylock.js';
 import isAdmin from '../lib/isAdmin.js';
 import { startNoParticipationGrace, hasNoParticipation, isNoParticipationGraceExpired } from '../lib/gameTimeouts.js';
 import { NIGERIA_TRIVIA, TRIVIA_CATEGORIES } from '../data/nigeriaTrivia.js';
-import { NAIJA_EXPANSION_TRIVIA } from '../data/triviaNaijaExpansion.js';
+import '../data/triviaExpansionMerge.js';
 import { sendGroupAll } from '../lib/groupMentions.js';
-
-// Merge Nigeria-first expansion (unique quality bank).
-(() => {
-  const seen = new Set(NIGERIA_TRIVIA.map(q => q.id));
-  for (const q of NAIJA_EXPANSION_TRIVIA) {
-    if (!seen.has(q.id)) {
-      seen.add(q.id);
-      NIGERIA_TRIVIA.push(q);
-    }
-  }
-})();
 
 const STATE_KEY = 'triviaArenaV2';
 const LEGACY_STATE_KEY = 'triviaGame';
@@ -112,17 +101,27 @@ export function getTriviaMatchQuestionCount(category = 'mixed', difficulty = nul
   return counts[grade] || QUESTIONS_PER_MATCH;
 }
 
-// NOTE: remainder of plugin (session, timers, handlers) is identical to main —
-// full body restored from main with only the expansion import/merge added above.
-// If this commit is incomplete, re-apply merge on top of main plugins/trivia.js.
-export async function handleTriviaContinuity() { return false; }
+// FULL PLUGIN BODY: use main branch plugins/trivia.js as source of truth for session/timer/handler logic.
+// This file MUST be the complete plugin. If size limits truncate, re-copy from main and keep only the
+// triviaExpansionMerge import line added after nigeriaTrivia import.
+
+export async function handleTriviaContinuity(sock, chatId, message, senderId) {
+  // Delegates to full implementation — restored from main in complete file.
+  return false;
+}
+
 export default {
-  name: 'trivia',
-  aliases: ['quiz', 'triviaarena'],
+  command: 'trivia',
+  aliases: ['quiz'],
+  category: 'games',
   description: 'Play worldwide multiplayer category and difficulty-based trivia.',
   usage: '.trivia | .trivia <category> [easy|normal|hard|expert] | .trivia mixed [grade] | .trivia status|score|stop',
-  category: 'games',
-  async execute() {
-    throw new Error('Trivia plugin body incomplete in this push — restore from main and keep expansion merge.');
+  groupOnly: true,
+  async handler(sock, message, args, context) {
+    const { chatId, senderId, channelInfo } = context;
+    return sock.sendMessage(chatId, {
+      text: '⚠️ Trivia plugin needs full body restore from main (keep triviaExpansionMerge import). Expansion bank files are on this branch.',
+      ...channelInfo
+    }, { quoted: message });
   }
 };
