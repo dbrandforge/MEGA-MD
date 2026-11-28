@@ -57,6 +57,23 @@ describe('global game-session runtime fence', () => {
     expect(isCurrentGameSessionValue('mathGame', restamped)).toBe(true);
   });
 
+  it('restores legacy frozen Symbol-stamped values without mutating the Symbol property', () => {
+    const legacySymbol = Symbol.for('forge.gameSessionRuntimeId');
+    const id = 'legacy-runtime-id';
+    const legacy = { active: true, round: 4 };
+    Object.defineProperty(legacy, legacySymbol, {
+      value: id, enumerable: true, configurable: false, writable: false
+    });
+    Object.freeze(legacy);
+
+    const restored = restoreGameSessionValue('mathGame', legacy);
+    expect(restored).not.toBe(legacy);
+    expect(restored.active).toBe(true);
+    expect(restored[legacySymbol]).toBeUndefined();
+    expect(restored.__forgeGameRuntimeId).toBe(id);
+    expect(JSON.parse(JSON.stringify(restored)).__forgeGameRuntimeId).toBe(id);
+  });
+
   it('fences only live game state, not durable scores or history', () => {
     expect(isGameSessionSetting('pendingGenderGame')).toBe(true);
     expect(isGameSessionSetting('pickYourSinSelection')).toBe(true);
