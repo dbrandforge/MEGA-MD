@@ -59,9 +59,11 @@ staleMessageReportTimer.unref?.();
 
 const incomingMessageQueue = createPerChatMessageQueue({
     maxConcurrentChats: 4,
-    processMessage: async ({ sock, update, queuedAt }) => {
+    processMessage: async ({ sock, update, queuedAt }, _chatId, queueContext) => {
         const mek = update.messages?.[0];
         try {
+            // A socket-generation change invalidates work queued by the old connection.
+            if (!queueContext?.isCurrent()) return;
             // Recheck at execution time: a valid message may become stale while
             // waiting behind other work in the per-chat queue.
             if (isMessageRevoked(mek)) {
@@ -75,9 +77,12 @@ const incomingMessageQueue = createPerChatMessageQueue({
             const handlerStartedAt = process.hrtime.bigint();
             const queueWaitMs = Math.max(0, Date.now() - (Number.isFinite(queuedAt) ? queuedAt : Date.now()));
             await runWithMessageScope(sock, mek, () => handleMessages(sock, update));
+            if (!queueContext?.isCurrent()) return;
             const handlerLatencyMs = Number(process.hrtime.bigint() - handlerStartedAt) / 1e6;
             printLog('info', `Message processed: jid=${mek?.key?.remoteJid || 'unknown'} id=${mek?.key?.id || 'unknown'} queue_wait_ms=${queueWaitMs} handler_ms=${handlerLatencyMs.toFixed(1)}`);
         } catch (err) {
+            // Do not send logs/notices for work invalidated by a reconnect.
+            if (!queueContext?.isCurrent()) return;
             printLog('error', `Error in handleMessages (jid=${mek?.key?.remoteJid || 'unknown'}): ${String(err?.message || 'Unknown message handler error').slice(0, 300)}`);
             const chatId = mek?.key?.remoteJid;
             if (chatId && !isMessageRevoked(mek) && !isMessageTooOld(mek)) {
@@ -1086,6 +1091,8 @@ async function startQasimDev() {
                     printLog('warning', 'Ignoring close event from a non-active WhatsApp socket.');
                     return;
                 }
+                const invalidated = incomingMessageQueue.invalidateAll();
+                printLog('warning', `Invalidated queued WhatsApp work: generation=${invalidated.generation} discarded=${invalidated.discarded}`);
                 activeSocket = null;
                 if (global.__forgeSock === QasimDev) global.__forgeSock = null;
                 global.__forgeWhatsAppConnected = false;
