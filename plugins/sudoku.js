@@ -31,8 +31,8 @@ export default {
     }
 
     if (action === 'resume') {
+      if (!access.ok) return sock.sendMessage(chatId, { text: access.msg, ...(context.channelInfo || {}) }, { quoted: message });
       if (!game || game.status !== 'active') return sock.sendMessage(chatId, { text: 'No saved Sudoku board is available to resume for you.', ...(context.channelInfo || {}) }, { quoted: message });
-      await writeSessions(chatId, sessions);
       game.lastMoveAt = Date.now();
       game.expiresAt = Date.now() + 12 * 60 * 60 * 1000;
       sessions[senderId] = game;
