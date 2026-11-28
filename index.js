@@ -851,7 +851,13 @@ async function startQasimDev() {
                     // entered the per-chat queue and consumed CPU just to be discarded
                     // later by handleMessages().
                     if (!shouldProcessMessageUpsert(chatUpdate?.type, mek)) {
-                        if (isMessageTooOld(mek)) recordStaleMessageDrop();
+                        if (isMessageTooOld(mek)) {
+                            recordStaleMessageDrop();
+                            const rawTimestamp = typeof mek.messageTimestamp?.toNumber === 'function' ? mek.messageTimestamp.toNumber() : Number(mek.messageTimestamp);
+                            const ageSeconds = Number.isFinite(rawTimestamp) ? Math.round((Date.now() - (rawTimestamp < 1e12 ? rawTimestamp * 1000 : rawTimestamp)) / 1000) : 'unknown';
+                            const jidKind = mek?.key?.remoteJid?.endsWith('@g.us') ? 'group' : 'direct';
+                            printLog('warning', `[Inbound guard] dropped stale event type=${chatUpdate?.type || 'unknown'} age_seconds=${ageSeconds} jid_kind=${jidKind} id=${String(mek?.key?.id || 'unknown').slice(0, 16)}`);
+                        }
                         continue;
                     }
 
