@@ -166,7 +166,7 @@ export async function resumeWyrSessions(sock, chatId) {
   let resumed = 0;
   for (const [playerId, session] of active) {
     const sent = await sock.sendMessage(chatId, {
-      text: `▶️ *WOULD YOU RATHER? — RESUMED*\\n\\n@${playerId.split('@')[0]}, your saved dilemma is back:\\n\\n🅰️ ${session.currentOptions[0]}\\n\\n🅱️ ${session.currentOptions[1]}\\n\\nChoose A or B. Your answers and question count are preserved.`,
+      text: `▶️ *WOULD YOU RATHER? — RESUMED*\n\n@${playerId.split('@')[0]}, your saved dilemma is back:\n\n🅰️ ${session.currentOptions[0]}\n\n🅱️ ${session.currentOptions[1]}\n\nChoose A or B. Your answers and question count are preserved.`,
       mentions: [playerId]
     });
     session.questionMessageId = sent?.key?.id || null;
