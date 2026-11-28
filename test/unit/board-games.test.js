@@ -2,6 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { createMiniSudoku, setMiniSudokuCell, checkMiniSudoku } from '../../lib/miniSudoku.js';
 import { chessInitialState, makeChessMove, chessStatus } from '../../lib/chessEngine.js';
 import { checkersInitialState, checkersLegalMoves, makeCheckersMove, checkersStatus } from '../../lib/checkersEngine.js';
+import chessPlugin from '../../plugins/chess.js';
+import checkersPlugin from '../../plugins/checkers.js';
+import sudokuPlugin from '../../plugins/sudoku.js';
+
+describe('Game command registration', () => {
+  it('registers all three games in the games category', () => {
+    expect(chessPlugin).toMatchObject({ command: 'chess', category: 'games', groupOnly: true });
+    expect(checkersPlugin).toMatchObject({ command: 'checkers', category: 'games', groupOnly: true, aliases: ['draughts'] });
+    expect(sudokuPlugin).toMatchObject({ command: 'sudoku', category: 'games' });
+  });
+});
 
 describe('Mini Sudoku', () => {
   it.each([['easy', 3], ['medium', 4], ['hard', 6]])('generates a playable %s %sx%s board', (difficulty, size) => {
