@@ -17,6 +17,7 @@ on:
       - 'plugins/chess.js'
       - 'plugins/checkers.js'
       - 'test/unit/board-games.test.js'
+      - 'test/unit/game-quality.test.js'
       - '.github/workflows/board-games.yml'
       - 'package.json'
       - 'package-lock.json'
