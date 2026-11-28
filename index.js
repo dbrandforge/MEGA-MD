@@ -1091,6 +1091,8 @@ async function startQasimDev() {
                     printLog('warning', 'Ignoring close event from a non-active WhatsApp socket.');
                     return;
                 }
+                const invalidated = incomingMessageQueue.invalidateAll();
+                printLog('warning', `Invalidated queued WhatsApp work: generation=${invalidated.generation} discarded=${invalidated.discarded}`);
                 activeSocket = null;
                 if (global.__forgeSock === QasimDev) global.__forgeSock = null;
                 global.__forgeWhatsAppConnected = false;
