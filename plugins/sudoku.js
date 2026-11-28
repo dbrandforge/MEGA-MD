@@ -21,6 +21,11 @@ export default {
     const action = String(args[0] || 'help').toLowerCase();
     const sessions = await readSessions(chatId);
     let game = sessions[senderId];
+    if (game?.status === 'active' && game.expiresAt && game.expiresAt <= Date.now()) {
+      delete sessions[senderId];
+      await writeSessions(chatId, sessions);
+      game = null;
+    }
 
     if (['help', ''].includes(action)) {
       return sock.sendMessage(chatId, { text:
@@ -40,7 +45,7 @@ export default {
         return sock.sendMessage(chatId, { text: 'You already have an active Sudoku. Use *.sudoku board* or *.sudoku quit* first.', ...(context.channelInfo || {}) }, { quoted: message });
       }
       try {
-        game = { ...createMiniSudoku(difficulty), status: 'active', playerId: senderId };
+        game = { ...createMiniSudoku(difficulty), status: 'active', playerId: senderId, lastMoveAt: Date.now(), expiresAt: Date.now() + 12 * 60 * 60 * 1000 };
         sessions[senderId] = game;
         await writeSessions(chatId, sessions);
         return sock.sendMessage(chatId, { text:
@@ -63,6 +68,7 @@ export default {
       const row = Number(args[1]), col = Number(args[2]), value = args[3];
       const result = setMiniSudokuCell(game, row, col, value);
       if (!result.ok) return sock.sendMessage(chatId, { text: `❌ ${result.error}`, ...(context.channelInfo || {}) }, { quoted: message });
+      game.lastMoveAt = Date.now(); game.expiresAt = Date.now() + 12 * 60 * 60 * 1000;
       const resultCheck = checkMiniSudoku(game);
       if (resultCheck.solved) {
         game.status = 'completed'; game.completedAt = Date.now();
@@ -76,6 +82,7 @@ export default {
     if (action === 'clear' || action === 'erase') {
       const ok = clearMiniSudokuCell(game, Number(args[1]), Number(args[2]));
       if (!ok) return sock.sendMessage(chatId, { text: 'That cell cannot be cleared. Check its row and column, and remember that starting clues are fixed.', ...(context.channelInfo || {}) }, { quoted: message });
+      game.lastMoveAt = Date.now(); game.expiresAt = Date.now() + 12 * 60 * 60 * 1000;
       sessions[senderId] = game; await writeSessions(chatId, sessions);
       return sock.sendMessage(chatId, { text: `Cell cleared.\n\n${renderMiniSudoku(game)}`, ...(context.channelInfo || {}) }, { quoted: message });
     }
