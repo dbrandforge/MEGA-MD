@@ -37,7 +37,7 @@ import { installSignalDiagnosticGuard } from './lib/signalDiagnostics.js';
 import { parseGroupSenderKeyRecoveryTargets, resetGroupSenderKeyMemoryBeforeSend } from './lib/groupSenderKeyRecovery.js';
 import { createPerChatMessageQueue } from './lib/perChatMessageQueue.js';
 import { installNetworkDiagnostics } from './lib/networkDiagnostics.js';
-import { runWithMessageScope } from './lib/messageScopedSocket.js';
+import { runWithMessageScope, invalidateSocketMessageScope } from './lib/messageScopedSocket.js';
 import { rotateGameSessionRuntime } from './lib/gameSessionRuntime.js';
 import { invalidateTicTacToeGames } from './plugins/tictactoe.js';
 
@@ -1086,6 +1086,9 @@ async function startQasimDev() {
                 console.log();
             }
             if (connection === 'close') {
+                // Fence delayed timers/continuations before rotating the socket runtime.
+                // Any callback still holding this socket must not reply after disconnect.
+                invalidateSocketMessageScope(QasimDev);
                 // Dispose per-socket caches even when this is a late close event.
                 cleanupSocketCaches();
                 // Ignore late close events from sockets that have already been superseded.
