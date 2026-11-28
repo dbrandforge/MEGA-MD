@@ -70,7 +70,7 @@ describe('global game-session runtime fence', () => {
     const restored = restoreGameSessionValue('mathGame', legacy);
     expect(restored).not.toBe(legacy);
     expect(restored.active).toBe(true);
-    expect(restored[legacySymbol]).toBeUndefined();
+    expect(restored[legacySymbol]).toBe(id);
     expect(restored.__forgeGameRuntimeId).toBe(id);
     expect(JSON.parse(JSON.stringify(restored)).__forgeGameRuntimeId).toBe(id);
   });
