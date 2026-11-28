@@ -3,6 +3,7 @@ import { resumeMathGame } from './math.js';
 import { resumeHangmanGame } from './hangman.js';
 import { resumeHotSeatSession } from './hotseat.js';
 import { resumePickYourSinSessions } from './pick-your-sin.js';
+import { resumeBasketSession } from './basket.js';
 import axios from 'axios';
 export default {
     command: 'game',
@@ -19,6 +20,11 @@ export default {
             if (target === 'trivia') return resumeTriviaGame(sock, chatId, message, channelInfo);
             if (target === 'math' || target === 'maths') return resumeMathGame(sock, chatId, message, channelInfo);
             if (target === 'hangman') return resumeHangmanGame(sock, chatId, message, channelInfo);
+            if (['basket', 'devilsbasket'].includes(target)) {
+                const senderId = context.senderId || message.key.participant || message.key.remoteJid;
+                const resumed = await resumeBasketSession(sock, chatId, senderId, message, channelInfo);
+                return resumed ? undefined : sock.sendMessage(chatId, { text: 'No saved Devil\'s Basket dare is available to resume.', ...channelInfo }, { quoted: message });
+            }
             if (target === 'hotseat') {
                 const resumed = await resumeHotSeatSession(sock, chatId);
                 return sock.sendMessage(chatId, { text: resumed ? `▶️ Resumed ${resumed} Hot Seat player timer(s).` : 'No saved Hot Seat session needs resuming.', ...channelInfo }, { quoted: message });
@@ -27,7 +33,7 @@ export default {
                 const resumed = await resumePickYourSinSessions(sock, chatId);
                 return sock.sendMessage(chatId, { text: resumed ? `▶️ Resumed ${resumed} PICK YOUR SIN player timer(s).` : 'No saved PICK YOUR SIN players need resuming.', ...channelInfo }, { quoted: message });
             }
-            return sock.sendMessage(chatId, { text: 'Use *.game resume trivia*, *.game resume math*, *.game resume hangman*, *.game resume hotseat*, or *.game resume picksin*.' }, { quoted: message });
+            return sock.sendMessage(chatId, { text: 'Use *.game resume trivia*, *.game resume math*, *.game resume hangman*, *.game resume hotseat*, or *.game resume picksin*, or *.game resume basket*.' }, { quoted: message });
         }
         try {
             const res = await axios.get('https://raw.githubusercontent.com/GlobalTechInfo/Database/main/images/game.json');
