@@ -1,6 +1,11 @@
 import TicTacToe from '../lib/tictactoe.js';
 import { isGameAllowed } from './daylock.js';
 const games = {};
+export function invalidateTicTacToeGames() {
+    const count = Object.keys(games).length;
+    for (const key of Object.keys(games)) delete games[key];
+    return count;
+}
 export function hasActiveTicTacToeGame(chatId) {
     return Object.values(games).some(room => room.state === 'PLAYING' && (room.x === chatId || room.o === chatId));
 }
