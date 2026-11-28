@@ -238,6 +238,23 @@ export async function handleHangmanGuess(sock, chatId, message, senderId, guessR
   return true;
 }
 
+export async function resumeHangmanGame(sock, chatId, message, channelInfo = {}) {
+  const access = await isGameAllowed(chatId, 'hangman');
+  if (!access.ok) {
+    await sock.sendMessage(chatId, { text: access.msg, ...channelInfo }, message ? { quoted: message } : {});
+    return true;
+  }
+  const game = await readGame(chatId);
+  if (!game) {
+    await sock.sendMessage(chatId, { text: 'There is no resumable Hangman round. Start a new one with .hangman.', ...channelInfo }, message ? { quoted: message } : {});
+    return true;
+  }
+  game.lastMoveAt = Date.now();
+  game.expiresAt = Date.now() + 30 * 60 * 1000;
+  await writeGame(chatId, game);
+  return sendGroupAll(sock, chatId, `▶️ *HANGMAN RESUMED*\n\n${renderBoard(game)}`, channelInfo, message ? { quoted: message } : undefined);
+}
+
 export default {
   command: 'hangman',
   aliases: ['hm'],
