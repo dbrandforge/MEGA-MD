@@ -27,12 +27,12 @@ describe('game quality foundations', () => {
   });
 
 
-  it('enforces 200 unique questions per Trivia category with 50 per grade', () => {
+  it('enforces 800 unique questions per Trivia category with 200 per grade', () => {
     const questions = [];
     let id = 0;
     for (const category of ['music', 'sports', 'nollywood', 'everyday', 'geography', 'history', 'culture', 'food', 'tech', 'business', 'science', 'gaming', 'literature', 'hollywood', 'bollywood', 'animation', 'series', 'current-affairs', 'forge']) {
       for (const difficulty of ['easy', 'normal', 'hard', 'expert']) {
-        for (let n = 0; n < 50; n++) {
+        for (let n = 0; n < 200; n++) {
           id += 1;
           questions.push({
             id: `synthetic-${id}`, category, difficulty,
@@ -53,8 +53,8 @@ describe('game quality foundations', () => {
       }
     }
     const report = auditTriviaBank(questions);
-    expect(TRIVIA_BANK_TARGETS.perCategory).toBe(200);
-    expect(TRIVIA_BANK_TARGETS.perDifficulty).toBe(50);
+    expect(TRIVIA_BANK_TARGETS.perCategory).toBe(800);
+    expect(TRIVIA_BANK_TARGETS.perDifficulty).toBe(200);
     expect(report.errors).toHaveLength(0);
     expect(report.categories.music.meetsTarget).toBe(true);
     expect(report.categories.football.meetsTarget).toBe(true);
@@ -73,7 +73,7 @@ describe('game quality foundations', () => {
     expect(report.categories.nigeria.meetsTarget).toBe(true);
     expect(report.ready).toBe(true); // Synthetic fixture covers every selectable category and grade.
     expect(getTriviaCoverage(questions).music.byDifficulty).toEqual({
-      easy: 50, normal: 50, hard: 50, expert: 50
+      easy: 200, normal: 200, hard: 200, expert: 200
     });
   });
 
