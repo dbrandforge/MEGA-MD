@@ -17,6 +17,7 @@ export default {
         const target = String(args[1] || '').toLowerCase();
         if (action === 'resume') {
             const channelInfo = context.channelInfo || {};
+            try {
             if (target === 'trivia') return resumeTriviaGame(sock, chatId, message, channelInfo);
             if (target === 'math' || target === 'maths') return resumeMathGame(sock, chatId, message, channelInfo);
             if (target === 'hangman') return resumeHangmanGame(sock, chatId, message, channelInfo);
@@ -34,6 +35,10 @@ export default {
                 return sock.sendMessage(chatId, { text: resumed ? `▶️ Resumed ${resumed} PICK YOUR SIN player timer(s).` : 'No saved PICK YOUR SIN players need resuming.', ...channelInfo }, { quoted: message });
             }
             return sock.sendMessage(chatId, { text: 'Use *.game resume trivia*, *.game resume math*, *.game resume hangman*, *.game resume hotseat*, *.game resume picksin*, or *.game resume basket*. For board games, use *.sudoku resume*, *.chess resume* or *.checkers resume*.' }, { quoted: message });
+            } catch (error) {
+                console.error('[GAME-RESUME] Recovery failed:', error);
+                return sock.sendMessage(chatId, { text: '❌ Game recovery could not be completed. Your saved progress has not been intentionally cleared. Please try again or ask an admin to inspect the game session.', ...channelInfo }, { quoted: message });
+            }
         }
         try {
             const res = await axios.get('https://raw.githubusercontent.com/GlobalTechInfo/Database/main/images/game.json');
