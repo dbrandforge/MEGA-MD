@@ -63,6 +63,27 @@ export async function resumeBasketSession(sock, chatId, senderId, message, chann
     return true;
 }
 
+export async function resumeBasketSessions(sock, chatId) {
+    if (!chatId?.endsWith('@g.us')) return 0;
+    const sessions = (await store.getSettingForGameResume(chatId, SESSION_KEY)) || {};
+    const activePlayers = Object.entries(sessions).filter(([, session]) => session?.currentDare);
+    if (!activePlayers.length) return 0;
+    const allowed = await isGameAllowed(chatId, 'basket');
+    if (!allowed.ok) return 0;
+    let resumed = 0;
+    for (const [senderId, session] of activePlayers) {
+        const sent = await sock.sendMessage(chatId, {
+            text: `▶️ *DEVIL'S BASKET RESUMED*\\n\\n@${senderId.split('@')[0]} — continue with your saved dare:\\n\\n${session.currentDare}\\n\\nReply to this fresh prompt or tag the bot when complete. Your attempts and used-dare history are preserved.`,
+            mentions: [senderId]
+        });
+        session.questionMessageId = sent?.key?.id || null;
+        session.updatedAt = Date.now();
+        resumed++;
+    }
+    if (!await store.saveSettingVerified(chatId, SESSION_KEY, sessions)) throw new Error('Basket sessions could not be resumed.');
+    return resumed;
+}
+
 export async function hasActiveBasketSession(chatId, senderId) {
     if (!chatId?.endsWith('@g.us') || !senderId) return false;
     const sessions = (await store.getSetting(chatId, SESSION_KEY)) || {};
