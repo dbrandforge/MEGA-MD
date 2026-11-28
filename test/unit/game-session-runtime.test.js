@@ -39,6 +39,24 @@ describe('global game-session runtime fence', () => {
       .toBe(oldSession.__forgeGameRuntimeId);
   });
 
+  it('clones frozen persisted values before restoring or restamping runtime metadata', () => {
+    const original = stampGameSessionValue('mathGame', {
+      active: true,
+      round: 7
+    });
+    const frozen = Object.freeze(original);
+
+    const restored = restoreGameSessionValue('mathGame', frozen);
+    expect(restored).not.toBe(frozen);
+    expect(restored.active).toBe(true);
+    expect(isCurrentGameSessionValue('mathGame', restored)).toBe(true);
+
+    const restamped = stampGameSessionValue('mathGame', frozen);
+    expect(restamped).not.toBe(frozen);
+    expect(restamped.__forgeGameRuntimeId).toBe(original.__forgeGameRuntimeId);
+    expect(isCurrentGameSessionValue('mathGame', restamped)).toBe(true);
+  });
+
   it('fences only live game state, not durable scores or history', () => {
     expect(isGameSessionSetting('pendingGenderGame')).toBe(true);
     expect(isGameSessionSetting('pickYourSinSelection')).toBe(true);
