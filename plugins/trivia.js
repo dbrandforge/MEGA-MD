@@ -101,10 +101,12 @@ export function getTriviaMatchQuestionCount(category = 'mixed', difficulty = nul
   return counts[grade] || QUESTIONS_PER_MATCH;
 }
 
-async function importLegacyGame(chatId) {
+async function importLegacyGame(chatId, { allowResume = false } = {}) {
   const imported = await store.getSetting(chatId, LEGACY_IMPORTED_KEY);
   if (imported) return null;
-  const legacy = await store.getSetting(chatId, LEGACY_STATE_KEY);
+  const legacy = allowResume && store.getSettingForGameResume
+    ? await store.getSettingForGameResume(chatId, LEGACY_STATE_KEY)
+    : await store.getSetting(chatId, LEGACY_STATE_KEY);
   const now = Date.now();
   if (legacy?.active && legacy.questionMessageId && Array.isArray(legacy.options) &&
       legacy.question && legacy.answer && (!legacy.expiresAt || legacy.expiresAt > now)) {
@@ -159,7 +161,7 @@ async function readGame(chatId, { allowResume = false } = {}) {
   let game = allowResume && store.getSettingForGameResume
     ? await store.getSettingForGameResume(chatId, STATE_KEY)
     : await store.getSetting(chatId, STATE_KEY);
-  if (!game?.active) game = await importLegacyGame(chatId);
+  if (!game?.active) game = await importLegacyGame(chatId, { allowResume });
   if (allowResume && game?.active) await saveGame(chatId, game);
   if (!game?.active) return null;
   // Let the persisted no-participation deadline win over the general match expiry after a restart.
