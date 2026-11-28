@@ -507,7 +507,7 @@ export async function resumeTodSessions(sock, chatId) {
         if (!player || !session.currentPrompt) continue;
         const typeLabel = session.currentType === 'truth' ? '🔥 *TRUTH*' : '💀 *DARE*';
         const sent = await sock.sendMessage(chatId, {
-            text: `▶️ *TRUTH OR DARE — RESUMED*\\n\\n${typeLabel} · Round ${session.round}\\n\\n${mention(player)}, continue with your saved prompt:\\n\\n${session.currentPrompt}\\n\\nUse *.done* when finished. Your progress is unchanged.`,
+            text: `▶️ *TRUTH OR DARE — RESUMED*\n\n${typeLabel} · Round ${session.round}\n\n${mention(player)}, continue with your saved prompt:\n\n${session.currentPrompt}\n\nUse *.done* when finished. Your progress is unchanged.`,
             mentions: [player]
         });
         session.questionMessageId = sent?.key?.id || null;
