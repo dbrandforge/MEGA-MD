@@ -12,6 +12,8 @@ on:
   push:
     branches: [main]
     paths:
+      - 'data/hangmanSeeds*.js'
+      - 'data/hangmanWords.js'
       - 'plugins/hangman.js'
       - 'test/unit/hangman-quality.test.js'
       - 'test/unit/game-quality.test.js'
