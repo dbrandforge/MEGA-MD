@@ -4,6 +4,7 @@ import { buildPickYourSinBank, normalizePickYourSinPrompt } from '../data/pickYo
 import { isGameAllowed } from './daylock.js';
 import { isFeatureGroup } from '../lib/featureGroups.js';
 import { sameWhatsAppUser, canonicalWhatsAppUserId } from '../lib/whatsappIdentity.js';
+import { isMessageTooOld } from '../lib/messageEventPolicy.js';
 import { getPickYourSinMediaKind, getPickYourSinMessageContext, isPickYourSinViewOnceMessage, validatePickYourSinTruthAnswer } from '../lib/pickYourSinResponse.js';
 
 const KEY = 'pickYourSinSessions';
@@ -906,7 +907,16 @@ async function handlePickYourSinMessageLocked(sock, chatId, message, text, sende
 }
 
 export async function handlePickYourSinMessage(sock, chatId, message, text, senderId) {
-  return withChatLock(chatId, () => handlePickYourSinMessageLocked(sock, chatId, message, text, senderId));
+  return withChatLock(chatId, async () => {
+    // A live message can wait behind a slow PICK YOUR SIN operation. Re-check
+    // its original WhatsApp timestamp after acquiring the lock so queued work
+    // cannot execute after the 180-second freshness window.
+    if (isMessageTooOld(message)) {
+      console.info('[PICK YOUR SIN] Ignored a message that became stale while waiting for the group lock.');
+      return false;
+    }
+    return handlePickYourSinMessageLocked(sock, chatId, message, text, senderId);
+  });
 }
 
 export default {
