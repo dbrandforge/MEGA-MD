@@ -155,9 +155,12 @@ async function importLegacyGame(chatId) {
   return null;
 }
 
-async function readGame(chatId) {
-  let game = await store.getSetting(chatId, STATE_KEY);
+async function readGame(chatId, { allowResume = false } = {}) {
+  let game = allowResume && store.getSettingForGameResume
+    ? await store.getSettingForGameResume(chatId, STATE_KEY)
+    : await store.getSetting(chatId, STATE_KEY);
   if (!game?.active) game = await importLegacyGame(chatId);
+  if (allowResume && game?.active) await saveGame(chatId, game);
   if (!game?.active) return null;
   // Let the persisted no-participation deadline win over the general match expiry after a restart.
   if (isNoParticipationGraceExpired(game)) return game;
@@ -430,7 +433,7 @@ export async function resumeTriviaGame(sock, chatId, message, channelInfo = {}) 
     return true;
   }
   const result = await withChatLock(chatId, async () => {
-    const game = await readGame(chatId);
+    const game = await readGame(chatId, { allowResume: true });
     if (!game?.active) {
       await sock.sendMessage(chatId, { text: 'There is no resumable Trivia match in this process.', ...channelInfo }, message ? { quoted: message } : {});
       return true;
