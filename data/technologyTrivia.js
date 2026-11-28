@@ -61,7 +61,7 @@ export const TECHNOLOGY_TRIVIA = [
     options: ['A computer operating system', 'A two-dimensional barcode', 'A type of internet cable', 'A digital audio format'],
     answer: 1,
     reviewedAt: '2026-11-06',
-    source: 'https://www.iso.org/standard/62021.html'
+    source: 'https://www.qrcode.com/en/about/'
   },
   {
     id: 'tx007',
