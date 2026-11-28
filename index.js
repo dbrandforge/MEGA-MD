@@ -59,7 +59,7 @@ staleMessageReportTimer.unref?.();
 
 const incomingMessageQueue = createPerChatMessageQueue({
     maxConcurrentChats: 4,
-    processMessage: async ({ sock, update, queuedAt }) => {
+    processMessage: async ({ sock, update, queuedAt }, _chatId, queueContext) => {
         const mek = update.messages?.[0];
         try {
             // Recheck at execution time: a valid message may become stale while
