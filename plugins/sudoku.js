@@ -1,115 +1,113 @@
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import path from 'path';
-const execAsync = promisify(exec);
+import store from '../lib/lightweight_store.js';
+import { createMiniSudoku, setMiniSudokuCell, renderMiniSudoku, checkMiniSudoku, clearMiniSudokuCell } from '../lib/miniSudoku.js';
+import { isGameAllowed } from './daylock.js';
+
+const KEY = 'sudokuSessions';
+const readSessions = async chatId => (await store.getSetting(chatId, KEY)) || {};
+const writeSessions = async (chatId, sessions) => {
+  if (!await store.saveSettingVerified(chatId, KEY, sessions)) throw new Error('Sudoku session could not be saved.');
+};
+const playerTag = id => '@' + String(id || '').split('@')[0];
+
 export default {
-    command: 'sudoku',
-    aliases: ['sudokugen', 'sudokusolve', 'sdk'],
-    category: 'utility',
-    description: 'Generate Sudoku puzzles or solve them',
-    usage: '.sudoku generate [easy|medium|hard]\n.sudoku solve <81 digits, 0 for empty>',
-    async handler(sock, message, args, context) {
-        const { chatId, channelInfo } = context;
-        const scriptPath = path.join(process.cwd(), 'lib', 'sudoku.py');
-        if (!args.length || args[0] === 'help') {
-            return await sock.sendMessage(chatId, {
-                text: `🧩 *Sudoku*\n\n` +
-                    `*Generate a puzzle:*\n` +
-                    `\`.sudoku generate easy\`\n` +
-                    `\`.sudoku generate medium\`\n` +
-                    `\`.sudoku generate hard\`\n\n` +
-                    `*Solve a puzzle:*\n` +
-                    `\`.sudoku solve 530070000600195000098000060800060003400803001700020006060000280000419005000080079\`\n\n` +
-                    `ℹ️ For solve: send 81 digits, use 0 for empty cells`,
-                ...channelInfo
-            }, { quoted: message });
-        }
-        const subCmd = args[0].toLowerCase();
-        if (subCmd === 'generate') {
-            const difficulty = (args[1] || 'medium').toLowerCase();
-            if (!['easy', 'medium', 'hard'].includes(difficulty)) {
-                return await sock.sendMessage(chatId, {
-                    text: `❌ Invalid difficulty. Use: \`easy\`, \`medium\`, or \`hard\``,
-                    ...channelInfo
-                }, { quoted: message });
-            }
-            await sock.sendMessage(chatId, {
-                text: `🧩 Generating ${difficulty} puzzle...`,
-                ...channelInfo
-            }, { quoted: message });
-            try {
-                const { stdout } = await execAsync(`python3 "${scriptPath}" generate ${difficulty}`, { timeout: 30000 });
-                const data = JSON.parse(stdout.trim());
-                if (data.error) {
-                    return await sock.sendMessage(chatId, {
-                        text: `❌ ${data.error}`,
-                        ...channelInfo
-                    }, { quoted: message });
-                }
-                const diffEmoji = { easy: '🟢', medium: '🟡', hard: '🔴' };
-                await sock.sendMessage(chatId, {
-                    text: `🧩 *Sudoku — ${diffEmoji[difficulty]} ${difficulty.toUpperCase()}*\n` +
-                        `📊 *Clues:* ${data.clues}/81\n\n` +
-                        `*Puzzle:*\n\`\`\`\n${data.formatted_puzzle}\n\`\`\`\n\n` +
-                        `*Puzzle code (to solve later):*\n\`${data.puzzle}\`\n\n` +
-                        `_Use \`.sudoku solve ${data.puzzle}\` to reveal solution_`,
-                    ...channelInfo
-                }, { quoted: message });
-            }
-            catch (error) {
-                await sock.sendMessage(chatId, {
-                    text: `❌ Failed to generate: ${error.message}`,
-                    ...channelInfo
-                }, { quoted: message });
-            }
-        }
-        else if (subCmd === 'solve') {
-            const grid = args[1]?.trim();
-            if (!grid) {
-                return await sock.sendMessage(chatId, {
-                    text: `❌ Provide a puzzle code (81 digits, 0 = empty)\n\nExample:\n\`.sudoku solve 530070000600195000...\``,
-                    ...channelInfo
-                }, { quoted: message });
-            }
-            if (!/^[0-9]{81}$/.test(grid)) {
-                return await sock.sendMessage(chatId, {
-                    text: `❌ Puzzle must be exactly 81 digits (0-9). Got ${grid.length} characters.`,
-                    ...channelInfo
-                }, { quoted: message });
-            }
-            await sock.sendMessage(chatId, {
-                text: `🔍 Solving puzzle...`,
-                ...channelInfo
-            }, { quoted: message });
-            try {
-                const { stdout } = await execAsync(`python3 "${scriptPath}" solve ${grid}`, { timeout: 30000 });
-                const data = JSON.parse(stdout.trim());
-                if (data.error) {
-                    return await sock.sendMessage(chatId, {
-                        text: `❌ ${data.error}`,
-                        ...channelInfo
-                    }, { quoted: message });
-                }
-                await sock.sendMessage(chatId, {
-                    text: `🧩 *Sudoku Solved!*\n` +
-                        `✅ *Filled:* ${data.filled} empty cells\n\n` +
-                        `*Puzzle:*\n\`\`\`\n${data.formatted_puzzle}\n\`\`\`\n\n` +
-                        `*Solution:*\n\`\`\`\n${data.formatted_solution}\n\`\`\``,
-                    ...channelInfo
-                }, { quoted: message });
-            }
-            catch (error) {
-                await sock.sendMessage(chatId, {
-                    text: `❌ Failed to solve: ${error.message}`,
-                    ...channelInfo
-                }, { quoted: message });
-            }
-        }
-        else {
-            await sock.sendMessage(chatId, {
-                text: `❌ Unknown subcommand: *${subCmd}*\nUse \`generate\` or \`solve\``,
-                ...channelInfo
-            }, { quoted: message });
-        }
+  command: 'sudoku',
+  aliases: ['sdk'],
+  category: 'games',
+  description: 'Play compact 3×3, 4×4 or 6×6 Sudoku puzzles; each player has a private session.',
+  usage: '.sudoku start [easy|medium|hard] | .sudoku set <row> <column> <number> | .sudoku board | .sudoku check | .sudoku clear <row> <column> | .sudoku quit',
+  cooldown: 1500,
+  async handler(sock, message, args, context) {
+    const chatId = context.chatId || message.key.remoteJid;
+    const senderId = context.senderId || message.key.participant || message.key.remoteJid;
+    const action = String(args[0] || 'help').toLowerCase();
+    const access = await isGameAllowed(chatId, 'sudoku');
+    const sessions = await readSessions(chatId);
+    let game = sessions[senderId];
+    if (game?.status === 'active' && game.expiresAt && game.expiresAt <= Date.now()) {
+      delete sessions[senderId];
+      await writeSessions(chatId, sessions);
+      game = null;
     }
+
+    if (['help', ''].includes(action)) {
+      return sock.sendMessage(chatId, { text:
+        '🧩 *MINI SUDOKU*\n\n' +
+        'Easy: 3×3 · Medium: 4×4 · Hard: 6×6 (2×3 regions)\n' +
+        'Each player gets a separate board, even in the same group.\n\n' +
+        '• *.sudoku start easy*\n• *.sudoku start medium*\n• *.sudoku start hard*\n' +
+        '• *.sudoku set <row> <column> <number>*\n• *.sudoku board*\n• *.sudoku check*\n' +
+        '• *.sudoku clear <row> <column>*\n• *.sudoku quit*\n\n' +
+        'Rows and columns start at 1. Dots are empty cells. A completed valid board wins.',
+        ...(context.channelInfo || {}) }, { quoted: message });
+    }
+
+    if (action === 'start' || action === 'new') {
+      if (!access.ok) return sock.sendMessage(chatId, { text: access.msg, ...(context.channelInfo || {}) }, { quoted: message });
+      const difficulty = String(args[1] || 'easy').toLowerCase();
+      if (game?.status === 'active') {
+        return sock.sendMessage(chatId, { text: 'You already have an active Sudoku. Use *.sudoku board* or *.sudoku quit* first.', ...(context.channelInfo || {}) }, { quoted: message });
+      }
+      try {
+        game = { ...createMiniSudoku(difficulty), status: 'active', playerId: senderId, lastMoveAt: Date.now(), expiresAt: Date.now() + 12 * 60 * 60 * 1000 };
+        sessions[senderId] = game;
+        await writeSessions(chatId, sessions);
+        return sock.sendMessage(chatId, { text:
+          `🧩 *SUDOKU — ${difficulty.toUpperCase()}*\nPlayer: ${playerTag(senderId)}\nBoard: ${game.size}×${game.size}\n\n${renderMiniSudoku(game)}\n\nEnter: *.sudoku set row column number*\nExample: *.sudoku set 1 2 3*`,
+          mentions: [senderId], ...(context.channelInfo || {}) }, { quoted: message });
+      } catch (error) {
+        return sock.sendMessage(chatId, { text: `Could not start Sudoku: ${error.message}`, ...(context.channelInfo || {}) }, { quoted: message });
+      }
+    }
+
+    if (!game || game.status !== 'active') {
+      return sock.sendMessage(chatId, { text: 'You do not have an active Sudoku. Start one with *.sudoku start easy*.', ...(context.channelInfo || {}) }, { quoted: message });
+    }
+
+    if (action === 'board' || action === 'status') {
+      return sock.sendMessage(chatId, { text: `🧩 *YOUR ${game.difficulty.toUpperCase()} SUDOKU* · ${game.size}×${game.size}\nMoves: ${game.moves || 0}\n\n${renderMiniSudoku(game)}\n\nUse *.sudoku set row column number*.`, ...(context.channelInfo || {}) }, { quoted: message });
+    }
+
+    if (action === 'set' || action === 'put') {
+      if (!access.ok) return sock.sendMessage(chatId, { text: access.msg, ...(context.channelInfo || {}) }, { quoted: message });
+      const row = Number(args[1]), col = Number(args[2]), value = args[3];
+      const result = setMiniSudokuCell(game, row, col, value);
+      if (!result.ok) return sock.sendMessage(chatId, { text: `❌ ${result.error}`, ...(context.channelInfo || {}) }, { quoted: message });
+      game.lastMoveAt = Date.now(); game.expiresAt = Date.now() + 12 * 60 * 60 * 1000;
+      const resultCheck = checkMiniSudoku(game);
+      if (resultCheck.solved) {
+        game.status = 'completed'; game.completedAt = Date.now();
+        sessions[senderId] = game; await writeSessions(chatId, sessions);
+        return sock.sendMessage(chatId, { text: `🏆 *SUDOKU SOLVED!*\n${playerTag(senderId)} completed the ${game.size}×${game.size} ${game.difficulty} puzzle in ${game.moves} moves.\n\n${renderMiniSudoku(game)}`, mentions: [senderId], ...(context.channelInfo || {}) }, { quoted: message });
+      }
+      sessions[senderId] = game; await writeSessions(chatId, sessions);
+      return sock.sendMessage(chatId, { text: `✅ Entry saved. ${resultCheck.empty} empty cell(s) remain.\n\n${renderMiniSudoku(game)}\n\nUse *.sudoku check* to validate your progress.`, ...(context.channelInfo || {}) }, { quoted: message });
+    }
+
+    if (action === 'clear' || action === 'erase') {
+      if (!access.ok) return sock.sendMessage(chatId, { text: access.msg, ...(context.channelInfo || {}) }, { quoted: message });
+      const ok = clearMiniSudokuCell(game, Number(args[1]), Number(args[2]));
+      if (!ok) return sock.sendMessage(chatId, { text: 'That cell cannot be cleared. Check its row and column, and remember that starting clues are fixed.', ...(context.channelInfo || {}) }, { quoted: message });
+      game.lastMoveAt = Date.now(); game.expiresAt = Date.now() + 12 * 60 * 60 * 1000;
+      sessions[senderId] = game; await writeSessions(chatId, sessions);
+      return sock.sendMessage(chatId, { text: `Cell cleared.\n\n${renderMiniSudoku(game)}`, ...(context.channelInfo || {}) }, { quoted: message });
+    }
+
+    if (action === 'check') {
+      const result = checkMiniSudoku(game);
+      if (result.solved) {
+        game.status = 'completed'; game.completedAt = Date.now();
+        sessions[senderId] = game; await writeSessions(chatId, sessions);
+        return sock.sendMessage(chatId, { text: `🏆 Puzzle solved in ${game.moves} moves!\n\n${renderMiniSudoku(game)}`, ...(context.channelInfo || {}) }, { quoted: message });
+      }
+      const errors = result.wrong.length ? result.wrong.map(([r,c]) => `R${r}C${c}`).join(', ') : 'none';
+      return sock.sendMessage(chatId, { text: `🔎 *SUDOKU CHECK*\nEmpty cells: ${result.empty}\nIncorrect entries: ${errors}\n${result.empty || result.wrong.length ? 'Keep going.' : 'Solved!'}`, ...(context.channelInfo || {}) }, { quoted: message });
+    }
+
+    if (action === 'quit' || action === 'stop') {
+      delete sessions[senderId]; await writeSessions(chatId, sessions);
+      return sock.sendMessage(chatId, { text: 'Your Sudoku session has ended. Other players’ boards are untouched.', ...(context.channelInfo || {}) }, { quoted: message });
+    }
+
+    return sock.sendMessage(chatId, { text: 'Unknown Sudoku action. Use *.sudoku help*.', ...(context.channelInfo || {}) }, { quoted: message });
+  }
 };
