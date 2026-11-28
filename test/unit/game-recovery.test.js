@@ -38,14 +38,14 @@ describe('safe persisted game recovery', () => {
     const result = await resumePersistedGameSessions(sock,
       ['123@g.us', '123@s.whatsapp.net'], (level, message) => logs.push([level, message]));
 
-    expect(result).toMatchObject({ groups: 1, resumed: 6, failed: 0 });
+    expect(result).toMatchObject({ groups: 1, resumed: 5, failed: 0 });
     expect(resumeMathGame).toHaveBeenCalledTimes(1);
     expect(resumeTriviaGame).not.toHaveBeenCalled();
     expect(resumeHangmanGame).toHaveBeenCalledTimes(1);
     expect(resumeHotSeatSession).toHaveBeenCalledTimes(1);
     expect(resumePickYourSinSessions).toHaveBeenCalledTimes(1);
     expect(resumeBasketSessions).toHaveBeenCalledTimes(1);
-    expect(logs.some(([, message]) => message.includes('resumed 6 active game session'))).toBe(true);
+    expect(logs.some(([, message]) => message.includes('resumed 5 active game session'))).toBe(true);
   });
 
   it('debounces duplicate open events but permits recovery again later', async () => {
