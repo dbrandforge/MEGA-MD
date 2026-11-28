@@ -31,6 +31,8 @@ describe('global game-session runtime fence', () => {
     rotateGameSessionRuntime('test-reconnect');
 
     expect(isCurrentGameSessionValue('triviaArenaV2', oldSession)).toBe(false);
+    const staleSpread = { ...oldSession, question: 'late timer result' };
+    expect(isCurrentGameSessionValue('triviaArenaV2', stampGameSessionValue('triviaArenaV2', staleSpread))).toBe(false);
     expect(isCurrentGameSessionValue('triviaArenaV2', persisted)).toBe(false);
     expect(isCurrentGameSessionValue('triviaArenaV2', restoreGameSessionValue('triviaArenaV2', persisted))).toBe(false);
     expect(stampGameSessionValue('triviaArenaV2', oldSession).__forgeGameRuntimeId)
