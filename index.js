@@ -62,6 +62,8 @@ const incomingMessageQueue = createPerChatMessageQueue({
     processMessage: async ({ sock, update, queuedAt }, _chatId, queueContext) => {
         const mek = update.messages?.[0];
         try {
+            // A socket-generation change invalidates work queued by the old connection.
+            if (!queueContext?.isCurrent()) return;
             // Recheck at execution time: a valid message may become stale while
             // waiting behind other work in the per-chat queue.
             if (isMessageRevoked(mek)) {
@@ -75,6 +77,7 @@ const incomingMessageQueue = createPerChatMessageQueue({
             const handlerStartedAt = process.hrtime.bigint();
             const queueWaitMs = Math.max(0, Date.now() - (Number.isFinite(queuedAt) ? queuedAt : Date.now()));
             await runWithMessageScope(sock, mek, () => handleMessages(sock, update));
+            if (!queueContext?.isCurrent()) return;
             const handlerLatencyMs = Number(process.hrtime.bigint() - handlerStartedAt) / 1e6;
             printLog('info', `Message processed: jid=${mek?.key?.remoteJid || 'unknown'} id=${mek?.key?.id || 'unknown'} queue_wait_ms=${queueWaitMs} handler_ms=${handlerLatencyMs.toFixed(1)}`);
         } catch (err) {
