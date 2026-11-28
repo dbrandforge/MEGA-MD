@@ -100,6 +100,22 @@ describe('message-scoped outbound protection', () => {
         expect(sendMessage).toHaveBeenCalledOnce();
     });
 
+    it('blocks a continuation from sending through a replacement socket after reconnect', async () => {
+        const oldSend = vi.fn();
+        const newSend = vi.fn();
+        const oldSock = { sendMessage: oldSend };
+        const newSock = { sendMessage: newSend };
+        const source = makeMessage();
+
+        await runWithMessageScope(oldSock, source, async () => {
+            const result = await newSock.sendMessage(source.key.remoteJid, { text: 'old callback on new socket' });
+            expect(result).toBeUndefined();
+        });
+
+        expect(oldSend).not.toHaveBeenCalled();
+        expect(newSend).not.toHaveBeenCalled();
+    });
+
     it('still allows independent scheduled sends outside a message scope', async () => {
         const sendMessage = vi.fn();
         const sock = { sendMessage };
