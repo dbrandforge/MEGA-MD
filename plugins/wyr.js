@@ -14,8 +14,11 @@ const USED_KEY = 'wouldYouRatherUsedQuestions';
 const questionKey = options => options.map(value => String(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()).sort().join('|');
 const choose = values => values[Math.floor(Math.random() * values.length)];
 
-async function getSessions(chatId) {
-  return (await store.getSetting(chatId, KEY)) || {};
+async function getSessions(chatId, { allowResume = false } = {}) {
+  const value = allowResume && store.getSettingForGameResume
+    ? await store.getSettingForGameResume(chatId, KEY)
+    : await store.getSetting(chatId, KEY);
+  return value || {};
 }
 async function saveSessions(chatId, sessions) {
   if (!await store.saveSettingVerified(chatId, KEY, sessions)) throw new Error('WYR session state could not be persisted.');
@@ -152,7 +155,8 @@ export async function handleWyrContinuity(sock, chatId, message, senderId) {
 
 export async function recoverWyrPlayer(sock, chatId, playerId) {
   if (!isFeatureGroup(chatId)) return false;
-  const sessions = await getSessions(chatId);
+  const sessions = await getSessions(chatId, { allowResume: true });
+  if (Object.keys(sessions).length) await saveSessions(chatId, sessions);
   const session = sessions[playerId];
   if (!session) return false;
   if (!['expired', 'replaced'].includes(session.status) && Number(session.expiresAt || 0) <= Date.now()) {
