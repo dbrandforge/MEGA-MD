@@ -54,7 +54,12 @@ async function getNormalizedMentions(sock, message) {
     const mentions = getMentions(message);
     return Promise.all(mentions.map(jid => normalizeHotSeatJid(sock, jid)));
 }
-async function getSession(chatId) { return (await store.getSetting(chatId, HOTSEAT_KEY)) || null; }
+async function getSession(chatId, { allowResume = false } = {}) {
+    const value = allowResume && store.getSettingForGameResume
+        ? await store.getSettingForGameResume(chatId, HOTSEAT_KEY)
+        : await store.getSetting(chatId, HOTSEAT_KEY);
+    return value || null;
+  }
 async function saveGameState(chatId, key, value) {
     if (!await store.saveSettingVerified(chatId, key, value)) throw new Error(`Hot Seat state (${key}) could not be persisted.`);
 }
@@ -279,7 +284,8 @@ async function sendPlayerQuestion(sock, chatId, player) {
 
 export async function resumeHotSeatPlayer(sock, chatId, player) {
     if (!isFeatureGroup(chatId) || !player) return false;
-    const session = await getSession(chatId);
+    const session = await getSession(chatId, { allowResume: true });
+    if (session) await saveSession(chatId, session);
     if (!session || session.status !== 'active') return false;
     const playerKey = await resolveSessionPlayerKey(sock, session, player);
     const state = session.playerStates?.[playerKey];
@@ -294,7 +300,8 @@ export async function resumeHotSeatPlayer(sock, chatId, player) {
 
 export async function recoverHotSeatPlayer(sock, chatId, player) {
     if (!isFeatureGroup(chatId) || !player) return false;
-    const session = await getSession(chatId);
+    const session = await getSession(chatId, { allowResume: true });
+    if (session) await saveSession(chatId, session);
     if (!session || session.status !== 'active') return false;
     let playerKey = await resolveSessionPlayerKey(sock, session, player);
     let state = session.playerStates?.[playerKey];
@@ -403,7 +410,8 @@ export async function replaceHotSeatPlayer(sock, chatId, removedPlayer, replacem
 
 export async function resumeHotSeatSession(sock, chatId) {
     if (!isFeatureGroup(chatId)) return 0;
-    const session = await getSession(chatId);
+    const session = await getSession(chatId, { allowResume: true });
+    if (session) await saveSession(chatId, session);
     if (!session) return 0;
     const now = Date.now();
     if (session.status === 'pending') {

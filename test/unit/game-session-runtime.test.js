@@ -3,6 +3,7 @@ import {
   GAME_SESSION_SETTING_KEYS,
   isCurrentGameSessionValue,
   isGameSessionSetting,
+  claimGameSessionValue,
   restoreGameSessionValue,
   rotateGameSessionRuntime,
   stampGameSessionValue
@@ -55,6 +56,33 @@ describe('global game-session runtime fence', () => {
     expect(restamped).not.toBe(frozen);
     expect(restamped.__forgeGameRuntimeId).toBe(original.__forgeGameRuntimeId);
     expect(isCurrentGameSessionValue('mathGame', restamped)).toBe(true);
+  });
+
+  it('restores legacy frozen Symbol-stamped values without mutating the Symbol property', () => {
+    const legacySymbol = Symbol.for('forge.gameSessionRuntimeId');
+    const id = 'legacy-runtime-id';
+    const legacy = { active: true, round: 4 };
+    Object.defineProperty(legacy, legacySymbol, {
+      value: id, enumerable: true, configurable: false, writable: false
+    });
+    Object.freeze(legacy);
+
+    const restored = restoreGameSessionValue('mathGame', legacy);
+    expect(restored).not.toBe(legacy);
+    expect(restored.active).toBe(true);
+    expect(restored[legacySymbol]).toBe(id);
+    expect(restored.__forgeGameRuntimeId).toBe(id);
+    expect(JSON.parse(JSON.stringify(restored)).__forgeGameRuntimeId).toBe(id);
+  });
+
+  it('explicitly claims a persisted prior-runtime session only when resume is requested', () => {
+    const prior = stampGameSessionValue('mathGame', { active: true, round: 3 });
+    const persisted = JSON.parse(JSON.stringify(prior));
+    rotateGameSessionRuntime('explicit-resume-test');
+    expect(isCurrentGameSessionValue('mathGame', persisted)).toBe(false);
+    const claimed = claimGameSessionValue('mathGame', persisted);
+    expect(isCurrentGameSessionValue('mathGame', claimed)).toBe(true);
+    expect(claimed.round).toBe(3);
   });
 
   it('fences only live game state, not durable scores or history', () => {

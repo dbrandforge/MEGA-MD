@@ -32,9 +32,12 @@ const saveRecords = async (chatId, records) => {
   if (!await store.saveSettingVerified(chatId, RECORD_KEY, records)) throw new Error('Hangman records could not be persisted.');
 };
 
-async function readGame(chatId) {
-  const game = await store.getSetting(chatId, STATE_KEY);
+async function readGame(chatId, { allowResume = false } = {}) {
+  const game = allowResume && store.getSettingForGameResume
+    ? await store.getSettingForGameResume(chatId, STATE_KEY)
+    : await store.getSetting(chatId, STATE_KEY);
   if (!game || game.status !== 'active') return null;
+  if (allowResume) await writeGame(chatId, game);
   if (game.expiresAt && game.expiresAt <= Date.now()) {
     if (!await store.saveSettingVerified(chatId, STATE_KEY, {...game, status:'ended', endedAt:Date.now(), reason:'expired'})) throw new Error('Expired Hangman state could not be persisted.');
     return null;
@@ -244,7 +247,7 @@ export async function resumeHangmanGame(sock, chatId, message, channelInfo = {})
     await sock.sendMessage(chatId, { text: access.msg, ...channelInfo }, message ? { quoted: message } : {});
     return true;
   }
-  const game = await readGame(chatId);
+  const game = await readGame(chatId, { allowResume: true });
   if (!game) {
     await sock.sendMessage(chatId, { text: 'There is no resumable Hangman round. Start a new one with .hangman.', ...channelInfo }, message ? { quoted: message } : {});
     return true;

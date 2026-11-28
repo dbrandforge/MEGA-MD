@@ -4,6 +4,7 @@ import { isGameAllowed } from './daylock.js';
 
 const KEY = 'sudokuSessions';
 const readSessions = async chatId => (await store.getSetting(chatId, KEY)) || {};
+const readSessionsForResume = async chatId => (await store.getSettingForGameResume(chatId, KEY)) || {};
 const writeSessions = async (chatId, sessions) => {
   if (!await store.saveSettingVerified(chatId, KEY, sessions)) throw new Error('Sudoku session could not be saved.');
 };
@@ -21,12 +22,22 @@ export default {
     const senderId = context.senderId || message.key.participant || message.key.remoteJid;
     const action = String(args[0] || 'help').toLowerCase();
     const access = await isGameAllowed(chatId, 'sudoku');
-    const sessions = await readSessions(chatId);
+    const sessions = action === 'resume' ? await readSessionsForResume(chatId) : await readSessions(chatId);
     let game = sessions[senderId];
     if (game?.status === 'active' && game.expiresAt && game.expiresAt <= Date.now()) {
       delete sessions[senderId];
       await writeSessions(chatId, sessions);
       game = null;
+    }
+
+    if (action === 'resume') {
+      if (!access.ok) return sock.sendMessage(chatId, { text: access.msg, ...(context.channelInfo || {}) }, { quoted: message });
+      if (!game || game.status !== 'active') return sock.sendMessage(chatId, { text: 'No saved Sudoku board is available to resume for you.', ...(context.channelInfo || {}) }, { quoted: message });
+      game.lastMoveAt = Date.now();
+      game.expiresAt = Date.now() + 12 * 60 * 60 * 1000;
+      sessions[senderId] = game;
+      await writeSessions(chatId, sessions);
+      return sock.sendMessage(chatId, { text: `▶️ *SUDOKU RESUMED*\n\n${renderMiniSudoku(game)}\n\nYour saved ${game.difficulty} progress is unchanged.`, ...(context.channelInfo || {}) }, { quoted: message });
     }
 
     if (['help', ''].includes(action)) {
@@ -36,7 +47,7 @@ export default {
         'Each player gets a separate board, even in the same group.\n\n' +
         '• *.sudoku start easy*\n• *.sudoku start medium*\n• *.sudoku start hard*\n' +
         '• *.sudoku set <row> <column> <number>*\n• *.sudoku board*\n• *.sudoku check*\n' +
-        '• *.sudoku clear <row> <column>*\n• *.sudoku quit*\n\n' +
+        '• *.sudoku clear <row> <column>*\n• *.sudoku resume*\n• *.sudoku quit*\n\n' +
         'Rows and columns start at 1. Dots are empty cells. A completed valid board wins.',
         ...(context.channelInfo || {}) }, { quoted: message });
     }

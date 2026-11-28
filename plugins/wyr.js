@@ -14,8 +14,11 @@ const USED_KEY = 'wouldYouRatherUsedQuestions';
 const questionKey = options => options.map(value => String(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()).sort().join('|');
 const choose = values => values[Math.floor(Math.random() * values.length)];
 
-async function getSessions(chatId) {
-  return (await store.getSetting(chatId, KEY)) || {};
+async function getSessions(chatId, { allowResume = false } = {}) {
+  const value = allowResume && store.getSettingForGameResume
+    ? await store.getSettingForGameResume(chatId, KEY)
+    : await store.getSetting(chatId, KEY);
+  return value || {};
 }
 async function saveSessions(chatId, sessions) {
   if (!await store.saveSettingVerified(chatId, KEY, sessions)) throw new Error('WYR session state could not be persisted.');
@@ -150,9 +153,35 @@ export async function handleWyrContinuity(sock, chatId, message, senderId) {
   return true;
 }
 
+export async function resumeWyrSessions(sock, chatId) {
+  if (!isFeatureGroup(chatId)) return 0;
+  const sessions = await getSessions(chatId, { allowResume: true });
+  const active = Object.entries(sessions).filter(([, session]) =>
+    session?.status === 'active' && Array.isArray(session.currentOptions) &&
+    session.currentOptions.length === 2 && Number(session.expiresAt || 0) > Date.now()
+  );
+  if (!active.length) return 0;
+  const access = await isGameAllowed(chatId, 'wyr');
+  if (!access.ok) return 0;
+  let resumed = 0;
+  for (const [playerId, session] of active) {
+    const sent = await sock.sendMessage(chatId, {
+      text: `▶️ *WOULD YOU RATHER? — RESUMED*\n\n@${playerId.split('@')[0]}, your saved dilemma is back:\n\n🅰️ ${session.currentOptions[0]}\n\n🅱️ ${session.currentOptions[1]}\n\nChoose A or B. Your answers and question count are preserved.`,
+      mentions: [playerId]
+    });
+    session.questionMessageId = sent?.key?.id || null;
+    session.updatedAt = Date.now();
+    session.expiresAt = Date.now() + EXPIRY_MS;
+    resumed++;
+  }
+  await saveSessions(chatId, sessions);
+  return resumed;
+}
+
 export async function recoverWyrPlayer(sock, chatId, playerId) {
   if (!isFeatureGroup(chatId)) return false;
-  const sessions = await getSessions(chatId);
+  const sessions = await getSessions(chatId, { allowResume: true });
+  if (Object.keys(sessions).length) await saveSessions(chatId, sessions);
   const session = sessions[playerId];
   if (!session) return false;
   if (!['expired', 'replaced'].includes(session.status) && Number(session.expiresAt || 0) <= Date.now()) {

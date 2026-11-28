@@ -2,6 +2,7 @@ import store from '../lib/lightweight_store.js';
 import { getUserGender } from './gender.js';
 import { getTruths, getDares, randomFrom } from '../data/todLists.js';
 import { isGameAllowed } from './daylock.js';
+import { isFeatureGroup } from '../lib/featureGroups.js';
 import { savePendingGenderGame } from '../lib/genderGameContinuation.js';
 import { canonicalWhatsAppUserId, sameWhatsAppUser } from '../lib/whatsappIdentity.js';
 
@@ -11,8 +12,11 @@ const WARNING_MS = 7 * 60 * 1000;
 const NEXT_QUESTION_COOLDOWN_MS = 30 * 1000;
 const RECOVERY_WINDOW_MS = 15 * 60 * 1000;
 
-async function getSessions(chatId) {
-    return (await store.getSetting(chatId, SESSIONS_KEY)) || {};
+async function getSessions(chatId, { allowResume = false } = {}) {
+    const value = allowResume && store.getSettingForGameResume
+        ? await store.getSettingForGameResume(chatId, SESSIONS_KEY)
+        : await store.getSetting(chatId, SESSIONS_KEY);
+    return value || {};
 }
 async function saveSessions(chatId, sessions) {
     if (!await store.saveSettingVerified(chatId, SESSIONS_KEY, sessions)) throw new Error('Truth or Dare session state could not be persisted.');
@@ -347,7 +351,8 @@ export default {
 };
 
 export async function recoverTodPlayer(sock, chatId, playerId) {
-    const sessions = await getSessions(chatId);
+    const sessions = await getSessions(chatId, { allowResume: true });
+    if (Object.keys(sessions).length) await saveSessions(chatId, sessions);
     const session = Object.values(sessions).find(item =>
         (item.status === 'paused' && item.removedPlayer === playerId)
         || item.recoveryArchives?.[playerId]
@@ -470,6 +475,48 @@ export async function replaceTodPlayer(sock, chatId, removedId, replacementId) {
     sessions[session.id] = session;
     await saveSessions(chatId, sessions);
     return true;
+}
+
+export async function resumeTodSessions(sock, chatId) {
+    if (!isFeatureGroup(chatId)) return 0;
+    const sessions = await getSessions(chatId, { allowResume: true });
+    const active = Object.values(sessions).filter(session => session?.status === 'active');
+    if (!active.length) return 0;
+    const access = await isGameAllowed(chatId, 'tod');
+    if (!access.ok) return 0;
+    await saveSessions(chatId, sessions);
+    let resumed = 0;
+    for (const session of active) {
+        if (session.nextQuestionAt) {
+            const scheduledAt = Number(session.nextQuestionAt);
+            const delayMs = Math.max(0, scheduledAt - Date.now());
+            setTimeout(async () => {
+                try {
+                    const latestSessions = await getSessions(chatId);
+                    const latest = latestSessions[session.id];
+                    if (!latest || latest.status !== 'active' || Number(latest.nextQuestionAt) !== scheduledAt) return;
+                    await startRound(sock, chatId, latest);
+                } catch (error) {
+                    console.error('[TOD] Recovered next-round timer failed:', error.message);
+                }
+            }, delayMs);
+            resumed++;
+            continue;
+        }
+        const player = session.waitingFor || session.currentAnswerer;
+        if (!player || !session.currentPrompt) continue;
+        const typeLabel = session.currentType === 'truth' ? '🔥 *TRUTH*' : '💀 *DARE*';
+        const sent = await sock.sendMessage(chatId, {
+            text: `▶️ *TRUTH OR DARE — RESUMED*\n\n${typeLabel} · Round ${session.round}\n\n${mention(player)}, continue with your saved prompt:\n\n${session.currentPrompt}\n\nUse *.done* when finished. Your progress is unchanged.`,
+            mentions: [player]
+        });
+        session.questionMessageId = sent?.key?.id || null;
+        session.lastActivity = Date.now();
+        session.warningSent = false;
+        resumed++;
+    }
+    await saveSessions(chatId, sessions);
+    return resumed;
 }
 
 export async function checkTodTimeouts(sock, chatId) {

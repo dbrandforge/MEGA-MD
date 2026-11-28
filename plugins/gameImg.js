@@ -1,23 +1,54 @@
 import { resumeTriviaGame } from './trivia.js';
 import { resumeMathGame } from './math.js';
 import { resumeHangmanGame } from './hangman.js';
+import { resumeHotSeatSession } from './hotseat.js';
+import { resumePickYourSinSessions } from './pick-your-sin.js';
+import { resumeBasketSession } from './basket.js';
+import { resumeTodSessions } from './tod.js';
+import { resumeWyrSessions } from './wyr.js';
 import axios from 'axios';
 export default {
     command: 'game',
     aliases: ['gaming', 'gameimg'],
     category: 'images',
     description: 'Get a random gaming image',
-    usage: '.game | .game resume <trivia|math|hangman>',
+    usage: '.game | .game resume <trivia|math|hangman|hotseat|picksin|basket|tod|wyr>',
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
         const action = String(args[0] || '').toLowerCase();
         const target = String(args[1] || '').toLowerCase();
         if (action === 'resume') {
             const channelInfo = context.channelInfo || {};
+            try {
             if (target === 'trivia') return resumeTriviaGame(sock, chatId, message, channelInfo);
             if (target === 'math' || target === 'maths') return resumeMathGame(sock, chatId, message, channelInfo);
             if (target === 'hangman') return resumeHangmanGame(sock, chatId, message, channelInfo);
-            return sock.sendMessage(chatId, { text: 'Use *.game resume trivia*, *.game resume math*, or *.game resume hangman*.' }, { quoted: message });
+            if (target === 'tod' || target === 'truthordare') {
+                const resumed = await resumeTodSessions(sock, chatId);
+                return sock.sendMessage(chatId, { text: resumed ? `▶️ Resumed ${resumed} Truth or Dare session(s).` : 'No active Truth or Dare sessions need resuming.', ...channelInfo }, { quoted: message });
+            }
+            if (target === 'wyr' || target === 'wouldyourather') {
+                const resumed = await resumeWyrSessions(sock, chatId);
+                return sock.sendMessage(chatId, { text: resumed ? `▶️ Resumed ${resumed} Would You Rather session(s).` : 'No active WYR sessions need resuming.', ...channelInfo }, { quoted: message });
+            }
+            if (['basket', 'devilsbasket'].includes(target)) {
+                const senderId = context.senderId || message.key.participant || message.key.remoteJid;
+                const resumed = await resumeBasketSession(sock, chatId, senderId, message, channelInfo);
+                return resumed ? undefined : sock.sendMessage(chatId, { text: 'No saved Devil\'s Basket dare is available to resume.', ...channelInfo }, { quoted: message });
+            }
+            if (target === 'hotseat') {
+                const resumed = await resumeHotSeatSession(sock, chatId);
+                return sock.sendMessage(chatId, { text: resumed ? `▶️ Resumed ${resumed} Hot Seat player timer(s).` : 'No saved Hot Seat session needs resuming.', ...channelInfo }, { quoted: message });
+            }
+            if (['picksin', 'pick-your-sin', 'pick your sin'].includes(target)) {
+                const resumed = await resumePickYourSinSessions(sock, chatId);
+                return sock.sendMessage(chatId, { text: resumed ? `▶️ Resumed ${resumed} PICK YOUR SIN player timer(s).` : 'No saved PICK YOUR SIN players need resuming.', ...channelInfo }, { quoted: message });
+            }
+            return sock.sendMessage(chatId, { text: 'Use *.game resume trivia*, *.game resume math*, *.game resume hangman*, *.game resume hotseat*, *.game resume picksin*, or *.game resume basket*, *.game resume tod* or *.game resume wyr*. For board games, use *.sudoku resume*, *.chess resume* or *.checkers resume*.' }, { quoted: message });
+            } catch (error) {
+                console.error('[GAME-RESUME] Recovery failed:', error);
+                return sock.sendMessage(chatId, { text: '❌ Game recovery could not be completed. Your saved progress has not been intentionally cleared. Please try again or ask an admin to inspect the game session.', ...channelInfo }, { quoted: message });
+            }
         }
         try {
             const res = await axios.get('https://raw.githubusercontent.com/GlobalTechInfo/Database/main/images/game.json');

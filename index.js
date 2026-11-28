@@ -12,6 +12,7 @@ import { monitorEventLoopDelay } from 'perf_hooks';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import { smsg } from './lib/myfunc.js';
+import { rotateGameSessionRuntime } from './lib/gameSessionRuntime.js';
 import { compileAll } from './lib/compile.js';
 import makeWASocket, { BufferJSON, proto, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers, jidDecode, jidNormalizedUser, makeCacheableSignalKeyStore, delay } from '@whiskeysockets/baileys';
 import NodeCache from 'node-cache';
@@ -1028,12 +1029,15 @@ async function startQasimDev() {
                 // Group automation must not depend on someone running .schedule manually.
                 for (const groupId of FEATURE_GROUPS) trackGroup(groupId);
                 startSchedulerEngine(QasimDev);
-                // Safety rule: never replay persisted game timers/prompts after a
-                // process restart or WhatsApp reconnect. A timer that expired while
-                // offline must not emit yesterday's game messages into a live group.
-                // Persisted progress is intentionally left untouched; admins/players
-                // can resume through the normal game controls, which create fresh prompts.
-                printLog('warning', '[game-recovery] Automatic game-session replay is disabled on reconnect; persisted progress is preserved without replaying overdue actions.');
+                // Rebuild safe game continuations after reconnect. Resume handlers
+                // issue fresh prompts and re-arm timers; they never replay old inbound
+                // messages or execute overdue timeout actions from the offline period.
+                try {
+                    const { resumePersistedGameSessions } = await import('./lib/gameRecovery.js');
+                    await resumePersistedGameSessions(QasimDev, FEATURE_GROUPS, (level, text) => printLog(level, text));
+                } catch (error) {
+                    printLog('error', `[game-recovery] Could not restore persisted game sessions: ${error.message}`);
+                }
                 try {
                     const welcomeModule = await import('./plugins/sincity-welcome.js');
                     if (typeof welcomeModule.restoreWelcomeJobs === 'function') await welcomeModule.restoreWelcomeJobs(QasimDev);
@@ -1101,9 +1105,11 @@ async function startQasimDev() {
                     printLog('warning', 'Ignoring close event from a non-active WhatsApp socket.');
                     return;
                 }
-                // Keep durable in-process game sessions recoverable across a transient
-                // WhatsApp reconnect. Old-socket sends remain fenced separately by
-                // messageScopedSocket; a process restart still invalidates stale games.
+                // Rotate the game runtime before reconnecting. Old timers keep their
+                // previous runtime ID and cannot mutate sessions after this point;
+                // explicit recovery on the next open claims saved progress safely.
+                const gameRuntime = rotateGameSessionRuntime('whatsapp-disconnect');
+                printLog('warning', `[game-recovery] Runtime rotated; old game callbacks fenced (${gameRuntime.reason}).`);
                 const invalidatedTicTacToe = invalidateTicTacToeGames();
                 printLog('warning', `Invalidated stale TicTacToe sessions after socket close: count=${invalidatedTicTacToe}; other active games remain resumable`);
                 const invalidated = incomingMessageQueue.invalidateAll();
