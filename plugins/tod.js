@@ -11,8 +11,11 @@ const WARNING_MS = 7 * 60 * 1000;
 const NEXT_QUESTION_COOLDOWN_MS = 30 * 1000;
 const RECOVERY_WINDOW_MS = 15 * 60 * 1000;
 
-async function getSessions(chatId) {
-    return (await store.getSetting(chatId, SESSIONS_KEY)) || {};
+async function getSessions(chatId, { allowResume = false } = {}) {
+    const value = allowResume && store.getSettingForGameResume
+        ? await store.getSettingForGameResume(chatId, SESSIONS_KEY)
+        : await store.getSetting(chatId, SESSIONS_KEY);
+    return value || {};
 }
 async function saveSessions(chatId, sessions) {
     if (!await store.saveSettingVerified(chatId, SESSIONS_KEY, sessions)) throw new Error('Truth or Dare session state could not be persisted.');
@@ -347,7 +350,8 @@ export default {
 };
 
 export async function recoverTodPlayer(sock, chatId, playerId) {
-    const sessions = await getSessions(chatId);
+    const sessions = await getSessions(chatId, { allowResume: true });
+    if (Object.keys(sessions).length) await saveSessions(chatId, sessions);
     const session = Object.values(sessions).find(item =>
         (item.status === 'paused' && item.removedPlayer === playerId)
         || item.recoveryArchives?.[playerId]
