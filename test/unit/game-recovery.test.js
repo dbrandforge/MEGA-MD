@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../lib/lightweight_store.js', () => ({
-  default: { getSettingForGameResume: vi.fn() }
+  default: { getSettingForGameResume: vi.fn(), saveSettingVerified: vi.fn(async () => true) }
 }));
 vi.mock('../../plugins/math.js', () => ({ resumeMathGame: vi.fn(async () => true) }));
 vi.mock('../../plugins/trivia.js', () => ({ resumeTriviaGame: vi.fn(async () => true) }));
@@ -28,7 +28,10 @@ describe('safe persisted game recovery', () => {
       hangmanGame: { status: 'active' },
       hotseatSession: { status: 'active' },
       pickYourSinSessions: { one: { status: 'active' } },
-      devilsBasketSessions: { one: { currentDare: 'dare' } }
+      devilsBasketSessions: { one: { currentDare: 'dare' } },
+      sudokuSessions: { one: { status: 'active' } },
+      chessSessions: { matches: { abc: { status: 'active' } } },
+      checkersSessions: { matches: { def: { status: 'active' } } }
     })[key] || null);
   });
 
@@ -38,21 +41,21 @@ describe('safe persisted game recovery', () => {
     const result = await resumePersistedGameSessions(sock,
       ['123@g.us', '123@s.whatsapp.net'], (level, message) => logs.push([level, message]));
 
-    expect(result).toMatchObject({ groups: 1, resumed: 5, failed: 0 });
+    expect(result).toMatchObject({ groups: 1, resumed: 8, failed: 0 });
     expect(resumeMathGame).toHaveBeenCalledTimes(1);
     expect(resumeTriviaGame).not.toHaveBeenCalled();
     expect(resumeHangmanGame).toHaveBeenCalledTimes(1);
     expect(resumeHotSeatSession).toHaveBeenCalledTimes(1);
     expect(resumePickYourSinSessions).toHaveBeenCalledTimes(1);
     expect(resumeBasketSessions).toHaveBeenCalledTimes(1);
-    expect(logs.some(([, message]) => message.includes('resumed 5 active game session'))).toBe(true);
+    expect(logs.some(([, message]) => message.includes('resumed 8 active game session'))).toBe(true);
   });
 
   it('debounces duplicate open events but permits recovery again later', async () => {
     const sock = {};
     const first = await resumePersistedGameSessions(sock, ['123@g.us']);
     const second = await resumePersistedGameSessions(sock, ['123@g.us']);
-    expect(first.resumed).toBe(5);
+    expect(first.resumed).toBe(8);
     expect(second.skipped).toBe(true);
   });
 });
