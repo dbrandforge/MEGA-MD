@@ -61,7 +61,7 @@ const EASY = [
   ["Which soup is commonly associated with the use of okazi leaves?", "Afang soup", "Oha soup", "Banga soup", "Ewedu soup", "https://www.britannica.com/plant/Gnetum"],
   ["What is the main ingredient in ewedu soup?", "Jute leaves", "Bitterleaf", "Waterleaf", "Scent leaf", "https://www.britannica.com/plant/jute"],
   ["Which ingredient is the base of Nigerian white soup, also called ofe nsala?", "Yam thickener and broth", "Tomato paste", "Coconut milk", "Ground melon seeds", "https://www.britannica.com/plant/yam"],
-  ["What is the common name for the Nigerian fermented seasoning made from castor seeds?", "Ogiri", "Iru", "Dawadawa", "Ugba", "https://www.britannica.com/plant/castor-oil-plant"]
+  ["What is the common name for the Nigerian fermented seasoning made from castor seeds?", "Ogiri", "Iru", "Dawadawa", "Ugba", "https://www.britannica.com/plant/castor-oil-plant"],
   ["Which Nigerian soup is commonly prepared with fresh or dried okra as its main thickening vegetable?", "Okra soup", "Edikang ikong", "Oha soup", "Ewedu soup", "https://www.britannica.com/plant/okra"],
   ["What is the principal ingredient in the northern Nigerian snack masa?", "Fermented rice batter", "Ground cassava", "Roasted yam flour", "Steamed beans", "https://www.fao.org/4/x5032e/x5032e00.htm"],
   ["Which ingredient gives the traditional Nigerian dish ofe nsala its characteristic light colour?", "A light broth thickened with yam", "Palm fruit extract", "Tomato paste", "Ground melon seeds", "https://www.britannica.com/plant/yam"],
@@ -116,7 +116,7 @@ const NORMAL = [
 ["Which ingredient is the main base of the West African dish groundnut soup?","Groundnut paste","Coconut water","Wheat bran","Cocoa butter","https://www.britannica.com/plant/peanut"],
 ["Which ingredient gives a dish a sour taste when added as citrus juice?","Citric acid","Capsaicin","Piperine","Starch","https://www.britannica.com/science/citric-acid"],
 ["What is the main reason to let grilled meat rest briefly before slicing?","To allow juices to redistribute","To make it continue boiling","To remove all fat","To make the meat absorb salt from the air","https://www.britannica.com/topic/meat"],
-["Which ingredient is the main source of starch in a typical serving of eba?","Cassava","Beef","Egg","Crayfish","https://www.britannica.com/plant/cassava"]
+["Which ingredient is the main source of starch in a typical serving of eba?","Cassava","Beef","Egg","Crayfish","https://www.britannica.com/plant/cassava"],
   ["Which seed is traditionally fermented to make ogiri, a pungent seasoning used in parts of southeastern Nigeria?", "Castor seed", "Sesame seed", "Pumpkin seed", "Sunflower seed", "https://www.fao.org/4/x5032e/x5032e00.htm"],
   ["In Nigerian cuisine, what is the defining base ingredient of banga soup?", "Extract from palm fruit", "Ground egusi", "Fermented locust beans", "Coconut milk", "https://www.britannica.com/food/palm-oil"],
   ["Which fermented cereal food is commonly eaten as a soft breakfast porridge in Nigeria and is also called akamu?", "Ogi", "Tuwo", "Fura", "Dambu", "https://www.fao.org/4/x5032e/x5032e00.htm"],
