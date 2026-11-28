@@ -80,3 +80,51 @@ describe('per-chat message queue', () => {
         expect(queue.getStats()).toMatchObject({ active: 0, pending: 0 });
     });
 });
+
+
+describe('per-chat message queue restart boundary', () => {
+    it('discards queued work from an invalidated socket generation', async () => {
+        const gate = deferred();
+        const processed = [];
+        const queue = createPerChatMessageQueue({
+            maxConcurrentChats: 1,
+            processMessage: async item => {
+                if (item.id === 'in-flight') await gate.promise;
+                processed.push(item.id);
+            }
+        });
+
+        queue.enqueue('group-a', { id: 'in-flight' });
+        queue.enqueue('group-a', { id: 'stale-queued' });
+        await Promise.resolve();
+        await Promise.resolve();
+
+        const invalidation = queue.invalidateAll();
+        expect(invalidation.discarded).toBe(1);
+        expect(queue.getStats().pending).toBe(0);
+
+        gate.resolve();
+        await vi.waitFor(() => expect(queue.getStats().active).toBe(0));
+        expect(processed).toEqual(['in-flight']);
+        expect(queue.getStats().pending).toBe(0);
+    });
+
+    it('marks an in-flight worker as obsolete after generation invalidation', async () => {
+        const gate = deferred();
+        let workerContext;
+        const queue = createPerChatMessageQueue({
+            processMessage: async (_item, _chatId, context) => {
+                workerContext = context;
+                await gate.promise;
+            }
+        });
+
+        queue.enqueue('group-a', { id: 'running' });
+        await vi.waitFor(() => expect(workerContext).toBeDefined());
+        expect(workerContext.isCurrent()).toBe(true);
+        queue.invalidateAll();
+        expect(workerContext.isCurrent()).toBe(false);
+        gate.resolve();
+        await vi.waitFor(() => expect(queue.getStats().active).toBe(0));
+    });
+});
