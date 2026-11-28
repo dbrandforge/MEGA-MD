@@ -1,4 +1,5 @@
 import { isConfiguredOwner } from '../lib/isOwner.js';
+import { isRootCreator } from '../lib/creatorRegistry.js';
 
 export default {
     command: 'kick',
@@ -39,6 +40,7 @@ export default {
         }
         const participants = metadata.participants || [];
         const actorIsCreator = Boolean(context.isCreatorOrBot || isConfiguredOwner(context.senderId));
+        const actorIsRootCreator = isRootCreator(context.senderId);
         const cleanIdentity = value => String(value || '').split(':')[0].split('@')[0];
         const matchedTargets = usersToKick.map(userId => {
             const target = participants.find(p => [p.id, p.lid, p.phoneNumber].some(value =>
@@ -58,8 +60,8 @@ export default {
             await sock.sendMessage(chatId, { text: '❌ One or more targets could not be confirmed as current group members. No one was removed.' }, { quoted: message });
             return;
         }
-        if (!actorIsCreator && matchedTargets.some(item => item.isAdmin)) {
-            await sock.sendMessage(chatId, { text: '⛔ Admins cannot remove fellow admins. My Creator alone can override that boundary.' }, { quoted: message });
+        if (!actorIsRootCreator && matchedTargets.some(item => item.isAdmin)) {
+            await sock.sendMessage(chatId, { text: '⛔ Only one of the two protected root creators can remove a WhatsApp group admin. Added creators and regular admins cannot use this command against admins.' }, { quoted: message });
             return;
         }
         if (!isBotAdmin) {
