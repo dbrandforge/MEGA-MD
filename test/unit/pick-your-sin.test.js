@@ -57,6 +57,60 @@ describe('Pick Your Sin sessions', () => {
     expect(session.playerStates[players[0]].currentCard).not.toBe(session.playerStates[players[1]].currentCard);
     expect(session.usedPromptKeys).toHaveLength(2);
   });
+  it('drops a PICK YOUR SIN message that becomes stale while waiting for the group lock', async () => {
+    const sock = {
+      user: { id: '234899999999:1@s.whatsapp.net' },
+      sendMessage: vi.fn(async () => ({ key: { id: 'announcement' } }))
+    };
+    await beginPickYourSinSession(sock, chatId, players, 'admin@s.whatsapp.net');
+
+    let releasePrompt;
+    const blockedPrompt = new Promise(resolve => { releasePrompt = resolve; });
+    let blockNextSend = true;
+    sock.sendMessage.mockImplementation(async () => {
+      if (blockNextSend) {
+        blockNextSend = false;
+        await blockedPrompt;
+      }
+      return { key: { id: 'prompt-after-lock' } };
+    });
+
+    const first = handlePickYourSinMessage(sock, chatId, colorMessage('red'), 'red', players[0]);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const queuedAt = Date.now();
+    const staleWhenProcessed = {
+      key: {
+        remoteJid: chatId,
+        participant: players[0],
+        id: 'queued-picksin-message',
+        fromMe: false
+      },
+      messageTimestamp: Math.floor(queuedAt / 1000),
+      message: {
+        extendedTextMessage: {
+          text: 'A sufficiently detailed truth answer that should never be processed after becoming stale.',
+          contextInfo: { mentionedJid: ['234899999999@s.whatsapp.net'] }
+        }
+      }
+    };
+    const queued = handlePickYourSinMessage(
+      sock, chatId, staleWhenProcessed,
+      'A sufficiently detailed truth answer that should never be processed after becoming stale.',
+      players[0]
+    );
+
+    await vi.advanceTimersByTimeAsync(181_000);
+    releasePrompt();
+    await first;
+    const sentBeforeQueuedSettled = sock.sendMessage.mock.calls.length;
+    const handled = await queued;
+
+    expect(handled).toBe(false);
+    expect(sock.sendMessage).toHaveBeenCalledTimes(sentBeforeQueuedSettled);
+  });
+
   it('does not give the same underlying action dare to players in different colours', async () => {
     let sent = 0;
     const sock = { user: { id: '234899999999:1@s.whatsapp.net' }, sendMessage: vi.fn(async () => ({ key: { id: `bot-${++sent}` } })) };
