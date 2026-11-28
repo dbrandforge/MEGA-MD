@@ -9,6 +9,8 @@ vi.mock('../../plugins/hangman.js', () => ({ resumeHangmanGame: vi.fn(async () =
 vi.mock('../../plugins/hotseat.js', () => ({ resumeHotSeatSession: vi.fn(async () => 1) }));
 vi.mock('../../plugins/pick-your-sin.js', () => ({ resumePickYourSinSessions: vi.fn(async () => 1) }));
 vi.mock('../../plugins/basket.js', () => ({ resumeBasketSessions: vi.fn(async () => 2) }));
+vi.mock('../../plugins/tod.js', () => ({ resumeTodSessions: vi.fn(async () => 1) }));
+vi.mock('../../plugins/wyr.js', () => ({ resumeWyrSessions: vi.fn(async () => 1) }));
 
 import store from '../../lib/lightweight_store.js';
 import { resumeMathGame } from '../../plugins/math.js';
@@ -17,6 +19,8 @@ import { resumeHangmanGame } from '../../plugins/hangman.js';
 import { resumeHotSeatSession } from '../../plugins/hotseat.js';
 import { resumePickYourSinSessions } from '../../plugins/pick-your-sin.js';
 import { resumeBasketSessions } from '../../plugins/basket.js';
+import { resumeTodSessions } from '../../plugins/tod.js';
+import { resumeWyrSessions } from '../../plugins/wyr.js';
 import { resumePersistedGameSessions } from '../../lib/gameRecovery.js';
 
 describe('safe persisted game recovery', () => {
@@ -31,7 +35,9 @@ describe('safe persisted game recovery', () => {
       devilsBasketSessions: { one: { currentDare: 'dare' } },
       sudokuSessions: { one: { status: 'active' } },
       chessSessions: { matches: { abc: { status: 'active' } } },
-      checkersSessions: { matches: { def: { status: 'active' } } }
+      checkersSessions: { matches: { def: { status: 'active' } } },
+      todSessions: { one: { status: 'active' } },
+      wouldYouRatherSessions: { one: { status: 'active' } }
     })[key] || null);
   });
 
@@ -41,21 +47,23 @@ describe('safe persisted game recovery', () => {
     const result = await resumePersistedGameSessions(sock,
       ['123@g.us', '123@s.whatsapp.net'], (level, message) => logs.push([level, message]));
 
-    expect(result).toMatchObject({ groups: 1, resumed: 8, failed: 0 });
+    expect(result).toMatchObject({ groups: 1, resumed: 10, failed: 0 });
     expect(resumeMathGame).toHaveBeenCalledTimes(1);
     expect(resumeTriviaGame).not.toHaveBeenCalled();
     expect(resumeHangmanGame).toHaveBeenCalledTimes(1);
     expect(resumeHotSeatSession).toHaveBeenCalledTimes(1);
     expect(resumePickYourSinSessions).toHaveBeenCalledTimes(1);
     expect(resumeBasketSessions).toHaveBeenCalledTimes(1);
-    expect(logs.some(([, message]) => message.includes('resumed 8 active game session'))).toBe(true);
+    expect(resumeTodSessions).toHaveBeenCalledTimes(1);
+    expect(resumeWyrSessions).toHaveBeenCalledTimes(1);
+    expect(logs.some(([, message]) => message.includes('resumed 10 active game session'))).toBe(true);
   });
 
   it('debounces duplicate open events but permits recovery again later', async () => {
     const sock = {};
     const first = await resumePersistedGameSessions(sock, ['123@g.us']);
     const second = await resumePersistedGameSessions(sock, ['123@g.us']);
-    expect(first.resumed).toBe(8);
+    expect(first.resumed).toBe(10);
     expect(second.skipped).toBe(true);
   });
 });
