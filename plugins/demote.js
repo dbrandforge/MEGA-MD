@@ -1,7 +1,12 @@
 import { removeRestrictedAdmin } from '../lib/restrictedAdminRegistry.js';
+import { isRootCreator } from '../lib/creatorRegistry.js';
 
 async function handleDemotionEvent(sock, groupId, participants, author) {
     try {
+        for (const target of participants || []) {
+            const jid = typeof target === 'string' ? target : (target.id || target.toString());
+            await removeRestrictedAdmin(groupId, jid);
+        }
         if (!Array.isArray(participants) || participants.length === 0) {
             return;
         }
@@ -51,6 +56,11 @@ export default {
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
         const isBotAdmin = context.isBotAdmin;
+        if (!isRootCreator(context.senderId)) {
+            return sock.sendMessage(chatId, {
+                text: '⛔ Only the two protected root creators can demote WhatsApp group admins. Added creators and regular admins cannot remove another admin’s status through Forge Guard.'
+            }, { quoted: message });
+        }
         if (!isBotAdmin) {
             await sock.sendMessage(chatId, {
                 text: '❌ *Please make the bot an admin first*'
