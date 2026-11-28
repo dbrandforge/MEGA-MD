@@ -57,7 +57,7 @@ if (unknownCategories.length || unknownRequiredGrades.length) {
   }
   process.exitCode = 1;
 } else if (requiredCategories.length === Object.keys(report.categories).length && requiredGrades.length === 0) {
-  console.log('\nPASS: every Trivia category meets the 200-question / four-grade initial release requirement.');
+  console.log('\nPASS: every Trivia category meets the 800-question / 200-per-grade initial release requirement.');
 } else {
   const deferredCount = report.deficits.length - new Set([
     ...blockingDeficits.map(d => d.category + ':' + d.difficulty),
@@ -66,5 +66,5 @@ if (unknownCategories.length || unknownRequiredGrades.length) {
   const gradeSummary = requiredGrades.length
     ? ' and required grades (' + requiredGrades.map(value => value.category + ':' + value.difficulty).join(', ') + ')'
     : '';
-  console.log(`\nPASS: staged release categories meet 200 questions / 50 per grade (${requiredCategories.join(', ')})${gradeSummary}. ${deferredCount} incomplete category/grade pools remain visible for later expansion.`);
+  console.log(`\nPASS: staged release categories meet 800 questions / 200 per grade (${requiredCategories.join(', ')})${gradeSummary}. ${deferredCount} incomplete category/grade pools remain visible for later expansion.`);
 }

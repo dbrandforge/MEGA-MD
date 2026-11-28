@@ -61,7 +61,8 @@ const EASY = [
   ["Which soup is commonly associated with the use of okazi leaves?", "Afang soup", "Oha soup", "Banga soup", "Ewedu soup", "https://www.britannica.com/plant/Gnetum"],
   ["What is the main ingredient in ewedu soup?", "Jute leaves", "Bitterleaf", "Waterleaf", "Scent leaf", "https://www.britannica.com/plant/jute"],
   ["Which ingredient is the base of Nigerian white soup, also called ofe nsala?", "Yam thickener and broth", "Tomato paste", "Coconut milk", "Ground melon seeds", "https://www.britannica.com/plant/yam"],
-  ["What is the common name for the Nigerian fermented seasoning made from castor seeds?", "Ogiri", "Iru", "Dawadawa", "Ugba", "https://www.britannica.com/plant/castor-oil-plant"]
+  ["What is the common name for the Nigerian fermented seasoning made from castor seeds?", "Ogiri", "Iru", "Dawadawa", "Ugba", "https://www.britannica.com/plant/castor-oil-plant"],
+
 ];
 
 const NORMAL = [
@@ -111,7 +112,8 @@ const NORMAL = [
 ["Which ingredient is the main base of the West African dish groundnut soup?","Groundnut paste","Coconut water","Wheat bran","Cocoa butter","https://www.britannica.com/plant/peanut"],
 ["Which ingredient gives a dish a sour taste when added as citrus juice?","Citric acid","Capsaicin","Piperine","Starch","https://www.britannica.com/science/citric-acid"],
 ["What is the main reason to let grilled meat rest briefly before slicing?","To allow juices to redistribute","To make it continue boiling","To remove all fat","To make the meat absorb salt from the air","https://www.britannica.com/topic/meat"],
-["Which ingredient is the main source of starch in a typical serving of eba?","Cassava","Beef","Egg","Crayfish","https://www.britannica.com/plant/cassava"]
+["Which ingredient is the main source of starch in a typical serving of eba?","Cassava","Beef","Egg","Crayfish","https://www.britannica.com/plant/cassava"],
+
 ];
 const HARD = [
 ["Which part of the oil palm fruit is processed to obtain palm oil used in Nigerian cooking?","The fleshy mesocarp","The leaf veins","The flower pollen","The root bark","https://www.britannica.com/plant/oil-palm"],
@@ -163,6 +165,7 @@ const HARD = [
 ["Which food preservation method combines salt, drying and smoke in some traditional fish products?","Curing and smoking","Proofing and blanching","Emulsifying and whipping","Gelatinising and steaming","https://www.fao.org/fishery/en"],
 ["Which factor most directly determines how quickly microorganisms can grow in stored cooked food?","Temperature, moisture availability and acidity","Plate colour only","Food shape only","Serving spoon material only","https://www.who.int/news-room/fact-sheets/detail/food-safety"],
 ["What does FIFO mean in professional kitchen stock rotation?","First in, first out","Fresh ingredients, fresh oil","Food inspection for odour","Freeze immediately for order","https://www.fao.org/"],
+
 ];
 const EXPERT = [
 ["Which cyanide-related measure is commonly used to assess the safety of processed cassava products?","Residual total cyanide content","Total starch gelatinisation temperature only","Protein-to-fat ratio","Vitamin C concentration","https://www.fao.org/4/x5032e/x5032e00.htm"],
@@ -214,11 +217,15 @@ const EXPERT = [
 ["What is the purpose of a validated thermal process in commercial low-acid food canning?","To achieve a defined reduction of relevant heat-resistant microorganisms and spores","To make the food taste sweeter","To remove all fat","To increase water activity","https://www.fda.gov/food"],
 ["Which Nigerian food system demonstrates a combination of fermentation, drying and reconstitution before serving?","Lafun from cassava","Fresh garden-egg salad","Plain boiled rice","Freshly cut watermelon","https://www.fao.org/4/x5032e/x5032e00.htm"],
 ["Which regional Nigerian food tradition features tuwo shinkafa, miyan kuka and other cereal-based staples?","Northern Nigerian culinary traditions","Coastal Niger Delta cuisine exclusively","Southwestern Yoruba cuisine exclusively","Cross River seafood cuisine exclusively","https://www.britannica.com/place/Nigeria"],
+
 ];
 
 export const FOOD_TRIVIA = [
   ...make(EASY, 'easy', 0),
   ...make(NORMAL, 'normal', 46),
   ...make(HARD, 'hard', 93),
-  ...make(EXPERT, 'expert', 142)
+  ...make(EXPERT, 'expert', 142),
+  {"id":"fdx001","category":"food","difficulty":"normal","question":"Which seed is traditionally fermented to make ogiri, a pungent seasoning used in parts of southeastern Nigeria?","options":["Castor seed","Sesame seed","Pumpkin seed","Sunflower seed"],"answer":0,"reviewedAt":"2026-11-28","source":"https://www.fao.org/4/x5032e/x5032e00.htm"},
+  {"id":"fdx002","category":"food","difficulty":"hard","question":"Which microorganism group is chiefly responsible for the lactic fermentation used in many traditional African cereal foods such as ogi?","options":["Lactic acid bacteria","Methanogenic archaea","Nitrogen-fixing cyanobacteria","Sulphur-oxidising bacteria"],"answer":0,"reviewedAt":"2026-11-28","source":"https://www.fao.org/4/x5032e/x5032e00.htm"},
+  {"id":"fdx003","category":"food","difficulty":"expert","question":"During traditional gari production, what is the main purpose of pressing fermented grated cassava before roasting?","options":["To remove excess liquid and reduce moisture before roasting","To convert starch directly into protein","To remove all cyanogenic compounds without further processing","To increase the cassava's sugar content"],"answer":0,"reviewedAt":"2026-11-28","source":"https://www.fao.org/4/x5032e/x5032e00.htm"}
 ];
