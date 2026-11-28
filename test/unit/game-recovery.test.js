@@ -52,7 +52,7 @@ describe('safe persisted game recovery', () => {
     const sock = {};
     const first = await resumePersistedGameSessions(sock, ['123@g.us']);
     const second = await resumePersistedGameSessions(sock, ['123@g.us']);
-    expect(first.resumed).toBe(4);
+    expect(first.resumed).toBe(5);
     expect(second.skipped).toBe(true);
   });
 });
