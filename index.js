@@ -12,6 +12,7 @@ import { monitorEventLoopDelay } from 'perf_hooks';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import { smsg } from './lib/myfunc.js';
+import { rotateGameSessionRuntime } from './lib/gameSessionRuntime.js';
 import { compileAll } from './lib/compile.js';
 import makeWASocket, { BufferJSON, proto, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers, jidDecode, jidNormalizedUser, makeCacheableSignalKeyStore, delay } from '@whiskeysockets/baileys';
 import NodeCache from 'node-cache';
@@ -1104,9 +1105,11 @@ async function startQasimDev() {
                     printLog('warning', 'Ignoring close event from a non-active WhatsApp socket.');
                     return;
                 }
-                // Keep durable in-process game sessions recoverable across a transient
-                // WhatsApp reconnect. Old-socket sends remain fenced separately by
-                // messageScopedSocket; a process restart still invalidates stale games.
+                // Rotate the game runtime before reconnecting. Old timers keep their
+                // previous runtime ID and cannot mutate sessions after this point;
+                // explicit recovery on the next open claims saved progress safely.
+                const gameRuntime = rotateGameSessionRuntime('whatsapp-disconnect');
+                printLog('warning', `[game-recovery] Runtime rotated; old game callbacks fenced (${gameRuntime.reason}).`);
                 const invalidatedTicTacToe = invalidateTicTacToeGames();
                 printLog('warning', `Invalidated stale TicTacToe sessions after socket close: count=${invalidatedTicTacToe}; other active games remain resumable`);
                 const invalidated = incomingMessageQueue.invalidateAll();
