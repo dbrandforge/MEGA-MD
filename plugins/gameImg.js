@@ -10,7 +10,7 @@ export default {
     aliases: ['gaming', 'gameimg'],
     category: 'images',
     description: 'Get a random gaming image',
-    usage: '.game | .game resume <trivia|math|hangman>',
+    usage: '.game | .game resume <trivia|math|hangman|hotseat|picksin|basket>',
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
         const action = String(args[0] || '').toLowerCase();
@@ -33,7 +33,7 @@ export default {
                 const resumed = await resumePickYourSinSessions(sock, chatId);
                 return sock.sendMessage(chatId, { text: resumed ? `▶️ Resumed ${resumed} PICK YOUR SIN player timer(s).` : 'No saved PICK YOUR SIN players need resuming.', ...channelInfo }, { quoted: message });
             }
-            return sock.sendMessage(chatId, { text: 'Use *.game resume trivia*, *.game resume math*, *.game resume hangman*, *.game resume hotseat*, or *.game resume picksin*, or *.game resume basket*.' }, { quoted: message });
+            return sock.sendMessage(chatId, { text: 'Use *.game resume trivia*, *.game resume math*, *.game resume hangman*, *.game resume hotseat*, *.game resume picksin*, or *.game resume basket*. For board games, use *.sudoku resume*, *.chess resume* or *.checkers resume*.' }, { quoted: message });
         }
         try {
             const res = await axios.get('https://raw.githubusercontent.com/GlobalTechInfo/Database/main/images/game.json');
