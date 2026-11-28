@@ -1,3 +1,5 @@
+import { removeRestrictedAdmin } from '../lib/restrictedAdminRegistry.js';
+
 async function handleDemotionEvent(sock, groupId, participants, author) {
     try {
         if (!Array.isArray(participants) || participants.length === 0) {
