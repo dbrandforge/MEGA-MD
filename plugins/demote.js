@@ -72,6 +72,7 @@ export default {
         try {
             await new Promise(resolve => setTimeout(resolve, 1000));
             await sock.groupParticipantsUpdate(chatId, userToDemote, "demote");
+            for (const target of userToDemote) await removeRestrictedAdmin(chatId, target);
             const usernames = await Promise.all(userToDemote.map(async (jid) => {
                 return `@${jid.split('@')[0]}`;
             }));
