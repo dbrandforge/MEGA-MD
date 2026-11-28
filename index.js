@@ -38,7 +38,6 @@ import { parseGroupSenderKeyRecoveryTargets, resetGroupSenderKeyMemoryBeforeSend
 import { createPerChatMessageQueue } from './lib/perChatMessageQueue.js';
 import { installNetworkDiagnostics } from './lib/networkDiagnostics.js';
 import { runWithMessageScope, invalidateSocketMessageScope } from './lib/messageScopedSocket.js';
-import { rotateGameSessionRuntime } from './lib/gameSessionRuntime.js';
 import { invalidateTicTacToeGames } from './plugins/tictactoe.js';
 
 // Keep libsignal diagnostics useful without allowing serialized ratchets or key material into logs.
@@ -1102,9 +1101,11 @@ async function startQasimDev() {
                     printLog('warning', 'Ignoring close event from a non-active WhatsApp socket.');
                     return;
                 }
-                const gameRuntime = rotateGameSessionRuntime('whatsapp-socket-closed');
+                // Keep durable in-process game sessions recoverable across a transient
+                // WhatsApp reconnect. Old-socket sends remain fenced separately by
+                // messageScopedSocket; a process restart still invalidates stale games.
                 const invalidatedTicTacToe = invalidateTicTacToeGames();
-                printLog('warning', `Invalidated game sessions after socket close: runtime=${gameRuntime.current} tic_tac_toe=${invalidatedTicTacToe}`);
+                printLog('warning', `Invalidated stale TicTacToe sessions after socket close: count=${invalidatedTicTacToe}; other active games remain resumable`);
                 const invalidated = incomingMessageQueue.invalidateAll();
                 printLog('warning', `Invalidated queued WhatsApp work: generation=${invalidated.generation} discarded=${invalidated.discarded}`);
                 activeSocket = null;
