@@ -3,6 +3,7 @@ import {
   GAME_SESSION_SETTING_KEYS,
   isCurrentGameSessionValue,
   isGameSessionSetting,
+  claimGameSessionValue,
   restoreGameSessionValue,
   rotateGameSessionRuntime,
   stampGameSessionValue
@@ -72,6 +73,16 @@ describe('global game-session runtime fence', () => {
     expect(restored[legacySymbol]).toBeUndefined();
     expect(restored.__forgeGameRuntimeId).toBe(id);
     expect(JSON.parse(JSON.stringify(restored)).__forgeGameRuntimeId).toBe(id);
+  });
+
+  it('explicitly claims a persisted prior-runtime session only when resume is requested', () => {
+    const prior = stampGameSessionValue('mathGame', { active: true, round: 3 });
+    const persisted = JSON.parse(JSON.stringify(prior));
+    rotateGameSessionRuntime('explicit-resume-test');
+    expect(isCurrentGameSessionValue('mathGame', persisted)).toBe(false);
+    const claimed = claimGameSessionValue('mathGame', persisted);
+    expect(isCurrentGameSessionValue('mathGame', claimed)).toBe(true);
+    expect(claimed.round).toBe(3);
   });
 
   it('fences only live game state, not durable scores or history', () => {
