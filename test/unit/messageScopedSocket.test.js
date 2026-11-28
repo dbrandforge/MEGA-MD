@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { runWithMessageScope } from '../../lib/messageScopedSocket.js';
+import { runWithMessageScope, invalidateSocketMessageScope } from '../../lib/messageScopedSocket.js';
 import { markMessageRevoked } from '../../lib/messageEventPolicy.js';
 
 function makeMessage({ ageMs = 0, id = 'source-1' } = {}) {
@@ -84,6 +84,36 @@ describe('message-scoped outbound protection', () => {
 
         expect(result).toBeUndefined();
         expect(sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('blocks delayed timer sends after the WhatsApp socket is invalidated', async () => {
+        const sendMessage = vi.fn();
+        const sock = { sendMessage };
+        const fresh = makeMessage();
+
+        await runWithMessageScope(sock, fresh, () => sock.sendMessage(fresh.key.remoteJid, { text: 'initial reply' }));
+        expect(sendMessage).toHaveBeenCalledOnce();
+
+        expect(invalidateSocketMessageScope(sock)).toBe(true);
+        const delayedResult = await sock.sendMessage(fresh.key.remoteJid, { text: 'delayed game callback' });
+        expect(delayedResult).toBeUndefined();
+        expect(sendMessage).toHaveBeenCalledOnce();
+    });
+
+    it('blocks a continuation from sending through a replacement socket after reconnect', async () => {
+        const oldSend = vi.fn();
+        const newSend = vi.fn();
+        const oldSock = { sendMessage: oldSend };
+        const newSock = { sendMessage: newSend };
+        const source = makeMessage();
+
+        await runWithMessageScope(oldSock, source, async () => {
+            const result = await newSock.sendMessage(source.key.remoteJid, { text: 'old callback on new socket' });
+            expect(result).toBeUndefined();
+        });
+
+        expect(oldSend).not.toHaveBeenCalled();
+        expect(newSend).not.toHaveBeenCalled();
     });
 
     it('still allows independent scheduled sends outside a message scope', async () => {

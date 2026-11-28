@@ -37,7 +37,7 @@ import { installSignalDiagnosticGuard } from './lib/signalDiagnostics.js';
 import { parseGroupSenderKeyRecoveryTargets, resetGroupSenderKeyMemoryBeforeSend } from './lib/groupSenderKeyRecovery.js';
 import { createPerChatMessageQueue } from './lib/perChatMessageQueue.js';
 import { installNetworkDiagnostics } from './lib/networkDiagnostics.js';
-import { runWithMessageScope } from './lib/messageScopedSocket.js';
+import { runWithMessageScope, invalidateSocketMessageScope } from './lib/messageScopedSocket.js';
 import { rotateGameSessionRuntime } from './lib/gameSessionRuntime.js';
 import { invalidateTicTacToeGames } from './plugins/tictactoe.js';
 
@@ -851,7 +851,13 @@ async function startQasimDev() {
                     // entered the per-chat queue and consumed CPU just to be discarded
                     // later by handleMessages().
                     if (!shouldProcessMessageUpsert(chatUpdate?.type, mek)) {
-                        if (isMessageTooOld(mek)) recordStaleMessageDrop();
+                        if (isMessageTooOld(mek)) {
+                            recordStaleMessageDrop();
+                            const rawTimestamp = typeof mek.messageTimestamp?.toNumber === 'function' ? mek.messageTimestamp.toNumber() : Number(mek.messageTimestamp);
+                            const ageSeconds = Number.isFinite(rawTimestamp) ? Math.round((Date.now() - (rawTimestamp < 1e12 ? rawTimestamp * 1000 : rawTimestamp)) / 1000) : 'unknown';
+                            const jidKind = mek?.key?.remoteJid?.endsWith('@g.us') ? 'group' : 'direct';
+                            printLog('warning', `[Inbound guard] dropped stale event type=${chatUpdate?.type || 'unknown'} age_seconds=${ageSeconds} jid_kind=${jidKind} id=${String(mek?.key?.id || 'unknown').slice(0, 16)}`);
+                        }
                         continue;
                     }
 
@@ -1086,6 +1092,9 @@ async function startQasimDev() {
                 console.log();
             }
             if (connection === 'close') {
+                // Fence delayed timers/continuations before rotating the socket runtime.
+                // Any callback still holding this socket must not reply after disconnect.
+                invalidateSocketMessageScope(QasimDev);
                 // Dispose per-socket caches even when this is a late close event.
                 cleanupSocketCaches();
                 // Ignore late close events from sockets that have already been superseded.
