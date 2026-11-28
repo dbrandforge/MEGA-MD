@@ -1,5 +1,6 @@
 import store from '../lib/lightweight_store.js';
 import { createMiniSudoku, setMiniSudokuCell, renderMiniSudoku, checkMiniSudoku, clearMiniSudokuCell } from '../lib/miniSudoku.js';
+import { isGameAllowed } from './daylock.js';
 
 const KEY = 'sudokuSessions';
 const readSessions = async chatId => (await store.getSetting(chatId, KEY)) || {};
@@ -19,6 +20,7 @@ export default {
     const chatId = context.chatId || message.key.remoteJid;
     const senderId = context.senderId || message.key.participant || message.key.remoteJid;
     const action = String(args[0] || 'help').toLowerCase();
+    const access = await isGameAllowed(chatId, 'sudoku');
     const sessions = await readSessions(chatId);
     let game = sessions[senderId];
     if (game?.status === 'active' && game.expiresAt && game.expiresAt <= Date.now()) {
@@ -40,6 +42,7 @@ export default {
     }
 
     if (action === 'start' || action === 'new') {
+      if (!access.ok) return sock.sendMessage(chatId, { text: access.msg, ...(context.channelInfo || {}) }, { quoted: message });
       const difficulty = String(args[1] || 'easy').toLowerCase();
       if (game?.status === 'active') {
         return sock.sendMessage(chatId, { text: 'You already have an active Sudoku. Use *.sudoku board* or *.sudoku quit* first.', ...(context.channelInfo || {}) }, { quoted: message });
@@ -65,6 +68,7 @@ export default {
     }
 
     if (action === 'set' || action === 'put') {
+      if (!access.ok) return sock.sendMessage(chatId, { text: access.msg, ...(context.channelInfo || {}) }, { quoted: message });
       const row = Number(args[1]), col = Number(args[2]), value = args[3];
       const result = setMiniSudokuCell(game, row, col, value);
       if (!result.ok) return sock.sendMessage(chatId, { text: `❌ ${result.error}`, ...(context.channelInfo || {}) }, { quoted: message });
@@ -80,6 +84,7 @@ export default {
     }
 
     if (action === 'clear' || action === 'erase') {
+      if (!access.ok) return sock.sendMessage(chatId, { text: access.msg, ...(context.channelInfo || {}) }, { quoted: message });
       const ok = clearMiniSudokuCell(game, Number(args[1]), Number(args[2]));
       if (!ok) return sock.sendMessage(chatId, { text: 'That cell cannot be cleared. Check its row and column, and remember that starting clues are fixed.', ...(context.channelInfo || {}) }, { quoted: message });
       game.lastMoveAt = Date.now(); game.expiresAt = Date.now() + 12 * 60 * 60 * 1000;
