@@ -476,6 +476,48 @@ export async function replaceTodPlayer(sock, chatId, removedId, replacementId) {
     return true;
 }
 
+export async function resumeTodSessions(sock, chatId) {
+    if (!isFeatureGroup(chatId)) return 0;
+    const sessions = await getSessions(chatId, { allowResume: true });
+    const active = Object.values(sessions).filter(session => session?.status === 'active');
+    if (!active.length) return 0;
+    const access = await isGameAllowed(chatId, 'tod');
+    if (!access.ok) return 0;
+    await saveSessions(chatId, sessions);
+    let resumed = 0;
+    for (const session of active) {
+        if (session.nextQuestionAt) {
+            const scheduledAt = Number(session.nextQuestionAt);
+            const delayMs = Math.max(0, scheduledAt - Date.now());
+            setTimeout(async () => {
+                try {
+                    const latestSessions = await getSessions(chatId);
+                    const latest = latestSessions[session.id];
+                    if (!latest || latest.status !== 'active' || Number(latest.nextQuestionAt) !== scheduledAt) return;
+                    await startRound(sock, chatId, latest);
+                } catch (error) {
+                    console.error('[TOD] Recovered next-round timer failed:', error.message);
+                }
+            }, delayMs);
+            resumed++;
+            continue;
+        }
+        const player = session.waitingFor || session.currentAnswerer;
+        if (!player || !session.currentPrompt) continue;
+        const typeLabel = session.currentType === 'truth' ? '🔥 *TRUTH*' : '💀 *DARE*';
+        const sent = await sock.sendMessage(chatId, {
+            text: `▶️ *TRUTH OR DARE — RESUMED*\\n\\n${typeLabel} · Round ${session.round}\\n\\n${mention(player)}, continue with your saved prompt:\\n\\n${session.currentPrompt}\\n\\nUse *.done* when finished. Your progress is unchanged.`,
+            mentions: [player]
+        });
+        session.questionMessageId = sent?.key?.id || null;
+        session.lastActivity = Date.now();
+        session.warningSent = false;
+        resumed++;
+    }
+    await saveSessions(chatId, sessions);
+    return resumed;
+}
+
 export async function checkTodTimeouts(sock, chatId) {
     const sessions = await getSessions(chatId);
     const now = Date.now();
