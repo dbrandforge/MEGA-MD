@@ -361,7 +361,9 @@ async function unlockGroup(sock, chatId, { manual = false } = {}) {
         if (!await unlockGroupSetting(sock, chatId)) return false;
 
         const day = getCurrentDay();
-        await sendDailyActivityOnce(sock, chatId, day);
+        // Manual unlocks are operator actions, not the scheduled morning transition.
+        // The recurring scheduler alone owns the daily activity send + pin.
+        if (!manual) await sendDailyActivityOnce(sock, chatId, day);
 
         await saveGroupSetting(chatId, LOCK_STATE_KEY, { locked: false, at: Date.now() });
         await saveGroupSetting(chatId, LAST_ACTION_KEY, { action: 'unlock', time: getCurrentTimeString(), day });
@@ -414,8 +416,7 @@ export async function handleGroupSettingUpdate(sock, updates) {
                 store.saveSettingVerified(chatId, LAST_ACTION_KEY, { action: 'unlock', time: getCurrentTimeString(), day, source: 'admin-early-unlock' })
             ]);
             if (writes.some(saved => !saved)) throw new Error('Could not persist early manual-unlock state.');
-            await sendGroupAll(sock, chatId, '🔓 *THE GROUP HAS BEEN UNLOCKED EARLY*\n\nAn admin has opened the group ahead of the scheduled unlock time. Today’s activities are now being posted.');
-            await sendDailyActivityOnce(sock, chatId, day);
+            await sendGroupAll(sock, chatId, '🔓 *THE GROUP HAS BEEN UNLOCKED EARLY*\\n\\nAn admin has opened the group ahead of the scheduled unlock time. The normal daily activity will still be published at its scheduled time.');
             console.log(`[GroupLock] Detected admin early-unlock for ${chatId} - ${day}`);
         } catch (error) {
             console.error(`[GroupLock] Early manual-unlock handler failed for ${chatId}:`, error);
