@@ -107,6 +107,10 @@ describe('message-scoped outbound protection', () => {
         const newSock = { sendMessage: newSend };
         const source = makeMessage();
 
+        // Register the replacement socket with the same guard used by the live
+        // connection before simulating an old callback crossing reconnect.
+        await runWithMessageScope(newSock, source, () => undefined);
+
         await runWithMessageScope(oldSock, source, async () => {
             const result = await newSock.sendMessage(source.key.remoteJid, { text: 'old callback on new socket' });
             expect(result).toBeUndefined();
