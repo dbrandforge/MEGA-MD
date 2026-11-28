@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getLagosDay, getManualLockableGames } from '../../plugins/daylock.js';
 import { auditTriviaBank, getTriviaCoverage, TRIVIA_BANK_TARGETS, TRIVIA_CATEGORY_POOLS } from '../../lib/triviaBankAudit.js';
 import { auditTriviaCandidates } from '../../lib/triviaCandidateAudit.js';
-import { canEndHangman } from '../../plugins/hangman.js';
+import { WORDS, canEndHangman } from '../../plugins/hangman.js';
 import { FALLBACK } from '../../data/wyrPairs.js';
 import { MAX_QUESTIONS_PER_SESSION } from '../../plugins/wyr.js';
 import { getLagosWeekKey } from '../../plugins/rank.js';
