@@ -12,6 +12,7 @@ const STATE_KEY = 'mathGame';
 const RECORD_KEY = 'mathRecords';
 const MATCH_EXPIRY_MS = 45 * 60 * 1000;
 const timers = new Map();
+const nextTimers = new Map();
 const chatLocks = new Map();
 async function withChatLock(chatId, task) {
   const previous = chatLocks.get(chatId) || Promise.resolve();
@@ -63,6 +64,9 @@ function clearTimer(chatId) {
   const timer = timers.get(chatId);
   if (timer) clearTimeout(timer);
   timers.delete(chatId);
+  const next = nextTimers.get(chatId);
+  if (next) clearTimeout(next);
+  nextTimers.delete(chatId);
 }
 
 async function saveMatchRecords(chatId, game) {
@@ -129,11 +133,16 @@ async function closeQuestion(sock, chatId, roundToken) {
       await endMatch(sock, chatId, game, 'completed');
       return true;
     }
-    setTimeout(async () => {
-      const latest = await readGame(chatId);
-      if (!latest || latest.roundToken !== roundToken || !latest.questionClosed) return;
-      await postNextQuestion(sock, chatId, latest);
+    const nextTimer = setTimeout(() => {
+      nextTimers.delete(chatId);
+      withChatLock(chatId, async () => {
+        const latest = await readGame(chatId);
+        if (!latest || latest.roundToken !== roundToken || !latest.questionClosed || !latest.active) return;
+        await postNextQuestion(sock, chatId, latest);
+      }).catch(error => console.error('[MATH] Next-question continuation failed:', error.message));
     }, 1800);
+    nextTimers.set(chatId, nextTimer);
+    nextTimer.unref?.();
     return true;
   });
 }
@@ -258,6 +267,43 @@ export async function handleMathContinuity(sock, chatId, message, senderId) {
   });
   if (result?.closeToken) await closeQuestion(sock, chatId, result.closeToken);
   return result === true || !!result?.handled;
+}
+
+export async function resumeMathGame(sock, chatId, message, channelInfo = {}) {
+  const access = await isGameAllowed(chatId, 'math');
+  if (!access.ok) {
+    await sock.sendMessage(chatId, { text: access.msg, ...channelInfo }, message ? { quoted: message } : {});
+    return true;
+  }
+  const result = await withChatLock(chatId, async () => {
+    const game = await readGame(chatId);
+    if (!game?.active) {
+      await sock.sendMessage(chatId, { text: 'There is no resumable Maths Arena match in this process.', ...channelInfo }, message ? { quoted: message } : {});
+      return true;
+    }
+    clearTimer(chatId);
+    if (game.questionClosed && game.noParticipationExpiresAt) {
+      armTimer(sock, chatId, game);
+      await sock.sendMessage(chatId, { text: `Maths Arena is on its five-minute no-participation hold. Question ${game.round}/${game.totalRounds}; use .math status to check the remaining time.`, ...channelInfo }, message ? { quoted: message } : {});
+      return true;
+    }
+    if (game.questionClosed) {
+      if (game.round >= game.totalRounds) {
+        await endMatch(sock, chatId, game, 'completed', message);
+        return true;
+      }
+      await postNextQuestion(sock, chatId, game);
+      return true;
+    }
+    if (game.expiresAt <= Date.now()) return { closeToken: game.roundToken };
+    const sent = await sendGroupAll(sock, chatId, `🧮 *FORGE GUARD — MATHS ARENA*\n\n*Question ${game.round}/${game.totalRounds}* · ${game.mode.toUpperCase()}\n\nHow much is:\n\n*${game.expression} = ?*\n\n⏱️ ${Math.max(1, Math.ceil((game.expiresAt - Date.now()) / 1000))} seconds remaining.\n\nReply directly to this question with your answer.\n🏆 ${formatScores(game.scores, 3).join(' | ') || 'No scores yet'}`);
+    game.questionMessageId = sent?.key?.id || null;
+    await saveGame(chatId, game);
+    armTimer(sock, chatId, game);
+    return true;
+  });
+  if (result?.closeToken) await closeQuestion(sock, chatId, result.closeToken);
+  return result === true || !!result?.closeToken;
 }
 
 export default {
