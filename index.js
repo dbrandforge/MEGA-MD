@@ -38,6 +38,7 @@ import { parseGroupSenderKeyRecoveryTargets, resetGroupSenderKeyMemoryBeforeSend
 import { createPerChatMessageQueue } from './lib/perChatMessageQueue.js';
 import { installNetworkDiagnostics } from './lib/networkDiagnostics.js';
 import { runWithMessageScope } from './lib/messageScopedSocket.js';
+import { rotateGameSessionRuntime } from './lib/gameSessionRuntime.js';
 
 // Keep libsignal diagnostics useful without allowing serialized ratchets or key material into logs.
 installSignalDiagnosticGuard();
@@ -1091,6 +1092,8 @@ async function startQasimDev() {
                     printLog('warning', 'Ignoring close event from a non-active WhatsApp socket.');
                     return;
                 }
+                const gameRuntime = rotateGameSessionRuntime('whatsapp-socket-closed');
+                printLog('warning', `Invalidated persisted game sessions after socket close: runtime=${gameRuntime.current}`);
                 const invalidated = incomingMessageQueue.invalidateAll();
                 printLog('warning', `Invalidated queued WhatsApp work: generation=${invalidated.generation} discarded=${invalidated.discarded}`);
                 activeSocket = null;
