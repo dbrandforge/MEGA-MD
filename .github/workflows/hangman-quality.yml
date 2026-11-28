@@ -1,8 +1,10 @@
-name: Hangman quality quarantine
+name: Hangman bank quality
 
 on:
   pull_request:
     paths:
+      - 'data/hangmanSeeds*.js'
+      - 'data/hangmanWords.js'
       - 'plugins/hangman.js'
       - 'test/unit/hangman-quality.test.js'
       - 'test/unit/game-quality.test.js'
@@ -20,9 +22,8 @@ permissions:
 
 jobs:
   hangman-quality:
-    name: Hangman bank quality (quarantined)
+    name: Hangman bank quality
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
