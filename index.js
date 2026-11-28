@@ -81,6 +81,8 @@ const incomingMessageQueue = createPerChatMessageQueue({
             const handlerLatencyMs = Number(process.hrtime.bigint() - handlerStartedAt) / 1e6;
             printLog('info', `Message processed: jid=${mek?.key?.remoteJid || 'unknown'} id=${mek?.key?.id || 'unknown'} queue_wait_ms=${queueWaitMs} handler_ms=${handlerLatencyMs.toFixed(1)}`);
         } catch (err) {
+            // Do not send logs/notices for work invalidated by a reconnect.
+            if (!queueContext?.isCurrent()) return;
             printLog('error', `Error in handleMessages (jid=${mek?.key?.remoteJid || 'unknown'}): ${String(err?.message || 'Unknown message handler error').slice(0, 300)}`);
             const chatId = mek?.key?.remoteJid;
             if (chatId && !isMessageRevoked(mek) && !isMessageTooOld(mek)) {
