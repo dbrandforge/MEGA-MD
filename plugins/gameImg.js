@@ -1,12 +1,24 @@
+import { resumeTriviaGame } from './trivia.js';
+import { resumeMathGame } from './math.js';
+import { resumeHangmanGame } from './hangman.js';
 import axios from 'axios';
 export default {
     command: 'game',
     aliases: ['gaming', 'gameimg'],
     category: 'images',
     description: 'Get a random gaming image',
-    usage: '.game',
+    usage: '.game | .game resume <trivia|math|hangman>',
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
+        const action = String(args[0] || '').toLowerCase();
+        const target = String(args[1] || '').toLowerCase();
+        if (action === 'resume') {
+            const channelInfo = context.channelInfo || {};
+            if (target === 'trivia') return resumeTriviaGame(sock, chatId, message, channelInfo);
+            if (target === 'math' || target === 'maths') return resumeMathGame(sock, chatId, message, channelInfo);
+            if (target === 'hangman') return resumeHangmanGame(sock, chatId, message, channelInfo);
+            return sock.sendMessage(chatId, { text: 'Use *.game resume trivia*, *.game resume math*, or *.game resume hangman*.' }, { quoted: message });
+        }
         try {
             const res = await axios.get('https://raw.githubusercontent.com/GlobalTechInfo/Database/main/images/game.json');
             if (!res.data || !Array.isArray(res.data) || res.data.length === 0) {
