@@ -1028,12 +1028,15 @@ async function startQasimDev() {
                 // Group automation must not depend on someone running .schedule manually.
                 for (const groupId of FEATURE_GROUPS) trackGroup(groupId);
                 startSchedulerEngine(QasimDev);
-                // Safety rule: never replay persisted game timers/prompts after a
-                // process restart or WhatsApp reconnect. A timer that expired while
-                // offline must not emit yesterday's game messages into a live group.
-                // Persisted progress is intentionally left untouched; admins/players
-                // can resume through the normal game controls, which create fresh prompts.
-                printLog('warning', '[game-recovery] Automatic game-session replay is disabled on reconnect; persisted progress is preserved without replaying overdue actions.');
+                // Rebuild safe game continuations after reconnect. Resume handlers
+                // issue fresh prompts and re-arm timers; they never replay old inbound
+                // messages or execute overdue timeout actions from the offline period.
+                try {
+                    const { resumePersistedGameSessions } = await import('./lib/gameRecovery.js');
+                    await resumePersistedGameSessions(QasimDev, FEATURE_GROUPS, (level, text) => printLog(level, text));
+                } catch (error) {
+                    printLog('error', `[game-recovery] Could not restore persisted game sessions: ${error.message}`);
+                }
                 try {
                     const welcomeModule = await import('./plugins/sincity-welcome.js');
                     if (typeof welcomeModule.restoreWelcomeJobs === 'function') await welcomeModule.restoreWelcomeJobs(QasimDev);
