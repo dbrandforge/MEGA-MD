@@ -42,6 +42,9 @@ const MANUAL_GAMES = {
   pickyoursin: 'Pick Your Sin',
   anonymous: 'Anonymous Night',
   tod: 'Truth or Dare',
+  sudoku: 'Mini Sudoku',
+  chess: 'Chess',
+  checkers: 'Checkers',
 };
 
 export function getManualLockableGames() {
