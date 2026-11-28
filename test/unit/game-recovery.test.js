@@ -25,6 +25,7 @@ import { resumePersistedGameSessions } from '../../lib/gameRecovery.js';
 
 describe('safe persisted game recovery', () => {
   beforeEach(() => {
+    vi.unstubAllEnvs();
     vi.clearAllMocks();
     vi.mocked(store.getSettingForGameResume).mockImplementation(async (_chat, key) => ({
       mathGame: { active: true },
@@ -39,6 +40,34 @@ describe('safe persisted game recovery', () => {
       todSessions: { one: { status: 'active' } },
       wouldYouRatherSessions: { one: { status: 'active' } }
     })[key] || null);
+  });
+
+  it('does not read or resume any saved game when automatic recovery is disabled', async () => {
+    vi.stubEnv('GAME_SESSION_AUTO_RECOVERY', 'false');
+    const logs = [];
+    const result = await resumePersistedGameSessions(
+      {},
+      ['123@g.us'],
+      (level, message) => logs.push([level, message])
+    );
+
+    expect(result).toMatchObject({
+      groups: 0,
+      resumed: 0,
+      failed: 0,
+      skipped: true,
+      reason: 'disabled'
+    });
+    expect(store.getSettingForGameResume).not.toHaveBeenCalled();
+    expect(resumeMathGame).not.toHaveBeenCalled();
+    expect(resumeTriviaGame).not.toHaveBeenCalled();
+    expect(resumeHangmanGame).not.toHaveBeenCalled();
+    expect(resumeHotSeatSession).not.toHaveBeenCalled();
+    expect(resumePickYourSinSessions).not.toHaveBeenCalled();
+    expect(resumeBasketSessions).not.toHaveBeenCalled();
+    expect(resumeTodSessions).not.toHaveBeenCalled();
+    expect(resumeWyrSessions).not.toHaveBeenCalled();
+    expect(logs.some(([, message]) => message.includes('disabled by GAME_SESSION_AUTO_RECOVERY'))).toBe(true);
   });
 
   it('resumes only active persisted sessions and ignores non-group IDs', async () => {
