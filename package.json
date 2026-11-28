@@ -21,7 +21,7 @@
     "build": "echo 'No build step needed - plain JS'",
     "lint": "eslint . --ext .js",
     "test": "vitest run",
-    "test:unit": "vitest run test/unit",
+    "test:unit": "vitest run test/unit --exclude test/unit/hangman-quality.test.js",
     "test:integration": "vitest run test/integration",
     "test:watch": "vitest",
     "audit": "npm audit --omit=dev",
@@ -30,7 +30,8 @@
     "trivia:audit:release": "npm run trivia:audit:stage",
     "trivia:audit:stage": "node scripts/audit-trivia-bank.js --require=forge,music,football,movies,lifestyle,geography,history,food,nigeria,culture,technology,business,science,gaming,literature,current-affairs",
     "chatdual:audit": "node scripts/audit-chatdual-specialty-banks.js",
-    "migrate:message-identity": "node scripts/migrate-message-identity-index.js"
+    "migrate:message-identity": "node scripts/migrate-message-identity-index.js",
+    "test:hangman-quality": "vitest run test/unit/hangman-quality.test.js"
   },
   "keywords": [
     "whatsapp-bot",
