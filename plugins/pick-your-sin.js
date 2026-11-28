@@ -133,8 +133,11 @@ async function sendColorPrompt(sock, chatId, session, playerId) {
   return true;
 }
 
-async function getSessions(chatId) {
-  return (await store.getSetting(chatId, KEY)) || {};
+async function getSessions(chatId, { allowResume = false } = {}) {
+  const value = allowResume && store.getSettingForGameResume
+    ? await store.getSettingForGameResume(chatId, KEY)
+    : await store.getSetting(chatId, KEY);
+  return value || {};
 }
 async function saveSessions(chatId, sessions) {
   if (!await store.saveSettingVerified(chatId, KEY, sessions)) {
@@ -223,7 +226,8 @@ async function schedulePlayerInactivity(sock, chatId, sessionId, playerId, token
 }
 
 export async function resumePickYourSinSessions(sock, chatId) {
-  const sessions = await getSessions(chatId);
+  const sessions = await getSessions(chatId, { allowResume: true });
+  if (Object.keys(sessions).length) await saveSessions(chatId, sessions);
   const pendingInactivity = [];
   const pendingReplacement = [];
   const resumedPrompts = [];
