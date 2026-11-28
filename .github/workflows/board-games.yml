@@ -9,6 +9,10 @@ on:
       - 'lib/chessEngine.js'
       - 'lib/checkersEngine.js'
       - 'lib/duelGamePlugin.js'
+      - 'lib/gameSessionRuntime.js'
+      - 'lib/gameplayGuard.js'
+      - 'plugins/daylock.js'
+      - 'plugins/games.js'
       - 'plugins/sudoku.js'
       - 'plugins/chess.js'
       - 'plugins/checkers.js'
@@ -45,4 +49,4 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Run board-game engine tests
-        run: npx vitest run test/unit/board-games.test.js
+        run: npm run test:unit
