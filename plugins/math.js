@@ -45,9 +45,12 @@ export function getMathMatchQuestionCount(mode = 'normal') {
   return getTriviaMatchQuestionCount('maths', difficulty);
 }
 
-async function readGame(chatId) {
-  const game = await store.getSetting(chatId, STATE_KEY);
+async function readGame(chatId, { allowResume = false } = {}) {
+  const game = allowResume && store.getSettingForGameResume
+    ? await store.getSettingForGameResume(chatId, STATE_KEY)
+    : await store.getSetting(chatId, STATE_KEY);
   if (!game?.active) return null;
+  if (allowResume) await saveGame(chatId, game);
   // Let the persisted no-participation deadline win over the general match expiry after a restart.
   if (isNoParticipationGraceExpired(game)) return game;
   if (game.matchExpiresAt && game.matchExpiresAt <= Date.now()) {
@@ -276,7 +279,7 @@ export async function resumeMathGame(sock, chatId, message, channelInfo = {}) {
     return true;
   }
   const result = await withChatLock(chatId, async () => {
-    const game = await readGame(chatId);
+    const game = await readGame(chatId, { allowResume: true });
     if (!game?.active) {
       await sock.sendMessage(chatId, { text: 'There is no resumable Maths Arena match in this process.', ...channelInfo }, message ? { quoted: message } : {});
       return true;
